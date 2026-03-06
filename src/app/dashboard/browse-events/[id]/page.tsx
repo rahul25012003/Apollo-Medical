@@ -1,0 +1,399 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+    Calendar,
+    Clock,
+    MapPin,
+    Users,
+    Award,
+    Ticket,
+    ArrowLeft,
+    Loader2,
+    Mail,
+    Phone,
+    Globe,
+    Building2,
+    User,
+    CheckCircle2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+
+interface EventDetails {
+    id: string;
+    title: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+    startTime: string | null;
+    endTime: string | null;
+    location: string | null;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    type: string;
+    category: string | null;
+    capacity: number;
+    price: number;
+    earlyBirdPrice: number | null;
+    earlyBirdDeadline: string | null;
+    cmeCredits: number | null;
+    organizer: string | null;
+    contactEmail: string | null;
+    contactPhone: string | null;
+    website: string | null;
+    _count?: {
+        registrations: number;
+    };
+    eventSpeakers?: Array<{
+        speaker: {
+            id: string;
+            name: string;
+            designation: string | null;
+            institution: string | null;
+            photo: string | null;
+        };
+    }>;
+    eventSponsors?: Array<{
+        sponsor: {
+            id: string;
+            name: string;
+            logo: string | null;
+            tier: string;
+        };
+    }>;
+}
+
+export default function EventDetailsPage() {
+    const params = useParams();
+    const router = useRouter();
+    const [event, setEvent] = useState<EventDetails | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function fetchEvent() {
+            try {
+                setLoading(true);
+                const response = await fetch(`/api/events/public/${params.id}`);
+                const data = await response.json();
+                if (data.success && data.data) {
+                    setEvent(data.data);
+                } else {
+                    setError(data.error?.message || "Event not found");
+                }
+            } catch (err) {
+                console.error("Failed to fetch event:", err);
+                setError("Failed to load event details");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        if (params.id) {
+            fetchEvent();
+        }
+    }, [params.id]);
+
+    const getAvailability = () => {
+        if (!event) return { text: "", color: "", available: 0, percentage: 0 };
+        const registered = event._count?.registrations || 0;
+        const available = event.capacity - registered;
+        const percentage = event.capacity > 0 ? (registered / event.capacity) * 100 : 0;
+
+        if (percentage >= 100) return { text: "Sold Out", color: "text-red-600", available: 0, percentage };
+        if (percentage >= 90) return { text: `Only ${available} spots left!`, color: "text-orange-600", available, percentage };
+        if (percentage >= 70) return { text: "Filling Fast", color: "text-yellow-600", available, percentage };
+        return { text: `${available} spots available`, color: "text-green-600", available, percentage };
+    };
+
+    if (loading) {
+        return (
+            <DashboardLayout title="Event Details" subtitle="Loading...">
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    if (error || !event) {
+        return (
+            <DashboardLayout title="Event Details" subtitle="Event not found">
+                <div className="text-center py-12 bg-muted/30 rounded-xl">
+                    <Calendar className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                    <h3 className="font-semibold text-lg mb-2">{error || "Event not found"}</h3>
+                    <p className="text-muted-foreground mb-4">
+                        The event you&apos;re looking for doesn&apos;t exist or has been removed.
+                    </p>
+                    <Button onClick={() => router.back()}>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Go Back
+                    </Button>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    const availability = getAvailability();
+    const eventDate = new Date(event.startDate);
+    const isPastEvent = eventDate < new Date();
+    const isSoldOut = availability.available === 0;
+
+    return (
+        <DashboardLayout
+            title={event.title}
+            subtitle={`${event.type}${event.category ? ` · ${event.category}` : ""}`}
+        >
+            <div className="space-y-6">
+                {/* Back Button */}
+                <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2">
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Events
+                </Button>
+
+                <div className="grid lg:grid-cols-3 gap-6">
+                    {/* Main Content */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Event Header */}
+                        <div className="bg-background rounded-xl border p-6">
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                <Badge variant="secondary">{event.type}</Badge>
+                                {event.category && <Badge variant="outline">{event.category}</Badge>}
+                                {event.cmeCredits && event.cmeCredits > 0 && (
+                                    <Badge className="bg-purple-100 text-purple-700 border-purple-200">
+                                        <Award className="w-3 h-3 mr-1" />
+                                        {event.cmeCredits} CME Credits
+                                    </Badge>
+                                )}
+                            </div>
+
+                            <h1 className="text-2xl font-bold mb-4">{event.title}</h1>
+
+                            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                                <div className="flex items-center gap-3 text-muted-foreground">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                        <Calendar className="w-5 h-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-foreground">
+                                            {format(eventDate, "EEEE, MMMM d, yyyy")}
+                                        </p>
+                                        {event.endDate !== event.startDate && (
+                                            <p className="text-xs">
+                                                to {format(new Date(event.endDate), "MMMM d, yyyy")}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {event.startTime && (
+                                    <div className="flex items-center gap-3 text-muted-foreground">
+                                        <div className="p-2 bg-primary/10 rounded-lg">
+                                            <Clock className="w-5 h-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-foreground">
+                                                {event.startTime}
+                                                {event.endTime && ` - ${event.endTime}`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(event.location || event.city) && (
+                                    <div className="flex items-center gap-3 text-muted-foreground sm:col-span-2">
+                                        <div className="p-2 bg-primary/10 rounded-lg">
+                                            <MapPin className="w-5 h-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-foreground">{event.location}</p>
+                                            {event.address && <p className="text-xs">{event.address}</p>}
+                                            {(event.city || event.state) && (
+                                                <p className="text-xs">
+                                                    {[event.city, event.state].filter(Boolean).join(", ")}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Description */}
+                        <div className="bg-background rounded-xl border p-6">
+                            <h2 className="text-lg font-semibold mb-4">About This Event</h2>
+                            <div className="prose prose-sm max-w-none text-muted-foreground">
+                                <p className="whitespace-pre-wrap">{event.description}</p>
+                            </div>
+                        </div>
+
+                        {/* Speakers */}
+                        {event.eventSpeakers && event.eventSpeakers.length > 0 && (
+                            <div className="bg-background rounded-xl border p-6">
+                                <h2 className="text-lg font-semibold mb-4">Speakers</h2>
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                    {event.eventSpeakers.map(({ speaker }) => (
+                                        <div key={speaker.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                                {speaker.photo ? (
+                                                    <img
+                                                        src={speaker.photo}
+                                                        alt={speaker.name}
+                                                        className="w-12 h-12 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <User className="w-6 h-6 text-primary" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium">{speaker.name}</p>
+                                                {speaker.designation && (
+                                                    <p className="text-xs text-muted-foreground">{speaker.designation}</p>
+                                                )}
+                                                {speaker.institution && (
+                                                    <p className="text-xs text-muted-foreground">{speaker.institution}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Contact Information */}
+                        {(event.organizer || event.contactEmail || event.contactPhone || event.website) && (
+                            <div className="bg-background rounded-xl border p-6">
+                                <h2 className="text-lg font-semibold mb-4">Contact Information</h2>
+                                <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                                    {event.organizer && (
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <Building2 className="w-4 h-4" />
+                                            <span>{event.organizer}</span>
+                                        </div>
+                                    )}
+                                    {event.contactEmail && (
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <Mail className="w-4 h-4" />
+                                            <a href={`mailto:${event.contactEmail}`} className="hover:text-primary">
+                                                {event.contactEmail}
+                                            </a>
+                                        </div>
+                                    )}
+                                    {event.contactPhone && (
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <Phone className="w-4 h-4" />
+                                            <a href={`tel:${event.contactPhone}`} className="hover:text-primary">
+                                                {event.contactPhone}
+                                            </a>
+                                        </div>
+                                    )}
+                                    {event.website && (
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <Globe className="w-4 h-4" />
+                                            <a href={event.website} target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+                                                Website
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Sidebar - Registration Card */}
+                    <div className="lg:col-span-1">
+                        <div className="bg-background rounded-xl border p-6 sticky top-6">
+                            <div className="text-center mb-6">
+                                {event.earlyBirdPrice && event.earlyBirdPrice < event.price ? (
+                                    <>
+                                        <span className="text-lg text-muted-foreground line-through">
+                                            ₹{event.price.toLocaleString()}
+                                        </span>
+                                        <p className="text-3xl font-bold text-primary">
+                                            ₹{event.earlyBirdPrice.toLocaleString()}
+                                        </p>
+                                        <p className="text-sm text-green-600 font-medium">Early Bird Price</p>
+                                        {event.earlyBirdDeadline && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                Until {format(new Date(event.earlyBirdDeadline), "MMM d, yyyy")}
+                                            </p>
+                                        )}
+                                    </>
+                                ) : (
+                                    <p className="text-3xl font-bold text-primary">
+                                        {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Availability */}
+                            <div className="mb-6">
+                                <div className="flex items-center justify-between text-sm mb-2">
+                                    <span className="text-muted-foreground">Availability</span>
+                                    <span className={cn("font-medium", availability.color)}>
+                                        {availability.text}
+                                    </span>
+                                </div>
+                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                    <div
+                                        className={cn(
+                                            "h-full rounded-full transition-all",
+                                            availability.percentage >= 100 ? "bg-red-500" :
+                                            availability.percentage >= 70 ? "bg-yellow-500" : "bg-green-500"
+                                        )}
+                                        style={{ width: `${Math.min(availability.percentage, 100)}%` }}
+                                    />
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1 text-center">
+                                    {event._count?.registrations || 0} / {event.capacity} registered
+                                </p>
+                            </div>
+
+                            {/* What's Included */}
+                            {event.cmeCredits && event.cmeCredits > 0 && (
+                                <div className="mb-6 p-3 bg-purple-50 rounded-lg">
+                                    <div className="flex items-center gap-2 text-purple-700">
+                                        <Award className="w-5 h-5" />
+                                        <span className="font-medium">{event.cmeCredits} CME Credits</span>
+                                    </div>
+                                    <p className="text-xs text-purple-600 mt-1">
+                                        Certificate will be issued after completion
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Register Button */}
+                            {!isPastEvent && !isSoldOut ? (
+                                <Link href={`/dashboard/browse-events/${event.id}/register`} className="block">
+                                    <Button className="w-full gap-2" size="lg">
+                                        <Ticket className="w-5 h-5" />
+                                        Register Now
+                                    </Button>
+                                </Link>
+                            ) : isPastEvent ? (
+                                <Button className="w-full" size="lg" disabled>
+                                    Event Ended
+                                </Button>
+                            ) : (
+                                <Button className="w-full" size="lg" disabled>
+                                    Sold Out
+                                </Button>
+                            )}
+
+                            <p className="text-xs text-center text-muted-foreground mt-3">
+                                Instant registration · Confirmation via email
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </DashboardLayout>
+    );
+}

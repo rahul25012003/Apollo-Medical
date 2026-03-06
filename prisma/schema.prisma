@@ -1,0 +1,691 @@
+// Prisma Schema for ICMS (Integrated Customer Management System)
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  SUPER_ADMIN          // Full access to all features and settings (platform-level)
+  ADMIN                // Full access within own tenant (tenant administrator)
+  EVENT_MANAGER        // Manage events, speakers, and sponsors
+  REGISTRATION_MANAGER // Handle registrations and attendee management
+  CERTIFICATE_MANAGER  // Generate and distribute certificates
+  ATTENDEE             // Regular user/attendee
+}
+
+enum EventStatus {
+  DRAFT
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum EventType {
+  CONFERENCE
+  WORKSHOP
+  SEMINAR
+  WEBINAR
+  CME
+  SYMPOSIUM
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  WAITLIST
+  ATTENDED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+  FREE
+}
+
+enum SponsorTier {
+  PLATINUM
+  GOLD
+  SILVER
+  BRONZE
+}
+
+enum OTPPurpose {
+  REGISTRATION
+  LOGIN
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+}
+
+enum CertificateStatus {
+  PENDING
+  ISSUED
+  REVOKED
+}
+
+// ============================================================================
+// TENANT MODEL (Multi-tenancy)
+// ============================================================================
+
+model Tenant {
+  id                String   @id @default(cuid())
+
+  // Identification
+  slug              String   @unique  // Used in URL: medconf.com/t/slug or slug.medconf.com
+  name              String             // Display name: "ABC Medical College"
+  domain            String?  @unique  // Custom domain: "abcmedical.com"
+
+  // Branding
+  logo              String?            // Logo URL
+  favicon           String?            // Favicon URL
+  tagline           String?            // "Excellence in Medical Education"
+
+  // Theme Colors (CSS variables)
+  primaryColor      String   @default("#0d9488")   // teal-600
+  secondaryColor    String   @default("#0891b2")   // cyan-600
+  accentColor       String   @default("#10b981")   // emerald-500
+
+  // Contact Information
+  email             String?
+  phone             String?
+  address           String?
+  city              String?
+  state             String?
+  country           String?
+  website           String?
+
+  // Social Links
+  facebook          String?
+  twitter           String?
+  linkedin          String?
+  instagram         String?
+  youtube           String?
+
+  // Section Visibility + Dashboard Module Visibility + Notification Config (JSON for flexibility)
+  // Frontpage: hero, events, gallery, sponsors, about, contact
+  // Modules: moduleSpeakers, moduleSponsors, moduleCertificates, moduleRegistrations
+  // Notifications: notifyRegistrations, notifyPayments
+  // Frontpage sections: testimonials
+  sections          Json     @default("{\"hero\":true,\"events\":true,\"gallery\":true,\"sponsors\":true,\"testimonials\":true,\"about\":true,\"contact\":true,\"moduleSpeakers\":true,\"moduleSponsors\":true,\"moduleCertificates\":true,\"moduleRegistrations\":true,\"notifyRegistrations\":true,\"notifyPayments\":true}")
+
+  // Hero Section Config
+  heroTitle         String?            // "Advance Your Medical Career"
+  heroSubtitle      String?            // "Register for upcoming conferences..."
+  heroBgImage       String?            // Background image for hero
+
+  // About Section Config
+  aboutTitle        String?
+  aboutDescription  String?  @db.Text
+  aboutFeatures     Json?              // Array of features [{icon, title, description}]
+
+  // Gallery Config
+  galleryImages     Json?              // Array of images [{src, alt, category}]
+  galleryVideos     Json?              // Array of videos [{thumbnail, title, youtubeId, duration}]
+
+  // Testimonials Config
+  testimonials      Json?              // Array of [{name, role, avatar, content, rating}]
+
+  // Footer Config
+  footerText        String?
+  copyrightText     String?
+
+  // Settings
+  isActive          Boolean  @default(true)
+  defaultCurrency   String   @default("INR")
+  defaultTimezone   String   @default("Asia/Kolkata")
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  events            Event[]
+  users             User[]
+  speakers          Speaker[]
+  sponsors          Sponsor[]
+  notificationChannels NotificationChannel[]
+
+  @@index([slug])
+  @@index([domain])
+  @@map("tenants")
+}
+
+// ============================================================================
+// NOTIFICATION CHANNEL MODEL
+// ============================================================================
+
+enum NotificationChannelType {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+model NotificationChannel {
+  id          String                  @id @default(cuid())
+  channel     NotificationChannelType
+  provider    String                  // e.g., "gmail_smtp", "sendgrid", "twilio", "whatsapp_business"
+  name        String                  // Display label, e.g., "Gmail — admin@priism.in"
+  config      Json                    // Provider-specific config (encrypted sensitive fields)
+  isActive    Boolean                 @default(true)
+  isDefault   Boolean                 @default(false) // Default channel per type
+
+  // Multi-tenancy (null = platform-level)
+  tenantId    String?
+  tenant      Tenant?                 @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  @@index([tenantId, channel])
+  @@map("notification_channels")
+}
+
+// ============================================================================
+// AUTH MODELS (NextAuth.js)
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?   // Hashed password for credentials auth
+  name          String?
+  firstName     String?
+  lastName      String?
+  phone         String?
+  avatar        String?   // URL to avatar image
+  role          UserRole  @default(ATTENDEE)
+  isActive      Boolean   @default(true)
+
+  // Multi-tenancy
+  tenantId      String?
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  // Notification Preferences
+  notifyEmail          Boolean @default(true)  // Receive updates via email
+  notifyRegistrations  Boolean @default(true)  // New registration alerts
+  notifyPayments       Boolean @default(true)  // Payment notifications
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  registrations Registration[] @relation("UserRegistrations")
+  registeredBy  Registration[] @relation("RegisteredByUser")
+  otps          OTP[]
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  // Device & Location Info
+  deviceName   String?  // e.g., "Chrome on Windows"
+  deviceType   String?  // desktop, mobile, tablet
+  browser      String?  // Chrome, Firefox, Safari, etc.
+  os           String?  // Windows, macOS, iOS, Android, etc.
+  ipAddress    String?
+  location     String?  // City, Country (from IP)
+
+  // Activity tracking
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model OTP {
+  id        String     @id @default(cuid())
+  code      String
+  purpose   OTPPurpose
+  email     String
+  userId    String?
+  expiresAt DateTime
+  used      Boolean    @default(false)
+
+  createdAt DateTime   @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, purpose])
+  @@map("otps")
+}
+
+// ============================================================================
+// EVENT MODELS
+// ============================================================================
+
+model Event {
+  id                   String      @id @default(cuid())
+  title                String
+  slug                 String      @unique
+  shortDescription     String?     @db.Text
+  description          String?     @db.Text
+
+  // Date & Time (optional for drafts, required for publishing)
+  startDate            DateTime?
+  endDate              DateTime?
+  startTime            String?     // e.g., "09:00"
+  endTime              String?     // e.g., "17:00"
+  timezone             String      @default("UTC")
+
+  // Location
+  location             String?
+  address              String?
+  city                 String?
+  state                String?
+  country              String?
+  mapLink              String?
+  isVirtual            Boolean     @default(false)
+  virtualLink          String?
+
+  // Capacity & Registration
+  capacity             Int         @default(100)
+  registrationOpensDate DateTime?  // When registration opens (defaults to now if not set)
+  registrationDeadline DateTime?   // When registration closes
+  isRegistrationOpen   Boolean     @default(true)
+
+  // Pricing
+  price                Decimal     @default(0) @db.Decimal(10, 2)
+  earlyBirdPrice       Decimal?    @db.Decimal(10, 2)
+  earlyBirdDeadline    DateTime?
+  currency             String      @default("INR")
+
+  // Status & Meta
+  status               EventStatus @default(DRAFT)
+  type                 EventType   @default(CONFERENCE)
+  category             String?
+  tags                 String[]
+
+  // Additional Info
+  cmeCredits           Int?
+  cmeCoordinatorName   String?
+  cmeCoordinatorEmail  String?
+  cmeCoordinatorDesignation String?
+  organizer            String?
+  contactEmail         String?
+  contactPhone         String?
+  website              String?
+  includes             String[]  // What's included in the event (e.g., "Conference kit", "Lunch")
+
+  // Media
+  bannerImage          String?
+  thumbnailImage       String?
+
+  // Certificate Signatories
+  signatory1Name       String?
+  signatory1Title      String?
+  signatory2Name       String?
+  signatory2Title      String?
+
+  // Settings
+  isPublished          Boolean     @default(false)
+  isFeatured           Boolean     @default(false)
+
+  // Multi-tenancy
+  tenantId             String?
+  tenant               Tenant?     @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  // Relations
+  registrations        Registration[]
+  eventSpeakers        EventSpeaker[]
+  eventSessions        EventSession[]
+  eventSponsors        EventSponsor[]
+  certificates         Certificate[]
+  pricingCategories    EventPricing[]
+
+  @@index([status])
+  @@index([startDate])
+  @@index([isPublished])
+  @@index([tenantId])
+  @@map("events")
+}
+
+// ============================================================================
+// EVENT PRICING MODEL (Category-based pricing)
+// ============================================================================
+
+model EventPricing {
+  id                String    @id @default(cuid())
+  eventId           String
+
+  // Category Info
+  name              String              // e.g., "Faculty", "Student", "Professional"
+  description       String?
+
+  // Capacity
+  totalSlots        Int       @default(20)
+
+  // Pricing
+  price             Decimal   @db.Decimal(10, 2)
+  earlyBirdPrice    Decimal?  @db.Decimal(10, 2)
+  earlyBirdDeadline DateTime?
+
+  // Display order
+  displayOrder      Int       @default(0)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  event             Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_pricing")
+}
+
+// ============================================================================
+// REGISTRATION MODELS
+// ============================================================================
+
+model Registration {
+  id               String             @id @default(cuid())
+
+  // Attendee Info (denormalized for non-user registrations)
+  userId           String?
+  name             String
+  email            String
+  phone            String?
+  organization     String?
+  designation      String?
+  category         String?            // Faculty, Resident, Student, etc.
+
+  // Registration Details
+  eventId          String
+  status           RegistrationStatus @default(PENDING)
+  paymentStatus    PaymentStatus      @default(PENDING)
+  amount           Decimal            @db.Decimal(10, 2)
+  currency         String             @default("INR")
+
+  // Payment Info
+  paymentId        String?            // External payment reference
+  paymentMethod    String?
+  paidAt           DateTime?
+
+  // Attendance
+  attendanceStatus String?            // checked_in, no_show, etc.
+  checkedInAt      DateTime?
+
+  // Notes
+  notes            String?            @db.Text
+  specialRequests  String?            @db.Text
+
+  // Registration Source - tracks who created this registration
+  // null = self-registration (public), set = registered by admin/staff
+  registeredById   String?
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  // Relations
+  user             User?              @relation("UserRegistrations", fields: [userId], references: [id], onDelete: SetNull)
+  event            Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registeredBy     User?              @relation("RegisteredByUser", fields: [registeredById], references: [id], onDelete: SetNull)
+  certificate      Certificate?
+
+  @@unique([email, eventId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([registeredById])
+  @@index([status])
+  @@map("registrations")
+}
+
+// ============================================================================
+// SPEAKER MODELS
+// ============================================================================
+
+model Speaker {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+
+  // Professional Info
+  designation  String?
+  department   String?
+  institution  String?
+  biography    String?  @db.Text
+
+  // Media
+  photo        String?
+
+  // Social Links
+  linkedin     String?
+  twitter      String?
+  website      String?
+
+  // Status
+  isActive     Boolean  @default(true)
+
+  // Multi-tenancy
+  tenantId     String?
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  eventSpeakers EventSpeaker[]
+  eventSessions EventSession[]
+
+  @@index([tenantId])
+  @@map("speakers")
+}
+
+model EventSpeaker {
+  id              String   @id @default(cuid())
+  eventId         String
+  speakerId       String
+
+  // Session Details
+  topic              String?
+  sessionDescription String?
+  sessionDate        DateTime?
+  sessionTime        String?
+  sessionEndTime     String?
+  sessionVenue       String?
+  sessionOrder       Int      @default(0)
+
+  // Status
+  status          String   @default("pending") // pending, confirmed, cancelled
+  isPublished     Boolean  @default(false)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  speaker      Speaker  @relation(fields: [speakerId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, speakerId])
+  @@map("event_speakers")
+}
+
+// ============================================================================
+// EVENT SESSION MODEL (Independent sessions, optionally linked to speakers)
+// ============================================================================
+
+model EventSession {
+  id              String   @id @default(cuid())
+  eventId         String
+
+  // Session Details
+  title              String
+  description        String?   @db.Text
+  sessionDate        DateTime?
+  startTime          String?
+  endTime            String?
+  venue              String?
+  sessionOrder       Int       @default(0)
+
+  // Optional Speaker Link
+  speakerId          String?
+
+  // Status
+  status          String   @default("scheduled") // scheduled, ongoing, completed, cancelled
+  isPublished     Boolean  @default(true)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  speaker      Speaker? @relation(fields: [speakerId], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@index([speakerId])
+  @@map("event_sessions")
+}
+
+// ============================================================================
+// SPONSOR MODELS
+// ============================================================================
+
+model Sponsor {
+  id          String      @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+
+  // Company Info
+  description String?     @db.Text
+  website     String?
+
+  // Media
+  logo        String?
+
+  // Status
+  isActive    Boolean     @default(true)
+
+  // Multi-tenancy
+  tenantId    String?
+  tenant      Tenant?     @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  eventSponsors EventSponsor[]
+
+  @@index([tenantId])
+  @@map("sponsors")
+}
+
+model EventSponsor {
+  id          String      @id @default(cuid())
+  eventId     String
+  sponsorId   String
+  tier        SponsorTier @default(SILVER)
+
+  // Display
+  displayOrder Int        @default(0)
+  isPublished  Boolean    @default(true)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sponsor     Sponsor     @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, sponsorId])
+  @@map("event_sponsors")
+}
+
+// ============================================================================
+// CERTIFICATE MODELS
+// ============================================================================
+
+model Certificate {
+  id               String            @id @default(cuid())
+  certificateCode  String            @unique // Unique verification code
+
+  // Certificate Details
+  registrationId   String            @unique
+  eventId          String
+
+  // Recipient Info (denormalized)
+  recipientName    String
+  recipientEmail   String
+
+  // Certificate Content
+  title            String?           // Certificate title/type
+  description      String?           @db.Text
+  cmeCredits       Int?
+
+  // Status
+  status           CertificateStatus @default(PENDING)
+  issuedAt         DateTime?
+  revokedAt        DateTime?
+  revokedReason    String?
+
+  // Download tracking
+  downloadCount    Int               @default(0)
+  lastDownloadedAt DateTime?
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relations
+  registration     Registration      @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  event            Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([certificateCode])
+  @@index([eventId])
+  @@map("certificates")
+}
