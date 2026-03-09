@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/deploy-bundle
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,6 +13,7 @@
 .claude
 CLAUDE.md
 package-lock.json
+deploy-bundle.tar.gz
 
 # testing
 /coverage

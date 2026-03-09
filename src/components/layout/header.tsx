@@ -65,10 +65,7 @@ export function Header({ title, subtitle }: HeaderProps) {
         : null;
 
     const handleSignOut = () => {
-        const callbackUrl = tenantSlug
-            ? `/auth/login?tenant=${tenantSlug}`
-            : "/";
-        signOut({ callbackUrl });
+        signOut({ callbackUrl: "/" });
     };
 
     return (

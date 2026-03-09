@@ -90,8 +90,7 @@ export default function EditTenantPage() {
     }, [slug]);
 
     const handleSubmit = async (data: TenantFormData) => {
-        const { slug: _slug, ...updateData } = data;
-        const response = await tenantsService.update(slug, updateData);
+        const response = await tenantsService.update(slug, data);
         if (response.success) {
             router.push("/dashboard/tenants");
         } else {

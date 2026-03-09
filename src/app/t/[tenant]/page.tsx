@@ -242,7 +242,7 @@ export default function TenantHomePage() {
               {sections.contact && <a href="#contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Contact</a>}
             </nav>
 
-            <Link href={`/auth/login?tenant=${tenantSlug}`}>
+            <Link href={"/auth/login"}>
               <Button
                 className="text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
                 style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}

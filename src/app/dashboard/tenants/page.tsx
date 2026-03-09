@@ -277,7 +277,7 @@ export default function TenantsPage() {
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem asChild>
                                                     <a
-                                                        href={`/t/${tenant.slug}`}
+                                                        href={tenant.domain ? `http://${tenant.domain}` : `/t/${tenant.slug}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                     >

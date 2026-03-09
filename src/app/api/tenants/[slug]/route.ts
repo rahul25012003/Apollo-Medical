@@ -13,6 +13,7 @@ type RouteContext = { params: Promise<{ slug: string }> };
 
 // Validation schema for updating a tenant
 const updateTenantSchema = z.object({
+  slug: z.string().min(3).max(50).regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens").optional(),
   name: z.string().min(2).optional(),
   domain: z.string().optional().nullable(),
   logo: z.string().url().optional().nullable(),
@@ -156,6 +157,17 @@ export const PUT = withErrorHandler(
 
     if (!existingTenant) {
       return Errors.notFound("Tenant");
+    }
+
+    // Check if new slug conflicts with existing
+    if (data.slug && data.slug !== existingTenant.slug) {
+      const existingSlug = await prisma.tenant.findUnique({
+        where: { slug: data.slug },
+      });
+
+      if (existingSlug) {
+        return Errors.badRequest("A tenant with this slug already exists");
+      }
     }
 
     // Check if new domain conflicts with existing

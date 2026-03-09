@@ -194,12 +194,9 @@ export function Sidebar() {
         ? tenant.slug
         : null;
 
-    // Handle logout — tenant users go to tenant login, SUPER_ADMIN goes to home
+    // Handle logout — redirect to home (domain-based routing handles tenant resolution)
     const handleLogout = () => {
-        const callbackUrl = tenantSlug
-            ? `/auth/login?tenant=${tenantSlug}`
-            : "/";
-        signOut({ callbackUrl });
+        signOut({ callbackUrl: "/" });
     };
 
     // Prevent hydration mismatch by only applying client state after mount

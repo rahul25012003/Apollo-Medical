@@ -25,9 +25,11 @@ function AuthLayoutInner({ children }: { children: React.ReactNode }) {
     const [branding, setBranding] = React.useState<TenantBranding | null>(null);
 
     React.useEffect(() => {
-        if (!tenantSlug) return;
+        // Resolve tenant from query param or hostname (domain-based lookup)
+        const identifier = tenantSlug || window.location.hostname;
+        if (!identifier || identifier === "localhost") return;
 
-        fetch(`/api/tenants/${tenantSlug}`)
+        fetch(`/api/tenants/${identifier}`)
             .then((r) => r.json())
             .then((data) => {
                 if (data.success && data.data) {

@@ -1,6 +1,36 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export const runtime = "nodejs";
+
+// ---------------------------------------------------------------------------
+// Domain → Tenant slug mapping (cached in memory, refreshed every 5 minutes)
+// ---------------------------------------------------------------------------
+let domainCache: Record<string, string> = {};
+let domainCacheTime = 0;
+const DOMAIN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getTenantSlugByDomain(domain: string): Promise<string | null> {
+  const now = Date.now();
+  if (now - domainCacheTime > DOMAIN_CACHE_TTL) {
+    try {
+      const tenants = await prisma.tenant.findMany({
+        where: { domain: { not: null }, isActive: true },
+        select: { domain: true, slug: true },
+      });
+      domainCache = {};
+      for (const t of tenants) {
+        if (t.domain) domainCache[t.domain.toLowerCase()] = t.slug;
+      }
+      domainCacheTime = now;
+    } catch {
+      // On error, use stale cache
+    }
+  }
+  return domainCache[domain.toLowerCase()] || null;
+}
 
 // Routes that require authentication
 const protectedRoutes = ["/dashboard", "/api/users", "/api/events", "/api/registrations", "/api/speakers", "/api/sponsors", "/api/certificates", "/api/upload", "/api/dashboard"];
@@ -19,6 +49,19 @@ const roleExceptions = ["/api/users/me", "/api/users/me/registrations", "/api/us
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ---------------------------------------------------------------------------
+  // Domain-based tenant rewriting: serve /t/[slug] content at root URL
+  // The client never sees /t/slug in the URL bar.
+  // ---------------------------------------------------------------------------
+  const hostname = request.headers.get("host")?.split(":")[0] || "";
+  const tenantSlug = await getTenantSlugByDomain(hostname);
+
+  if (tenantSlug && pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = `/t/${tenantSlug}`;
+    return NextResponse.rewrite(url);
+  }
 
   // Check if it's a public route
   const isPublicRoute = publicRoutes.some(

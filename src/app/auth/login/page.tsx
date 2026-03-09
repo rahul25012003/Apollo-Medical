@@ -50,13 +50,14 @@ export default function LoginPage() {
     const [activeTab, setActiveTab] = React.useState("admin");
     const [tenantBranding, setTenantBranding] = React.useState<TenantBranding | null>(null);
 
-    // Fetch tenant branding if tenant slug is present
+    // Fetch tenant branding from query param or hostname (domain-based lookup)
     React.useEffect(() => {
-        if (!tenantSlug) return;
+        const identifier = tenantSlug || window.location.hostname;
+        if (!identifier || identifier === "localhost") return;
 
         async function fetchTenant() {
             try {
-                const response = await fetch(`/api/tenants/${tenantSlug}`);
+                const response = await fetch(`/api/tenants/${identifier}`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.data) {
@@ -161,7 +162,7 @@ export default function LoginPage() {
             {/* Header */}
             <header className="p-4 lg:p-6">
                 <Link
-                    href={tenantSlug ? `/t/${tenantSlug}` : "/"}
+                    href="/"
                     className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <ArrowLeft className="h-4 w-4" />
@@ -299,7 +300,7 @@ export default function LoginPage() {
                                     <div className="space-y-1.5">
                                         <div className="flex justify-between">
                                             <Label htmlFor="password" className="text-sm">Password</Label>
-                                            <Link href={tenantSlug ? `/auth/forgot-password?tenant=${tenantSlug}` : "/auth/forgot-password"} className="text-xs text-primary hover:underline">
+                                            <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">
                                                 Forgot?
                                             </Link>
                                         </div>
@@ -342,41 +343,36 @@ export default function LoginPage() {
                                         <div className="flex justify-between gap-2">
                                             <span className="text-amber-600">Administrator:</span>
                                             <code className="font-medium">
-                                                {tenantSlug === "apollo-medical" ? "admin@apollo.com" :
-                                                 tenantSlug === "fortis-institute" ? "admin@fortis.com" :
-                                                 "admin@apollo.com"} / Admin@123
+                                                {tenantSlug === "carens" ? "admin@carens.com" :
+                                                    "admin@carens.com"} / Admin@123
                                             </code>
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <span className="text-amber-600">Event Mgr:</span>
                                             <code className="font-medium">
-                                                {tenantSlug === "apollo-medical" ? "events@apollo.com" :
-                                                 tenantSlug === "fortis-institute" ? "events@fortis.com" :
-                                                 "events@apollo.com"} / User@123
+                                                {tenantSlug === "carens" ? "events@carens.com" :
+                                                    "events@carens.com"} / User@123
                                             </code>
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <span className="text-amber-600">Reg. Mgr:</span>
                                             <code className="font-medium">
-                                                {tenantSlug === "apollo-medical" ? "registrations@apollo.com" :
-                                                 tenantSlug === "fortis-institute" ? "registrations@fortis.com" :
-                                                 "registrations@apollo.com"} / User@123
+                                                {tenantSlug === "carens" ? "registrations@carens.com" :
+                                                    "registrations@carens.com"} / User@123
                                             </code>
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <span className="text-amber-600">Cert. Mgr:</span>
                                             <code className="font-medium">
-                                                {tenantSlug === "apollo-medical" ? "certificates@apollo.com" :
-                                                 tenantSlug === "fortis-institute" ? "certificates@fortis.com" :
-                                                 "certificates@apollo.com"} / User@123
+                                                {tenantSlug === "carens" ? "certificates@carens.com" :
+                                                    "certificates@carens.com"} / User@123
                                             </code>
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <span className="text-amber-600">Attendee:</span>
                                             <code className="font-medium">
-                                                {tenantSlug === "apollo-medical" ? "attendee@apollo.com" :
-                                                 tenantSlug === "fortis-institute" ? "attendee@fortis.com" :
-                                                 "attendee@apollo.com"} / User@123
+                                                {tenantSlug === "carens" ? "attendee@carens.com" :
+                                                    "attendee@carens.com"} / User@123
                                             </code>
                                         </div>
                                     </div>
@@ -388,8 +384,8 @@ export default function LoginPage() {
                     {/* Footer Link */}
                     <p className="text-center text-sm text-muted-foreground mt-6">
                         New here?{" "}
-                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/events"} className="text-primary font-medium hover:underline">
-                            {tenantSlug ? "Back to Home" : "Browse Events"}
+                        <Link href="/" className="text-primary font-medium hover:underline">
+                            Back to Home
                         </Link>
                     </p>
                 </div>

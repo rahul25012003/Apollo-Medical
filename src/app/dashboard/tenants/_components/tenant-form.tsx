@@ -399,7 +399,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                 </div>
                 <div className="flex items-center gap-2">
                     {isEditing && slug && (
-                        <a href={`/t/${slug}`} target="_blank" rel="noopener noreferrer">
+                        <a href={formData.domain ? `http://${formData.domain}` : `/t/${slug}`} target="_blank" rel="noopener noreferrer">
                             <Button variant="outline" type="button" className="gap-2">
                                 <ExternalLink className="w-4 h-4" />
                                 Preview
@@ -454,21 +454,19 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                 <div className="space-y-2">
                                     <Label htmlFor="slug">URL Slug *</Label>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-muted-foreground whitespace-nowrap">/t/</span>
                                         <Input
                                             id="slug"
-                                            placeholder="apollo-medical"
+                                            placeholder="carens"
                                             value={formData.slug}
                                             onChange={(e) => {
                                                 setSlugManuallyEdited(true);
                                                 updateField("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
                                             }}
                                             required
-                                            disabled={isEditing}
                                         />
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        Accessible at /t/{formData.slug || "slug"}
+                                        Used internally for tenant identification
                                     </p>
                                 </div>
                                 )}
