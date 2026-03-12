@@ -211,9 +211,14 @@ export function withErrorHandler<TContext>(
         if (error.message.includes("Foreign key constraint")) {
           return Errors.badRequest("Invalid reference to related record");
         }
+        // Prisma unknown field error
+        if (error.message.includes("Unknown argument") || error.message.includes("Unknown field")) {
+          return Errors.badRequest(error.message);
+        }
       }
 
-      return Errors.internalError();
+      const errMsg = error instanceof Error ? error.message : "Internal server error";
+      return Errors.internalError(errMsg);
     }
   };
 }

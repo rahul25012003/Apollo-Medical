@@ -91,6 +91,7 @@ model Tenant {
   // Branding
   logo              String?            // Logo URL
   favicon           String?            // Favicon URL
+  secondaryLogo     String?            // Secondary logo displayed above login button
   tagline           String?            // "Excellence in Medical Education"
 
   // Theme Colors (CSS variables)
@@ -106,6 +107,10 @@ model Tenant {
   state             String?
   country           String?
   website           String?
+
+  // Map & Business Hours
+  mapUrl            String?            // Google Maps embed URL
+  businessHours     Json?              // JSON: { monFri, sat, sunHoliday }
 
   // Social Links
   facebook          String?
@@ -137,6 +142,15 @@ model Tenant {
 
   // Testimonials Config
   testimonials      Json?              // Array of [{name, role, avatar, content, rating}]
+
+  // Yearly Stats Config
+  yearlyStats       Json?              // {year, events, attendees, speakers}
+
+  // FAQ Config
+  faqs              Json?              // Array of [{id, question, answer}]
+
+  // Ongoing Research Config
+  researchItems     Json?              // Array of [{id, icon, title, description, status}]
 
   // Footer Config
   footerText        String?

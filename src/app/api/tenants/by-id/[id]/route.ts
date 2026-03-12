@@ -85,20 +85,46 @@ export const PUT = withErrorHandler(
       }
     }
 
+    // Whitelist only known Prisma fields to avoid unknown field errors
+    const allowedFields = [
+      "name", "tagline", "logo", "favicon", "secondaryLogo",
+      "primaryColor", "secondaryColor", "accentColor",
+      "email", "phone", "address", "city", "state", "country", "website", "mapUrl", "businessHours",
+      "facebook", "twitter", "linkedin", "instagram", "youtube",
+      "sections", "heroTitle", "heroSubtitle", "heroBgImage",
+      "aboutTitle", "aboutDescription", "aboutFeatures",
+      "galleryImages", "galleryVideos", "testimonials",
+      "yearlyStats", "faqs", "researchItems",
+      "footerText", "copyrightText",
+      // Admin-only fields (already stripped for non-super-admins above)
+      "slug", "isActive", "domain", "defaultCurrency", "defaultTimezone",
+    ];
+
+    const updateData: Record<string, unknown> = {};
+    for (const key of allowedFields) {
+      if (key in bodyAny) {
+        updateData[key] = bodyAny[key];
+      }
+    }
+
     // Merge sections with existing to avoid overwriting unset keys
-    const updateData = { ...body };
-    if (body.sections && existing.sections) {
+    if (updateData.sections && existing.sections) {
       updateData.sections = {
         ...(existing.sections as object),
-        ...body.sections,
+        ...(updateData.sections as object),
       };
     }
 
-    const tenant = await prisma.tenant.update({
-      where: { id },
-      data: updateData,
-    });
+    try {
+      const tenant = await prisma.tenant.update({
+        where: { id },
+        data: updateData,
+      });
 
-    return successResponse(tenant, "Tenant updated successfully");
+      return successResponse(tenant, "Tenant updated successfully");
+    } catch (prismaError: any) {
+      console.error("Prisma update error:", prismaError?.message, "Fields sent:", Object.keys(updateData));
+      throw prismaError;
+    }
   }
 );

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { updateSponsorSchema } from "@/lib/validations/sponsor";
 import {
   successResponse,
@@ -49,6 +50,10 @@ export const GET = withErrorHandler(
       return Errors.notFound("Sponsor");
     }
 
+    if (!isTenantOwner(session, sponsor.tenantId)) {
+      return Errors.forbidden("You don't have access to this sponsor");
+    }
+
     return successResponse(sponsor);
   }
 );
@@ -75,6 +80,10 @@ export const PUT = withErrorHandler(
 
     if (!existingSponsor) {
       return Errors.notFound("Sponsor");
+    }
+
+    if (!isTenantOwner(session, existingSponsor.tenantId)) {
+      return Errors.forbidden("You don't have access to this sponsor");
     }
 
     const body = await parseBody(request);
@@ -130,6 +139,10 @@ export const DELETE = withErrorHandler(
 
     if (!existingSponsor) {
       return Errors.notFound("Sponsor");
+    }
+
+    if (!isTenantOwner(session, existingSponsor.tenantId)) {
+      return Errors.forbidden("You don't have access to this sponsor");
     }
 
     // Check if sponsor has event assignments

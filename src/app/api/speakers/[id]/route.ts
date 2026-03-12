@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { updateSpeakerSchema } from "@/lib/validations/speaker";
 import {
   successResponse,
@@ -49,6 +50,10 @@ export const GET = withErrorHandler(
       return Errors.notFound("Speaker");
     }
 
+    if (!isTenantOwner(session, speaker.tenantId)) {
+      return Errors.forbidden("You don't have access to this speaker");
+    }
+
     return successResponse(speaker);
   }
 );
@@ -75,6 +80,10 @@ export const PUT = withErrorHandler(
 
     if (!existingSpeaker) {
       return Errors.notFound("Speaker");
+    }
+
+    if (!isTenantOwner(session, existingSpeaker.tenantId)) {
+      return Errors.forbidden("You don't have access to this speaker");
     }
 
     const body = await parseBody(request);
@@ -141,6 +150,10 @@ export const DELETE = withErrorHandler(
 
     if (!existingSpeaker) {
       return Errors.notFound("Speaker");
+    }
+
+    if (!isTenantOwner(session, existingSpeaker.tenantId)) {
+      return Errors.forbidden("You don't have access to this speaker");
     }
 
     // Check if speaker has event assignments

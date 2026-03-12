@@ -132,8 +132,13 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   // Hash password
   const hashedPassword = await hashPassword(password);
 
-  // Determine tenant from body (SUPER_ADMIN can assign)
-  const tenantId: string | null = typeof body.tenantId === "string" ? body.tenantId : null;
+  // Determine tenant: ADMIN forced to own tenant, SUPER_ADMIN can assign any
+  let tenantId: string | null = null;
+  if (session.user.role === "ADMIN") {
+    tenantId = session.user.tenantId ?? null;
+  } else if (typeof body.tenantId === "string") {
+    tenantId = body.tenantId;
+  }
 
   const user = await prisma.user.create({
     data: {

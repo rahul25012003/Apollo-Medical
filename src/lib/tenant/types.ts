@@ -8,6 +8,8 @@ export interface TenantSections {
   testimonials: boolean;
   about: boolean;
   contact: boolean;
+  faq?: boolean;
+  ongoingResearch?: boolean;
   moduleSpeakers?: boolean;
   moduleSponsors?: boolean;
   moduleCertificates?: boolean;
@@ -31,6 +33,12 @@ export interface TenantSocialLinks {
   youtube?: string;
 }
 
+export interface BusinessHours {
+  monFri: string;
+  sat: string;
+  sunHoliday: string;
+}
+
 export interface TenantContact {
   email?: string;
   phone?: string;
@@ -39,6 +47,8 @@ export interface TenantContact {
   state?: string;
   country?: string;
   website?: string;
+  mapUrl?: string;
+  businessHours?: BusinessHours;
 }
 
 export interface TenantTheme {
@@ -50,6 +60,7 @@ export interface TenantTheme {
 export interface TenantBranding {
   logo?: string;
   favicon?: string;
+  secondaryLogo?: string;
   name: string;
   tagline?: string;
 }
@@ -70,6 +81,27 @@ export interface GalleryVideo {
   duration: string;
   youtubeId: string;
   event?: string;
+}
+
+export interface YearlyStats {
+  year: string;
+  events: string;
+  attendees: string;
+  speakers: string;
+}
+
+export interface FAQItem {
+  id: number;
+  question: string;
+  answer: string;
+}
+
+export interface ResearchItem {
+  id: number;
+  icon: string;
+  title: string;
+  description: string;
+  status: string;
 }
 
 export interface AboutFeature {
@@ -131,6 +163,9 @@ export interface TenantConfig {
   gallery: TenantGalleryConfig;
   footer: TenantFooterConfig;
   testimonials?: Testimonial[];
+  yearlyStats?: YearlyStats;
+  faqs?: FAQItem[];
+  researchItems?: ResearchItem[];
 
   // Settings
   settings: TenantSettings;
@@ -144,6 +179,7 @@ export interface TenantModel {
   domain: string | null;
   logo: string | null;
   favicon: string | null;
+  secondaryLogo: string | null;
   tagline: string | null;
   primaryColor: string;
   secondaryColor: string;
@@ -155,6 +191,8 @@ export interface TenantModel {
   state: string | null;
   country: string | null;
   website: string | null;
+  mapUrl: string | null;
+  businessHours: unknown | null; // JSON
   facebook: string | null;
   twitter: string | null;
   linkedin: string | null;
@@ -170,6 +208,9 @@ export interface TenantModel {
   galleryImages: unknown | null; // JSON
   galleryVideos: unknown | null; // JSON
   testimonials: unknown | null; // JSON
+  yearlyStats: unknown | null; // JSON
+  faqs: unknown | null; // JSON
+  researchItems: unknown | null; // JSON
   footerText: string | null;
   copyrightText: string | null;
   isActive: boolean;
@@ -190,6 +231,7 @@ export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
       name: tenant.name,
       logo: tenant.logo || undefined,
       favicon: tenant.favicon || undefined,
+      secondaryLogo: tenant.secondaryLogo || undefined,
       tagline: tenant.tagline || undefined,
     },
 
@@ -207,6 +249,8 @@ export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
       state: tenant.state || undefined,
       country: tenant.country || undefined,
       website: tenant.website || undefined,
+      mapUrl: tenant.mapUrl || undefined,
+      businessHours: (tenant.businessHours as BusinessHours) || undefined,
     },
 
     social: {
@@ -245,6 +289,9 @@ export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
     },
 
     testimonials: (tenant.testimonials as Testimonial[]) || undefined,
+    yearlyStats: (tenant.yearlyStats as YearlyStats) || undefined,
+    faqs: (tenant.faqs as FAQItem[]) || undefined,
+    researchItems: (tenant.researchItems as ResearchItem[]) || undefined,
 
     footer: {
       text: tenant.footerText || undefined,

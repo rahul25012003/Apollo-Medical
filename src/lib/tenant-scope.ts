@@ -22,3 +22,17 @@ export function getEffectiveTenantId(
 export function tenantWhereClause(tenantId: string | null): { tenantId?: string } {
     return tenantId ? { tenantId } : {};
 }
+
+/**
+ * Check if a resource belongs to the user's tenant.
+ * SUPER_ADMIN can access any resource. Others must match tenantId.
+ * Returns true if access is allowed.
+ */
+export function isTenantOwner(
+    session: Session,
+    resourceTenantId: string | null | undefined
+): boolean {
+    if (session.user.role === "SUPER_ADMIN") return true;
+    if (!session.user.tenantId) return false;
+    return session.user.tenantId === resourceTenantId;
+}

@@ -40,6 +40,7 @@ export const GET = withErrorHandler(
         role: true,
         isActive: true,
         emailVerified: true,
+        tenantId: true,
         createdAt: true,
         updatedAt: true,
         registrations: {
@@ -65,6 +66,11 @@ export const GET = withErrorHandler(
 
     if (!user) {
       return Errors.notFound("User");
+    }
+
+    // ADMIN can only view users from their own tenant
+    if (id !== session.user.id && session.user.role === "ADMIN" && user.tenantId !== session.user.tenantId) {
+      return Errors.forbidden("You can only view users from your organization");
     }
 
     return successResponse(user);
@@ -97,6 +103,11 @@ export const PUT = withErrorHandler(
 
     if (!existingUser) {
       return Errors.notFound("User");
+    }
+
+    // ADMIN can only update users from their own tenant
+    if (!isSelf && session.user.role === "ADMIN" && existingUser.tenantId !== session.user.tenantId) {
+      return Errors.forbidden("You can only update users from your organization");
     }
 
     const body = await parseBody(request);
@@ -172,6 +183,11 @@ export const DELETE = withErrorHandler(
 
     if (!existingUser) {
       return Errors.notFound("User");
+    }
+
+    // ADMIN can only delete users from their own tenant
+    if (session.user.role === "ADMIN" && existingUser.tenantId !== session.user.tenantId) {
+      return Errors.forbidden("You can only manage users from your organization");
     }
 
     // Soft delete by deactivating

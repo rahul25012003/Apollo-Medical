@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { updateEventSchema } from "@/lib/validations/event";
 import { generateUniqueSlug } from "@/lib/auth-utils";
 import {
@@ -68,6 +69,11 @@ export const GET = withErrorHandler(
       return Errors.notFound("Event");
     }
 
+    // Authenticated non-public access: verify tenant ownership
+    if (session && !event.isPublished && !isTenantOwner(session, event.tenantId)) {
+      return Errors.notFound("Event");
+    }
+
     return successResponse(event);
   }
 );
@@ -94,6 +100,10 @@ export const PUT = withErrorHandler(
 
     if (!existingEvent) {
       return Errors.notFound("Event");
+    }
+
+    if (!isTenantOwner(session, existingEvent.tenantId)) {
+      return Errors.forbidden("You don't have access to this event");
     }
 
     const body = await parseBody(request);
@@ -230,6 +240,10 @@ export const DELETE = withErrorHandler(
 
     if (!existingEvent) {
       return Errors.notFound("Event");
+    }
+
+    if (!isTenantOwner(session, existingEvent.tenantId)) {
+      return Errors.forbidden("You don't have access to this event");
     }
 
     // Prevent deletion if event has registrations

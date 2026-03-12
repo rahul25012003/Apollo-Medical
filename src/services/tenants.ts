@@ -11,6 +11,7 @@ export interface Tenant {
   domain: string | null;
   logo: string | null;
   favicon: string | null;
+  secondaryLogo: string | null;
   tagline: string | null;
   primaryColor: string;
   secondaryColor: string;
@@ -22,6 +23,8 @@ export interface Tenant {
   state: string | null;
   country: string | null;
   website: string | null;
+  mapUrl: string | null;
+  businessHours: unknown | null;
   facebook: string | null;
   twitter: string | null;
   linkedin: string | null;
@@ -35,6 +38,8 @@ export interface Tenant {
     testimonials: boolean;
     about: boolean;
     contact: boolean;
+    faq?: boolean;
+    ongoingResearch?: boolean;
     moduleSpeakers?: boolean;
     moduleSponsors?: boolean;
     moduleCertificates?: boolean;
@@ -51,6 +56,9 @@ export interface Tenant {
   galleryImages: unknown | null;
   galleryVideos: unknown | null;
   testimonials: unknown | null;
+  yearlyStats: unknown | null;
+  faqs: unknown | null;
+  researchItems: unknown | null;
   footerText: string | null;
   copyrightText: string | null;
   isActive: boolean;
@@ -70,6 +78,7 @@ export interface CreateTenantData {
   domain?: string | null;
   logo?: string | null;
   favicon?: string | null;
+  secondaryLogo?: string | null;
   tagline?: string | null;
   primaryColor?: string;
   secondaryColor?: string;
@@ -81,6 +90,8 @@ export interface CreateTenantData {
   state?: string | null;
   country?: string | null;
   website?: string | null;
+  mapUrl?: string | null;
+  businessHours?: unknown | null;
   facebook?: string | null;
   twitter?: string | null;
   linkedin?: string | null;
@@ -110,6 +121,9 @@ export interface CreateTenantData {
   galleryImages?: unknown | null;
   galleryVideos?: unknown | null;
   testimonials?: unknown | null;
+  yearlyStats?: unknown | null;
+  faqs?: unknown | null;
+  researchItems?: unknown | null;
   footerText?: string | null;
   copyrightText?: string | null;
   isActive?: boolean;

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import {
   successResponse,
   paginatedResponse,
@@ -27,14 +28,18 @@ export const GET = withErrorHandler(
 
     const { id: eventId } = await context!.params;
 
-    // Check if event exists
+    // Check if event exists and verify tenant
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { id: true, title: true },
+      select: { id: true, title: true, tenantId: true },
     });
 
     if (!event) {
       return Errors.notFound("Event");
+    }
+
+    if (!isTenantOwner(session, event.tenantId)) {
+      return Errors.forbidden("You don't have access to this event's registrations");
     }
 
     const { searchParams } = new URL(request.url);

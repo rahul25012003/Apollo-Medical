@@ -40,8 +40,8 @@ const publicRoutes = ["/", "/auth", "/events", "/api/auth", "/api/events/public"
 
 // Routes that require specific roles
 const roleRoutes: Record<string, string[]> = {
-  "/dashboard/users": ["SUPER_ADMIN"],
-  "/api/users": ["SUPER_ADMIN"],
+  "/dashboard/users": ["SUPER_ADMIN", "ADMIN"],
+  "/api/users": ["SUPER_ADMIN", "ADMIN"],
 };
 
 // Routes that are exceptions to role-based access (accessible by any authenticated user)

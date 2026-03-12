@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { updateCertificateSchema } from "@/lib/validations/certificate";
 import {
   successResponse,
@@ -40,6 +41,7 @@ export const GET = withErrorHandler(
             signatory1Title: true,
             signatory2Name: true,
             signatory2Title: true,
+            tenantId: true,
           },
         },
         registration: {
@@ -67,6 +69,11 @@ export const GET = withErrorHandler(
 
     if (!isOwner && !canAccess(session.user.role, "certificates")) {
       return Errors.forbidden("You don't have permission to view this certificate");
+    }
+
+    // Tenant isolation for non-owners
+    if (!isOwner && !isTenantOwner(session, certificate.event.tenantId)) {
+      return Errors.forbidden("You don't have access to this certificate");
     }
 
     // Track download
@@ -100,10 +107,15 @@ export const PUT = withErrorHandler(
     // Check if certificate exists
     const existingCertificate = await prisma.certificate.findUnique({
       where: { id },
+      include: { event: { select: { tenantId: true } } },
     });
 
     if (!existingCertificate) {
       return Errors.notFound("Certificate");
+    }
+
+    if (!isTenantOwner(session, existingCertificate.event.tenantId)) {
+      return Errors.forbidden("You don't have access to this certificate");
     }
 
     const body = await parseBody(request);
@@ -179,10 +191,15 @@ export const DELETE = withErrorHandler(
     // Check if certificate exists
     const existingCertificate = await prisma.certificate.findUnique({
       where: { id },
+      include: { event: { select: { tenantId: true } } },
     });
 
     if (!existingCertificate) {
       return Errors.notFound("Certificate");
+    }
+
+    if (!isTenantOwner(session, existingCertificate.event.tenantId)) {
+      return Errors.forbidden("You don't have access to this certificate");
     }
 
     await prisma.certificate.delete({

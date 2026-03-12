@@ -19,6 +19,7 @@ import {
     Image as ImageIcon,
     Video,
     Upload,
+    Link2,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ import {
 import { cn } from "@/lib/utils";
 import { COLOR_PRESETS, findPresetByColors } from "@/lib/tenant/color-presets";
 import { generateSlug, TenantFormData } from "@/lib/tenant/validation";
-import type { Testimonial, GalleryImage, GalleryVideo } from "@/lib/tenant/types";
+import type { Testimonial, GalleryImage, GalleryVideo, FAQItem, ResearchItem } from "@/lib/tenant/types";
 import { useAlertDialog } from "@/components/ui/confirm-dialog";
 import { uploadFile } from "@/services";
 
@@ -88,6 +89,7 @@ const defaultFormData: TenantFormData = {
     tagline: "",
     logo: "",
     favicon: "",
+    secondaryLogo: "",
     isActive: true,
     primaryColor: "#0d9488",
     secondaryColor: "#0891b2",
@@ -177,6 +179,14 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
     const [editingVideo, setEditingVideo] = useState<GalleryVideo | null>(null);
     const [videoForm, setVideoForm] = useState({ youtubeUrl: "", title: "", category: "", duration: "", thumbnail: "", event: "" });
 
+    // Logo & Favicon upload state
+    const [logoUploading, setLogoUploading] = useState(false);
+    const [faviconUploading, setFaviconUploading] = useState(false);
+    const [logoInputMode, setLogoInputMode] = useState<"upload" | "url">("upload");
+    const [faviconInputMode, setFaviconInputMode] = useState<"upload" | "url">("upload");
+    const [secondaryLogoUploading, setSecondaryLogoUploading] = useState(false);
+    const [secondaryLogoInputMode, setSecondaryLogoInputMode] = useState<"upload" | "url">("upload");
+
     const { alert, AlertDialog } = useAlertDialog();
 
     const updateField = <K extends keyof TenantFormData>(key: K, value: TenantFormData[K]) => {
@@ -254,6 +264,63 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
             e.target.value = "";
         }
     };
+    // --- Logo & Favicon upload handlers ---
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setLogoUploading(true);
+            const res = await uploadFile(file, "general");
+            if (res.success && res.data) {
+                updateField("logo", res.data.url);
+            } else {
+                alert({ title: "Upload failed", description: res.error?.message || "Could not upload logo", variant: "error" });
+            }
+        } catch {
+            alert({ title: "Upload failed", description: "An unexpected error occurred", variant: "error" });
+        } finally {
+            setLogoUploading(false);
+            e.target.value = "";
+        }
+    };
+    const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setFaviconUploading(true);
+            const res = await uploadFile(file, "general");
+            if (res.success && res.data) {
+                updateField("favicon", res.data.url);
+            } else {
+                alert({ title: "Upload failed", description: res.error?.message || "Could not upload favicon", variant: "error" });
+            }
+        } catch {
+            alert({ title: "Upload failed", description: "An unexpected error occurred", variant: "error" });
+        } finally {
+            setFaviconUploading(false);
+            e.target.value = "";
+        }
+    };
+
+    const handleSecondaryLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setSecondaryLogoUploading(true);
+            const res = await uploadFile(file, "general");
+            if (res.success && res.data) {
+                updateField("secondaryLogo", res.data.url);
+            } else {
+                alert({ title: "Upload failed", description: res.error?.message || "Could not upload secondary logo", variant: "error" });
+            }
+        } catch {
+            alert({ title: "Upload failed", description: "An unexpected error occurred", variant: "error" });
+        } finally {
+            setSecondaryLogoUploading(false);
+            e.target.value = "";
+        }
+    };
+
     const openAddImage = () => {
         setEditingImage(null);
         setImageForm({ src: "", alt: "", category: "", event: "" });
@@ -314,6 +381,66 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
         updateField("galleryVideos", list.filter((v) => v.id !== id));
     };
 
+    // --- FAQ handlers ---
+    const [faqDialogOpen, setFaqDialogOpen] = useState(false);
+    const [editingFaq, setEditingFaq] = useState<FAQItem | null>(null);
+    const [faqForm, setFaqForm] = useState({ question: "", answer: "" });
+
+    const openAddFaq = () => {
+        setEditingFaq(null);
+        setFaqForm({ question: "", answer: "" });
+        setFaqDialogOpen(true);
+    };
+    const openEditFaq = (faq: FAQItem) => {
+        setEditingFaq(faq);
+        setFaqForm({ question: faq.question, answer: faq.answer });
+        setFaqDialogOpen(true);
+    };
+    const saveFaq = () => {
+        const list = (formData.faqs as FAQItem[] | null) || [];
+        if (editingFaq) {
+            updateField("faqs", list.map((f) => f.id === editingFaq.id ? { ...f, ...faqForm } : f));
+        } else {
+            const newId = list.length > 0 ? Math.max(...list.map((f) => f.id)) + 1 : 1;
+            updateField("faqs", [...list, { id: newId, ...faqForm }]);
+        }
+        setFaqDialogOpen(false);
+    };
+    const deleteFaq = (id: number) => {
+        const list = (formData.faqs as FAQItem[] | null) || [];
+        updateField("faqs", list.filter((f) => f.id !== id));
+    };
+
+    // --- Research handlers ---
+    const [researchDialogOpen, setResearchDialogOpen] = useState(false);
+    const [editingResearch, setEditingResearch] = useState<ResearchItem | null>(null);
+    const [researchForm, setResearchForm] = useState({ icon: "BrainCircuit", title: "", description: "", status: "Active" });
+
+    const openAddResearch = () => {
+        setEditingResearch(null);
+        setResearchForm({ icon: "BrainCircuit", title: "", description: "", status: "Active" });
+        setResearchDialogOpen(true);
+    };
+    const openEditResearch = (item: ResearchItem) => {
+        setEditingResearch(item);
+        setResearchForm({ icon: item.icon, title: item.title, description: item.description, status: item.status });
+        setResearchDialogOpen(true);
+    };
+    const saveResearch = () => {
+        const list = (formData.researchItems as ResearchItem[] | null) || [];
+        if (editingResearch) {
+            updateField("researchItems", list.map((r) => r.id === editingResearch.id ? { ...r, ...researchForm } : r));
+        } else {
+            const newId = list.length > 0 ? Math.max(...list.map((r) => r.id)) + 1 : 1;
+            updateField("researchItems", [...list, { id: newId, ...researchForm }]);
+        }
+        setResearchDialogOpen(false);
+    };
+    const deleteResearch = (id: number) => {
+        const list = (formData.researchItems as ResearchItem[] | null) || [];
+        updateField("researchItems", list.filter((r) => r.id !== id));
+    };
+
     // Auto-generate slug from name
     useEffect(() => {
         if (!isEditing && !slugManuallyEdited && formData.name) {
@@ -328,7 +455,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
 
             // Clean empty strings to null for optional URL fields
             const cleanedData = { ...formData };
-            const urlFields = ["website", "facebook", "twitter", "linkedin", "instagram", "youtube", "logo", "favicon", "heroBgImage"] as const;
+            const urlFields = ["website", "facebook", "twitter", "linkedin", "instagram", "youtube", "logo", "favicon", "secondaryLogo", "heroBgImage"] as const;
             for (const field of urlFields) {
                 if (cleanedData[field] === "") {
                     (cleanedData as any)[field] = null;
@@ -399,7 +526,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                 </div>
                 <div className="flex items-center gap-2">
                     {isEditing && slug && (
-                        <a href={formData.domain ? `http://${formData.domain}` : `/t/${slug}`} target="_blank" rel="noopener noreferrer">
+                        <a href={formData.domain ? `https://${formData.domain}` : `/t/${slug}`} target="_blank" rel="noopener noreferrer">
                             <Button variant="outline" type="button" className="gap-2">
                                 <ExternalLink className="w-4 h-4" />
                                 Preview
@@ -481,23 +608,212 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                 />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Logo */}
                                 <div className="space-y-2">
-                                    <Label htmlFor="logo">Logo URL</Label>
-                                    <Input
-                                        id="logo"
-                                        placeholder="https://example.com/logo.png"
-                                        value={formData.logo || ""}
-                                        onChange={(e) => updateField("logo", e.target.value)}
-                                    />
+                                    <div className="flex items-center justify-between">
+                                        <Label>Logo</Label>
+                                        <div className="flex items-center gap-1 rounded-md border p-0.5 bg-muted/50">
+                                            <button
+                                                type="button"
+                                                onClick={() => setLogoInputMode("upload")}
+                                                className={cn(
+                                                    "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-colors",
+                                                    logoInputMode === "upload" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                <Upload className="h-3 w-3" /> Upload
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setLogoInputMode("url")}
+                                                className={cn(
+                                                    "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-colors",
+                                                    logoInputMode === "url" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                <Link2 className="h-3 w-3" /> URL
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        {formData.logo ? (
+                                            <div className="relative h-16 w-16 rounded-md border overflow-hidden bg-muted flex-shrink-0">
+                                                <img src={formData.logo} alt="Logo" className="h-full w-full object-contain" />
+                                            </div>
+                                        ) : (
+                                            <div className="h-16 w-16 rounded-md border border-dashed flex items-center justify-center bg-muted/50 flex-shrink-0">
+                                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col gap-1.5 flex-1">
+                                            {logoInputMode === "upload" ? (
+                                                <>
+                                                    <label
+                                                        htmlFor="logo-upload"
+                                                        className={cn(
+                                                            "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium h-9 px-3 cursor-pointer",
+                                                            "bg-primary text-primary-foreground hover:bg-primary/90",
+                                                            logoUploading && "opacity-50 pointer-events-none"
+                                                        )}
+                                                    >
+                                                        {logoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                                        {logoUploading ? "Uploading..." : "Upload Logo"}
+                                                    </label>
+                                                    <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={logoUploading} />
+                                                </>
+                                            ) : (
+                                                <Input
+                                                    placeholder="https://example.com/logo.png"
+                                                    value={formData.logo || ""}
+                                                    onChange={(e) => updateField("logo", e.target.value)}
+                                                />
+                                            )}
+                                            {formData.logo && (
+                                                <button type="button" className="text-xs text-destructive hover:underline text-left" onClick={() => updateField("logo", "")}>
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
+                                {/* Favicon */}
                                 <div className="space-y-2">
-                                    <Label htmlFor="favicon">Favicon URL</Label>
-                                    <Input
-                                        id="favicon"
-                                        placeholder="https://example.com/favicon.ico"
-                                        value={formData.favicon || ""}
-                                        onChange={(e) => updateField("favicon", e.target.value)}
-                                    />
+                                    <div className="flex items-center justify-between">
+                                        <Label>Favicon</Label>
+                                        <div className="flex items-center gap-1 rounded-md border p-0.5 bg-muted/50">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFaviconInputMode("upload")}
+                                                className={cn(
+                                                    "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-colors",
+                                                    faviconInputMode === "upload" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                <Upload className="h-3 w-3" /> Upload
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFaviconInputMode("url")}
+                                                className={cn(
+                                                    "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-colors",
+                                                    faviconInputMode === "url" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                <Link2 className="h-3 w-3" /> URL
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        {formData.favicon ? (
+                                            <div className="relative h-16 w-16 rounded-md border overflow-hidden bg-muted flex-shrink-0">
+                                                <img src={formData.favicon} alt="Favicon" className="h-full w-full object-contain" />
+                                            </div>
+                                        ) : (
+                                            <div className="h-16 w-16 rounded-md border border-dashed flex items-center justify-center bg-muted/50 flex-shrink-0">
+                                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col gap-1.5 flex-1">
+                                            {faviconInputMode === "upload" ? (
+                                                <>
+                                                    <label
+                                                        htmlFor="favicon-upload"
+                                                        className={cn(
+                                                            "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium h-9 px-3 cursor-pointer",
+                                                            "bg-primary text-primary-foreground hover:bg-primary/90",
+                                                            faviconUploading && "opacity-50 pointer-events-none"
+                                                        )}
+                                                    >
+                                                        {faviconUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                                        {faviconUploading ? "Uploading..." : "Upload Favicon"}
+                                                    </label>
+                                                    <input id="favicon-upload" type="file" accept="image/*" className="hidden" onChange={handleFaviconUpload} disabled={faviconUploading} />
+                                                </>
+                                            ) : (
+                                                <Input
+                                                    placeholder="https://example.com/favicon.ico"
+                                                    value={formData.favicon || ""}
+                                                    onChange={(e) => updateField("favicon", e.target.value)}
+                                                />
+                                            )}
+                                            {formData.favicon && (
+                                                <button type="button" className="text-xs text-destructive hover:underline text-left" onClick={() => updateField("favicon", "")}>
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Secondary Logo */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label>Secondary Logo</Label>
+                                        <p className="text-xs text-muted-foreground">Displayed above the login button on the home page</p>
+                                    </div>
+                                    <div className="flex items-center gap-1 rounded-md border p-0.5 bg-muted/50">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSecondaryLogoInputMode("upload")}
+                                            className={cn(
+                                                "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-colors",
+                                                secondaryLogoInputMode === "upload" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                        >
+                                            <Upload className="h-3 w-3" /> Upload
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSecondaryLogoInputMode("url")}
+                                            className={cn(
+                                                "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-colors",
+                                                secondaryLogoInputMode === "url" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                        >
+                                            <Link2 className="h-3 w-3" /> URL
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {formData.secondaryLogo ? (
+                                        <div className="relative h-16 w-16 rounded-md border overflow-hidden bg-muted flex-shrink-0">
+                                            <img src={formData.secondaryLogo} alt="Secondary Logo" className="h-full w-full object-contain" />
+                                        </div>
+                                    ) : (
+                                        <div className="h-16 w-16 rounded-md border border-dashed flex items-center justify-center bg-muted/50 flex-shrink-0">
+                                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col gap-1.5 flex-1">
+                                        {secondaryLogoInputMode === "upload" ? (
+                                            <>
+                                                <label
+                                                    htmlFor="secondary-logo-upload"
+                                                    className={cn(
+                                                        "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium h-9 px-3 cursor-pointer",
+                                                        "bg-primary text-primary-foreground hover:bg-primary/90",
+                                                        secondaryLogoUploading && "opacity-50 pointer-events-none"
+                                                    )}
+                                                >
+                                                    {secondaryLogoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                                    {secondaryLogoUploading ? "Uploading..." : "Upload Secondary Logo"}
+                                                </label>
+                                                <input id="secondary-logo-upload" type="file" accept="image/*" className="hidden" onChange={handleSecondaryLogoUpload} disabled={secondaryLogoUploading} />
+                                            </>
+                                        ) : (
+                                            <Input
+                                                placeholder="https://example.com/secondary-logo.png"
+                                                value={formData.secondaryLogo || ""}
+                                                onChange={(e) => updateField("secondaryLogo", e.target.value)}
+                                            />
+                                        )}
+                                        {formData.secondaryLogo && (
+                                            <button type="button" className="text-xs text-destructive hover:underline text-left" onClick={() => updateField("secondaryLogo", "")}>
+                                                Remove
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             {!restrictedMode && (
@@ -626,46 +942,94 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                             <div className="section-divider-gradient my-4" />
                             <div>
                                 <Label className="mb-3 block">Live Preview</Label>
-                                <div className="p-6 rounded-xl border border-border bg-muted/30 space-y-4">
-                                    {/* Gradient banner */}
-                                    <div
-                                        className="h-16 rounded-lg"
-                                        style={{
-                                            background: `linear-gradient(135deg, ${formData.primaryColor || "#0d9488"}, ${formData.secondaryColor || "#0891b2"})`,
-                                        }}
-                                    />
-                                    {/* Sample buttons */}
-                                    <div className="flex gap-2 flex-wrap">
-                                        <button
-                                            type="button"
-                                            className="px-4 py-2 rounded-lg text-white text-sm font-medium"
-                                            style={{ backgroundColor: formData.primaryColor || "#0d9488" }}
-                                        >
-                                            Primary Button
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="px-4 py-2 rounded-lg text-white text-sm font-medium"
-                                            style={{ backgroundColor: formData.secondaryColor || "#0891b2" }}
-                                        >
-                                            Secondary Button
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="px-4 py-2 rounded-lg text-white text-sm font-medium"
-                                            style={{ backgroundColor: formData.accentColor || "#10b981" }}
-                                        >
-                                            Accent Button
-                                        </button>
+                                <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm">
+                                    {/* Mini Header */}
+                                    <div className="flex items-center justify-between px-4 py-2.5 border-b bg-white">
+                                        <div className="flex items-center gap-2">
+                                            {formData.logo ? (
+                                                <img src={formData.logo} alt="Logo" className="h-7 w-7 rounded-md object-contain" />
+                                            ) : (
+                                                <div className="h-7 w-7 rounded-md flex items-center justify-center text-white text-xs"
+                                                    style={{ background: `linear-gradient(135deg, ${formData.primaryColor || "#0d9488"}, ${formData.secondaryColor || "#0891b2"})` }}>
+                                                    {formData.name?.charAt(0) || "T"}
+                                                </div>
+                                            )}
+                                            <span className="text-xs font-semibold truncate max-w-[120px]">{formData.name || "Organization"}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {formData.secondaryLogo && (
+                                                <img src={formData.secondaryLogo} alt="Secondary" className="h-6 w-6 rounded-md object-contain" />
+                                            )}
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full text-white"
+                                                style={{ background: `linear-gradient(135deg, ${formData.primaryColor || "#0d9488"}, ${formData.secondaryColor || "#0891b2"})` }}>
+                                                Login
+                                            </span>
+                                        </div>
                                     </div>
-                                    {/* Sample card */}
-                                    <div className="p-4 rounded-lg bg-card border-2" style={{ borderColor: formData.primaryColor || "#0d9488" }}>
-                                        <h4 className="font-semibold" style={{ color: formData.primaryColor || "#0d9488" }}>
-                                            Sample Card Title
-                                        </h4>
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                            This is how content will look with your color palette.
-                                        </p>
+                                    {/* Mini Hero */}
+                                    {formData.sections?.hero !== false && (
+                                        <div className="px-4 py-6 text-center"
+                                            style={{ background: `linear-gradient(135deg, ${formData.primaryColor || "#0d9488"}10, ${formData.secondaryColor || "#0891b2"}10)` }}>
+                                            <p className="text-[10px] font-medium mb-1" style={{ color: formData.primaryColor || "#0d9488" }}>
+                                                {formData.tagline || "Welcome to"}
+                                            </p>
+                                            <p className="text-sm font-bold leading-tight mb-1">
+                                                {formData.heroTitle || formData.name || "Organization Name"}
+                                            </p>
+                                            <p className="text-[10px] text-muted-foreground">
+                                                {formData.heroSubtitle || "Register for upcoming events"}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {/* Mini Sections */}
+                                    <div className="px-4 py-2 space-y-1.5">
+                                        {formData.sections?.events !== false && (
+                                            <div className="flex items-center gap-2 px-2 py-1 rounded bg-muted/50">
+                                                <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: formData.primaryColor || "#0d9488" }} />
+                                                <span className="text-[10px] text-muted-foreground">Events</span>
+                                            </div>
+                                        )}
+                                        {formData.sections?.ongoingResearch !== false && (
+                                            <div className="flex items-center gap-2 px-2 py-1 rounded bg-muted/50">
+                                                <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: formData.secondaryColor || "#0891b2" }} />
+                                                <span className="text-[10px] text-muted-foreground">Ongoing Research</span>
+                                            </div>
+                                        )}
+                                        {formData.sections?.gallery !== false && (
+                                            <div className="flex items-center gap-2 px-2 py-1 rounded bg-muted/50">
+                                                <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: formData.accentColor || "#10b981" }} />
+                                                <span className="text-[10px] text-muted-foreground">Gallery</span>
+                                            </div>
+                                        )}
+                                        {formData.sections?.testimonials !== false && (
+                                            <div className="flex items-center gap-2 px-2 py-1 rounded bg-muted/50">
+                                                <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: formData.primaryColor || "#0d9488" }} />
+                                                <span className="text-[10px] text-muted-foreground">Testimonials</span>
+                                            </div>
+                                        )}
+                                        {formData.sections?.about !== false && (
+                                            <div className="flex items-center gap-2 px-2 py-1 rounded bg-muted/50">
+                                                <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: formData.secondaryColor || "#0891b2" }} />
+                                                <span className="text-[10px] text-muted-foreground">About</span>
+                                            </div>
+                                        )}
+                                        {formData.sections?.contact !== false && (
+                                            <div className="flex items-center gap-2 px-2 py-1 rounded bg-muted/50">
+                                                <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: formData.accentColor || "#10b981" }} />
+                                                <span className="text-[10px] text-muted-foreground">Contact</span>
+                                            </div>
+                                        )}
+                                        {formData.sections?.faq !== false && (
+                                            <div className="flex items-center gap-2 px-2 py-1 rounded bg-muted/50">
+                                                <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: formData.primaryColor || "#0d9488" }} />
+                                                <span className="text-[10px] text-muted-foreground">FAQ</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Mini Footer */}
+                                    <div className="px-4 py-2 text-center text-white text-[10px]"
+                                        style={{ background: `linear-gradient(135deg, ${formData.primaryColor || "#0d9488"}, ${formData.secondaryColor || "#0891b2"})` }}>
+                                        {formData.copyrightText || `© ${formData.name || "Organization"}`}
                                     </div>
                                 </div>
                             </div>
@@ -688,6 +1052,8 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                 { key: "testimonials", label: "Testimonials", desc: "Client testimonials and reviews" },
                                 { key: "about", label: "About", desc: "About the organization" },
                                 { key: "contact", label: "Contact", desc: "Contact information and form" },
+                                { key: "faq", label: "FAQ", desc: "Frequently asked questions section" },
+                                { key: "ongoingResearch", label: "Ongoing Research", desc: "Research initiatives and projects" },
                             ].map((section) => (
                                 <div
                                     key={section.key}
@@ -807,6 +1173,52 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                     value={formData.heroBgImage || ""}
                                     onChange={(e) => updateField("heroBgImage", e.target.value)}
                                 />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Yearly Stats */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Yearly Highlights</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                Showcase stats below the events section on the homepage (e.g. &quot;Events in 2025&quot;)
+                            </p>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Year</Label>
+                                    <Input
+                                        placeholder="2025"
+                                        value={(formData.yearlyStats as any)?.year || ""}
+                                        onChange={(e) => updateField("yearlyStats", { ...(formData.yearlyStats as any || {}), year: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Events</Label>
+                                    <Input
+                                        placeholder="12"
+                                        value={(formData.yearlyStats as any)?.events || ""}
+                                        onChange={(e) => updateField("yearlyStats", { ...(formData.yearlyStats as any || {}), events: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Attendees</Label>
+                                    <Input
+                                        placeholder="500+"
+                                        value={(formData.yearlyStats as any)?.attendees || ""}
+                                        onChange={(e) => updateField("yearlyStats", { ...(formData.yearlyStats as any || {}), attendees: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Speakers</Label>
+                                    <Input
+                                        placeholder="30+"
+                                        value={(formData.yearlyStats as any)?.speakers || ""}
+                                        onChange={(e) => updateField("yearlyStats", { ...(formData.yearlyStats as any || {}), speakers: e.target.value })}
+                                    />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -1227,6 +1639,168 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
+
+                    {/* ===================== FAQ Manager ===================== */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                            <CardTitle>FAQs</CardTitle>
+                            <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={openAddFaq}>
+                                <Plus className="w-4 h-4" /> Add FAQ
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {(!formData.faqs || (formData.faqs as FAQItem[]).length === 0) ? (
+                                <p className="text-sm text-muted-foreground text-center py-6">No FAQs added yet.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {(formData.faqs as FAQItem[]).map((faq) => (
+                                        <div key={faq.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 group">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-sm">{faq.question}</p>
+                                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{faq.answer}</p>
+                                            </div>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditFaq(faq)}>
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </Button>
+                                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteFaq(faq.id)}>
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* FAQ Dialog */}
+                    <Dialog open={faqDialogOpen} onOpenChange={setFaqDialogOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>{editingFaq ? "Edit FAQ" : "Add FAQ"}</DialogTitle>
+                                <DialogDescription>
+                                    {editingFaq ? "Update the question and answer." : "Add a new frequently asked question."}
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-2">
+                                <div className="space-y-2">
+                                    <Label>Question *</Label>
+                                    <Input placeholder="What is CareNS?" value={faqForm.question} onChange={(e) => setFaqForm((p) => ({ ...p, question: e.target.value }))} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Answer *</Label>
+                                    <Textarea placeholder="CareNS is a professional organization dedicated to..." value={faqForm.answer} onChange={(e) => setFaqForm((p) => ({ ...p, answer: e.target.value }))} rows={4} />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setFaqDialogOpen(false)}>Cancel</Button>
+                                <Button type="button" onClick={saveFaq} disabled={!faqForm.question || !faqForm.answer}>
+                                    {editingFaq ? "Update" : "Add"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* ===================== Ongoing Research Manager ===================== */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                            <CardTitle>Ongoing Research</CardTitle>
+                            <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={openAddResearch}>
+                                <Plus className="w-4 h-4" /> Add Research
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {(!formData.researchItems || (formData.researchItems as ResearchItem[]).length === 0) ? (
+                                <p className="text-sm text-muted-foreground text-center py-6">No research items added yet.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {(formData.researchItems as ResearchItem[]).map((item) => (
+                                        <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 group">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium text-sm">{item.title}</span>
+                                                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{item.status}</span>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
+                                            </div>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditResearch(item)}>
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </Button>
+                                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteResearch(item.id)}>
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Research Dialog */}
+                    <Dialog open={researchDialogOpen} onOpenChange={setResearchDialogOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>{editingResearch ? "Edit Research" : "Add Research"}</DialogTitle>
+                                <DialogDescription>
+                                    {editingResearch ? "Update the research item details." : "Add a new ongoing research item."}
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-2">
+                                <div className="space-y-2">
+                                    <Label>Title *</Label>
+                                    <Input placeholder="Neuromodulation Techniques" value={researchForm.title} onChange={(e) => setResearchForm((p) => ({ ...p, title: e.target.value }))} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Description *</Label>
+                                    <Textarea placeholder="Investigating novel non-invasive brain stimulation approaches..." value={researchForm.description} onChange={(e) => setResearchForm((p) => ({ ...p, description: e.target.value }))} rows={3} />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Status</Label>
+                                        <Select value={researchForm.status} onValueChange={(v) => setResearchForm((p) => ({ ...p, status: v }))}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Active">Active</SelectItem>
+                                                <SelectItem value="Recruiting">Recruiting</SelectItem>
+                                                <SelectItem value="Ongoing">Ongoing</SelectItem>
+                                                <SelectItem value="Pilot Phase">Pilot Phase</SelectItem>
+                                                <SelectItem value="Completed">Completed</SelectItem>
+                                                <SelectItem value="Published">Published</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Icon</Label>
+                                        <Select value={researchForm.icon} onValueChange={(v) => setResearchForm((p) => ({ ...p, icon: v }))}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="BrainCircuit">Brain Circuit</SelectItem>
+                                                <SelectItem value="Microscope">Microscope</SelectItem>
+                                                <SelectItem value="Activity">Activity</SelectItem>
+                                                <SelectItem value="BookOpen">Book</SelectItem>
+                                                <SelectItem value="Shield">Shield</SelectItem>
+                                                <SelectItem value="Sparkles">Sparkles</SelectItem>
+                                                <SelectItem value="Heart">Heart</SelectItem>
+                                                <SelectItem value="Award">Award</SelectItem>
+                                                <SelectItem value="Globe">Globe</SelectItem>
+                                                <SelectItem value="Users">Users</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setResearchDialogOpen(false)}>Cancel</Button>
+                                <Button type="button" onClick={saveResearch} disabled={!researchForm.title || !researchForm.description}>
+                                    {editingResearch ? "Update" : "Add"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
                 </TabsContent>
 
                 {/* Contact & Social Tab */}
@@ -1303,6 +1877,69 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                     value={formData.website || ""}
                                     onChange={(e) => updateField("website", e.target.value)}
                                 />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Map & Business Hours</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="mapUrl">Google Maps Embed URL</Label>
+                                <Input
+                                    id="mapUrl"
+                                    placeholder="https://www.google.com/maps/embed?pb=..."
+                                    value={formData.mapUrl || ""}
+                                    onChange={(e) => updateField("mapUrl", e.target.value)}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Go to Google Maps → Share → Embed a map → Copy the src URL from the iframe code
+                                </p>
+                            </div>
+                            {formData.mapUrl && (
+                                <div className="rounded-lg overflow-hidden border h-48">
+                                    <iframe
+                                        src={formData.mapUrl}
+                                        width="100%"
+                                        height="100%"
+                                        style={{ border: 0 }}
+                                        allowFullScreen
+                                        loading="lazy"
+                                        referrerPolicy="no-referrer-when-downgrade"
+                                        title="Location Map"
+                                    />
+                                </div>
+                            )}
+                            <div className="space-y-3 pt-2">
+                                <Label>Business Hours</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs text-muted-foreground">Monday - Friday</Label>
+                                        <Input
+                                            placeholder="9:00 AM - 5:00 PM"
+                                            value={(formData.businessHours as any)?.monFri || ""}
+                                            onChange={(e) => updateField("businessHours", { ...(formData.businessHours as any || {}), monFri: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs text-muted-foreground">Saturday</Label>
+                                        <Input
+                                            placeholder="9:00 AM - 1:00 PM"
+                                            value={(formData.businessHours as any)?.sat || ""}
+                                            onChange={(e) => updateField("businessHours", { ...(formData.businessHours as any || {}), sat: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs text-muted-foreground">Sunday & Gazetted Holidays</Label>
+                                        <Input
+                                            placeholder="Closed"
+                                            value={(formData.businessHours as any)?.sunHoliday || ""}
+                                            onChange={(e) => updateField("businessHours", { ...(formData.businessHours as any || {}), sunHoliday: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

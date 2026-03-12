@@ -52,10 +52,16 @@ export interface CreateSponsorData {
 
 export const sponsorsService = {
   /**
-   * Get all sponsors
+   * Get all sponsors (requires auth)
    */
   getAll: (filters?: SponsorFilters) =>
     api.get<Sponsor[]>("/api/sponsors", filters as Record<string, string | number | boolean>),
+
+  /**
+   * Get public sponsors (no auth required)
+   */
+  getPublic: (filters?: SponsorFilters) =>
+    api.get<Sponsor[]>("/api/sponsors/public", filters as Record<string, string | number | boolean>),
 
   /**
    * Get single sponsor by ID

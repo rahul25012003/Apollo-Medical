@@ -261,7 +261,7 @@ export default function PublicHomePage() {
 
                 const [eventsRes, sponsorsRes] = await Promise.all([
                     eventsService.getPublic({ limit: 20 }),
-                    sponsorsService.getAll({ isActive: true, limit: 20 }),
+                    sponsorsService.getPublic({ isActive: true, limit: 20 }),
                 ]);
 
                 if (eventsRes.success && eventsRes.data) {
@@ -575,9 +575,15 @@ export default function PublicHomePage() {
                 <FloatingBubbles />
 
                 <div className="container mx-auto px-4 lg:px-8 py-16 lg:py-24 relative z-10">
-                    <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                    <div className={cn(
+                        "grid gap-12 lg:gap-20 items-center",
+                        featuredEvents.length > 0 ? "lg:grid-cols-2" : "lg:grid-cols-1 max-w-4xl mx-auto"
+                    )}>
                         {/* Left Side - Text Content */}
-                        <div className="text-white space-y-8 text-center lg:text-left">
+                        <div className={cn(
+                            "text-white space-y-8",
+                            featuredEvents.length > 0 ? "text-center lg:text-left" : "text-center"
+                        )}>
                             <div
                                 data-scroll-reveal
                                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-lg"
@@ -589,7 +595,12 @@ export default function PublicHomePage() {
                             <h1
                                 data-scroll-reveal
                                 data-scroll-delay="1"
-                                className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight"
+                                className={cn(
+                                    "font-bold leading-[1.1] tracking-tight",
+                                    featuredEvents.length > 0
+                                        ? "text-4xl md:text-5xl lg:text-6xl xl:text-7xl"
+                                        : "text-4xl md:text-5xl lg:text-6xl xl:text-7xl"
+                                )}
                             >
                                 Advance Your
                                 <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-300 to-emerald-300">
@@ -600,7 +611,12 @@ export default function PublicHomePage() {
                             <p
                                 data-scroll-reveal
                                 data-scroll-delay="2"
-                                className="text-lg lg:text-xl text-white/70 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+                                className={cn(
+                                    "text-lg lg:text-xl text-white/70 leading-relaxed",
+                                    featuredEvents.length > 0
+                                        ? "max-w-xl mx-auto lg:mx-0"
+                                        : "max-w-2xl mx-auto"
+                                )}
                             >
                                 Register for upcoming medical conferences, workshops, and symposiums.
                                 Earn CME credits and connect with healthcare leaders worldwide.
@@ -609,9 +625,12 @@ export default function PublicHomePage() {
                             <div
                                 data-scroll-reveal
                                 data-scroll-delay="3"
-                                className="flex flex-wrap gap-4 justify-center lg:justify-start"
+                                className={cn(
+                                    "flex flex-wrap gap-4",
+                                    featuredEvents.length > 0 ? "justify-center lg:justify-start" : "justify-center"
+                                )}
                             >
-                                <Link href="#events">
+                                <Link href="/events">
                                     <Button
                                         size="lg"
                                         className="bg-white text-primary hover:bg-white/90 shadow-xl hover:shadow-2xl transition-all duration-300 gap-2 text-base px-8 rounded-full"
@@ -620,157 +639,200 @@ export default function PublicHomePage() {
                                         Browse Events
                                     </Button>
                                 </Link>
+                                <Link href="/auth/login">
+                                    <Button
+                                        size="lg"
+                                        variant="outline"
+                                        className="border-white/30 text-white hover:bg-white/10 shadow-lg transition-all duration-300 gap-2 text-base px-8 rounded-full bg-white/5 backdrop-blur-sm"
+                                    >
+                                        <Lock className="h-4 w-4" />
+                                        Sign In
+                                    </Button>
+                                </Link>
                             </div>
 
-                            {/* Stats with Animation */}
-                            <div
-                                data-scroll-reveal
-                                data-scroll-delay="4"
-                                className="grid grid-cols-3 gap-6 lg:gap-10 pt-10 border-t border-white/10"
-                            >
-                                {[
-                                    { value: "50+", label: "Events/Year", icon: Calendar },
-                                    { value: "5000+", label: "Attendees", icon: Users },
-                                    { value: "200+", label: "Speakers", icon: Mic2 },
-                                ].map((stat, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="text-center lg:text-left group"
-                                    >
-                                        <div className="flex items-center justify-center lg:justify-start gap-2 mb-1">
-                                            <stat.icon className="h-5 w-5 text-cyan-300/70 group-hover:text-cyan-300 transition-colors" />
-                                            <p className="text-3xl lg:text-4xl font-bold counter-number">{stat.value}</p>
+                            {/* Feature highlights when no events */}
+                            {featuredEvents.length === 0 && (
+                                <div
+                                    data-scroll-reveal
+                                    data-scroll-delay="4"
+                                    className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-10 border-t border-white/10 max-w-3xl mx-auto"
+                                >
+                                    {[
+                                        { icon: Award, title: "CME Accredited", desc: "Earn verified credits" },
+                                        { icon: GraduationCap, title: "Digital Certificates", desc: "Instant download" },
+                                        { icon: Globe, title: "Hybrid Access", desc: "Join from anywhere" },
+                                    ].map((feature, idx) => (
+                                        <div key={idx} className="flex flex-col items-center gap-3 group">
+                                            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center group-hover:bg-white/15 transition-all">
+                                                <feature.icon className="h-6 w-6 text-cyan-300" />
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="font-semibold text-sm">{feature.title}</p>
+                                                <p className="text-xs text-white/50">{feature.desc}</p>
+                                            </div>
                                         </div>
-                                        <p className="text-sm text-white/50">{stat.label}</p>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Stats - only show when there are events */}
+                            {featuredEvents.length > 0 && (
+                                <div
+                                    data-scroll-reveal
+                                    data-scroll-delay="4"
+                                    className="grid grid-cols-3 gap-6 lg:gap-10 pt-10 border-t border-white/10"
+                                >
+                                    {[
+                                        { value: "50+", label: "Events/Year", icon: Calendar },
+                                        { value: "5000+", label: "Attendees", icon: Users },
+                                        { value: "200+", label: "Speakers", icon: Mic2 },
+                                    ].map((stat, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="text-center lg:text-left group"
+                                        >
+                                            <div className="flex items-center justify-center lg:justify-start gap-2 mb-1">
+                                                <stat.icon className="h-5 w-5 text-cyan-300/70 group-hover:text-cyan-300 transition-colors" />
+                                                <p className="text-3xl lg:text-4xl font-bold counter-number">{stat.value}</p>
+                                            </div>
+                                            <p className="text-sm text-white/50">{stat.label}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Right Side - Featured Event Card (Rounded) */}
-                        <div
-                            data-scroll-reveal="right"
-                            data-scroll-delay="2"
-                            className="relative"
-                        >
-                            <div className="relative rounded-[2.5rem] overflow-hidden bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl">
-                                {featuredEvents.map((event, index) => (
-                                    <div
-                                        key={event.id}
-                                        className={cn(
-                                            "transition-all duration-700 ease-out",
-                                            index === currentSlide ? "opacity-100 translate-x-0" : "opacity-0 absolute inset-0 translate-x-8"
-                                        )}
-                                    >
-                                        {/* Event Image */}
-                                        <div className="relative h-56 lg:h-72 overflow-hidden rounded-t-[2.5rem]">
-                                            <div
-                                                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                                                style={{ backgroundImage: `url(${event.image})` }}
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                        {/* Right Side - Featured Event Card (only when events exist) */}
+                        {featuredEvents.length > 0 && (
+                            <div
+                                data-scroll-reveal="right"
+                                data-scroll-delay="2"
+                                className="relative"
+                            >
+                                <div className="relative rounded-[2.5rem] overflow-hidden bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl">
+                                    {featuredEvents.map((event, index) => (
+                                        <div
+                                            key={event.id}
+                                            className={cn(
+                                                "transition-all duration-700 ease-out",
+                                                index === currentSlide ? "opacity-100 translate-x-0" : "opacity-0 absolute inset-0 translate-x-8"
+                                            )}
+                                        >
+                                            {/* Event Image */}
+                                            <div className="relative h-56 lg:h-72 overflow-hidden rounded-t-[2.5rem]">
+                                                <div
+                                                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                                                    style={{ backgroundImage: `url(${event.image})` }}
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-                                            {/* Badges */}
-                                            <div className="absolute top-5 left-5 flex gap-2 z-10">
-                                                <Badge className="bg-white/95 backdrop-blur-sm text-primary border-0 px-3 py-1 rounded-full shadow-lg">
-                                                    {event.type}
-                                                </Badge>
-                                                {event.featured && (
-                                                    <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-3 py-1 rounded-full shadow-lg">
-                                                        <Star className="h-3 w-3 mr-1 fill-current" />
-                                                        Featured
+                                                {/* Badges */}
+                                                <div className="absolute top-5 left-5 flex gap-2 z-10">
+                                                    <Badge className="bg-white/95 backdrop-blur-sm text-primary border-0 px-3 py-1 rounded-full shadow-lg">
+                                                        {event.type}
                                                     </Badge>
-                                                )}
-                                            </div>
-                                            <div className="absolute top-5 right-5 z-10">
-                                                <Badge className="bg-white/95 backdrop-blur-sm text-primary border-0 px-3 py-1 rounded-full shadow-lg">
-                                                    <Award className="h-3 w-3 mr-1" />
-                                                    {event.cmeCredits} CME
-                                                </Badge>
-                                            </div>
-                                        </div>
-
-                                        {/* Event Details */}
-                                        <div className="p-6 lg:p-8 space-y-4">
-                                            <div>
-                                                <h3 className="text-xl lg:text-2xl font-bold text-white line-clamp-2 mb-2">
-                                                    {event.title}
-                                                </h3>
-                                                <p className="text-sm text-white/70 line-clamp-2">
-                                                    {event.shortDescription}
-                                                </p>
-                                            </div>
-
-                                            <div className="flex flex-wrap gap-4 text-sm text-white/80">
-                                                <span className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
-                                                    <Calendar className="h-4 w-4 text-cyan-300" />
-                                                    {event.date}
-                                                </span>
-                                                <span className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
-                                                    <MapPin className="h-4 w-4 text-cyan-300" />
-                                                    {event.location.split(",")[0]}
-                                                </span>
-                                            </div>
-
-                                            <div className="flex items-center justify-between pt-5 border-t border-white/20">
-                                                <div>
-                                                    {event.earlyBirdPrice && (
-                                                        <span className="text-sm text-white/50 line-through mr-2">
-                                                            ₹{event.price.toLocaleString()}
-                                                        </span>
-                                                    )}
-                                                    <span className="text-2xl lg:text-3xl font-bold text-cyan-300">
-                                                        ₹{(event.earlyBirdPrice || event.price).toLocaleString()}
-                                                    </span>
-                                                    {event.earlyBirdPrice && (
-                                                        <p className="text-xs text-emerald-400 font-medium mt-1">Early bird pricing</p>
+                                                    {event.featured && (
+                                                        <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-3 py-1 rounded-full shadow-lg">
+                                                            <Star className="h-3 w-3 mr-1 fill-current" />
+                                                            Featured
+                                                        </Badge>
                                                     )}
                                                 </div>
-                                                <Link href={`/events/${event.id}/register`}>
-                                                    <Button className="bg-white text-primary hover:bg-white/90 gap-2 shadow-lg hover:shadow-xl transition-all duration-300 rounded-full px-6">
-                                                        <Ticket className="h-4 w-4" />
-                                                        Register Now
-                                                    </Button>
-                                                </Link>
+                                                <div className="absolute top-5 right-5 z-10">
+                                                    <Badge className="bg-white/95 backdrop-blur-sm text-primary border-0 px-3 py-1 rounded-full shadow-lg">
+                                                        <Award className="h-3 w-3 mr-1" />
+                                                        {event.cmeCredits} CME
+                                                    </Badge>
+                                                </div>
+                                            </div>
+
+                                            {/* Event Details */}
+                                            <div className="p-6 lg:p-8 space-y-4">
+                                                <div>
+                                                    <h3 className="text-xl lg:text-2xl font-bold text-white line-clamp-2 mb-2">
+                                                        {event.title}
+                                                    </h3>
+                                                    <p className="text-sm text-white/70 line-clamp-2">
+                                                        {event.shortDescription}
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-4 text-sm text-white/80">
+                                                    <span className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+                                                        <Calendar className="h-4 w-4 text-cyan-300" />
+                                                        {event.date}
+                                                    </span>
+                                                    <span className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+                                                        <MapPin className="h-4 w-4 text-cyan-300" />
+                                                        {event.location.split(",")[0]}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-5 border-t border-white/20">
+                                                    <div>
+                                                        {event.earlyBirdPrice && (
+                                                            <span className="text-sm text-white/50 line-through mr-2">
+                                                                ₹{event.price.toLocaleString()}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-2xl lg:text-3xl font-bold text-cyan-300">
+                                                            ₹{(event.earlyBirdPrice || event.price).toLocaleString()}
+                                                        </span>
+                                                        {event.earlyBirdPrice && (
+                                                            <p className="text-xs text-emerald-400 font-medium mt-1">Early bird pricing</p>
+                                                        )}
+                                                    </div>
+                                                    <Link href={`/events/${event.id}/register`}>
+                                                        <Button className="bg-white text-primary hover:bg-white/90 gap-2 shadow-lg hover:shadow-xl transition-all duration-300 rounded-full px-6">
+                                                            <Ticket className="h-4 w-4" />
+                                                            Register Now
+                                                        </Button>
+                                                    </Link>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
 
-                            {/* Carousel Controls */}
-                            <button
-                                onClick={prevSlide}
-                                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-white shadow-2xl flex items-center justify-center hover:bg-gray-50 hover:scale-110 transition-all duration-300 z-10"
-                                aria-label="Previous slide"
-                            >
-                                <ArrowLeft className="h-5 w-5 text-gray-600" />
-                            </button>
-                            <button
-                                onClick={nextSlide}
-                                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-white shadow-2xl flex items-center justify-center hover:bg-gray-50 hover:scale-110 transition-all duration-300 z-10"
-                                aria-label="Next slide"
-                            >
-                                <ArrowRight className="h-5 w-5 text-gray-600" />
-                            </button>
+                                {/* Carousel Controls */}
+                                {featuredEvents.length > 1 && (
+                                    <>
+                                        <button
+                                            onClick={prevSlide}
+                                            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-white shadow-2xl flex items-center justify-center hover:bg-gray-50 hover:scale-110 transition-all duration-300 z-10"
+                                            aria-label="Previous slide"
+                                        >
+                                            <ArrowLeft className="h-5 w-5 text-gray-600" />
+                                        </button>
+                                        <button
+                                            onClick={nextSlide}
+                                            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-white shadow-2xl flex items-center justify-center hover:bg-gray-50 hover:scale-110 transition-all duration-300 z-10"
+                                            aria-label="Next slide"
+                                        >
+                                            <ArrowRight className="h-5 w-5 text-gray-600" />
+                                        </button>
 
-                            {/* Indicators */}
-                            <div className="flex justify-center gap-3 mt-8">
-                                {featuredEvents.map((_, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setCurrentSlide(index)}
-                                        className={cn(
-                                            "h-2.5 rounded-full transition-all duration-500",
-                                            index === currentSlide
-                                                ? "w-10 bg-white"
-                                                : "w-2.5 bg-white/40 hover:bg-white/60"
-                                        )}
-                                        aria-label={`Go to slide ${index + 1}`}
-                                    />
-                                ))}
+                                        {/* Indicators */}
+                                        <div className="flex justify-center gap-3 mt-8">
+                                            {featuredEvents.map((_, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => setCurrentSlide(index)}
+                                                    className={cn(
+                                                        "h-2.5 rounded-full transition-all duration-500",
+                                                        index === currentSlide
+                                                            ? "w-10 bg-white"
+                                                            : "w-2.5 bg-white/40 hover:bg-white/60"
+                                                    )}
+                                                    aria-label={`Go to slide ${index + 1}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
@@ -781,22 +843,21 @@ export default function PublicHomePage() {
                 </svg>
             </section>
 
-            {/* Events Section - Premium Redesign */}
-            <section id="events" className="py-20 lg:py-32 bg-gradient-to-b from-slate-50 to-slate-100 relative overflow-hidden">
-                <DecorativeBackground />
-
+            {/* Events Section - Only shown when events exist */}
+            {!dataLoading && upcomingEvents.length > 0 && (
+            <section id="events" className="py-20 lg:py-28 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
                 <div className="container mx-auto px-4 lg:px-8 relative z-10">
                     {/* Section Header */}
-                    <div className="text-center mb-16" data-scroll-reveal>
+                    <div className="text-center mb-14" data-scroll-reveal>
                         <Badge variant="outline" className="mb-4 bg-primary/5 border-primary/20 px-5 py-1.5 rounded-full">
                             <Calendar className="h-3.5 w-3.5 mr-2" />
-                            Upcoming Events
+                            Events
                         </Badge>
                         <h2 className="text-3xl lg:text-5xl font-bold tracking-tight mb-4">
-                            Explore Medical Events
+                            Upcoming Events
                         </h2>
                         <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-                            Find and register for conferences, workshops, and CME sessions tailored for healthcare professionals
+                            Browse and register for our latest conferences, workshops, and training programs
                         </p>
                     </div>
 
@@ -804,7 +865,7 @@ export default function PublicHomePage() {
                     <div
                         data-scroll-reveal
                         data-scroll-delay="1"
-                        className="flex flex-wrap justify-center gap-3 mb-14 relative z-20"
+                        className="flex flex-wrap justify-center gap-3 mb-12 relative z-20"
                     >
                         {categories.map((category) => (
                             <button
@@ -812,9 +873,9 @@ export default function PublicHomePage() {
                                 type="button"
                                 onClick={() => setActiveCategory(category)}
                                 className={cn(
-                                    "px-6 py-2.5 text-sm font-medium rounded-full transition-all duration-300 cursor-pointer border relative z-20",
+                                    "px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 cursor-pointer border relative z-20",
                                     activeCategory === category
-                                        ? "bg-primary text-white border-primary shadow-lg"
+                                        ? "bg-primary text-white border-primary shadow-md"
                                         : "bg-white text-muted-foreground border-border hover:border-primary/50 hover:text-primary hover:-translate-y-0.5"
                                 )}
                             >
@@ -823,23 +884,16 @@ export default function PublicHomePage() {
                         ))}
                     </div>
 
-                    {/* Events Grid - Premium Cards */}
-                    {dataLoading ? (
-                        <div className="flex items-center justify-center py-20">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        </div>
-                    ) : filteredEvents?.length === 0 ? (
-                        <div className="text-center py-16">
-                            <Calendar className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                            <h3 className="text-xl font-semibold mb-2">No Events Found</h3>
+                    {/* Events Grid */}
+                    {filteredEvents?.length === 0 ? (
+                        <div className="text-center py-12">
+                            <Calendar className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
                             <p className="text-muted-foreground">
-                                {activeCategory === "All"
-                                    ? "There are no upcoming events at the moment. Check back soon!"
-                                    : `No events found in ${activeCategory} category.`}
+                                No events found in <span className="font-medium">{activeCategory}</span> category.
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
                             {filteredEvents?.map((event, index) => {
                                 const slots = getSlotsInfo(event);
                                 const isHovered = hoveredEvent === event.id;
@@ -849,7 +903,7 @@ export default function PublicHomePage() {
                                         key={event.id}
                                         data-scroll-reveal="scale"
                                         data-scroll-delay={String((index % 3) + 1)}
-                                        className="relative bg-white rounded-[2rem] overflow-hidden border border-border/30 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 group cursor-pointer h-[420px] flex flex-col"
+                                        className="relative bg-white rounded-2xl overflow-hidden border border-border/40 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1.5 group cursor-pointer flex flex-col"
                                         onMouseEnter={() => setHoveredEvent(event.id)}
                                         onMouseLeave={() => setHoveredEvent(null)}
                                     >
@@ -859,15 +913,15 @@ export default function PublicHomePage() {
                                                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                                                 style={{ backgroundImage: `url(${event.image})` }}
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
                                             {/* Floating Badges */}
-                                            <div className="absolute top-4 left-4 flex flex-wrap gap-2 z-10">
-                                                <Badge className="bg-white/95 backdrop-blur-sm text-primary border-0 shadow-md rounded-full px-3">
+                                            <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-10">
+                                                <Badge className="bg-white/90 backdrop-blur-sm text-primary border-0 shadow-sm rounded-full px-3 text-xs font-medium">
                                                     {event.type}
                                                 </Badge>
                                                 {(event.cmeCredits ?? 0) > 0 && (
-                                                    <Badge className="bg-primary/95 text-white border-0 shadow-md backdrop-blur-sm rounded-full px-3">
+                                                    <Badge className="bg-primary/90 text-white border-0 shadow-sm backdrop-blur-sm rounded-full px-3 text-xs">
                                                         <Award className="h-3 w-3 mr-1" />
                                                         {event.cmeCredits} CME
                                                     </Badge>
@@ -876,48 +930,48 @@ export default function PublicHomePage() {
 
                                             {/* Urgency Badge */}
                                             {slots.urgent && (
-                                                <div className="absolute top-4 right-4 z-10">
-                                                    <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 shadow-md backdrop-blur-sm animate-pulse rounded-full px-3">
+                                                <div className="absolute top-3 right-3 z-10">
+                                                    <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 shadow-sm backdrop-blur-sm animate-pulse rounded-full px-3 text-xs">
                                                         {slots.text}
                                                     </Badge>
                                                 </div>
                                             )}
 
                                             {/* Bottom Info Overlay */}
-                                            <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-                                                <div className="flex items-center gap-3 text-white/90 text-sm mb-2">
-                                                    <span className="flex items-center gap-1.5">
-                                                        <Calendar className="h-3.5 w-3.5" />
+                                            <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+                                                <div className="flex items-center gap-3 text-white/85 text-xs mb-1.5">
+                                                    <span className="flex items-center gap-1">
+                                                        <Calendar className="h-3 w-3" />
                                                         {event.date}
                                                     </span>
-                                                    <span className="w-1 h-1 rounded-full bg-white/50" />
-                                                    <span className="flex items-center gap-1.5">
-                                                        <MapPin className="h-3.5 w-3.5" />
+                                                    <span className="w-1 h-1 rounded-full bg-white/40" />
+                                                    <span className="flex items-center gap-1">
+                                                        <MapPin className="h-3 w-3" />
                                                         {event.location.split(",")[0]}
                                                     </span>
                                                 </div>
-                                                <h3 className="font-bold text-white leading-tight text-lg line-clamp-2">
+                                                <h3 className="font-semibold text-white leading-snug text-base line-clamp-2">
                                                     {event.title}
                                                 </h3>
                                             </div>
                                         </div>
 
                                         {/* Card Content */}
-                                        <div className="p-5 lg:p-6 flex-1 flex flex-col">
-                                            <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                                        <div className="p-5 flex-1 flex flex-col">
+                                            <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
                                                 {event.shortDescription}
                                             </p>
 
-                                            {/* Price Section */}
-                                            <div className="pt-3 border-t border-border/50 mt-auto">
-                                                <div className="flex items-center justify-between mb-4">
+                                            {/* Price & Slots */}
+                                            <div className="pt-3 border-t border-border/40 mt-auto">
+                                                <div className="flex items-center justify-between mb-3">
                                                     <div>
                                                         {event.earlyBirdPrice && (
-                                                            <span className="text-sm text-muted-foreground line-through mr-2">
+                                                            <span className="text-xs text-muted-foreground line-through mr-1.5">
                                                                 ₹{event.price.toLocaleString()}
                                                             </span>
                                                         )}
-                                                        <span className="text-xl font-bold text-primary">
+                                                        <span className="text-lg font-bold text-primary">
                                                             ₹{(event.earlyBirdPrice || event.price).toLocaleString()}
                                                         </span>
                                                         {event.earlyBirdDeadline && (
@@ -926,8 +980,8 @@ export default function PublicHomePage() {
                                                             </p>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                                        <Users className="h-4 w-4" />
+                                                    <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">
+                                                        <Users className="h-3.5 w-3.5" />
                                                         <span>{event.registrations}/{event.capacity}</span>
                                                     </div>
                                                 </div>
@@ -938,9 +992,9 @@ export default function PublicHomePage() {
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            className="w-full gap-2 rounded-full border-primary/30 hover:bg-primary/5 hover:border-primary"
+                                                            className="w-full gap-1.5 rounded-full text-xs border-border hover:bg-muted/50"
                                                         >
-                                                            <Eye className="h-4 w-4" />
+                                                            <Eye className="h-3.5 w-3.5" />
                                                             Details
                                                         </Button>
                                                     </Link>
@@ -948,16 +1002,16 @@ export default function PublicHomePage() {
                                                         <Button
                                                             size="sm"
                                                             className={cn(
-                                                                "w-full gap-2 transition-all duration-300 rounded-full",
+                                                                "w-full gap-1.5 transition-all duration-300 rounded-full text-xs",
                                                                 isHovered
-                                                                    ? "gradient-medical text-white shadow-lg"
+                                                                    ? "gradient-medical text-white shadow-md"
                                                                     : "bg-primary text-white hover:bg-primary/90"
                                                             )}
                                                         >
                                                             Register
                                                             <ArrowRight className={cn(
-                                                                "h-4 w-4 transition-transform duration-300",
-                                                                isHovered && "translate-x-1"
+                                                                "h-3.5 w-3.5 transition-transform duration-300",
+                                                                isHovered && "translate-x-0.5"
                                                             )} />
                                                         </Button>
                                                     </Link>
@@ -971,10 +1025,7 @@ export default function PublicHomePage() {
                     )}
 
                     {/* View All CTA */}
-                    <div
-                        data-scroll-reveal
-                        className="text-center mt-16"
-                    >
+                    <div data-scroll-reveal className="text-center mt-14">
                         <Link href="/events">
                             <Button variant="outline" size="lg" className="gap-2 px-8 rounded-full border-2 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300">
                                 View All Events
@@ -983,14 +1034,11 @@ export default function PublicHomePage() {
                         </Link>
                     </div>
                 </div>
-
-                {/* Bottom Curve */}
-                <svg className="absolute bottom-0 left-0 right-0 w-full" viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-                    <path d="M0 80L48 74.7C96 69 192 59 288 53.3C384 48 480 48 576 53.3C672 59 768 69 864 69.3C960 69 1056 59 1152 53.3C1248 48 1344 48 1392 48L1440 48V80H1392C1344 80 1248 80 1152 80C1056 80 960 80 864 80C768 80 672 80 576 80C480 80 384 80 288 80C192 80 96 80 48 80H0Z" fill="white" />
-                </svg>
             </section>
+            )}
 
-            {/* Sponsors Section - Tier-based Showcase */}
+            {/* Sponsors Section - Only shown when sponsors exist */}
+            {!dataLoading && sponsors.length > 0 && (
             <section className="py-20 lg:py-28 bg-gradient-to-b from-white to-slate-50 relative overflow-hidden">
                 <div className="container mx-auto px-4 lg:px-8 relative z-10">
                     {/* Section Header */}
@@ -1004,138 +1052,131 @@ export default function PublicHomePage() {
                         <div className="w-20 h-1 bg-gradient-to-r from-primary to-teal-400 mx-auto rounded-full" />
                     </div>
 
-                    {sponsors.length > 0 ? (
-                        <div className="space-y-12">
-                            {/* Platinum Sponsors */}
-                            {sponsors.filter(s => s.tier === "platinum").length > 0 && (
-                                <div data-scroll-reveal>
-                                    <div className="flex items-center justify-center gap-3 mb-8">
-                                        <div className="h-px flex-1 max-w-[100px] bg-gradient-to-r from-transparent to-slate-300" />
-                                        <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-800 text-white rounded-full text-sm font-medium">
-                                            <Crown className="h-4 w-4" />
-                                            Platinum Partners
-                                        </div>
-                                        <div className="h-px flex-1 max-w-[100px] bg-gradient-to-l from-transparent to-slate-300" />
+                    <div className="space-y-12">
+                        {/* Platinum Sponsors */}
+                        {sponsors.filter(s => s.tier === "platinum").length > 0 && (
+                            <div data-scroll-reveal>
+                                <div className="flex items-center justify-center gap-3 mb-8">
+                                    <div className="h-px flex-1 max-w-[100px] bg-gradient-to-r from-transparent to-slate-300" />
+                                    <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-800 text-white rounded-full text-sm font-medium">
+                                        <Crown className="h-4 w-4" />
+                                        Platinum Partners
                                     </div>
-                                    <div className="flex flex-wrap justify-center gap-8">
-                                        {sponsors.filter(s => s.tier === "platinum").map((sponsor, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 border border-slate-200 hover:border-slate-300 min-w-[200px]"
-                                            >
-                                                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                <div className="relative flex flex-col items-center">
-                                                    {sponsor.logo ? (
-                                                        <Image
-                                                            src={sponsor.logo}
-                                                            alt={sponsor.name}
-                                                            width={120}
-                                                            height={60}
-                                                            className="h-16 w-auto object-contain grayscale group-hover:grayscale-0 transition-all duration-500"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-24 h-16 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-105 transition-transform">
-                                                            {sponsor.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-                                                        </div>
-                                                    )}
-                                                    <p className="mt-4 font-semibold text-foreground text-center">
-                                                        {sponsor.name}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <div className="h-px flex-1 max-w-[100px] bg-gradient-to-l from-transparent to-slate-300" />
                                 </div>
-                            )}
+                                <div className="flex flex-wrap justify-center gap-8">
+                                    {sponsors.filter(s => s.tier === "platinum").map((sponsor, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 border border-slate-200 hover:border-slate-300 min-w-[200px]"
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <div className="relative flex flex-col items-center">
+                                                {sponsor.logo ? (
+                                                    <Image
+                                                        src={sponsor.logo}
+                                                        alt={sponsor.name}
+                                                        width={120}
+                                                        height={60}
+                                                        className="h-16 w-auto object-contain grayscale group-hover:grayscale-0 transition-all duration-500"
+                                                    />
+                                                ) : (
+                                                    <div className="w-24 h-16 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-105 transition-transform">
+                                                        {sponsor.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                                                    </div>
+                                                )}
+                                                <p className="mt-4 font-semibold text-foreground text-center">
+                                                    {sponsor.name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-                            {/* Gold Sponsors */}
-                            {sponsors.filter(s => s.tier === "gold").length > 0 && (
-                                <div data-scroll-reveal>
-                                    <div className="flex items-center justify-center gap-3 mb-8">
-                                        <div className="h-px flex-1 max-w-[100px] bg-gradient-to-r from-transparent to-amber-300" />
-                                        <div className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-full text-sm font-medium">
-                                            <Star className="h-4 w-4" />
-                                            Gold Partners
-                                        </div>
-                                        <div className="h-px flex-1 max-w-[100px] bg-gradient-to-l from-transparent to-amber-300" />
+                        {/* Gold Sponsors */}
+                        {sponsors.filter(s => s.tier === "gold").length > 0 && (
+                            <div data-scroll-reveal>
+                                <div className="flex items-center justify-center gap-3 mb-8">
+                                    <div className="h-px flex-1 max-w-[100px] bg-gradient-to-r from-transparent to-amber-300" />
+                                    <div className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-full text-sm font-medium">
+                                        <Star className="h-4 w-4" />
+                                        Gold Partners
                                     </div>
-                                    <div className="flex flex-wrap justify-center gap-6">
-                                        {sponsors.filter(s => s.tier === "gold").map((sponsor, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="group bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-amber-100 hover:border-amber-200 min-w-[160px]"
-                                            >
-                                                <div className="flex flex-col items-center">
-                                                    {sponsor.logo ? (
-                                                        <Image
-                                                            src={sponsor.logo}
-                                                            alt={sponsor.name}
-                                                            width={100}
-                                                            height={50}
-                                                            className="h-12 w-auto object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-16 h-12 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center text-white text-lg font-bold shadow group-hover:scale-105 transition-transform">
-                                                            {sponsor.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-                                                        </div>
-                                                    )}
-                                                    <p className="mt-3 text-sm font-medium text-foreground text-center">
-                                                        {sponsor.name}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <div className="h-px flex-1 max-w-[100px] bg-gradient-to-l from-transparent to-amber-300" />
                                 </div>
-                            )}
+                                <div className="flex flex-wrap justify-center gap-6">
+                                    {sponsors.filter(s => s.tier === "gold").map((sponsor, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="group bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-amber-100 hover:border-amber-200 min-w-[160px]"
+                                        >
+                                            <div className="flex flex-col items-center">
+                                                {sponsor.logo ? (
+                                                    <Image
+                                                        src={sponsor.logo}
+                                                        alt={sponsor.name}
+                                                        width={100}
+                                                        height={50}
+                                                        className="h-12 w-auto object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-12 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center text-white text-lg font-bold shadow group-hover:scale-105 transition-transform">
+                                                        {sponsor.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                                                    </div>
+                                                )}
+                                                <p className="mt-3 text-sm font-medium text-foreground text-center">
+                                                    {sponsor.name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-                            {/* Silver Sponsors */}
-                            {sponsors.filter(s => s.tier === "silver").length > 0 && (
-                                <div data-scroll-reveal>
-                                    <div className="flex items-center justify-center gap-3 mb-8">
-                                        <div className="h-px flex-1 max-w-[100px] bg-gradient-to-r from-transparent to-gray-300" />
-                                        <div className="flex items-center gap-2 px-4 py-1.5 bg-gray-500 text-white rounded-full text-sm font-medium">
-                                            <Medal className="h-4 w-4" />
-                                            Silver Partners
-                                        </div>
-                                        <div className="h-px flex-1 max-w-[100px] bg-gradient-to-l from-transparent to-gray-300" />
+                        {/* Silver Sponsors */}
+                        {sponsors.filter(s => s.tier === "silver").length > 0 && (
+                            <div data-scroll-reveal>
+                                <div className="flex items-center justify-center gap-3 mb-8">
+                                    <div className="h-px flex-1 max-w-[100px] bg-gradient-to-r from-transparent to-gray-300" />
+                                    <div className="flex items-center gap-2 px-4 py-1.5 bg-gray-500 text-white rounded-full text-sm font-medium">
+                                        <Medal className="h-4 w-4" />
+                                        Silver Partners
                                     </div>
-                                    <div className="flex flex-wrap justify-center gap-4">
-                                        {sponsors.filter(s => s.tier === "silver").map((sponsor, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="group bg-white/80 backdrop-blur rounded-lg px-5 py-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-gray-200"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    {sponsor.logo ? (
-                                                        <Image
-                                                            src={sponsor.logo}
-                                                            alt={sponsor.name}
-                                                            width={80}
-                                                            height={40}
-                                                            className="h-8 w-auto object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-sm font-bold">
-                                                            {sponsor.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-                                                        </div>
-                                                    )}
-                                                    <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                                                        {sponsor.name}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <div className="h-px flex-1 max-w-[100px] bg-gradient-to-l from-transparent to-gray-300" />
                                 </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="text-center py-12">
-                            <Building2 className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-                            <p className="text-muted-foreground">Partner information coming soon</p>
-                        </div>
-                    )}
+                                <div className="flex flex-wrap justify-center gap-4">
+                                    {sponsors.filter(s => s.tier === "silver").map((sponsor, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="group bg-white/80 backdrop-blur rounded-lg px-5 py-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-gray-200"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                {sponsor.logo ? (
+                                                    <Image
+                                                        src={sponsor.logo}
+                                                        alt={sponsor.name}
+                                                        width={80}
+                                                        height={40}
+                                                        className="h-8 w-auto object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
+                                                    />
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-sm font-bold">
+                                                        {sponsor.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                                                    </div>
+                                                )}
+                                                <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                                                    {sponsor.name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Become a Sponsor CTA */}
                     <div data-scroll-reveal className="mt-16 text-center">
@@ -1152,6 +1193,7 @@ export default function PublicHomePage() {
                     </div>
                 </div>
             </section>
+            )}
 
             {/* Gallery Section */}
             <section id="gallery" className="py-20 lg:py-28 bg-slate-50 relative overflow-hidden">

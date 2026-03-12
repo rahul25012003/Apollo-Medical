@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { generateUniqueSlug } from "@/lib/auth-utils";
 import {
   successResponse,
@@ -64,6 +65,10 @@ export const POST = withErrorHandler(
 
     if (!originalEvent) {
       return Errors.notFound("Event");
+    }
+
+    if (!isTenantOwner(session, originalEvent.tenantId)) {
+      return Errors.forbidden("You don't have access to this event");
     }
 
     // Calculate new dates (original end date + 3 months)

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { updateRegistrationSchema } from "@/lib/validations/registration";
 import {
   successResponse,
@@ -91,10 +92,15 @@ export const PUT = withErrorHandler(
     // Check if registration exists
     const existingRegistration = await prisma.registration.findUnique({
       where: { id },
+      include: { event: { select: { tenantId: true } } },
     });
 
     if (!existingRegistration) {
       return Errors.notFound("Registration");
+    }
+
+    if (!isTenantOwner(session, existingRegistration.event.tenantId)) {
+      return Errors.forbidden("You don't have access to this registration");
     }
 
     const body = await parseBody(request);
@@ -165,11 +171,16 @@ export const DELETE = withErrorHandler(
       where: { id },
       include: {
         certificate: true,
+        event: { select: { tenantId: true } },
       },
     });
 
     if (!existingRegistration) {
       return Errors.notFound("Registration");
+    }
+
+    if (!isTenantOwner(session, existingRegistration.event.tenantId)) {
+      return Errors.forbidden("You don't have access to this registration");
     }
 
     // If certificate exists, don't allow deletion

@@ -56,6 +56,11 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     where.isFeatured = true;
   }
 
+  const tenantId = searchParams.get("tenantId");
+  if (tenantId) {
+    where.tenantId = tenantId;
+  }
+
   // Upcoming events only (start date in future)
   const upcomingOnly = searchParams.get("upcoming");
   if (upcomingOnly === "true") {

@@ -248,10 +248,10 @@ export function mergeTenantConfig(partial: Partial<TenantConfig>): TenantConfig 
     hero: { ...defaultTenantConfig.hero, ...partial.hero },
     about: { ...defaultTenantConfig.about, ...partial.about },
     gallery: {
-      images: partial.gallery?.images || defaultTenantConfig.gallery.images,
-      videos: partial.gallery?.videos || defaultTenantConfig.gallery.videos,
+      images: partial.gallery?.images || [],
+      videos: partial.gallery?.videos || [],
     },
-    testimonials: partial.testimonials || defaultTenantConfig.testimonials,
+    testimonials: partial.testimonials || [],
     footer: { ...defaultTenantConfig.footer, ...partial.footer },
     settings: { ...defaultTenantConfig.settings, ...partial.settings },
   };

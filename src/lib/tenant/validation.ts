@@ -15,6 +15,7 @@ export const tenantFormSchema = z.object({
   tagline: z.string().optional().nullable(),
   logo: z.string().optional().nullable(),
   favicon: z.string().optional().nullable(),
+  secondaryLogo: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
 
   // Theme
@@ -31,6 +32,8 @@ export const tenantFormSchema = z.object({
     testimonials: z.boolean().optional(),
     about: z.boolean().optional(),
     contact: z.boolean().optional(),
+    faq: z.boolean().optional(),
+    ongoingResearch: z.boolean().optional(),
     moduleSpeakers: z.boolean().optional(),
     moduleSponsors: z.boolean().optional(),
     moduleCertificates: z.boolean().optional(),
@@ -81,6 +84,30 @@ export const tenantFormSchema = z.object({
     event: z.string().optional(),
   })).optional().nullable(),
 
+  // Yearly Stats
+  yearlyStats: z.object({
+    year: z.string(),
+    events: z.string(),
+    attendees: z.string(),
+    speakers: z.string(),
+  }).optional().nullable(),
+
+  // FAQs
+  faqs: z.array(z.object({
+    id: z.number(),
+    question: z.string(),
+    answer: z.string(),
+  })).optional().nullable(),
+
+  // Ongoing Research
+  researchItems: z.array(z.object({
+    id: z.number(),
+    icon: z.string(),
+    title: z.string(),
+    description: z.string(),
+    status: z.string(),
+  })).optional().nullable(),
+
   // Footer
   footerText: z.string().optional().nullable(),
   copyrightText: z.string().optional().nullable(),
@@ -93,6 +120,12 @@ export const tenantFormSchema = z.object({
   state: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
   website: z.string().url("Invalid URL").optional().nullable().or(z.literal("")),
+  mapUrl: z.string().optional().nullable(),
+  businessHours: z.object({
+    monFri: z.string(),
+    sat: z.string(),
+    sunHoliday: z.string(),
+  }).optional().nullable(),
 
   // Social
   facebook: z.string().url("Invalid URL").optional().nullable().or(z.literal("")),
