@@ -120,6 +120,7 @@ export interface TenantAboutConfig {
   title?: string;
   description?: string;
   features?: AboutFeature[];
+  images?: string[];
 }
 
 export interface TenantGalleryConfig {
@@ -205,6 +206,7 @@ export interface TenantModel {
   aboutTitle: string | null;
   aboutDescription: string | null;
   aboutFeatures: unknown | null; // JSON
+  aboutImages: unknown | null; // JSON
   galleryImages: unknown | null; // JSON
   galleryVideos: unknown | null; // JSON
   testimonials: unknown | null; // JSON
@@ -281,6 +283,7 @@ export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
       title: tenant.aboutTitle || undefined,
       description: tenant.aboutDescription || undefined,
       features: (tenant.aboutFeatures as AboutFeature[]) || undefined,
+      images: (tenant.aboutImages as string[]) || undefined,
     },
 
     gallery: {

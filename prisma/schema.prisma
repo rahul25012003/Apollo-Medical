@@ -135,6 +135,7 @@ model Tenant {
   aboutTitle        String?
   aboutDescription  String?  @db.Text
   aboutFeatures     Json?              // Array of features [{icon, title, description}]
+  aboutImages       Json?              // Array of image URLs for about slideshow
 
   // Gallery Config
   galleryImages     Json?              // Array of images [{src, alt, category}]

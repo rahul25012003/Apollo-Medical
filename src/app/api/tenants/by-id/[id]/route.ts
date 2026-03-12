@@ -92,7 +92,7 @@ export const PUT = withErrorHandler(
       "email", "phone", "address", "city", "state", "country", "website", "mapUrl", "businessHours",
       "facebook", "twitter", "linkedin", "instagram", "youtube",
       "sections", "heroTitle", "heroSubtitle", "heroBgImage",
-      "aboutTitle", "aboutDescription", "aboutFeatures",
+      "aboutTitle", "aboutDescription", "aboutFeatures", "aboutImages",
       "galleryImages", "galleryVideos", "testimonials",
       "yearlyStats", "faqs", "researchItems",
       "footerText", "copyrightText",

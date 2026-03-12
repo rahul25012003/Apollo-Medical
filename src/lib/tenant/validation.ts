@@ -55,6 +55,7 @@ export const tenantFormSchema = z.object({
     title: z.string(),
     description: z.string(),
   })).optional().nullable(),
+  aboutImages: z.array(z.string()).optional().nullable(),
 
   // Testimonials
   testimonials: z.array(z.object({

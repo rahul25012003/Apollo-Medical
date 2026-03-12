@@ -96,50 +96,6 @@ function WaveDivider({ fill = "white", flip = false }: { fill?: string; flip?: b
 }
 
 
-function AboutSlideshow({ theme, images }: { theme: { primaryColor: string; secondaryColor: string }; images: string[] }) {
-  const [currentImage, setCurrentImage] = useState(0);
-  const aboutImages = images.length > 0 ? images : ["/uploads/general/carens-about-1.jpg", "/uploads/general/carens-about-2.jpg"];
-
-  useEffect(() => {
-    if (aboutImages.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentImage((prev) => (prev + 1) % aboutImages.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [aboutImages.length]);
-
-  return (
-    <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/4] max-w-md mx-auto">
-      {aboutImages.map((img, idx) => (
-        <img
-          key={idx}
-          src={img}
-          alt={`About image ${idx + 1}`}
-          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
-          style={{ opacity: currentImage === idx ? 1 : 0 }}
-        />
-      ))}
-      {/* Dots */}
-      {aboutImages.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-          {aboutImages.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentImage(idx)}
-              className="h-2.5 rounded-full transition-all duration-300"
-              style={{
-                width: currentImage === idx ? "2rem" : "0.625rem",
-                backgroundColor: currentImage === idx ? theme.primaryColor : "rgba(255,255,255,0.6)",
-              }}
-            />
-          ))}
-        </div>
-      )}
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent" />
-    </div>
-  );
-}
-
 function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryColor: string }; faqs: { question: string; answer: string }[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -222,12 +178,6 @@ export default function TenantHomePage() {
   const [aboutSlide, setAboutSlide] = useState(0);
 
   // About slideshow auto-rotate
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAboutSlide((prev) => (prev + 1) % 2);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Trigger animations on mount
   useEffect(() => {
@@ -308,6 +258,16 @@ export default function TenantHomePage() {
   const hasEvents = featuredEvents.length > 0;
   const hasSponsors = sponsors.length > 0;
   const hasGallery = galleryImages.length > 0 || galleryVideos.length > 0;
+
+  // About slideshow auto-rotate
+  const aboutImageCount = about.images?.length || 0;
+  useEffect(() => {
+    if (aboutImageCount <= 1) return;
+    const interval = setInterval(() => {
+      setAboutSlide((prev) => (prev + 1) % aboutImageCount);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [aboutImageCount]);
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -1138,8 +1098,9 @@ export default function TenantHomePage() {
             {/* Two-column: Slideshow + Text */}
             <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
               {/* Image Slideshow */}
+              {about.images && about.images.length > 0 && (
               <div className="relative rounded-2xl overflow-hidden shadow-2xl" style={{ minHeight: "400px" }}>
-                {["/uploads/general/carens-about-1.jpg", "/uploads/general/carens-about-2.jpg"].map((img, idx) => (
+                {about.images.map((img: string, idx: number) => (
                   <img
                     key={idx}
                     src={img}
@@ -1148,8 +1109,9 @@ export default function TenantHomePage() {
                     style={{ opacity: aboutSlide === idx ? 1 : 0 }}
                   />
                 ))}
+                {about.images.length > 1 && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                  {[0, 1].map((idx) => (
+                  {about.images.map((_: string, idx: number) => (
                     <button
                       key={idx}
                       onClick={() => setAboutSlide(idx)}
@@ -1161,8 +1123,10 @@ export default function TenantHomePage() {
                     />
                   ))}
                 </div>
+                )}
                 <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent" />
               </div>
+              )}
 
               {/* Text Content */}
               {about.description && (

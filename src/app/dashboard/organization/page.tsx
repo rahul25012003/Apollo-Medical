@@ -65,6 +65,7 @@ export default function OrganizationPage() {
                         aboutTitle: t.aboutTitle || "",
                         aboutDescription: t.aboutDescription || "",
                         aboutFeatures: t.aboutFeatures || null,
+                        aboutImages: t.aboutImages || null,
                         galleryImages: t.galleryImages || null,
                         galleryVideos: t.galleryVideos || null,
                         testimonials: t.testimonials || null,

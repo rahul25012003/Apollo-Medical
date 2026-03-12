@@ -115,6 +115,7 @@ const defaultFormData: TenantFormData = {
     aboutTitle: "",
     aboutDescription: "",
     aboutFeatures: null,
+    aboutImages: null as string[] | null,
     galleryImages: null,
     galleryVideos: null,
     testimonials: null,
@@ -186,6 +187,11 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
     const [faviconInputMode, setFaviconInputMode] = useState<"upload" | "url">("upload");
     const [secondaryLogoUploading, setSecondaryLogoUploading] = useState(false);
     const [secondaryLogoInputMode, setSecondaryLogoInputMode] = useState<"upload" | "url">("upload");
+
+    // Hero BG & About Images upload state
+    const [heroBgUploading, setHeroBgUploading] = useState(false);
+    const [heroBgInputMode, setHeroBgInputMode] = useState<"upload" | "url">("upload");
+    const [aboutImageUploading, setAboutImageUploading] = useState(false);
 
     const { alert, AlertDialog } = useAlertDialog();
 
@@ -270,7 +276,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
         if (!file) return;
         try {
             setLogoUploading(true);
-            const res = await uploadFile(file, "general");
+            const res = await uploadFile(file, `${tenantFolder}/logos`);
             if (res.success && res.data) {
                 updateField("logo", res.data.url);
             } else {
@@ -288,7 +294,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
         if (!file) return;
         try {
             setFaviconUploading(true);
-            const res = await uploadFile(file, "general");
+            const res = await uploadFile(file, `${tenantFolder}/logos`);
             if (res.success && res.data) {
                 updateField("favicon", res.data.url);
             } else {
@@ -307,7 +313,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
         if (!file) return;
         try {
             setSecondaryLogoUploading(true);
-            const res = await uploadFile(file, "general");
+            const res = await uploadFile(file, `${tenantFolder}/logos`);
             if (res.success && res.data) {
                 updateField("secondaryLogo", res.data.url);
             } else {
@@ -319,6 +325,53 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
             setSecondaryLogoUploading(false);
             e.target.value = "";
         }
+    };
+
+    // Tenant-specific folder for uploads
+    const tenantFolder = `tenants/${formData.slug}`;
+
+    const handleHeroBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setHeroBgUploading(true);
+            const res = await uploadFile(file, `${tenantFolder}/hero`);
+            if (res.success && res.data) {
+                updateField("heroBgImage", res.data.url);
+            } else {
+                alert({ title: "Upload failed", description: res.error?.message || "Could not upload background image", variant: "error" });
+            }
+        } catch {
+            alert({ title: "Upload failed", description: "An unexpected error occurred", variant: "error" });
+        } finally {
+            setHeroBgUploading(false);
+            e.target.value = "";
+        }
+    };
+
+    const handleAboutImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setAboutImageUploading(true);
+            const res = await uploadFile(file, `${tenantFolder}/about`);
+            if (res.success && res.data) {
+                const current = (formData.aboutImages as string[]) || [];
+                updateField("aboutImages", [...current, res.data.url] as any);
+            } else {
+                alert({ title: "Upload failed", description: res.error?.message || "Could not upload image", variant: "error" });
+            }
+        } catch {
+            alert({ title: "Upload failed", description: "An unexpected error occurred", variant: "error" });
+        } finally {
+            setAboutImageUploading(false);
+            e.target.value = "";
+        }
+    };
+
+    const removeAboutImage = (index: number) => {
+        const current = (formData.aboutImages as string[]) || [];
+        updateField("aboutImages", current.filter((_, i) => i !== index) as any);
     };
 
     const openAddImage = () => {
@@ -1166,13 +1219,33 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="heroBgImage">Background Image URL</Label>
-                                <Input
-                                    id="heroBgImage"
-                                    placeholder="https://example.com/hero-bg.jpg"
-                                    value={formData.heroBgImage || ""}
-                                    onChange={(e) => updateField("heroBgImage", e.target.value)}
-                                />
+                                <div className="flex items-center justify-between">
+                                    <Label>Hero Background Image</Label>
+                                    <div className="flex items-center gap-1 text-xs">
+                                        <button type="button" onClick={() => setHeroBgInputMode("upload")} className={`px-2 py-1 rounded ${heroBgInputMode === "upload" ? "bg-primary text-white" : "bg-muted"}`}>Upload</button>
+                                        <button type="button" onClick={() => setHeroBgInputMode("url")} className={`px-2 py-1 rounded ${heroBgInputMode === "url" ? "bg-primary text-white" : "bg-muted"}`}>URL</button>
+                                    </div>
+                                </div>
+                                {formData.heroBgImage && (
+                                    <div className="relative w-full h-32 rounded-lg overflow-hidden border">
+                                        <img src={formData.heroBgImage} alt="Hero BG" className="w-full h-full object-cover" />
+                                        <button type="button" onClick={() => updateField("heroBgImage", "")} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600">×</button>
+                                    </div>
+                                )}
+                                {heroBgInputMode === "upload" ? (
+                                    <div>
+                                        <input id="herobg-upload" type="file" accept="image/*" className="hidden" onChange={handleHeroBgUpload} disabled={heroBgUploading} />
+                                        <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById("herobg-upload")?.click()} disabled={heroBgUploading}>
+                                            {heroBgUploading ? "Uploading..." : "Upload Background Image"}
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Input
+                                        placeholder="https://example.com/hero-bg.jpg"
+                                        value={formData.heroBgImage || ""}
+                                        onChange={(e) => updateField("heroBgImage", e.target.value)}
+                                    />
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -1247,6 +1320,27 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                     onChange={(e) => updateField("aboutDescription", e.target.value)}
                                     rows={4}
                                 />
+                                <p className="text-xs text-muted-foreground">Separate paragraphs with a blank line. Use &quot;Heading: text&quot; format for sub-sections.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>About Slideshow Images</Label>
+                                <p className="text-xs text-muted-foreground">Images shown in the slideshow beside the about text on the homepage.</p>
+                                {((formData.aboutImages as string[]) || []).length > 0 && (
+                                    <div className="flex flex-wrap gap-3">
+                                        {((formData.aboutImages as string[]) || []).map((img, idx) => (
+                                            <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border">
+                                                <img src={img} alt={`About ${idx + 1}`} className="w-full h-full object-cover" />
+                                                <button type="button" onClick={() => removeAboutImage(idx)} className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">×</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div>
+                                    <input id="about-img-upload" type="file" accept="image/*" className="hidden" onChange={handleAboutImageUpload} disabled={aboutImageUploading} />
+                                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById("about-img-upload")?.click()} disabled={aboutImageUploading}>
+                                        {aboutImageUploading ? "Uploading..." : "Add Image"}
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
