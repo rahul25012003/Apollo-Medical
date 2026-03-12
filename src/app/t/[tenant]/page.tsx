@@ -96,6 +96,50 @@ function WaveDivider({ fill = "white", flip = false }: { fill?: string; flip?: b
 }
 
 
+function AboutSlideshow({ theme, images }: { theme: { primaryColor: string; secondaryColor: string }; images: string[] }) {
+  const [currentImage, setCurrentImage] = useState(0);
+  const aboutImages = images.length > 0 ? images : ["/uploads/general/carens-about-1.jpg", "/uploads/general/carens-about-2.jpg"];
+
+  useEffect(() => {
+    if (aboutImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % aboutImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [aboutImages.length]);
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/4] max-w-md mx-auto">
+      {aboutImages.map((img, idx) => (
+        <img
+          key={idx}
+          src={img}
+          alt={`About image ${idx + 1}`}
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+          style={{ opacity: currentImage === idx ? 1 : 0 }}
+        />
+      ))}
+      {/* Dots */}
+      {aboutImages.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {aboutImages.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentImage(idx)}
+              className="h-2.5 rounded-full transition-all duration-300"
+              style={{
+                width: currentImage === idx ? "2rem" : "0.625rem",
+                backgroundColor: currentImage === idx ? theme.primaryColor : "rgba(255,255,255,0.6)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent" />
+    </div>
+  );
+}
+
 function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryColor: string }; faqs: { question: string; answer: string }[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -175,6 +219,15 @@ export default function TenantHomePage() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [testimonialSlide, setTestimonialSlide] = useState(0);
+  const [aboutSlide, setAboutSlide] = useState(0);
+
+  // About slideshow auto-rotate
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAboutSlide((prev) => (prev + 1) % 2);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Trigger animations on mount
   useEffect(() => {
@@ -294,29 +347,14 @@ export default function TenantHomePage() {
       <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-xl shadow-sm">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex h-16 lg:h-20 items-center justify-between">
-            <Link href="/" className="flex items-center gap-3 group">
-              {branding.logo ? (
-                <Image
-                  src={branding.logo}
-                  alt={branding.name}
-                  width={48}
-                  height={48}
-                  className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl object-contain transition-transform group-hover:scale-110"
-                />
-              ) : (
-                <div
-                  className="h-10 w-10 lg:h-12 lg:w-12 rounded-2xl flex items-center justify-center shadow-lg transition-all group-hover:shadow-xl group-hover:scale-105"
-                  style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
-                >
-                  <GraduationCap className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
-                </div>
-              )}
-              <div className="hidden sm:block">
-                <h1 className="font-bold text-lg lg:text-xl leading-none tracking-tight">{branding.name}</h1>
-                {branding.tagline && (
-                  <p className="text-xs text-muted-foreground">{branding.tagline}</p>
-                )}
+            <Link href="/" className="flex items-center gap-2 group">
+              <div
+                className="h-8 w-8 rounded-xl flex items-center justify-center shadow-md"
+                style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+              >
+                <GraduationCap className="h-4 w-4 text-white" />
               </div>
+              <span className="font-bold text-base lg:text-lg tracking-tight">{branding.name}</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-8">
@@ -331,15 +369,6 @@ export default function TenantHomePage() {
             </nav>
 
             <div className="flex items-center gap-3">
-              {branding.secondaryLogo && (
-                <Image
-                  src={branding.secondaryLogo}
-                  alt="Secondary Logo"
-                  width={44}
-                  height={44}
-                  className="h-9 w-9 lg:h-11 lg:w-11 rounded-xl object-contain"
-                />
-              )}
               <Link href={"/auth/login"}>
                 <Button
                   className="text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
@@ -365,7 +394,7 @@ export default function TenantHomePage() {
       >
         {/* Fade overlay on top of background image */}
         {hero.bgImage && (
-          <div className="absolute inset-0 bg-white/70 pointer-events-none z-0" />
+          <div className="absolute inset-0 bg-white/45 pointer-events-none z-0" />
         )}
 
       {/* Hero Section */}
@@ -379,40 +408,44 @@ export default function TenantHomePage() {
         >
           <DecorativeBackground />
 
-          {/* Floating decorative elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div
-              className="absolute top-20 left-10 w-20 h-20 rounded-full opacity-20 animate-float"
-              style={{ backgroundColor: theme.primaryColor, animationDelay: "0s" }}
-            />
-            <div
-              className="absolute top-40 right-20 w-32 h-32 rounded-full opacity-10 animate-float"
-              style={{ backgroundColor: theme.secondaryColor, animationDelay: "1s" }}
-            />
-            <div
-              className="absolute bottom-40 left-1/4 w-16 h-16 rounded-full opacity-15 animate-float"
-              style={{ backgroundColor: theme.accentColor, animationDelay: "2s" }}
-            />
-          </div>
+          {/* Subtle top/bottom gradient for depth */}
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/10 via-transparent to-black/10" />
+
+          {/* Hero Logos — pinned to edges */}
+          {branding.logo && (
+            <div className="absolute left-8 lg:left-24 top-[40%] -translate-y-1/2 z-10 h-40 w-40 md:h-52 md:w-52 lg:h-64 lg:w-64 rounded-full bg-white shadow-xl flex items-center justify-center p-8">
+              <img src={branding.logo} alt={branding.name} className="h-full w-full object-contain" />
+            </div>
+          )}
+          {branding.secondaryLogo && (
+            <div className="absolute right-8 lg:right-24 top-[40%] -translate-y-1/2 z-10 h-40 w-40 md:h-52 md:w-52 lg:h-64 lg:w-64 rounded-full bg-white shadow-xl overflow-hidden flex items-center justify-center p-5">
+              <img src={branding.secondaryLogo} alt="Secondary Logo" className="h-full w-full object-contain rounded-full" />
+            </div>
+          )}
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             <div className={cn(
               "text-center max-w-4xl mx-auto",
               isVisible ? "animate-fadeInUp" : "opacity-0"
             )}>
-              <Badge
-                className="mb-6 px-6 py-2 rounded-full text-white border-0 shadow-lg animate-scaleIn"
-                style={{ backgroundColor: theme.primaryColor }}
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                {branding.tagline || "Welcome to"}
-              </Badge>
+              <div className="mb-8 animate-scaleIn flex items-center justify-center gap-4">
+                <div className="h-px w-12 lg:w-20 bg-gray-800/40" />
+                <span className="text-sm lg:text-base font-bold tracking-[0.2em] uppercase text-gray-800">
+                  {branding.tagline || "Welcome to"}
+                </span>
+                <div className="h-px w-12 lg:w-20 bg-gray-800/40" />
+              </div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold mb-6 tracking-tight leading-tight">
-                {hero.title || "Centre for Advanced Research and Excellence (CARE) in Neuromodulation"}
-              </h1>
+              <div className="text-center mb-6">
+                <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-none text-gray-900 drop-shadow-sm">
+                  Centre for Advanced Research and Excellence
+                </h1>
+                <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-none mt-2 text-gray-900 drop-shadow-sm">
+                  (CARE) in Neuromodulation
+                </h1>
+              </div>
 
-              <p className="text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animation-delay-200 animate-fadeInUp">
+              <p className="text-lg lg:text-xl text-gray-700 font-medium max-w-2xl mx-auto mb-10 animation-delay-200 animate-fadeInUp">
                 {hero.subtitle || "Register for the upcoming CME and workshop programs."}
               </p>
 
@@ -422,7 +455,7 @@ export default function TenantHomePage() {
                     <Button
                       size="lg"
                       className="text-white rounded-full px-8 shadow-xl hover:shadow-2xl transition-all hover:scale-105 group"
-                      style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+                      style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`, boxShadow: `0 8px 30px ${theme.primaryColor}40` }}
                     >
                       Browse Events
                       <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -433,7 +466,7 @@ export default function TenantHomePage() {
                     <Button
                       size="lg"
                       className="text-white rounded-full px-8 shadow-xl hover:shadow-2xl transition-all hover:scale-105 group"
-                      style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+                      style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`, boxShadow: `0 8px 30px ${theme.primaryColor}40` }}
                     >
                       Explore Events
                       <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -444,7 +477,7 @@ export default function TenantHomePage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="rounded-full px-8 border-2 hover:bg-white/50 transition-all"
+                    className="rounded-full px-8 border-2 bg-white/80 backdrop-blur-sm hover:bg-white transition-all font-semibold"
                   >
                     Learn More
                   </Button>
@@ -453,29 +486,29 @@ export default function TenantHomePage() {
 
               {/* Yearly Stats */}
               {yearlyStats && (yearlyStats.events || yearlyStats.attendees || yearlyStats.speakers) && (
-                <div className="grid grid-cols-3 gap-8 mt-16 max-w-lg mx-auto animation-delay-600 animate-fadeInUp">
+                <div className="grid grid-cols-3 gap-4 lg:gap-6 mt-16 max-w-xl mx-auto animation-delay-600 animate-fadeInUp">
                   {yearlyStats.events && (
-                    <div className="text-center">
+                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50">
                       <p className="text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
                         {yearlyStats.events}
                       </p>
-                      <p className="text-sm text-muted-foreground">Events in {yearlyStats.year || new Date().getFullYear()}</p>
+                      <p className="text-xs lg:text-sm text-muted-foreground mt-1">Events in {yearlyStats.year || new Date().getFullYear()}</p>
                     </div>
                   )}
                   {yearlyStats.attendees && (
-                    <div className="text-center">
+                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50">
                       <p className="text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
                         {yearlyStats.attendees}
                       </p>
-                      <p className="text-sm text-muted-foreground">Attendees in {yearlyStats.year || new Date().getFullYear()}</p>
+                      <p className="text-xs lg:text-sm text-muted-foreground mt-1">Attendees in {yearlyStats.year || new Date().getFullYear()}</p>
                     </div>
                   )}
                   {yearlyStats.speakers && (
-                    <div className="text-center">
+                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50">
                       <p className="text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
                         {yearlyStats.speakers}
                       </p>
-                      <p className="text-sm text-muted-foreground">Speakers in {yearlyStats.year || new Date().getFullYear()}</p>
+                      <p className="text-xs lg:text-sm text-muted-foreground mt-1">Speakers in {yearlyStats.year || new Date().getFullYear()}</p>
                     </div>
                   )}
                 </div>
@@ -502,8 +535,8 @@ export default function TenantHomePage() {
                 <Calendar className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
                 Upcoming Events
               </Badge>
-              <h2 className="text-3xl lg:text-5xl font-bold mb-4 tracking-tight">Featured Events</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
+              <h2 className="text-3xl lg:text-5xl font-bold mb-4 tracking-tight text-gray-900">Featured Events</h2>
+              <p className="text-gray-600 max-w-2xl mx-auto font-medium">
                 Discover our upcoming conferences, workshops, and training programs
               </p>
             </div>
@@ -673,7 +706,7 @@ export default function TenantHomePage() {
                   variant="outline"
                   size="lg"
                   className="rounded-full px-8 border-2 hover:scale-105 transition-all"
-                  style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}
+                  style={{ borderColor: theme.primaryColor, color: theme.primaryColor, backgroundColor: "rgba(255,255,255,0.8)" }}
                 >
                   View All Events
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -1102,22 +1135,50 @@ export default function TenantHomePage() {
           <DecorativeBackground />
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="text-center mb-16">
-              <Badge
-                variant="outline"
-                className="mb-4 px-5 py-1.5 rounded-full"
-                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
-              >
-                <Award className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
-                About Us
-              </Badge>
-              <h2 className="text-3xl lg:text-5xl font-bold mb-4 tracking-tight">
-                {about.title || `Why Choose ${branding.name}?`}
-              </h2>
+            {/* Two-column: Slideshow + Text */}
+            <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+              {/* Image Slideshow */}
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl" style={{ minHeight: "400px" }}>
+                {["/uploads/general/carens-about-1.jpg", "/uploads/general/carens-about-2.jpg"].map((img, idx) => (
+                  <img
+                    key={idx}
+                    src={img}
+                    alt={`About image ${idx + 1}`}
+                    className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+                    style={{ opacity: aboutSlide === idx ? 1 : 0 }}
+                  />
+                ))}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                  {[0, 1].map((idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setAboutSlide(idx)}
+                      className="h-2.5 rounded-full transition-all duration-300"
+                      style={{
+                        width: aboutSlide === idx ? "2rem" : "0.625rem",
+                        backgroundColor: aboutSlide === idx ? theme.primaryColor : "rgba(255,255,255,0.6)",
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent" />
+              </div>
+
+              {/* Text Content */}
               {about.description && (
-                <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-                  {about.description}
-                </p>
+                <div className="space-y-6 text-center">
+                  {about.description.split("\n\n").map((paragraph: string, idx: number) => {
+                    const colonIdx = paragraph.indexOf(":");
+                    const heading = idx === 0 ? "About Us" : (colonIdx > 0 && colonIdx < 60) ? paragraph.slice(0, colonIdx) : null;
+                    const text = idx === 0 ? paragraph : (colonIdx > 0 && colonIdx < 60) ? paragraph.slice(colonIdx + 1).trim() : paragraph;
+                    return (
+                      <div key={idx}>
+                        {heading && <h3 className="text-xl font-bold mb-2" style={{ color: theme.primaryColor }}>{heading}</h3>}
+                        <p className="text-muted-foreground text-base leading-relaxed">{text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
 
