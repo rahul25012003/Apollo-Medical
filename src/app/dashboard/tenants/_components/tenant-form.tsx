@@ -212,7 +212,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
         if (!file) return;
         try {
             setAvatarUploading(true);
-            const res = await uploadFile(file, "avatars");
+            const res = await uploadFile(file, `${tenantFolder}/avatars`);
             if (res.success && res.data) {
                 setTestimonialForm((p) => ({ ...p, avatar: res.data!.url }));
             } else {
@@ -256,7 +256,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
         if (!file) return;
         try {
             setImageUploading(true);
-            const res = await uploadFile(file, "gallery");
+            const res = await uploadFile(file, `${tenantFolder}/gallery`);
             if (res.success && res.data) {
                 setImageForm((p) => ({ ...p, src: res.data!.url }));
             } else {
@@ -266,7 +266,40 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
             alert({ title: "Upload failed", description: "An unexpected error occurred", variant: "error" });
         } finally {
             setImageUploading(false);
-            // Reset the input so the same file can be re-selected
+            e.target.value = "";
+        }
+    };
+
+    // Bulk gallery image upload (multiple files at once)
+    const [bulkImageUploading, setBulkImageUploading] = useState(false);
+    const handleBulkImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        try {
+            setBulkImageUploading(true);
+            const list = (formData.galleryImages as GalleryImage[] | null) || [];
+            let maxId = list.length > 0 ? Math.max(...list.map((i) => i.id)) : 0;
+            const newImages: GalleryImage[] = [];
+            for (const file of Array.from(files)) {
+                const res = await uploadFile(file, `${tenantFolder}/gallery`);
+                if (res.success && res.data) {
+                    maxId++;
+                    newImages.push({
+                        id: maxId,
+                        src: res.data.url,
+                        alt: file.name.replace(/\.[^/.]+$/, ""),
+                        category: "General",
+                    });
+                }
+            }
+            if (newImages.length > 0) {
+                updateField("galleryImages", [...list, ...newImages]);
+                alert({ title: "Uploaded", description: `${newImages.length} image(s) added to gallery`, variant: "success" });
+            }
+        } catch {
+            alert({ title: "Upload failed", description: "An unexpected error occurred", variant: "error" });
+        } finally {
+            setBulkImageUploading(false);
             e.target.value = "";
         }
     };
@@ -350,16 +383,20 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
     };
 
     const handleAboutImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
         try {
             setAboutImageUploading(true);
-            const res = await uploadFile(file, `${tenantFolder}/about`);
-            if (res.success && res.data) {
-                const current = (formData.aboutImages as string[]) || [];
-                updateField("aboutImages", [...current, res.data.url] as any);
-            } else {
-                alert({ title: "Upload failed", description: res.error?.message || "Could not upload image", variant: "error" });
+            const current = (formData.aboutImages as string[]) || [];
+            const newUrls: string[] = [];
+            for (const file of Array.from(files)) {
+                const res = await uploadFile(file, `${tenantFolder}/about`);
+                if (res.success && res.data) {
+                    newUrls.push(res.data.url);
+                }
+            }
+            if (newUrls.length > 0) {
+                updateField("aboutImages", [...current, ...newUrls] as any);
             }
         } catch {
             alert({ title: "Upload failed", description: "An unexpected error occurred", variant: "error" });
@@ -522,6 +559,11 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
             }
 
             await onSubmit(cleanedData);
+            alert({
+                title: "Saved",
+                description: "Changes saved successfully!",
+                variant: "success",
+            });
         } catch (error: any) {
             alert({
                 title: "Error",
@@ -1336,7 +1378,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                     </div>
                                 )}
                                 <div>
-                                    <input id="about-img-upload" type="file" accept="image/*" className="hidden" onChange={handleAboutImageUpload} disabled={aboutImageUploading} />
+                                    <input id="about-img-upload" type="file" accept="image/*" multiple className="hidden" onChange={handleAboutImageUpload} disabled={aboutImageUploading} />
                                     <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById("about-img-upload")?.click()} disabled={aboutImageUploading}>
                                         {aboutImageUploading ? "Uploading..." : "Add Image"}
                                     </Button>
@@ -1454,7 +1496,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                                 "flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors text-sm",
                                                 avatarUploading ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/50"
                                             )}>
-                                                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
+                                                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
                                                 {avatarUploading ? (
                                                     <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
                                                 ) : (
@@ -1499,9 +1541,15 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                             <CardTitle>Gallery Images</CardTitle>
-                            <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={openAddImage}>
-                                <Plus className="w-4 h-4" /> Add Image
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => document.getElementById("bulk-gallery-upload")?.click()} disabled={bulkImageUploading}>
+                                    <Upload className="w-4 h-4" /> {bulkImageUploading ? "Uploading..." : "Upload Multiple"}
+                                </Button>
+                                <input id="bulk-gallery-upload" type="file" accept="image/*" multiple className="hidden" onChange={handleBulkImageUpload} disabled={bulkImageUploading} />
+                                <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={openAddImage}>
+                                    <Plus className="w-4 h-4" /> Add Image
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {(!formData.galleryImages || (formData.galleryImages as GalleryImage[]).length === 0) ? (
@@ -1566,7 +1614,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                         )}>
                                             <input
                                                 type="file"
-                                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                                accept="image/*"
                                                 className="hidden"
                                                 onChange={handleImageUpload}
                                                 disabled={imageUploading}

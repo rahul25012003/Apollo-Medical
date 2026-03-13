@@ -24,7 +24,7 @@ import {
     Building2,
     User,
 } from "lucide-react";
-import { eventsService, speakersService, sponsorsService } from "@/services";
+import { eventsService, speakersService, sponsorsService, uploadFile } from "@/services";
 import { toast } from "sonner";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -128,6 +128,7 @@ export default function CreateEventPage() {
     ]);
     const [newIncludeItem, setNewIncludeItem] = useState("");
     const [saving, setSaving] = useState(false);
+    const [bannerUploading, setBannerUploading] = useState(false);
     const [formData, setFormData] = useState({
         title: "",
         category: "",
@@ -143,6 +144,7 @@ export default function CreateEventPage() {
         address: "",
         city: "",
         state: "",
+        country: "India",
         mapLink: "",
         virtualLink: "",
         registrationOpensDate: new Date().toISOString().split('T')[0], // Default to today
@@ -166,13 +168,34 @@ export default function CreateEventPage() {
         status: "draft",
         isFeatured: false,
         allowComments: false,
+        organizer: "",
         contactEmail: "",
         contactPhone: "",
         website: "",
+        bannerImage: "",
     });
 
     const updateFormData = (field: string, value: string | boolean) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setBannerUploading(true);
+            const res = await uploadFile(file, "events");
+            if (res.success && res.data) {
+                updateFormData("bannerImage", res.data.url);
+                toast.success("Banner image uploaded successfully");
+            } else {
+                toast.error("Failed to upload banner image");
+            }
+        } catch {
+            toast.error("Error uploading banner image");
+        } finally {
+            setBannerUploading(false);
+        }
     };
 
     // Fetch existing speakers and sponsors
@@ -332,10 +355,10 @@ export default function CreateEventPage() {
                 endDate: formData.endDate,
                 startTime: formData.startTime,
                 endTime: formData.endTime,
-                registrationDeadline: "",
+                registrationDeadline: formData.registrationDeadline,
                 location: formData.venue,
                 capacity: totalSlots,
-                organizer: "",
+                organizer: formData.organizer,
                 contactEmail: formData.contactEmail,
                 contactPhone: formData.contactPhone,
                 price: slotCategories[0]?.price || 0,
@@ -365,6 +388,7 @@ export default function CreateEventPage() {
                 address: formData.address || undefined,
                 city: formData.city || undefined,
                 state: formData.state || undefined,
+                country: formData.country || undefined,
                 mapLink: formData.mapLink || undefined,
                 virtualLink: formData.virtualLink || undefined,
                 isVirtual: !!formData.virtualLink,
@@ -380,10 +404,12 @@ export default function CreateEventPage() {
                 cmeCoordinatorName: formData.cmeEnabled && formData.cmeCoordinatorName ? formData.cmeCoordinatorName : undefined,
                 cmeCoordinatorEmail: formData.cmeEnabled && formData.cmeCoordinatorEmail ? formData.cmeCoordinatorEmail : undefined,
                 cmeCoordinatorDesignation: formData.cmeEnabled && formData.cmeCoordinatorDesignation ? formData.cmeCoordinatorDesignation : undefined,
+                organizer: formData.organizer || undefined,
                 contactEmail: formData.contactEmail || undefined,
                 contactPhone: formData.contactPhone || undefined,
                 website: formData.website || undefined,
                 includes: includes,
+                bannerImage: formData.bannerImage || undefined,
                 isPublished: publish,
                 isFeatured: formData.isFeatured,
                 signatory1Name: formData.signatory1Name || undefined,
@@ -509,9 +535,7 @@ export default function CreateEventPage() {
                         sponsorData.website = website;
                     }
 
-                    console.log("Creating sponsor with data:", sponsorData);
                     const sponsorRes = await sponsorsService.create(sponsorData);
-                    console.log("Sponsor create response:", sponsorRes);
 
                     if (sponsorRes.success && sponsorRes.data) {
                         const newSponsor = sponsorRes.data;
@@ -767,7 +791,8 @@ export default function CreateEventPage() {
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="flex gap-2">
-                                            <Input
+                                            <input
+                                                type="text"
                                                 value={newIncludeItem}
                                                 onChange={(e) => setNewIncludeItem(e.target.value)}
                                                 placeholder="e.g., Lunch and refreshments"
@@ -777,14 +802,21 @@ export default function CreateEventPage() {
                                                         addIncludeItem();
                                                     }
                                                 }}
+                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                             />
-                                            <Button
+                                            <button
                                                 type="button"
-                                                onClick={addIncludeItem}
+                                                onClick={() => {
+                                                    if (newIncludeItem.trim() && !includes.includes(newIncludeItem.trim())) {
+                                                        setIncludes([...includes, newIncludeItem.trim()]);
+                                                        setNewIncludeItem("");
+                                                    }
+                                                }}
                                                 disabled={!newIncludeItem.trim()}
+                                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 disabled:pointer-events-none disabled:opacity-50"
                                             >
                                                 <Plus className="h-4 w-4" />
-                                            </Button>
+                                            </button>
                                         </div>
 
                                         {includes.length > 0 ? (
@@ -922,7 +954,7 @@ export default function CreateEventPage() {
                                             />
                                         </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                             <div className="space-y-2">
                                                 <Label htmlFor="city">City</Label>
                                                 <Input
@@ -939,6 +971,15 @@ export default function CreateEventPage() {
                                                     value={formData.state}
                                                     onChange={(e) => updateFormData("state", e.target.value)}
                                                     placeholder="e.g., Maharashtra"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="country">Country</Label>
+                                                <Input
+                                                    id="country"
+                                                    value={formData.country}
+                                                    onChange={(e) => updateFormData("country", e.target.value)}
+                                                    placeholder="e.g., India"
                                                 />
                                             </div>
                                         </div>
@@ -980,20 +1021,58 @@ export default function CreateEventPage() {
                                             Event Banner
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent>
-                                        <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                                                    <Image className="h-6 w-6 text-muted-foreground" />
+                                    <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="bannerUploadTop">Upload Banner Image</Label>
+                                            <label
+                                                htmlFor="bannerUploadTop"
+                                                className="block border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                                            >
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                                        <Image className="h-6 w-6 text-muted-foreground" />
+                                                    </div>
+                                                    <p className="text-sm font-medium">
+                                                        {bannerUploading ? "Uploading..." : "Click to upload"}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Recommended: 1200x630px, PNG or JPG
+                                                    </p>
                                                 </div>
-                                                <p className="text-sm font-medium">
-                                                    Upload Banner Image
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Recommended: 1200x630px, PNG or JPG
-                                                </p>
-                                            </div>
+                                            </label>
+                                            <input
+                                                id="bannerUploadTop"
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                                onChange={handleBannerUpload}
+                                                disabled={bannerUploading}
+                                                className="hidden"
+                                            />
                                         </div>
+                                        {formData.bannerImage && (
+                                            <div className="space-y-2">
+                                                <div className="rounded-lg overflow-hidden border">
+                                                    <img
+                                                        src={formData.bannerImage}
+                                                        alt="Banner preview"
+                                                        className="w-full h-32 object-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).style.display = 'none';
+                                                        }}
+                                                    />
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => updateFormData("bannerImage", "")}
+                                                    className="gap-1 text-destructive"
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                    Remove
+                                                </Button>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
 
@@ -1046,7 +1125,6 @@ export default function CreateEventPage() {
                                                     Tips for Success
                                                 </p>
                                                 <ul className="text-xs text-muted-foreground space-y-1">
-                                                    <li>• Add a compelling banner image</li>
                                                     <li>• Write detailed descriptions</li>
                                                     <li>• Set early bird pricing</li>
                                                     <li>• Add speaker profiles</li>
@@ -2305,18 +2383,42 @@ export default function CreateEventPage() {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
+                                        <Label>Organizer Name</Label>
+                                        <Input
+                                            placeholder="Department of Medicine"
+                                            value={formData.organizer}
+                                            onChange={(e) => updateFormData("organizer", e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
                                         <Label>Contact Email</Label>
-                                        <Input type="email" placeholder="events@medicalcollege.edu" />
+                                        <Input
+                                            type="email"
+                                            placeholder="events@medicalcollege.edu"
+                                            value={formData.contactEmail}
+                                            onChange={(e) => updateFormData("contactEmail", e.target.value)}
+                                        />
                                     </div>
 
                                     <div className="space-y-2">
                                         <Label>Contact Phone</Label>
-                                        <Input type="tel" placeholder="+91 98765 43210" />
+                                        <Input
+                                            type="tel"
+                                            placeholder="+91 98765 43210"
+                                            value={formData.contactPhone}
+                                            onChange={(e) => updateFormData("contactPhone", e.target.value)}
+                                        />
                                     </div>
 
                                     <div className="space-y-2">
                                         <Label>Event Website</Label>
-                                        <Input type="url" placeholder="https://event.medicalcollege.edu" />
+                                        <Input
+                                            type="url"
+                                            placeholder="https://event.medicalcollege.edu"
+                                            value={formData.website}
+                                            onChange={(e) => updateFormData("website", e.target.value)}
+                                        />
                                     </div>
                                 </CardContent>
                             </Card>

@@ -47,8 +47,65 @@ const roleRoutes: Record<string, string[]> = {
 // Routes that are exceptions to role-based access (accessible by any authenticated user)
 const roleExceptions = ["/api/users/me", "/api/users/me/registrations", "/api/users/me/certificates"];
 
+// ---------------------------------------------------------------------------
+// CORS helper: compute allowed origin and attach headers to any response
+// ---------------------------------------------------------------------------
+function getCorsOrigin(request: NextRequest): string {
+  const origin = request.headers.get("origin");
+  const host = request.headers.get("host");
+  if (!origin || !host) return "";
+  const hostWithoutPort = host.split(":")[0];
+  const allowed =
+    origin === `https://${host}` ||
+    origin === `http://${host}` ||
+    origin === `https://${hostWithoutPort}` ||
+    origin === `http://${hostWithoutPort}`;
+  return allowed ? origin : "";
+}
+
+function withSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  return response;
+}
+
+function withCorsHeaders(response: NextResponse, request: NextRequest): NextResponse {
+  withSecurityHeaders(response);
+  if (!request.nextUrl.pathname.startsWith("/api/")) return response;
+  const allowedOrigin = getCorsOrigin(request);
+  if (allowedOrigin) {
+    response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+  }
+  response.headers.set("Vary", "Origin");
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ---------------------------------------------------------------------------
+  // CORS preflight — respond immediately for OPTIONS on API routes
+  // ---------------------------------------------------------------------------
+  if (pathname.startsWith("/api/") && request.method === "OPTIONS") {
+    const allowedOrigin = getCorsOrigin(request);
+    const preflightHeaders: Record<string, string> = {
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Max-Age": "86400",
+      "Vary": "Origin",
+    };
+    if (allowedOrigin) {
+      preflightHeaders["Access-Control-Allow-Origin"] = allowedOrigin;
+    }
+    const preflightResponse = new NextResponse(null, {
+      status: 204,
+      headers: preflightHeaders,
+    });
+    return withSecurityHeaders(preflightResponse);
+  }
 
   // ---------------------------------------------------------------------------
   // Domain-based tenant rewriting: serve /t/[slug] content at root URL
@@ -60,7 +117,7 @@ export async function middleware(request: NextRequest) {
   if (tenantSlug && pathname === "/") {
     const url = request.nextUrl.clone();
     url.pathname = `/t/${tenantSlug}`;
-    return NextResponse.rewrite(url);
+    return withCorsHeaders(NextResponse.rewrite(url), request);
   }
 
   // Check if it's a public route
@@ -69,7 +126,7 @@ export async function middleware(request: NextRequest) {
   );
 
   if (isPublicRoute) {
-    return NextResponse.next();
+    return withCorsHeaders(NextResponse.next(), request);
   }
 
   // Check if it's a protected route
@@ -78,7 +135,7 @@ export async function middleware(request: NextRequest) {
   );
 
   if (!isProtectedRoute) {
-    return NextResponse.next();
+    return withCorsHeaders(NextResponse.next(), request);
   }
 
   // Get session
@@ -87,9 +144,12 @@ export async function middleware(request: NextRequest) {
   if (!session) {
     // For API routes, return 401
     if (pathname.startsWith("/api/")) {
-      return NextResponse.json(
-        { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } },
-        { status: 401 }
+      return withCorsHeaders(
+        NextResponse.json(
+          { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } },
+          { status: 401 }
+        ),
+        request
       );
     }
 
@@ -111,9 +171,12 @@ export async function middleware(request: NextRequest) {
         if (!allowedRoles.includes(session.user.role)) {
           // For API routes, return 403
           if (pathname.startsWith("/api/")) {
-            return NextResponse.json(
-              { success: false, error: { code: "FORBIDDEN", message: "Access denied" } },
-              { status: 403 }
+            return withCorsHeaders(
+              NextResponse.json(
+                { success: false, error: { code: "FORBIDDEN", message: "Access denied" } },
+                { status: 403 }
+              ),
+              request
             );
           }
 
@@ -124,7 +187,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  return withCorsHeaders(NextResponse.next(), request);
 }
 
 export const config = {

@@ -9,9 +9,18 @@ import {
 } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import { sendEmail, registrationConfirmationHtml } from "@/lib/notifications";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+import { createNotification } from "@/lib/notifications-db";
+
+const rateLimiter = createRateLimiter("registrations-public", { maxRequests: 10, windowSeconds: 60 });
 
 // POST /api/registrations/public - Public registration (no auth required, but links user if logged in)
 export const POST = withErrorHandler(async (request: NextRequest) => {
+  const rl = rateLimiter.check(getClientIp(request));
+  if (!rl.allowed) {
+    return Errors.badRequest(rl.message);
+  }
+
   // Optionally get session to link logged-in user
   const session = await auth().catch(() => null);
 
@@ -35,6 +44,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     select: {
       id: true,
       title: true,
+      tenantId: true,
       capacity: true,
       isRegistrationOpen: true,
       registrationDeadline: true,
@@ -191,6 +201,15 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       status,
     }),
   }).catch((err) => console.error("Registration email error:", err));
+
+  // Create in-app notification for admins (non-blocking)
+  createNotification({
+    type: "NEW_REGISTRATION",
+    title: "New Registration",
+    message: `${registration.name} registered for "${registration.event.title}".`,
+    link: `/dashboard/registrations`,
+    tenantId: event.tenantId,
+  });
 
   return successResponse(registration, "Registration successful", 201);
 });

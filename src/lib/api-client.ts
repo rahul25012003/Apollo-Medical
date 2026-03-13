@@ -147,6 +147,17 @@ export async function uploadFile(
       credentials: "include",
     });
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      return {
+        success: false,
+        error: {
+          code: "UPLOAD_ERROR",
+          message: errorData?.error?.message || `Upload failed with status ${response.status}`,
+        },
+      };
+    }
+
     return await response.json();
   } catch (error) {
     return {

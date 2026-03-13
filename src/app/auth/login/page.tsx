@@ -11,15 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Mail,
     Lock,
     GraduationCap,
     ArrowRight,
     ArrowLeft,
-    Shield,
-    Smartphone,
     Loader2,
     CheckCircle2,
     Info
@@ -47,7 +44,7 @@ export default function LoginPage() {
 
     const [isLoading, setIsLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const [activeTab, setActiveTab] = React.useState("admin");
+    const [loginMode, setLoginMode] = React.useState<"delegate" | "admin">("delegate");
     const [tenantBranding, setTenantBranding] = React.useState<TenantBranding | null>(null);
 
     // Fetch tenant branding from query param or hostname (domain-based lookup)
@@ -85,7 +82,7 @@ export default function LoginPage() {
     const btnClass = tenantBranding ? "w-full text-white" : "w-full gradient-medical text-white";
 
     // OTP states
-    const [phone, setPhone] = React.useState("");
+    const [delegateEmail, setDelegateEmail] = React.useState("");
     const [otp, setOtp] = React.useState("");
     const [otpSent, setOtpSent] = React.useState(false);
 
@@ -127,31 +124,72 @@ export default function LoginPage() {
     };
 
     const handleSendOtp = async () => {
-        if (!phone || phone.length < 10) {
-            setError("Please enter a valid mobile number");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!delegateEmail || !emailRegex.test(delegateEmail)) {
+            setError("Please enter a valid email address");
             return;
         }
         setIsLoading(true);
         setError(null);
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        setOtpSent(true);
-        setIsLoading(false);
+        try {
+            const res = await fetch("/api/auth/otp/send", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: delegateEmail, purpose: "LOGIN" }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data.error || data.message || "Failed to send OTP");
+                setIsLoading(false);
+                return;
+            }
+            setOtpSent(true);
+        } catch (err) {
+            console.error("Send OTP error:", err);
+            setError("An error occurred while sending OTP. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleVerifyOtp = async () => {
-        if (!otp || otp.length < 4) {
-            setError("Please enter a valid OTP");
+        if (!otp || otp.length < 6) {
+            setError("Please enter a valid 6-digit OTP");
             return;
         }
         setIsLoading(true);
         setError(null);
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        setError("OTP login coming soon. Please use admin login.");
-        setIsLoading(false);
+        try {
+            const result = await signIn("otp-login", {
+                email: delegateEmail,
+                code: otp,
+                redirect: false,
+            });
+
+            if (result?.error) {
+                setError(result.error === "CredentialsSignin"
+                    ? "Invalid or expired OTP"
+                    : result.error);
+                setIsLoading(false);
+                return;
+            }
+
+            if (result?.ok) {
+                router.push("/dashboard");
+                router.refresh();
+            } else {
+                setError("Login failed. Please try again.");
+                setIsLoading(false);
+            }
+        } catch (err) {
+            console.error("Verify OTP error:", err);
+            setError("An error occurred. Please try again.");
+            setIsLoading(false);
+        }
     };
 
     const resetOtpState = () => {
-        setPhone("");
+        setDelegateEmail("");
         setOtp("");
         setOtpSent(false);
         setError(null);
@@ -162,7 +200,7 @@ export default function LoginPage() {
             {/* Header */}
             <header className="p-4 lg:p-6">
                 <Link
-                    href="/"
+                    href={tenantSlug ? `/t/${tenantSlug}` : "/"}
                     className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <ArrowLeft className="h-4 w-4" />
@@ -187,56 +225,46 @@ export default function LoginPage() {
                                 <GraduationCap className="w-8 h-8 text-white" />
                             </div>
                         )}
-                        <h1 className="text-2xl font-bold">Sign in to {tenantBranding?.name || "ICMS"}</h1>
-                        <p className="text-muted-foreground mt-1 text-sm">Welcome back! Please enter your details.</p>
+                        <h1 className="text-2xl font-bold">
+                            {loginMode === "delegate" ? "Delegate Login" : "Admin Login"}
+                        </h1>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                            {loginMode === "delegate"
+                                ? "Enter your email address to continue."
+                                : "Sign in with your admin credentials."}
+                        </p>
                     </div>
 
                     {/* Card */}
                     <div className="bg-white rounded-2xl shadow-xl shadow-black/5 border p-6">
-                        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setError(null); resetOtpState(); }}>
-                            <TabsList className="grid w-full grid-cols-2 h-11 mb-6 bg-muted/60">
-                                <TabsTrigger value="public" className="text-sm gap-1.5 rounded-lg">
-                                    <Smartphone className="w-4 h-4" />
-                                    Public
-                                </TabsTrigger>
-                                <TabsTrigger value="admin" className="text-sm gap-1.5 rounded-lg">
-                                    <Shield className="w-4 h-4" />
-                                    Admin
-                                </TabsTrigger>
-                            </TabsList>
+                        {/* Error Alert */}
+                        {error && (
+                            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm flex items-start gap-2">
+                                <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                {error}
+                            </div>
+                        )}
 
-                            {/* Error Alert */}
-                            {error && (
-                                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm flex items-start gap-2">
-                                    <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    {error}
-                                </div>
-                            )}
-
-                            {/* Public OTP Login */}
-                            <TabsContent value="public" className="mt-0 space-y-4">
+                        {loginMode === "delegate" ? (
+                            /* Delegate OTP Login */
+                            <div className="space-y-4">
                                 {!otpSent ? (
                                     <>
                                         <div className="space-y-1.5">
-                                            <Label className="text-sm">Mobile Number</Label>
-                                            <div className="flex gap-2">
-                                                <span className="inline-flex items-center px-3 rounded-lg border bg-muted/50 text-sm font-medium text-muted-foreground">
-                                                    +91
-                                                </span>
-                                                <Input
-                                                    type="tel"
-                                                    placeholder="9876543210"
-                                                    value={phone}
-                                                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                                                    className="flex-1"
-                                                />
-                                            </div>
+                                            <Label className="text-sm">Email Address</Label>
+                                            <Input
+                                                type="email"
+                                                placeholder="you@example.com"
+                                                value={delegateEmail}
+                                                onChange={(e) => setDelegateEmail(e.target.value)}
+                                                icon={<Mail className="w-4 h-4" />}
+                                            />
                                         </div>
                                         <Button
                                             className={btnClass}
                                             style={tenantGradient}
                                             onClick={handleSendOtp}
-                                            disabled={phone.length < 10 || isLoading}
+                                            disabled={!delegateEmail || isLoading}
                                         >
                                             {isLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                                             Send OTP
@@ -248,7 +276,7 @@ export default function LoginPage() {
                                             <CheckCircle2 className="w-5 h-5 text-green-600" />
                                             <div className="text-sm">
                                                 <p className="font-medium text-green-700">OTP Sent</p>
-                                                <p className="text-green-600">+91 {phone}</p>
+                                                <p className="text-green-600">{delegateEmail}</p>
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
@@ -266,7 +294,7 @@ export default function LoginPage() {
                                             className={btnClass}
                                             style={tenantGradient}
                                             onClick={handleVerifyOtp}
-                                            disabled={otp.length < 4 || isLoading}
+                                            disabled={otp.length < 6 || isLoading}
                                         >
                                             {isLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                                             Verify & Login
@@ -276,14 +304,25 @@ export default function LoginPage() {
                                             className="w-full text-sm text-muted-foreground hover:text-foreground"
                                             onClick={resetOtpState}
                                         >
-                                            ← Change number
+                                            ← Change email
                                         </button>
                                     </>
                                 )}
-                            </TabsContent>
 
-                            {/* Admin Email Login */}
-                            <TabsContent value="admin" className="mt-0 space-y-4">
+                                {/* Admin link - small, below */}
+                                <div className="pt-2 text-center">
+                                    <button
+                                        type="button"
+                                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                        onClick={() => { setLoginMode("admin"); setError(null); resetOtpState(); }}
+                                    >
+                                        Admin Login →
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            /* Admin Email Login */
+                            <div className="space-y-4">
                                 <form onSubmit={handleSubmit(onAdminSubmit)} className="space-y-4">
                                     <div className="space-y-1.5">
                                         <Label htmlFor="email" className="text-sm">Email</Label>
@@ -327,64 +366,24 @@ export default function LoginPage() {
                                     </Button>
                                 </form>
 
-                                {/* Demo Credentials */}
-                                <div className="mt-4 p-3 rounded-lg bg-amber-50/80 border border-amber-100">
-                                    <p className="text-xs font-medium text-amber-800 mb-2 flex items-center gap-1.5">
-                                        <Info className="w-3.5 h-3.5" />
-                                        Demo Credentials {tenantBranding ? `(${tenantBranding.name})` : ""}
-                                    </p>
-                                    <div className="text-xs space-y-1.5 text-amber-700">
-                                        {!tenantSlug && (
-                                            <div className="flex justify-between gap-2">
-                                                <span className="text-amber-600">Super Admin:</span>
-                                                <code className="font-medium">admin@icms.com / Admin@123</code>
-                                            </div>
-                                        )}
-                                        <div className="flex justify-between gap-2">
-                                            <span className="text-amber-600">Administrator:</span>
-                                            <code className="font-medium">
-                                                {tenantSlug === "carens" ? "admin@carens.com" :
-                                                    "admin@carens.com"} / Admin@123
-                                            </code>
-                                        </div>
-                                        <div className="flex justify-between gap-2">
-                                            <span className="text-amber-600">Event Mgr:</span>
-                                            <code className="font-medium">
-                                                {tenantSlug === "carens" ? "events@carens.com" :
-                                                    "events@carens.com"} / User@123
-                                            </code>
-                                        </div>
-                                        <div className="flex justify-between gap-2">
-                                            <span className="text-amber-600">Reg. Mgr:</span>
-                                            <code className="font-medium">
-                                                {tenantSlug === "carens" ? "registrations@carens.com" :
-                                                    "registrations@carens.com"} / User@123
-                                            </code>
-                                        </div>
-                                        <div className="flex justify-between gap-2">
-                                            <span className="text-amber-600">Cert. Mgr:</span>
-                                            <code className="font-medium">
-                                                {tenantSlug === "carens" ? "certificates@carens.com" :
-                                                    "certificates@carens.com"} / User@123
-                                            </code>
-                                        </div>
-                                        <div className="flex justify-between gap-2">
-                                            <span className="text-amber-600">Attendee:</span>
-                                            <code className="font-medium">
-                                                {tenantSlug === "carens" ? "attendee@carens.com" :
-                                                    "attendee@carens.com"} / User@123
-                                            </code>
-                                        </div>
-                                    </div>
+                                {/* Back to delegate login - small, below */}
+                                <div className="pt-2 text-center">
+                                    <button
+                                        type="button"
+                                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                        onClick={() => { setLoginMode("delegate"); setError(null); }}
+                                    >
+                                        ← Delegate Login
+                                    </button>
                                 </div>
-                            </TabsContent>
-                        </Tabs>
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer Link */}
                     <p className="text-center text-sm text-muted-foreground mt-6">
                         New here?{" "}
-                        <Link href="/" className="text-primary font-medium hover:underline">
+                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"} className="text-primary font-medium hover:underline">
                             Back to Home
                         </Link>
                     </p>
@@ -392,8 +391,12 @@ export default function LoginPage() {
             </main>
 
             {/* Footer */}
-            <footer className="p-4 text-center text-xs text-muted-foreground">
-                © {new Date().getFullYear()} {tenantBranding?.name || "ICMS"}
+            <footer className="p-4 flex flex-col items-center gap-1 text-xs text-muted-foreground">
+                <span>© {new Date().getFullYear()} {tenantBranding?.name || "ICMS"}</span>
+                <a href="https://summitsolutions.co.in" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity">
+                    Powered by
+                    <img src="/summit-logo.png" alt="Summit Solutions" className="h-10 inline-block" />
+                </a>
             </footer>
         </div>
     );

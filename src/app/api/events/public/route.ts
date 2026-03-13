@@ -3,14 +3,23 @@ import { prisma } from "@/lib/prisma";
 import {
   successResponse,
   paginatedResponse,
+  Errors,
   withErrorHandler,
   getPaginationParams,
   getSortParams,
 } from "@/lib/api-utils";
 import { Prisma } from "@prisma/client";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+
+const rateLimiter = createRateLimiter("events-public", { maxRequests: 60, windowSeconds: 60 });
 
 // GET /api/events/public - List published events (public access)
 export const GET = withErrorHandler(async (request: NextRequest) => {
+  const rl = rateLimiter.check(getClientIp(request));
+  if (!rl.allowed) {
+    return Errors.badRequest(rl.message);
+  }
+
   const { searchParams } = new URL(request.url);
   const { page, limit, skip } = getPaginationParams(searchParams);
   const { field: sortBy, order: sortOrder } = getSortParams(

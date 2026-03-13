@@ -122,8 +122,8 @@ export const PUT = withErrorHandler(
       });
 
       return successResponse(tenant, "Tenant updated successfully");
-    } catch (prismaError: any) {
-      console.error("Prisma update error:", prismaError?.message, "Fields sent:", Object.keys(updateData));
+    } catch (prismaError: unknown) {
+      console.error("Prisma update error for tenant:", id);
       throw prismaError;
     }
   }

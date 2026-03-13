@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+    AlertCircle,
     Camera,
     ChevronLeft,
     ChevronRight,
+    RefreshCw,
     X,
     Eye,
     ArrowLeft,
@@ -19,164 +20,50 @@ import {
     ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// Gallery images data - same as homepage but can be extended
-const galleryImages = [
-    {
-        id: 1,
-        src: "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&q=80",
-        alt: "Medical Conference Keynote",
-        category: "Conference",
-        event: "Annual Medical Summit 2024",
-    },
-    {
-        id: 2,
-        src: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80",
-        alt: "Workshop Session",
-        category: "Workshop",
-        event: "Surgical Techniques Workshop",
-    },
-    {
-        id: 3,
-        src: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&q=80",
-        alt: "Networking Event",
-        category: "Networking",
-        event: "Healthcare Leaders Meet",
-    },
-    {
-        id: 4,
-        src: "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=800&q=80",
-        alt: "Medical Equipment Exhibition",
-        category: "Exhibition",
-        event: "MedTech Expo 2024",
-    },
-    {
-        id: 5,
-        src: "https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800&q=80",
-        alt: "CME Training Session",
-        category: "Training",
-        event: "CME Credit Program",
-    },
-    {
-        id: 6,
-        src: "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800&q=80",
-        alt: "Panel Discussion",
-        category: "Conference",
-        event: "Healthcare Innovation Forum",
-    },
-    {
-        id: 7,
-        src: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&q=80",
-        alt: "Award Ceremony",
-        category: "Awards",
-        event: "Excellence in Medicine Awards",
-    },
-    {
-        id: 8,
-        src: "https://images.unsplash.com/photo-1504439468489-c8920d796a29?w=800&q=80",
-        alt: "Hands-on Workshop",
-        category: "Workshop",
-        event: "Practical Skills Training",
-    },
-    {
-        id: 9,
-        src: "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=800&q=80",
-        alt: "Medical Research Presentation",
-        category: "Conference",
-        event: "Research Symposium 2024",
-    },
-    {
-        id: 10,
-        src: "https://images.unsplash.com/photo-1581595220892-b0739db3ba8c?w=800&q=80",
-        alt: "Healthcare Technology Demo",
-        category: "Exhibition",
-        event: "Digital Health Summit",
-    },
-    {
-        id: 11,
-        src: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&q=80",
-        alt: "Medical Team Collaboration",
-        category: "Networking",
-        event: "Inter-Hospital Conference",
-    },
-    {
-        id: 12,
-        src: "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=800&q=80",
-        alt: "Certificate Distribution",
-        category: "Awards",
-        event: "CME Certification Ceremony",
-    },
-];
-
-// Gallery videos data
-const galleryVideos = [
-    {
-        id: 1,
-        thumbnail: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&q=80",
-        title: "Annual Medical Conference 2024 - Highlights",
-        category: "Conference",
-        duration: "12:45",
-        youtubeId: "dQw4w9WgXcQ", // Replace with actual YouTube IDs
-        event: "Annual Medical Summit 2024",
-    },
-    {
-        id: 2,
-        thumbnail: "https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=800&q=80",
-        title: "Surgical Techniques Workshop - Full Session",
-        category: "Workshop",
-        duration: "45:30",
-        youtubeId: "dQw4w9WgXcQ",
-        event: "Surgical Skills Training",
-    },
-    {
-        id: 3,
-        thumbnail: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&q=80",
-        title: "Healthcare Innovation Panel Discussion",
-        category: "Conference",
-        duration: "32:15",
-        youtubeId: "dQw4w9WgXcQ",
-        event: "Healthcare Innovation Forum",
-    },
-    {
-        id: 4,
-        thumbnail: "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=800&q=80",
-        title: "MedTech Expo 2024 - Event Recap",
-        category: "Exhibition",
-        duration: "8:20",
-        youtubeId: "dQw4w9WgXcQ",
-        event: "MedTech Expo 2024",
-    },
-    {
-        id: 5,
-        thumbnail: "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800&q=80",
-        title: "CME Accreditation Explained",
-        category: "Training",
-        duration: "18:45",
-        youtubeId: "dQw4w9WgXcQ",
-        event: "CME Credit Program",
-    },
-    {
-        id: 6,
-        thumbnail: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&q=80",
-        title: "Excellence in Medicine Awards Ceremony",
-        category: "Awards",
-        duration: "25:10",
-        youtubeId: "dQw4w9WgXcQ",
-        event: "Excellence Awards 2024",
-    },
-];
-
-// Get unique categories for photos and videos
-const photoCategories = ["All", ...Array.from(new Set(galleryImages.map(img => img.category)))];
-const videoCategories = ["All", ...Array.from(new Set(galleryVideos.map(vid => vid.category)))];
+import { GalleryImage, GalleryVideo } from "@/lib/tenant/types";
 
 export default function GalleryPage() {
+    const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+    const [galleryVideos, setGalleryVideos] = useState<GalleryVideo[]>([]);
     const [activeTab, setActiveTab] = useState<"photos" | "videos">("photos");
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [activeCategory, setActiveCategory] = useState("All");
     const [videoModalOpen, setVideoModalOpen] = useState(false);
-    const [selectedVideo, setSelectedVideo] = useState<typeof galleryVideos[0] | null>(null);
+    const [selectedVideo, setSelectedVideo] = useState<GalleryVideo | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch gallery data from the tenant API
+    const fetchGallery = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const res = await fetch("/api/tenants");
+            if (!res.ok) {
+                throw new Error("Failed to load gallery data");
+            }
+            const data = await res.json();
+            // Handle both single tenant object and array response
+            const tenant = Array.isArray(data) ? data[0] : data;
+            if (tenant) {
+                setGalleryImages(tenant.galleryImages || []);
+                setGalleryVideos(tenant.galleryVideos || []);
+            }
+        } catch {
+            setError("Unable to load the gallery. Please check your connection and try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchGallery();
+    }, []);
+
+    // Get unique categories for photos and videos
+    const photoCategories = ["All", ...Array.from(new Set(galleryImages.map(img => img.category)))];
+    const videoCategories = ["All", ...Array.from(new Set(galleryVideos.map(vid => vid.category)))];
 
     // Get current categories based on active tab
     const categories = activeTab === "photos" ? photoCategories : videoCategories;
@@ -216,7 +103,7 @@ export default function GalleryPage() {
     };
 
     // Video modal handlers
-    const openVideoModal = (video: typeof galleryVideos[0]) => {
+    const openVideoModal = (video: GalleryVideo) => {
         setSelectedVideo(video);
         setVideoModalOpen(true);
     };
@@ -225,6 +112,8 @@ export default function GalleryPage() {
         setVideoModalOpen(false);
         setSelectedVideo(null);
     };
+
+    const hasNoContent = galleryImages.length === 0 && galleryVideos.length === 0;
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -282,7 +171,53 @@ export default function GalleryPage() {
             {/* Gallery Content */}
             <section className="py-12 lg:py-20">
                 <div className="container mx-auto px-4 lg:px-8">
+                    {/* Loading State */}
+                    {loading && (
+                        <div className="flex flex-col items-center justify-center py-20">
+                            <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
+                            <p className="text-muted-foreground">Loading gallery...</p>
+                        </div>
+                    )}
+
+                    {/* Error State */}
+                    {!loading && error && (
+                        <div className="flex flex-col items-center justify-center py-20 text-center">
+                            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-6">
+                                <AlertCircle className="h-10 w-10 text-red-500" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-foreground mb-2">Something went wrong</h2>
+                            <p className="text-muted-foreground max-w-md mb-8">
+                                {error}
+                            </p>
+                            <Button onClick={fetchGallery} className="gap-2 rounded-full">
+                                <RefreshCw className="h-4 w-4" />
+                                Try Again
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Empty State */}
+                    {!loading && !error && hasNoContent && (
+                        <div className="flex flex-col items-center justify-center py-20 text-center">
+                            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
+                                <Camera className="h-10 w-10 text-muted-foreground" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-foreground mb-2">No gallery items yet</h2>
+                            <p className="text-muted-foreground max-w-md mb-8">
+                                Photos and videos from events will appear here once they are uploaded.
+                            </p>
+                            <Link href="/">
+                                <Button variant="outline" className="gap-2 rounded-full">
+                                    <ArrowLeft className="h-4 w-4" />
+                                    Back to Home
+                                </Button>
+                            </Link>
+                        </div>
+                    )}
+
                     {/* Tabs for Photos/Videos */}
+                    {!loading && !error && !hasNoContent && (
+                    <>
                     <div className="flex justify-center mb-8">
                         <div className="inline-flex bg-white rounded-full p-1.5 shadow-lg border">
                             <button
@@ -328,7 +263,7 @@ export default function GalleryPage() {
                                 key={category}
                                 onClick={() => setActiveCategory(category)}
                                 className={cn(
-                                    "px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 border",
+                                    "px-3 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 border",
                                     activeCategory === category
                                         ? "bg-primary text-white border-primary shadow-lg"
                                         : "bg-white text-muted-foreground border-border hover:border-primary/50 hover:text-primary"
@@ -351,7 +286,7 @@ export default function GalleryPage() {
 
                     {/* Photos Grid */}
                     {activeTab === "photos" && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                             {filteredImages.map((image, index) => (
                                 <div
                                     key={image.id}
@@ -440,6 +375,8 @@ export default function GalleryPage() {
                             ))}
                         </div>
                     )}
+                    </>
+                    )}
                 </div>
             </section>
 
@@ -457,16 +394,16 @@ export default function GalleryPage() {
 
                     {/* Navigation - Previous */}
                     <button
-                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                         onClick={(e) => { e.stopPropagation(); prevImage(); }}
                         aria-label="Previous image"
                     >
-                        <ChevronLeft className="h-6 w-6 text-white" />
+                        <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                     </button>
 
                     {/* Navigation - Next */}
                     <button
-                        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                         onClick={(e) => { e.stopPropagation(); nextImage(); }}
                         aria-label="Next image"
                     >
@@ -474,7 +411,7 @@ export default function GalleryPage() {
                     </button>
 
                     {/* Image Container */}
-                    <div className="relative max-w-5xl max-h-[85vh] mx-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative max-w-5xl max-h-[85vh] mx-2 sm:mx-4" onClick={(e) => e.stopPropagation()}>
                         <Image
                             src={filteredImages[lightboxIndex].src}
                             alt={filteredImages[lightboxIndex].alt}

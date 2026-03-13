@@ -23,6 +23,15 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     return Errors.badRequest("No file provided");
   }
 
+  // Folder-level permission check
+  const userRole = session.user.role;
+  const REGULAR_USER_ALLOWED_FOLDERS = ["general", "avatars", "events"];
+  if (userRole !== "SUPER_ADMIN" && userRole !== "ADMIN") {
+    if (!REGULAR_USER_ALLOWED_FOLDERS.includes(folder)) {
+      return Errors.forbidden("You do not have permission to upload to this folder");
+    }
+  }
+
   // Determine allowed types based on folder
   let allowedTypes = UPLOAD_CONFIG.allowedImageTypes;
   if (folder === "documents") {

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { verifyOTPSchema } from "@/lib/validations/auth";
 import {
@@ -76,14 +77,18 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     const token = crypto.randomUUID();
     const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
+    // Hash the token before storing — only the hash is persisted
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+
     await prisma.verificationToken.create({
       data: {
         identifier: email.toLowerCase(),
-        token,
+        token: tokenHash,
         expires,
       },
     });
 
+    // Return the plaintext token to the client (never stored)
     return successResponse(
       { token, message: "OTP verified. Use this token to reset your password." },
       "OTP verified successfully"

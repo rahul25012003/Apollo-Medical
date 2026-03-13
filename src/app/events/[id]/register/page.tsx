@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
     ArrowLeft,
     ArrowRight,
@@ -109,19 +109,54 @@ interface FamilyMember {
     dietaryPreference: string;
 }
 
+interface TenantBranding {
+    name: string;
+    logo: string | null;
+    primaryColor: string;
+    secondaryColor: string;
+    slug: string;
+}
+
 export default function RegisterPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const eventId = params.id as string;
+    const tenantSlug = searchParams.get("tenant");
     const [currentStep, setCurrentStep] = useState<Step>("details");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [registrationId, setRegistrationId] = useState<string | null>(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
+    const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
 
     // Event data from API
     const [eventData, setEventData] = useState<EventDisplayData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Fetch tenant branding
+    useEffect(() => {
+        if (!tenantSlug) return;
+        async function fetchTenant() {
+            try {
+                const res = await fetch(`/api/tenants/${tenantSlug}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.data) {
+                        const t = data.data;
+                        setTenantBranding({
+                            name: t.branding?.name || t.name || "ICMS",
+                            logo: t.branding?.logo || t.logo || null,
+                            primaryColor: t.theme?.primaryColor || t.primaryColor || "#0d9488",
+                            secondaryColor: t.theme?.secondaryColor || t.secondaryColor || "#0891b2",
+                            slug: tenantSlug!,
+                        });
+                    }
+                }
+            } catch { /* silently fail */ }
+        }
+        fetchTenant();
+    }, [tenantSlug]);
 
     // Check if page was opened as preview from dashboard
     useEffect(() => {
@@ -333,7 +368,6 @@ export default function RegisterPage() {
     };
 
     const handleNextStep = () => {
-        // "preferences" removed for demo
         const stepOrder: Step[] = ["category", "details", "payment", "confirmation"];
         const currentIndex = stepOrder.indexOf(currentStep);
         if (currentIndex < stepOrder.length - 1) {
@@ -342,7 +376,6 @@ export default function RegisterPage() {
     };
 
     const handlePrevStep = () => {
-        // "preferences" removed for demo
         const stepOrder: Step[] = ["category", "details", "payment", "confirmation"];
         const currentIndex = stepOrder.indexOf(currentStep);
         if (currentIndex > 0) {
@@ -397,41 +430,47 @@ export default function RegisterPage() {
         formData.institution &&
         formData.agreeTerms;
 
-    const handleDownloadReceipt = () => {
-        if (!eventData || !registrationId) return;
+    const buildReceiptHtml = () => {
+        if (!eventData || !registrationId) return "";
+        const brandName = tenantBranding?.name || "ICMS";
+        const brandColor = tenantBranding?.primaryColor || "#0d9488";
+        const brandColorDark = tenantBranding?.secondaryColor || "#0f766e";
 
-        const receiptContent = `
-<!DOCTYPE html>
+        return `<!DOCTYPE html>
 <html>
 <head>
     <title>Registration Receipt - ${eventData.title}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background: #fff; font-size: 12px; }
-        .header { text-align: center; border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 15px; }
-        .logo { font-size: 22px; font-weight: bold; color: #0d9488; }
+        .header { text-align: center; border-bottom: 2px solid ${brandColor}; padding-bottom: 12px; margin-bottom: 15px; }
+        .logo { font-size: 22px; font-weight: bold; color: ${brandColor}; }
         .subtitle { font-size: 10px; color: #666; margin-top: 2px; }
         .title { font-size: 16px; margin-top: 8px; color: #333; }
-        .receipt-id { font-size: 10px; color: #888; margin-top: 4px; }
+        .receipt-id { font-size: 10px; color: #888; margin-top: 4px; word-break: break-all; }
         .content { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .section { background: #fafafa; padding: 12px; border-radius: 6px; }
         .section.full { grid-column: 1 / -1; }
-        .section-title { font-size: 10px; color: #0d9488; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .section-title { font-size: 10px; color: ${brandColor}; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; letter-spacing: 0.5px; }
         .row { display: flex; justify-content: space-between; margin-bottom: 5px; }
         .label { color: #666; font-size: 11px; }
-        .value { font-weight: 600; color: #333; font-size: 11px; text-align: right; max-width: 60%; }
+        .value { font-weight: 600; color: #333; font-size: 11px; text-align: right; max-width: 60%; word-break: break-all; }
         .highlight { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); padding: 15px; border-radius: 8px; margin: 12px 0; border: 1px solid #99f6e4; text-align: center; }
         .amount-label { font-size: 11px; color: #666; margin-bottom: 3px; }
-        .amount { font-size: 24px; color: #0d9488; font-weight: bold; }
+        .amount { font-size: 24px; color: ${brandColor}; font-weight: bold; }
         .status { display: inline-block; padding: 3px 10px; background: #dcfce7; color: #166534; border-radius: 12px; font-size: 10px; font-weight: 600; }
         .footer { text-align: center; margin-top: 15px; padding-top: 12px; border-top: 1px solid #eee; }
         .footer p { color: #666; font-size: 10px; margin-bottom: 4px; }
-        .footer .thanks { font-size: 12px; color: #0d9488; font-weight: 600; margin-bottom: 8px; }
-        .print-btn { display: block; margin: 15px auto; padding: 10px 25px; background: #0d9488; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; }
-        .print-btn:hover { background: #0f766e; }
+        .footer .thanks { font-size: 12px; color: ${brandColor}; font-weight: 600; margin-bottom: 8px; }
+        .no-print { display: flex; gap: 10px; justify-content: center; margin: 20px auto; }
+        .btn { padding: 10px 25px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: ${brandColor}; color: white; }
+        .btn-primary:hover { background: ${brandColorDark}; }
+        .btn-outline { background: white; color: ${brandColor}; border: 2px solid ${brandColor}; }
+        .btn-outline:hover { background: ${brandColor}10; }
         @media print {
             body { padding: 15px; }
-            .print-btn { display: none; }
+            .no-print { display: none !important; }
             .section { background: #f8f8f8; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .highlight { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
@@ -439,9 +478,9 @@ export default function RegisterPage() {
 </head>
 <body>
     <div class="header">
-        <div class="logo">MedConf</div>
-        <div class="subtitle">Medical Conference Portal</div>
-        <div class="title">Registration Receipt</div>
+        <div class="logo">${brandName}</div>
+        <div class="subtitle">Conference Registration Receipt</div>
+        <div class="title">${eventData.title}</div>
         <div class="receipt-id">Receipt #${registrationId.slice(-8).toUpperCase()}</div>
     </div>
 
@@ -466,8 +505,8 @@ export default function RegisterPage() {
 
         <div class="section full">
             <div class="section-title">Registration</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div class="row"><span class="label">Registration ID</span><span class="value">${registrationId}</span></div>
+            <div class="row"><span class="label">Registration ID</span><span class="value">${registrationId}</span></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
                 <div class="row"><span class="label">Category</span><span class="value">${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</span></div>
                 <div class="row"><span class="label">Date</span><span class="value">${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
                 <div class="row"><span class="label">Status</span><span class="status">${totalPrice > 0 ? 'Payment Pending' : 'Confirmed'}</span></div>
@@ -483,19 +522,30 @@ export default function RegisterPage() {
 
     <div class="footer">
         <p class="thanks">Thank you for registering!</p>
-        <p>Confirmation sent to ${formData.email} | Queries: ${eventData.contactEmail || 'support@medconf.com'}</p>
-        <p style="margin-top: 8px; color: #999;">© ${new Date().getFullYear()} MedConf</p>
+        <p>Confirmation sent to ${formData.email} | Queries: ${eventData.contactEmail || 'support@icms.com'}</p>
+        <p style="margin-top: 8px; color: #999;">&copy; ${new Date().getFullYear()} ${brandName}</p>
     </div>
 
-    <button class="print-btn" onclick="window.print()">Save as PDF / Print</button>
+    <div class="no-print">
+        <button class="btn btn-primary" onclick="window.print()">Save as PDF</button>
+        <button class="btn btn-outline" onclick="window.close()">Close</button>
+    </div>
 </body>
 </html>`;
+    };
 
-        // Open in new window for print-to-PDF
+    const handleDownloadReceipt = () => {
+        const receiptHtml = buildReceiptHtml();
+        if (!receiptHtml) return;
+
         const printWindow = window.open('', '_blank');
         if (printWindow) {
-            printWindow.document.write(receiptContent);
+            printWindow.document.write(receiptHtml);
             printWindow.document.close();
+            // Auto-trigger save as PDF dialog after content loads
+            printWindow.onload = () => {
+                printWindow.print();
+            };
         }
     };
 
@@ -512,7 +562,7 @@ export default function RegisterPage() {
             <div className="min-h-screen flex flex-col items-center justify-center gap-4">
                 <AlertCircle className="h-12 w-12 text-destructive" />
                 <h1 className="text-xl font-semibold">{error}</h1>
-                <Link href="/events">
+                <Link href={tenantSlug ? `/t/${tenantSlug}` : "/events"}>
                     <Button variant="outline">Back to Events</Button>
                 </Link>
             </div>
@@ -527,14 +577,21 @@ export default function RegisterPage() {
             <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-sm">
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
-                        <Link href="/" className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
-                                <GraduationCap className="h-5 w-5 text-white" />
-                            </div>
-                            <span className="font-bold text-xl">MedConf</span>
+                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"} className="flex items-center gap-2">
+                            {tenantBranding?.logo ? (
+                                <img src={tenantBranding.logo} alt={tenantBranding.name} className="h-8 w-8 rounded-lg object-contain" />
+                            ) : (
+                                <div
+                                    className="h-8 w-8 rounded-lg flex items-center justify-center"
+                                    style={tenantBranding ? { background: `linear-gradient(135deg, ${tenantBranding.primaryColor}, ${tenantBranding.secondaryColor})` } : undefined}
+                                >
+                                    <GraduationCap className="h-5 w-5 text-white" />
+                                </div>
+                            )}
+                            <span className="font-bold text-xl">{tenantBranding?.name || "ICMS"}</span>
                         </Link>
                         <div className="flex items-center gap-3">
-                            <Link href="/">
+                            <Link href={tenantSlug ? `/auth/login?tenant=${tenantSlug}` : "/auth/login"}>
                                 <Button variant="outline" size="sm">
                                     Login
                                 </Button>
@@ -1191,12 +1248,12 @@ export default function RegisterPage() {
                                     </p>
 
                                     <div className="max-w-md mx-auto space-y-4 text-left mb-8">
-                                        <div className="p-4 rounded-xl bg-muted/50">
+                                        <div className="p-4 rounded-xl bg-muted/50 space-y-3">
+                                            <div className="text-sm">
+                                                <p className="text-muted-foreground">Registration ID</p>
+                                                <p className="font-mono font-bold text-xs break-all">{registrationId || "Pending"}</p>
+                                            </div>
                                             <div className="grid grid-cols-2 gap-4 text-sm">
-                                                <div>
-                                                    <p className="text-muted-foreground">Registration ID</p>
-                                                    <p className="font-mono font-bold">{registrationId || "Pending"}</p>
-                                                </div>
                                                 <div>
                                                     <p className="text-muted-foreground">{totalPrice > 0 ? "Amount Due" : "Fee"}</p>
                                                     <p className="font-bold text-primary">
@@ -1238,9 +1295,9 @@ export default function RegisterPage() {
                                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                         <Button variant="outline" className="gap-2" onClick={handleDownloadReceipt}>
                                             <Download className="h-4 w-4" />
-                                            Download Receipt
+                                            Save as PDF
                                         </Button>
-                                        <Link href="/events">
+                                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/events"}>
                                             <Button className="gap-2 gradient-medical text-white">
                                                 Browse More Events
                                                 <ArrowRight className="h-4 w-4" />

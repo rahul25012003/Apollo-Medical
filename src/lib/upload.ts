@@ -6,13 +6,13 @@
  */
 
 import { writeFile, mkdir, unlink } from "fs/promises";
-import { join } from "path";
+import { join, resolve, normalize } from "path";
 import { randomUUID } from "crypto";
 
 // Upload configuration
 export const UPLOAD_CONFIG = {
   maxFileSize: 10 * 1024 * 1024, // 10MB
-  allowedImageTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+  allowedImageTypes: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/svg+xml", "image/tiff", "image/avif", "image/heic", "image/heif"],
   allowedDocumentTypes: ["application/pdf"],
   uploadDir: "public/uploads",
 };
@@ -113,14 +113,44 @@ async function uploadToCloudinary(
   );
 }
 
+// Whitelist of allowed file extensions
+const ALLOWED_EXTENSIONS = [
+  "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "avif", "heic", "heif", "pdf",
+];
+
+/**
+ * Sanitize file name by stripping double extensions and validating against whitelist.
+ * e.g., "file.php.jpg" becomes "file.jpg"
+ * Returns null if the final extension is not in the whitelist.
+ */
+function sanitizeFileName(originalName: string): { sanitized: string; extension: string } | null {
+  // Get only the last extension (strips double extensions like file.php.jpg -> jpg)
+  const extension = (originalName.split(".").pop() || "").toLowerCase();
+
+  if (!extension || !ALLOWED_EXTENSIONS.includes(extension)) {
+    return null;
+  }
+
+  // Use only the base name (first part before any dot) + the validated final extension
+  const baseName = originalName.split(".")[0] || "file";
+  return { sanitized: `${baseName}.${extension}`, extension };
+}
+
 /**
  * Generate a unique file name
  */
 function generateFileName(originalName: string): string {
-  const extension = originalName.split(".").pop() || "";
+  const result = sanitizeFileName(originalName);
+  if (!result) {
+    // Fallback: caller should have validated before reaching here
+    const extension = (originalName.split(".").pop() || "").toLowerCase();
+    const uniqueId = randomUUID();
+    const timestamp = Date.now();
+    return `${timestamp}-${uniqueId}.${extension}`;
+  }
   const uniqueId = randomUUID();
   const timestamp = Date.now();
-  return `${timestamp}-${uniqueId}.${extension}`;
+  return `${timestamp}-${uniqueId}.${result.extension}`;
 }
 
 /**
@@ -132,6 +162,15 @@ function validateFile(
 ): { valid: boolean; error?: string } {
   const { allowedTypes = UPLOAD_CONFIG.allowedImageTypes, maxSize = UPLOAD_CONFIG.maxFileSize } =
     options;
+
+  // Validate file extension against whitelist and strip double extensions
+  const sanitized = sanitizeFileName(file.name);
+  if (!sanitized) {
+    return {
+      valid: false,
+      error: `Invalid file extension. Allowed extensions: ${ALLOWED_EXTENSIONS.join(", ")}`,
+    };
+  }
 
   if (!allowedTypes.includes(file.type)) {
     return {
@@ -209,11 +248,28 @@ export async function deleteFile(url: string): Promise<boolean> {
     if (provider === "local") {
       // Extract path from URL
       const relativePath = url.replace(/^\/uploads\//, "");
-      const fullPath = join(
-        process.cwd(),
-        UPLOAD_CONFIG.uploadDir,
-        relativePath
-      );
+
+      // Directory traversal protection: reject suspicious patterns
+      const normalized = normalize(relativePath);
+      if (
+        normalized.startsWith("..") ||
+        normalized.includes("..\\") ||
+        normalized.includes("../") ||
+        relativePath.includes("\0")
+      ) {
+        console.error("Delete blocked: directory traversal attempt", url);
+        return false;
+      }
+
+      const uploadsRoot = resolve(process.cwd(), UPLOAD_CONFIG.uploadDir);
+      const fullPath = resolve(uploadsRoot, normalized);
+
+      // Ensure resolved path is strictly within the uploads directory
+      if (!fullPath.startsWith(uploadsRoot + "/") && !fullPath.startsWith(uploadsRoot + "\\")) {
+        console.error("Delete blocked: resolved path outside uploads directory", fullPath);
+        return false;
+      }
+
       await unlink(fullPath);
     }
     // TODO: Implement S3/Cloudinary deletion when needed

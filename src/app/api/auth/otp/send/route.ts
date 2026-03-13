@@ -9,8 +9,16 @@ import {
   parseBody,
 } from "@/lib/api-utils";
 import { sendEmail, sendSms, otpEmailHtml, otpSmsText } from "@/lib/notifications";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+
+const rateLimiter = createRateLimiter("otp-send", { maxRequests: 10, windowSeconds: 900 });
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
+  const rl = rateLimiter.check(getClientIp(request));
+  if (!rl.allowed) {
+    return Errors.badRequest(rl.message);
+  }
+
   const body = await parseBody(request);
 
   if (!body) {
@@ -41,26 +49,26 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     );
   }
 
-  // For registration, check if user doesn't exist
-  if (purpose === "REGISTRATION") {
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
+  // Check user existence without revealing it to the caller
+  const existingUser = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+    select: { id: true },
+  });
 
-    if (existingUser) {
-      return Errors.conflict("An account with this email already exists");
-    }
+  // For registration: if user already exists, return generic success (no leak)
+  if (purpose === "REGISTRATION" && existingUser) {
+    return successResponse(
+      { message: "If an account with this email exists, an OTP has been sent" },
+      "If an account with this email exists, an OTP has been sent"
+    );
   }
 
-  // For login/password reset, check if user exists
-  if (purpose === "LOGIN" || purpose === "PASSWORD_RESET") {
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-
-    if (!existingUser) {
-      return Errors.notFound("User");
-    }
+  // For login/password reset: if user doesn't exist, return generic success (no leak)
+  if ((purpose === "LOGIN" || purpose === "PASSWORD_RESET") && !existingUser) {
+    return successResponse(
+      { message: "If an account with this email exists, an OTP has been sent" },
+      "If an account with this email exists, an OTP has been sent"
+    );
   }
 
   // Invalidate any existing OTPs for this email and purpose
@@ -79,20 +87,14 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   const code = generateOTP();
   const expiresAt = getOTPExpiry(10); // 10 minutes
 
-  // Find user if exists (for linking)
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-    select: { id: true },
-  });
-
-  // Save OTP
+  // Save OTP (use existingUser found earlier for linking)
   await prisma.oTP.create({
     data: {
       code,
       email: email.toLowerCase(),
       purpose,
       expiresAt,
-      userId: user?.id,
+      userId: existingUser?.id,
     },
   });
 
@@ -104,21 +106,16 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }).catch((err) => console.error("OTP email send error:", err));
 
   // Also try SMS if user has a phone (best-effort)
-  if (user?.id) {
-    const userRecord = await prisma.user.findUnique({ where: { id: user.id }, select: { phone: true } });
+  if (existingUser?.id) {
+    const userRecord = await prisma.user.findUnique({ where: { id: existingUser.id }, select: { phone: true } });
     if (userRecord?.phone) {
       sendSms({ to: userRecord.phone, message: otpSmsText(code, purpose) })
         .catch((err) => console.error("OTP SMS send error:", err));
     }
   }
 
-  // In development, also log the OTP
-  if (process.env.NODE_ENV === "development") {
-    console.log(`OTP for ${email}: ${code}`);
-  }
-
   return successResponse(
-    { message: "OTP sent successfully" },
-    "OTP sent to your email"
+    { message: "If an account with this email exists, an OTP has been sent" },
+    "If an account with this email exists, an OTP has been sent"
   );
 });

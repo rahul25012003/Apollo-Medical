@@ -13,6 +13,7 @@ import {
   getSortParams,
 } from "@/lib/api-utils";
 import { Prisma } from "@prisma/client";
+import { createNotification } from "@/lib/notifications-db";
 import { getEffectiveTenantId, tenantWhereClause } from "@/lib/tenant-scope";
 
 // GET /api/events - List all events (with filters)
@@ -195,6 +196,16 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         },
       },
     });
+  });
+
+  // Create in-app notification (non-blocking)
+  createNotification({
+    type: "NEW_EVENT",
+    title: "New Event Created",
+    message: `"${event?.title || eventData.title}" has been created.`,
+    link: `/dashboard/events/${event?.id}`,
+    tenantId,
+    excludeUserId: session.user.id,
   });
 
   return successResponse(event, "Event created successfully", 201);

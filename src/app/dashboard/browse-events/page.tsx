@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { EVENT_TYPES, EVENT_CATEGORIES } from "@/lib/event-constants";
+import { useTenantFilter } from "@/hooks/use-tenant-filter";
 
 interface PublicEvent {
     id: string;
@@ -63,12 +64,19 @@ export default function BrowseEventsPage() {
     const [selectedType, setSelectedType] = useState("All Types");
     const [selectedCategory, setSelectedCategory] = useState("All Categories");
     const [showFilters, setShowFilters] = useState(false);
+    const { effectiveTenantId, sessionLoading } = useTenantFilter();
 
     useEffect(() => {
+        if (sessionLoading) return;
+
         async function fetchEvents() {
             try {
                 setLoading(true);
-                const response = await fetch("/api/events/public");
+                const params = new URLSearchParams();
+                if (effectiveTenantId) {
+                    params.set("tenantId", effectiveTenantId);
+                }
+                const response = await fetch(`/api/events/public?${params.toString()}`);
                 const data = await response.json();
                 if (data.success && data.data) {
                     setEvents(data.data);
@@ -81,7 +89,7 @@ export default function BrowseEventsPage() {
         }
 
         fetchEvents();
-    }, []);
+    }, [effectiveTenantId, sessionLoading]);
 
     // Filter events
     const filteredEvents = events.filter((event) => {

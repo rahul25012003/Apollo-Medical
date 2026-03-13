@@ -171,6 +171,7 @@ model Tenant {
   speakers          Speaker[]
   sponsors          Sponsor[]
   notificationChannels NotificationChannel[]
+  notifications        Notification[]
 
   @@index([slug])
   @@index([domain])
@@ -208,6 +209,43 @@ model NotificationChannel {
 }
 
 // ============================================================================
+// IN-APP NOTIFICATION MODEL
+// ============================================================================
+
+enum NotificationType {
+  NEW_REGISTRATION
+  NEW_EVENT
+  REGISTRATION_CONFIRMED
+  PAYMENT_RECEIVED
+  EVENT_PUBLISHED
+  EVENT_CANCELLED
+  GENERAL
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  link      String?          // Optional deep-link, e.g., "/dashboard/registrations/xyz"
+
+  // Who receives it
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Multi-tenancy
+  tenantId  String?
+  tenant    Tenant?          @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead, createdAt])
+  @@index([tenantId])
+  @@map("notifications")
+}
+
+// ============================================================================
 // AUTH MODELS (NextAuth.js)
 // ============================================================================
 
@@ -242,6 +280,7 @@ model User {
   registrations Registration[] @relation("UserRegistrations")
   registeredBy  Registration[] @relation("RegisteredByUser")
   otps          OTP[]
+  notifications Notification[]
 
   @@index([tenantId])
   @@map("users")

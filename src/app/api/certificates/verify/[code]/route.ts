@@ -28,7 +28,6 @@ export const GET = withErrorHandler(
         revokedReason: true,
         event: {
           select: {
-            id: true,
             title: true,
             type: true,
             startDate: true,

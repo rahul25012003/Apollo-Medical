@@ -48,6 +48,7 @@ import { EVENT_TYPES, EVENT_CATEGORIES, EVENT_STATUSES } from "@/lib/event-const
 import { eventsService } from "@/services/events";
 import { speakersService, Speaker } from "@/services/speakers";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
+import { uploadFile } from "@/services";
 import { toast } from "sonner";
 
 // Build arrays from shared constants
@@ -167,6 +168,7 @@ export default function EditEventPage() {
     const [existingSpeakers, setExistingSpeakers] = useState<Speaker[]>([]);
     const [existingSponsors, setExistingSponsors] = useState<Sponsor[]>([]);
     const [slotCategories, setSlotCategories] = useState<SlotCategory[]>([]);
+    const [bannerUploading, setBannerUploading] = useState(false);
 
     const { confirm, ConfirmDialog } = useConfirmDialog();
 
@@ -393,6 +395,25 @@ export default function EditEventPage() {
         setFormData(prev => ({ ...prev, [field]: value }));
         setError(null);
         setSuccess(false);
+    };
+
+    const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setBannerUploading(true);
+            const res = await uploadFile(file, "events");
+            if (res.success && res.data) {
+                handleChange("bannerImage", res.data.url);
+                toast.success("Banner image uploaded successfully");
+            } else {
+                toast.error("Failed to upload banner image");
+            }
+        } catch {
+            toast.error("Error uploading banner image");
+        } finally {
+            setBannerUploading(false);
+        }
     };
 
     const addIncludeItem = () => {
@@ -1273,25 +1294,41 @@ export default function EditEventPage() {
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="bannerImage">Banner Image URL</Label>
+                                            <Label htmlFor="bannerUpload">Upload Banner Image</Label>
                                             <Input
-                                                id="bannerImage"
-                                                type="url"
-                                                value={formData.bannerImage}
-                                                onChange={e => handleChange("bannerImage", e.target.value)}
-                                                placeholder="https://..."
+                                                id="bannerUpload"
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                                onChange={handleBannerUpload}
+                                                disabled={bannerUploading}
+                                                className="cursor-pointer"
                                             />
+                                            {bannerUploading && (
+                                                <p className="text-xs text-muted-foreground">Uploading...</p>
+                                            )}
                                         </div>
                                         {formData.bannerImage && (
-                                            <div className="rounded-lg overflow-hidden border">
-                                                <img
-                                                    src={formData.bannerImage}
-                                                    alt="Banner preview"
-                                                    className="w-full h-32 object-cover"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                    }}
-                                                />
+                                            <div className="space-y-2">
+                                                <div className="rounded-lg overflow-hidden border">
+                                                    <img
+                                                        src={formData.bannerImage}
+                                                        alt="Banner preview"
+                                                        className="w-full h-32 object-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).style.display = 'none';
+                                                        }}
+                                                    />
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleChange("bannerImage", "")}
+                                                    className="gap-1 text-destructive"
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                    Remove
+                                                </Button>
                                             </div>
                                         )}
                                     </CardContent>

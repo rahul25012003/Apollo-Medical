@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     Calendar,
     Clock,
@@ -84,6 +85,7 @@ const typeIcons: Record<string, React.ElementType> = {
 };
 
 export default function PublicEventsPage() {
+    const router = useRouter();
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState("all");
     const [filterStatus, setFilterStatus] = useState("UPCOMING");
@@ -267,21 +269,21 @@ export default function PublicEventsPage() {
                             <Loader2 className="h-6 w-6 animate-spin text-primary" />
                         </div>
                     ) : (
-                        <div className="flex flex-wrap justify-center gap-8 md:gap-16">
+                        <div className="flex flex-wrap justify-center gap-4 sm:gap-8 md:gap-16">
                             <div className="text-center">
-                                <div className="text-3xl font-bold text-primary">{stats.upcoming}</div>
+                                <div className="text-2xl sm:text-3xl font-bold text-primary">{stats.upcoming}</div>
                                 <div className="text-sm text-muted-foreground">Upcoming Events</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-3xl font-bold text-primary">{stats.speakers}</div>
+                                <div className="text-2xl sm:text-3xl font-bold text-primary">{stats.speakers}</div>
                                 <div className="text-sm text-muted-foreground">Expert Speakers</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-3xl font-bold text-primary">{stats.cmeCredits}</div>
+                                <div className="text-2xl sm:text-3xl font-bold text-primary">{stats.cmeCredits}</div>
                                 <div className="text-sm text-muted-foreground">CME Credits Available</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-3xl font-bold text-primary">{stats.registrations}+</div>
+                                <div className="text-2xl sm:text-3xl font-bold text-primary">{stats.registrations}+</div>
                                 <div className="text-sm text-muted-foreground">Registrations</div>
                             </div>
                         </div>
@@ -295,7 +297,7 @@ export default function PublicEventsPage() {
                     <div className="flex flex-wrap gap-4 items-center justify-between">
                         <div className="flex flex-wrap gap-3">
                             <Select value={filterType} onValueChange={setFilterType}>
-                                <SelectTrigger className="w-[160px] rounded-xl">
+                                <SelectTrigger className="w-full sm:w-[160px] rounded-xl">
                                     <SelectValue placeholder="Event Type" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -308,7 +310,7 @@ export default function PublicEventsPage() {
                                 </SelectContent>
                             </Select>
                             <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger className="w-[160px] rounded-xl">
+                                <SelectTrigger className="w-full sm:w-[160px] rounded-xl">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -394,14 +396,14 @@ export default function PublicEventsPage() {
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t">
+                                        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-4 pt-6 border-t">
                                             <div>
                                                 {featuredEvent.earlyBirdPrice && (
                                                     <span className="text-sm text-muted-foreground line-through mr-2">
                                                         ₹{featuredEvent.price.toLocaleString()}
                                                     </span>
                                                 )}
-                                                <span className="text-3xl font-bold text-primary">
+                                                <span className="text-2xl sm:text-3xl font-bold text-primary">
                                                     ₹{(featuredEvent.earlyBirdPrice || featuredEvent.price).toLocaleString()}
                                                 </span>
                                                 {featuredEvent.earlyBirdDeadline && (
@@ -410,15 +412,15 @@ export default function PublicEventsPage() {
                                                     </p>
                                                 )}
                                             </div>
-                                            <div className="flex gap-3">
+                                            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                                 <Link href={`/events/${featuredEvent.id}`}>
-                                                    <Button size="lg" variant="outline" className="rounded-xl gap-2">
+                                                    <Button size="lg" variant="outline" className="rounded-xl gap-2 w-full sm:w-auto">
                                                         <Eye className="h-5 w-5" />
                                                         View Details
                                                     </Button>
                                                 </Link>
                                                 <Link href={`/events/${featuredEvent.id}/register`}>
-                                                    <Button size="lg" className="rounded-xl gap-2 gradient-medical text-white hover:opacity-90 shadow-lg shadow-primary/25">
+                                                    <Button size="lg" className="rounded-xl gap-2 gradient-medical text-white hover:opacity-90 shadow-lg shadow-primary/25 w-full sm:w-auto">
                                                         <Ticket className="h-5 w-5" />
                                                         Register Now
                                                         <ArrowRight className="h-5 w-5" />
@@ -566,7 +568,7 @@ export default function PublicEventsPage() {
                                                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium group-hover:bg-primary/90 transition-colors"
                                                             onClick={(e) => {
                                                                 e.preventDefault();
-                                                                window.location.href = `/events/${event.id}/register`;
+                                                                router.push(`/events/${event.id}/register`);
                                                             }}
                                                         >
                                                             Register

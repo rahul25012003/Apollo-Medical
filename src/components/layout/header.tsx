@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Bell, Search, ChevronDown, Settings, User, LogOut, HelpCircle, Loader2, Ticket, Award, Calendar } from "lucide-react";
+import React, { useCallback } from "react";
+import { Bell, Search, ChevronDown, Settings, User, LogOut, HelpCircle, Loader2, Ticket, Award, Calendar, Users, CheckCircle2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     DropdownMenu,
@@ -47,6 +47,36 @@ function getInitials(name: string | null | undefined, email: string | null | und
     return "U";
 }
 
+interface NotificationItem {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    isRead: boolean;
+    link: string | null;
+    createdAt: string;
+}
+
+function timeAgo(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+}
+
+function notificationIcon(type: string) {
+    switch (type) {
+        case "NEW_REGISTRATION": return <Users className="w-4 h-4 text-blue-500" />;
+        case "NEW_EVENT": return <Calendar className="w-4 h-4 text-green-500" />;
+        case "PAYMENT_RECEIVED": return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+        default: return <Bell className="w-4 h-4 text-muted-foreground" />;
+    }
+}
+
 export function Header({ title, subtitle }: HeaderProps) {
     const { sidebarCollapsed } = useUIStore();
     const [searchOpen, setSearchOpen] = React.useState(false);
@@ -57,6 +87,43 @@ export function Header({ title, subtitle }: HeaderProps) {
     const displayRole = user?.role ? formatRole(user.role) : "User";
     const initials = getInitials(user?.name, user?.email);
 
+    // Notifications
+    const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
+    const [unreadCount, setUnreadCount] = React.useState(0);
+
+    const fetchNotifications = useCallback(async () => {
+        try {
+            const res = await fetch("/api/notifications?limit=20");
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.data) {
+                    setNotifications(data.data.notifications || []);
+                    setUnreadCount(data.data.unreadCount || 0);
+                }
+            }
+        } catch { /* silently fail */ }
+    }, []);
+
+    // Fetch on mount + poll every 30 seconds
+    React.useEffect(() => {
+        if (status !== "authenticated") return;
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
+    }, [status, fetchNotifications]);
+
+    const markAllAsRead = async () => {
+        try {
+            await fetch("/api/notifications", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ markAll: true }),
+            });
+            setUnreadCount(0);
+            setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        } catch { /* silently fail */ }
+    };
+
     // Get tenant slug for logout redirect (only for actual tenant users, not SUPER_ADMIN)
     const { tenant } = useTenant();
     const userRole = user?.role;
@@ -65,7 +132,7 @@ export function Header({ title, subtitle }: HeaderProps) {
         : null;
 
     const handleSignOut = () => {
-        signOut({ callbackUrl: "/" });
+        signOut({ callbackUrl: tenantSlug ? `/t/${tenantSlug}` : "/" });
     };
 
     return (
@@ -114,47 +181,81 @@ export function Header({ title, subtitle }: HeaderProps) {
                     <TenantSelector />
 
                     {/* Notifications */}
-                    <DropdownMenu>
+                    <DropdownMenu onOpenChange={(open) => { if (open) fetchNotifications(); }}>
                         <DropdownMenuTrigger asChild>
                             <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
                                 <Bell className="w-5 h-5 text-muted-foreground" />
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full ring-2 ring-background" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full ring-2 ring-background px-1">
+                                        {unreadCount > 99 ? "99+" : unreadCount}
+                                    </span>
+                                )}
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-80">
                             <DropdownMenuLabel className="flex items-center justify-between">
                                 Notifications
-                                <span className="text-xs font-normal text-primary cursor-pointer hover:underline">
-                                    Mark all as read
-                                </span>
+                                {unreadCount > 0 && (
+                                    <button
+                                        onClick={markAllAsRead}
+                                        className="text-xs font-normal text-primary cursor-pointer hover:underline bg-transparent border-0 p-0"
+                                    >
+                                        Mark all as read
+                                    </button>
+                                )}
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <div className="max-h-[300px] overflow-y-auto">
-                                <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 cursor-pointer">
-                                    <div className="flex items-center gap-2 w-full">
-                                        <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-                                        <span className="font-medium text-sm">New registration</span>
-                                        <span className="text-xs text-muted-foreground ml-auto">2m ago</span>
+                            <div className="max-h-[350px] overflow-y-auto">
+                                {notifications.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                                        <Bell className="w-8 h-8 mb-2 opacity-30" />
+                                        <p className="text-sm">No notifications yet</p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground pl-4">
-                                        Dr. Smith registered for the Neurology Conference
-                                    </p>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 cursor-pointer">
-                                    <div className="flex items-center gap-2 w-full">
-                                        <span className="w-2 h-2 bg-muted rounded-full flex-shrink-0" />
-                                        <span className="font-medium text-sm">Payment received</span>
-                                        <span className="text-xs text-muted-foreground ml-auto">1h ago</span>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground pl-4">
-                                        Payment of $299 received for CME Workshop
-                                    </p>
-                                </DropdownMenuItem>
+                                ) : (
+                                    notifications.map((n) => (
+                                        <DropdownMenuItem
+                                            key={n.id}
+                                            className={cn(
+                                                "flex flex-col items-start gap-1 p-3 cursor-pointer",
+                                                !n.isRead && "bg-primary/5"
+                                            )}
+                                            asChild={!!n.link}
+                                        >
+                                            {n.link ? (
+                                                <Link href={n.link}>
+                                                    <div className="flex items-center gap-2 w-full">
+                                                        {notificationIcon(n.type)}
+                                                        <span className={cn("text-sm", !n.isRead && "font-medium")}>
+                                                            {n.title}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
+                                                            {timeAgo(n.createdAt)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground pl-6 line-clamp-2">
+                                                        {n.message}
+                                                    </p>
+                                                </Link>
+                                            ) : (
+                                                <div>
+                                                    <div className="flex items-center gap-2 w-full">
+                                                        {notificationIcon(n.type)}
+                                                        <span className={cn("text-sm", !n.isRead && "font-medium")}>
+                                                            {n.title}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
+                                                            {timeAgo(n.createdAt)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground pl-6 line-clamp-2">
+                                                        {n.message}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </DropdownMenuItem>
+                                    ))
+                                )}
                             </div>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="justify-center text-primary text-sm">
-                                View all notifications
-                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
 

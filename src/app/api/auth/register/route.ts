@@ -8,8 +8,21 @@ import {
   withErrorHandler,
   parseBody,
 } from "@/lib/api-utils";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+
+const registerLimiter = createRateLimiter("register", {
+  maxRequests: 5,
+  windowSeconds: 900, // 15 minutes
+});
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
+  // Rate limit: 5 requests per 15 minutes per IP
+  const ip = getClientIp(request);
+  const rateLimitResult = registerLimiter.check(ip);
+  if (!rateLimitResult.allowed) {
+    return Errors.badRequest(rateLimitResult.message);
+  }
+
   const body = await parseBody(request);
 
   if (!body) {

@@ -91,9 +91,7 @@ export default function EditTenantPage() {
 
     const handleSubmit = async (data: TenantFormData) => {
         const response = await tenantsService.update(slug, data);
-        if (response.success) {
-            router.push("/dashboard/tenants");
-        } else {
+        if (!response.success) {
             const errorMessage =
                 typeof response.error === "string"
                     ? response.error

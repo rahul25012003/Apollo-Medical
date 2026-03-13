@@ -16,10 +16,12 @@ import {
     Clock,
     CalendarDays,
     Loader2,
+    AlertTriangle,
 } from "lucide-react";
 import { dashboardService, DashboardStats } from "@/services/dashboard";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
 import { TenantProvider } from "@/lib/tenant/context";
+import { useSession } from "next-auth/react";
 
 interface StatCard {
     title: string;
@@ -50,110 +52,105 @@ interface RecentRegistration {
 
 export default function DashboardPage() {
     const { sidebarCollapsed } = useUIStore();
+    const { data: session } = useSession();
     const { tenantFilterParams, effectiveTenantId, sessionLoading } = useTenantFilter();
+    const userName = session?.user?.name || "Admin";
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [stats, setStats] = useState<StatCard[]>([]);
     const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
     const [recentRegistrations, setRecentRegistrations] = useState<RecentRegistration[]>([]);
 
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const tenantId = tenantFilterParams.tenantId;
+            const response = await dashboardService.getStats(tenantId);
+
+            if (response.success && response.data) {
+                const data = response.data;
+
+                // Set stats from live database
+                setStats([
+                    {
+                        title: "Total Events",
+                        value: data.overview.totalEvents.toString(),
+                        change: `+${data.overview.totalEvents > 0 ? "12" : "0"}%`,
+                        trend: "up",
+                        icon: Calendar,
+                        color: "text-blue-600",
+                        bgColor: "bg-blue-50",
+                    },
+                    {
+                        title: "Registrations",
+                        value: data.overview.totalRegistrations.toLocaleString(),
+                        change: `+${data.overview.monthlyRegistrations}`,
+                        trend: "up",
+                        icon: Users,
+                        color: "text-green-600",
+                        bgColor: "bg-green-50",
+                    },
+                    {
+                        title: "Certificates Issued",
+                        value: data.overview.totalCertificates.toLocaleString(),
+                        change: "+0%",
+                        trend: "up",
+                        icon: Award,
+                        color: "text-purple-600",
+                        bgColor: "bg-purple-50",
+                    },
+                    {
+                        title: "Revenue",
+                        value: `₹${data.overview.totalRevenue.toLocaleString()}`,
+                        change: "+0%",
+                        trend: "up",
+                        icon: DollarSign,
+                        color: "text-amber-600",
+                        bgColor: "bg-amber-50",
+                    },
+                ]);
+
+                // Set upcoming events from live database
+                setUpcomingEvents(data.upcomingEvents.map((e) => ({
+                    id: e.id,
+                    title: e.title,
+                    date: new Date(e.startDate).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                    }),
+                    time: e.startDate
+                        ? new Date(e.startDate).toLocaleTimeString("en-IN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                        })
+                        : "TBD",
+                    registrations: e.registeredCount,
+                    capacity: e.capacity,
+                })));
+
+                // Set recent registrations from live database
+                setRecentRegistrations(data.recentRegistrations.map((r) => ({
+                    id: r.id,
+                    name: r.name,
+                    event: r.event.title,
+                    date: formatTimeAgo(new Date(r.createdAt)),
+                    status: r.status.toLowerCase(),
+                })));
+            } else {
+                setError("Failed to load dashboard data. Please try refreshing the page.");
+            }
+        } catch {
+            setError("Something went wrong while loading the dashboard. Please try again later.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (sessionLoading) return;
-
-        async function fetchDashboardData() {
-            try {
-                setLoading(true);
-                const tenantId = tenantFilterParams.tenantId;
-                const response = await dashboardService.getStats(tenantId);
-
-                if (response.success && response.data) {
-                    const data = response.data;
-
-                    // Set stats from live database
-                    setStats([
-                        {
-                            title: "Total Events",
-                            value: data.overview.totalEvents.toString(),
-                            change: `+${data.overview.totalEvents > 0 ? "12" : "0"}%`,
-                            trend: "up",
-                            icon: Calendar,
-                            color: "text-blue-600",
-                            bgColor: "bg-blue-50",
-                        },
-                        {
-                            title: "Registrations",
-                            value: data.overview.totalRegistrations.toLocaleString(),
-                            change: `+${data.overview.monthlyRegistrations}`,
-                            trend: "up",
-                            icon: Users,
-                            color: "text-green-600",
-                            bgColor: "bg-green-50",
-                        },
-                        {
-                            title: "Certificates Issued",
-                            value: data.overview.totalCertificates.toLocaleString(),
-                            change: "+0%",
-                            trend: "up",
-                            icon: Award,
-                            color: "text-purple-600",
-                            bgColor: "bg-purple-50",
-                        },
-                        {
-                            title: "Revenue",
-                            value: `₹${data.overview.totalRevenue.toLocaleString()}`,
-                            change: "+0%",
-                            trend: "up",
-                            icon: DollarSign,
-                            color: "text-amber-600",
-                            bgColor: "bg-amber-50",
-                        },
-                    ]);
-
-                    // Set upcoming events from live database
-                    setUpcomingEvents(data.upcomingEvents.map((e) => ({
-                        id: e.id,
-                        title: e.title,
-                        date: new Date(e.startDate).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                        }),
-                        time: "09:00 AM",
-                        registrations: e.registeredCount,
-                        capacity: e.capacity,
-                    })));
-
-                    // Set recent registrations from live database
-                    setRecentRegistrations(data.recentRegistrations.map((r) => ({
-                        id: r.id,
-                        name: r.name,
-                        event: r.event.title,
-                        date: formatTimeAgo(new Date(r.createdAt)),
-                        status: r.status.toLowerCase(),
-                    })));
-                } else {
-                    // Set default empty stats if API fails
-                    setStats([
-                        { title: "Total Events", value: "0", change: "0%", trend: "up", icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
-                        { title: "Registrations", value: "0", change: "0%", trend: "up", icon: Users, color: "text-green-600", bgColor: "bg-green-50" },
-                        { title: "Certificates Issued", value: "0", change: "0%", trend: "up", icon: Award, color: "text-purple-600", bgColor: "bg-purple-50" },
-                        { title: "Revenue", value: "₹0", change: "0%", trend: "up", icon: DollarSign, color: "text-amber-600", bgColor: "bg-amber-50" },
-                    ]);
-                    console.error("Dashboard API returned error:", response);
-                }
-            } catch (error) {
-                console.error("Failed to fetch dashboard data:", error);
-                // Set default empty stats on error
-                setStats([
-                    { title: "Total Events", value: "0", change: "0%", trend: "up", icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
-                    { title: "Registrations", value: "0", change: "0%", trend: "up", icon: Users, color: "text-green-600", bgColor: "bg-green-50" },
-                    { title: "Certificates Issued", value: "0", change: "0%", trend: "up", icon: Award, color: "text-purple-600", bgColor: "bg-purple-50" },
-                    { title: "Revenue", value: "₹0", change: "0%", trend: "up", icon: DollarSign, color: "text-amber-600", bgColor: "bg-amber-50" },
-                ]);
-            } finally {
-                setLoading(false);
-            }
-        }
-
         fetchDashboardData();
     }, [sessionLoading, effectiveTenantId]);
 
@@ -168,6 +165,38 @@ export default function DashboardPage() {
         if (diffHours < 24) return `${diffHours} hours ago`;
         return `${diffDays} days ago`;
     };
+
+    if (error) {
+        return (
+            <TenantProvider tenantId={effectiveTenantId}>
+                <div className="min-h-screen bg-muted/30">
+                    <Sidebar />
+                    <Header title="Dashboard" subtitle="Welcome back" />
+                    <main className={cn(
+                        "pt-16 min-h-screen transition-all duration-300",
+                        sidebarCollapsed ? "lg:pl-[72px]" : "lg:pl-64",
+                        "pl-0"
+                    )}>
+                        <div className="flex items-center justify-center h-[50vh]">
+                            <div className="text-center space-y-4">
+                                <div className="mx-auto w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+                                    <AlertTriangle className="h-6 w-6 text-red-500" />
+                                </div>
+                                <p className="text-sm text-muted-foreground max-w-md">{error}</p>
+                                <button
+                                    onClick={() => fetchDashboardData()}
+                                    className="text-sm font-medium text-primary hover:underline"
+                                    aria-label="Retry loading dashboard data"
+                                >
+                                    Try again
+                                </button>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </TenantProvider>
+        );
+    }
 
     if (loading) {
         return (
@@ -193,7 +222,7 @@ export default function DashboardPage() {
         <TenantProvider tenantId={effectiveTenantId}>
             <div className="min-h-screen bg-muted/30">
                 <Sidebar />
-                <Header title="Dashboard" subtitle="Welcome back, Dr. Admin" />
+                <Header title="Dashboard" subtitle={`Welcome back, ${userName}`} />
 
             {/* Main content */}
             <main className={cn(
@@ -244,12 +273,17 @@ export default function DashboardPage() {
                                     <h2 className="font-semibold text-foreground">Upcoming Events</h2>
                                     <p className="text-sm text-muted-foreground">Next scheduled events</p>
                                 </div>
-                                <button className="text-sm text-primary font-medium hover:underline">
+                                <button className="text-sm text-primary font-medium hover:underline" aria-label="View all upcoming events">
                                     View all
                                 </button>
                             </div>
                             <div className="divide-y divide-border">
-                                {upcomingEvents.map((event) => (
+                                {upcomingEvents.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                                        <CalendarDays className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                                        <p className="text-sm text-muted-foreground">No upcoming events. Create an event to get started.</p>
+                                    </div>
+                                ) : upcomingEvents.map((event) => (
                                     <div key={event.id} className="p-5 hover:bg-muted/50 transition-colors">
                                         <div className="flex items-start gap-4">
                                             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -296,12 +330,17 @@ export default function DashboardPage() {
                                     <h2 className="font-semibold text-foreground">Recent Registrations</h2>
                                     <p className="text-sm text-muted-foreground">Latest sign-ups</p>
                                 </div>
-                                <button className="text-sm text-primary font-medium hover:underline">
+                                <button className="text-sm text-primary font-medium hover:underline" aria-label="View all recent registrations">
                                     View all
                                 </button>
                             </div>
                             <div className="divide-y divide-border">
-                                {recentRegistrations.map((registration) => (
+                                {recentRegistrations.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                                        <Users className="w-10 h-10 text-muted-foreground/40 mb-3" />
+                                        <p className="text-sm text-muted-foreground">No registrations yet.</p>
+                                    </div>
+                                ) : recentRegistrations.map((registration) => (
                                     <div key={registration.id} className="p-4 hover:bg-muted/50 transition-colors">
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -350,6 +389,7 @@ export default function DashboardPage() {
                                 <button
                                     key={index}
                                     className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border hover:bg-muted/50 hover:border-primary/20 transition-all group"
+                                    aria-label={action.label}
                                 >
                                     <div className={cn("p-3 rounded-lg text-white", action.color)}>
                                         <action.icon className="w-5 h-5" />

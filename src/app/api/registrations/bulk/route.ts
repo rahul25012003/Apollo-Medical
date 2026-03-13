@@ -9,6 +9,7 @@ import {
   parseBody,
 } from "@/lib/api-utils";
 import { sendEmail } from "@/lib/notifications";
+import { isTenantOwner } from "@/lib/tenant-scope";
 
 // POST /api/registrations/bulk - Perform bulk actions on registrations
 export const POST = withErrorHandler(async (request: NextRequest) => {
@@ -36,14 +37,20 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   const { registrationIds, action, data } = parsed.data;
 
-  // Verify all registrations exist
+  // Verify all registrations exist and belong to user's tenant
   const existingRegistrations = await prisma.registration.findMany({
     where: { id: { in: registrationIds } },
-    select: { id: true, status: true, paymentStatus: true, email: true },
+    select: { id: true, status: true, paymentStatus: true, email: true, event: { select: { tenantId: true } } },
   });
 
   if (existingRegistrations.length !== registrationIds.length) {
     return Errors.badRequest("Some registration IDs are invalid");
+  }
+
+  // Tenant isolation check — ensure all registrations belong to user's tenant
+  const unauthorized = existingRegistrations.some(r => !isTenantOwner(session, r.event.tenantId));
+  if (unauthorized) {
+    return Errors.forbidden("You don't have permission to modify some of these registrations");
   }
 
   let result;

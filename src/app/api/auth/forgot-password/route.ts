@@ -9,8 +9,16 @@ import {
   parseBody,
 } from "@/lib/api-utils";
 import { sendEmail, otpEmailHtml } from "@/lib/notifications";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+
+const rateLimiter = createRateLimiter("forgot-password", { maxRequests: 5, windowSeconds: 900 });
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
+  const rl = rateLimiter.check(getClientIp(request));
+  if (!rl.allowed) {
+    return Errors.badRequest(rl.message);
+  }
+
   const body = await parseBody(request);
 
   if (!body) {
@@ -71,11 +79,6 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     subject: `Password Reset OTP — ${code}`,
     html: otpEmailHtml(code, "PASSWORD_RESET"),
   }).catch((err) => console.error("Password reset email error:", err));
-
-  // In development, also log the OTP
-  if (process.env.NODE_ENV === "development") {
-    console.log(`Password reset OTP for ${email}: ${code}`);
-  }
 
   return successResponse(
     { message: "If an account exists, you will receive a password reset email." },

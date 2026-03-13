@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     Calendar,
     Users,
@@ -11,63 +11,168 @@ import {
     ArrowDownRight,
     Clock,
     Mic2,
+    Loader2,
+    Inbox,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { dashboardService } from "@/services/dashboard";
+import { useTenantFilter } from "@/hooks/use-tenant-filter";
 
-const stats = [
-    {
-        title: "Total Events",
-        value: "24",
-        change: "+12%",
-        trend: "up",
-        icon: Calendar,
-        color: "bg-blue-500",
-    },
-    {
-        title: "Registrations",
-        value: "1,248",
-        change: "+23%",
-        trend: "up",
-        icon: Users,
-        color: "bg-green-500",
-    },
-    {
-        title: "Revenue",
-        value: "₹12.4L",
-        change: "+18%",
-        trend: "up",
-        icon: IndianRupee,
-        color: "bg-purple-500",
-    },
-    {
-        title: "Certificates Issued",
-        value: "856",
-        change: "+8%",
-        trend: "up",
-        icon: Award,
-        color: "bg-orange-500",
-    },
-];
+interface StatItem {
+    title: string;
+    value: string;
+    change: string;
+    trend: "up" | "down";
+    icon: React.ElementType;
+    color: string;
+}
 
-const recentRegistrations = [
-    { name: "Dr. Priya Sharma", event: "Epilepsy Management CME", amount: "₹1,500", time: "2 mins ago", status: "paid" },
-    { name: "Dr. Rajesh Kumar", event: "Neurostimulation Summit 2026", amount: "₹5,000", time: "15 mins ago", status: "pending" },
-    { name: "Dr. Ananya Patel", event: "DBS Workshop", amount: "₹3,800", time: "1 hour ago", status: "paid" },
-    { name: "Dr. Vikram Singh", event: "Neurostimulation Summit 2026", amount: "₹5,000", time: "2 hours ago", status: "paid" },
-    { name: "Dr. Meera Krishnan", event: "Neural Engineering Symposium", amount: "₹1,500", time: "3 hours ago", status: "paid" },
-];
+interface RegistrationItem {
+    name: string;
+    event: string;
+    amount: string;
+    time: string;
+    status: string;
+}
 
-const upcomingEvents = [
-    { name: "Epilepsy Management CME Session", date: "Dec 29, 2025", slots: "72/80", status: "open" },
-    { name: "Deep Brain Stimulation Workshop", date: "Jan 5, 2026", slots: "27/30", status: "open" },
-    { name: "National Neurostimulation Summit 2026", date: "Jan 10-11, 2026", slots: "156/200", status: "open" },
-    { name: "Neural Engineering Research Symposium", date: "Jan 18, 2026", slots: "89/200", status: "upcoming" },
-];
+interface EventItem {
+    name: string;
+    date: string;
+    slots: string;
+    status: string;
+}
+
+function EmptyState({ message }: { message: string }) {
+    return (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+            <Inbox className="h-10 w-10 text-muted-foreground/40 mb-3" />
+            <p className="text-sm text-muted-foreground">{message}</p>
+        </div>
+    );
+}
 
 export default function DashboardPage() {
+    const { tenantFilterParams, effectiveTenantId, sessionLoading } = useTenantFilter();
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<StatItem[]>([]);
+    const [recentRegistrations, setRecentRegistrations] = useState<RegistrationItem[]>([]);
+    const [upcomingEvents, setUpcomingEvents] = useState<EventItem[]>([]);
+
+    useEffect(() => {
+        if (sessionLoading) return;
+
+        async function fetchDashboardData() {
+            try {
+                setLoading(true);
+                const tenantId = tenantFilterParams.tenantId;
+                const response = await dashboardService.getStats(tenantId);
+
+                if (response.success && response.data) {
+                    const data = response.data;
+
+                    setStats([
+                        {
+                            title: "Total Events",
+                            value: data.overview.totalEvents.toString(),
+                            change: data.overview.totalEvents > 0 ? "+12%" : "0%",
+                            trend: "up",
+                            icon: Calendar,
+                            color: "bg-blue-500",
+                        },
+                        {
+                            title: "Registrations",
+                            value: data.overview.totalRegistrations.toLocaleString(),
+                            change: `+${data.overview.monthlyRegistrations}`,
+                            trend: "up",
+                            icon: Users,
+                            color: "bg-green-500",
+                        },
+                        {
+                            title: "Revenue",
+                            value: `₹${data.overview.totalRevenue.toLocaleString()}`,
+                            change: "0%",
+                            trend: "up",
+                            icon: IndianRupee,
+                            color: "bg-purple-500",
+                        },
+                        {
+                            title: "Certificates Issued",
+                            value: data.overview.totalCertificates.toLocaleString(),
+                            change: "0%",
+                            trend: "up",
+                            icon: Award,
+                            color: "bg-orange-500",
+                        },
+                    ]);
+
+                    setUpcomingEvents(data.upcomingEvents.map((e) => ({
+                        name: e.title,
+                        date: new Date(e.startDate).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                        }),
+                        slots: `${e.registeredCount}/${e.capacity}`,
+                        status: new Date(e.startDate) > new Date() ? "open" : "upcoming",
+                    })));
+
+                    setRecentRegistrations(data.recentRegistrations.map((r) => ({
+                        name: r.name,
+                        event: r.event.title,
+                        amount: "",
+                        time: formatTimeAgo(new Date(r.createdAt)),
+                        status: r.status.toLowerCase(),
+                    })));
+                } else {
+                    setDefaultEmptyState();
+                }
+            } catch (error) {
+                console.error("Failed to fetch dashboard data:", error);
+                setDefaultEmptyState();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchDashboardData();
+    }, [sessionLoading, effectiveTenantId]);
+
+    function setDefaultEmptyState() {
+        setStats([
+            { title: "Total Events", value: "0", change: "0%", trend: "up", icon: Calendar, color: "bg-blue-500" },
+            { title: "Registrations", value: "0", change: "0%", trend: "up", icon: Users, color: "bg-green-500" },
+            { title: "Revenue", value: "₹0", change: "0%", trend: "up", icon: IndianRupee, color: "bg-purple-500" },
+            { title: "Certificates Issued", value: "0", change: "0%", trend: "up", icon: Award, color: "bg-orange-500" },
+        ]);
+        setRecentRegistrations([]);
+        setUpcomingEvents([]);
+    }
+
+    function formatTimeAgo(date: Date) {
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffMins < 60) return `${diffMins} minutes ago`;
+        if (diffHours < 24) return `${diffHours} hours ago`;
+        return `${diffDays} days ago`;
+    }
+
+    if (loading) {
+        return (
+            <div className="space-y-6 animate-fadeIn">
+                <div className="flex items-center justify-center h-[50vh]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6 animate-fadeIn">
             {/* Header */}
@@ -129,33 +234,37 @@ export default function DashboardPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
-                            {recentRegistrations.map((reg, index) => (
-                                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-10 w-10">
-                                            <AvatarFallback className="bg-primary/10 text-primary">
-                                                {reg.name.split(" ").map(n => n[0]).join("")}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-medium text-sm">{reg.name}</p>
-                                            <p className="text-xs text-muted-foreground">{reg.event}</p>
+                        {recentRegistrations.length === 0 ? (
+                            <EmptyState message="No registrations yet. Registrations will appear here as attendees sign up for your events." />
+                        ) : (
+                            <div className="space-y-4">
+                                {recentRegistrations.map((reg, index) => (
+                                    <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-10 w-10">
+                                                <AvatarFallback className="bg-primary/10 text-primary">
+                                                    {reg.name.split(" ").map(n => n[0]).join("")}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-medium text-sm">{reg.name}</p>
+                                                <p className="text-xs text-muted-foreground">{reg.event}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="font-semibold text-sm">{reg.amount}</p>
-                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                            <Clock className="h-3 w-3" />
-                                            {reg.time}
+                                        <div className="text-right">
+                                            {reg.amount && <p className="font-semibold text-sm">{reg.amount}</p>}
+                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                <Clock className="h-3 w-3" />
+                                                {reg.time}
+                                            </div>
                                         </div>
+                                        <Badge variant={reg.status === "paid" || reg.status === "confirmed" ? "success" : "warning"}>
+                                            {reg.status}
+                                        </Badge>
                                     </div>
-                                    <Badge variant={reg.status === "paid" ? "success" : "warning"}>
-                                        {reg.status}
-                                    </Badge>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -171,27 +280,31 @@ export default function DashboardPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
-                            {upcomingEvents.map((event, index) => (
-                                <div key={index} className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/50 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                            <Calendar className="h-5 w-5 text-primary" />
+                        {upcomingEvents.length === 0 ? (
+                            <EmptyState message="No upcoming events. Create an event to get started." />
+                        ) : (
+                            <div className="space-y-4">
+                                {upcomingEvents.map((event, index) => (
+                                    <div key={index} className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                                <Calendar className="h-5 w-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-sm">{event.name}</p>
+                                                <p className="text-xs text-muted-foreground">{event.date}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="font-medium text-sm">{event.name}</p>
-                                            <p className="text-xs text-muted-foreground">{event.date}</p>
+                                        <div className="text-right">
+                                            <Badge variant={event.status === "open" ? "default" : "secondary"}>
+                                                {event.status}
+                                            </Badge>
+                                            <p className="text-xs text-muted-foreground mt-1">{event.slots} slots</p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <Badge variant={event.status === "open" ? "default" : "secondary"}>
-                                            {event.status}
-                                        </Badge>
-                                        <p className="text-xs text-muted-foreground mt-1">{event.slots} slots</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

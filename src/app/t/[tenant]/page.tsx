@@ -42,9 +42,10 @@ import {
   Microscope,
   BookOpen,
   Activity,
+  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { eventsService, Event } from "@/services/events";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
 
@@ -66,34 +67,83 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; style?: 
   FlaskConical,
 };
 
+// Scroll-triggered reveal animation hook
+function useScrollReveal() {
+  useEffect(() => {
+    const elements = document.querySelectorAll('[data-scroll-reveal]');
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+}
+
+// Animated number counter component
+function AnimatedCounter({ value, suffix = "" }: { value: string | number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const numericValue = typeof value === 'string' ? parseInt(value.replace(/[^0-9]/g, '')) || 0 : value;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Animate from 0 to target
+          const duration = 2000;
+          const start = performance.now();
+          function animate(now: number) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease out cubic
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.floor(eased * numericValue));
+            if (progress < 1) requestAnimationFrame(animate);
+          }
+          requestAnimationFrame(animate);
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [numericValue]);
+
+  // Preserve original format (e.g., "500+" should show "500+")
+  const originalStr = String(value);
+  const prefix = originalStr.match(/^[^0-9]*/)?.[0] || "";
+  const suffixFromValue = originalStr.match(/[^0-9]*$/)?.[0] || "";
+
+  return <span ref={ref} className="counter-number">{prefix}{count}{suffixFromValue}{suffix}</span>;
+}
+
 // Decorative background component
 function DecorativeBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute w-[600px] h-[600px] bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl -top-40 -right-40 animate-pulse" />
-      <div className="absolute w-[400px] h-[400px] bg-gradient-to-br from-secondary/10 to-transparent rounded-full blur-3xl bottom-20 -left-40 animate-pulse" style={{ animationDelay: "1s" }} />
-      <div className="absolute w-[300px] h-[300px] bg-gradient-to-br from-accent/10 to-transparent rounded-full blur-3xl top-1/2 left-1/2 animate-pulse" style={{ animationDelay: "2s" }} />
+      <div className="absolute w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl -top-40 -right-40 animate-pulse" />
+      <div className="absolute w-[200px] h-[200px] md:w-[400px] md:h-[400px] bg-gradient-to-br from-secondary/10 to-transparent rounded-full blur-3xl bottom-20 -left-40 animate-pulse" style={{ animationDelay: "1s" }} />
+      <div className="absolute w-[150px] h-[150px] md:w-[300px] md:h-[300px] bg-gradient-to-br from-accent/10 to-transparent rounded-full blur-3xl top-1/2 left-1/2 animate-pulse" style={{ animationDelay: "2s" }} />
     </div>
   );
 }
 
-// Wave SVG component
-function WaveDivider({ fill = "white", flip = false }: { fill?: string; flip?: boolean }) {
-  return (
-    <svg
-      className={cn("absolute left-0 right-0 w-full h-16 md:h-24", flip ? "top-0 rotate-180" : "bottom-0")}
-      viewBox="0 0 1440 120"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      preserveAspectRatio="none"
-    >
-      <path
-        d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
-        fill={fill}
-      />
-    </svg>
-  );
-}
+
 
 
 function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryColor: string }; faqs: { question: string; answer: string }[] }) {
@@ -104,13 +154,11 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
   return (
     <section
       id="faq"
-      className="py-20 lg:py-28 relative overflow-hidden"
+      className="py-6 lg:py-8 relative overflow-hidden"
       style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}
     >
-      <WaveDivider fill="#ffffff" flip />
-
-      <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-12">
-        <div className="text-center mb-16">
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
+        <div className="text-center mb-5" data-scroll-reveal>
           <Badge
             variant="outline"
             className="mb-4 px-5 py-1.5 rounded-full"
@@ -119,7 +167,7 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
             <HelpCircle className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
             FAQ
           </Badge>
-          <h2 className="text-3xl lg:text-5xl font-bold mb-4 tracking-tight">Frequently Asked Questions</h2>
+          <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Frequently Asked Questions</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Find answers to common questions about our organization and events
           </p>
@@ -133,6 +181,7 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
             >
               <button
                 type="button"
+                aria-expanded={openIndex === index}
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
                 className="w-full flex items-center justify-between p-6 text-left gap-4"
               >
@@ -148,7 +197,7 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
               <div
                 className={cn(
                   "overflow-hidden transition-all duration-300",
-                  openIndex === index ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                  openIndex === index ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
                 )}
               >
                 <p className="px-6 pb-6 text-muted-foreground leading-relaxed">
@@ -159,9 +208,50 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
           ))}
         </div>
       </div>
-
-      <WaveDivider fill="#ffffff" />
     </section>
+  );
+}
+
+function CountdownTimer({ targetDate, theme }: { targetDate: string; theme: { primaryColor: string; secondaryColor: string } }) {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    function calculateTime() {
+      const diff = new Date(targetDate).getTime() - Date.now();
+      if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      return {
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / (1000 * 60)) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+      };
+    }
+    setTimeLeft(calculateTime());
+    const timer = setInterval(() => setTimeLeft(calculateTime()), 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  const units = [
+    { label: "Days", value: timeLeft.days },
+    { label: "Hours", value: timeLeft.hours },
+    { label: "Minutes", value: timeLeft.minutes },
+    { label: "Seconds", value: timeLeft.seconds },
+  ];
+
+  return (
+    <div className="flex items-center justify-center gap-3 sm:gap-4">
+      {units.map((unit) => (
+        <div key={unit.label} className="text-center">
+          <div
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white text-2xl sm:text-3xl font-bold shadow-lg"
+            style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+          >
+            {String(unit.value).padStart(2, "0")}
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-medium">{unit.label}</p>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -176,9 +266,42 @@ export default function TenantHomePage() {
   const [isVisible, setIsVisible] = useState(false);
   const [testimonialSlide, setTestimonialSlide] = useState(0);
   const [aboutSlide, setAboutSlide] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  const [testimonialVisibleCount, setTestimonialVisibleCount] = useState(3);
+  const [speakers, setSpeakers] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [pricingCategories, setPricingCategories] = useState<any[]>([]);
+  const [activeScheduleDay, setActiveScheduleDay] = useState(0);
+
+  // Scroll-triggered reveal animations
+  useScrollReveal();
+
+  // Responsive testimonial carousel: 1 on mobile, 2 on tablet, 3 on desktop
+  useEffect(() => {
+    function updateVisibleCount() {
+      if (window.innerWidth < 640) {
+        setTestimonialVisibleCount(1);
+      } else if (window.innerWidth < 1024) {
+        setTestimonialVisibleCount(2);
+      } else {
+        setTestimonialVisibleCount(3);
+      }
+    }
+    updateVisibleCount();
+    window.addEventListener("resize", updateVisibleCount);
+    return () => window.removeEventListener("resize", updateVisibleCount);
+  }, []);
 
   // About slideshow auto-rotate
 
+  // Scroll-aware navbar
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   // Trigger animations on mount
   useEffect(() => {
     setIsVisible(true);
@@ -194,14 +317,55 @@ export default function TenantHomePage() {
           sponsorsService.getPublic({ isActive: true, tenantId: tenant.id }),
         ]);
 
+        let eventsData: any[] = [];
         if (eventsRes.success && eventsRes.data) {
-          const eventsData = Array.isArray(eventsRes.data)
+          eventsData = Array.isArray(eventsRes.data)
             ? eventsRes.data
             : (eventsRes.data as any).events || [];
           setEvents(eventsData);
         }
         if (sponsorsRes.success && sponsorsRes.data) {
           setSponsors(sponsorsRes.data || []);
+        }
+
+        // Fetch speakers
+        try {
+          const speakersRes = await fetch(`/api/speakers?tenantId=${tenant.id}&isActive=true`);
+          if (speakersRes.ok) {
+            const speakersJson = await speakersRes.json();
+            setSpeakers(speakersJson.data || speakersJson || []);
+          }
+        } catch (e) {
+          console.error("Error fetching speakers:", e);
+        }
+
+        // Fetch sessions for the first event
+        if (eventsData.length > 0) {
+          try {
+            const sessionsRes = await fetch(`/api/events/${eventsData[0].id}/sessions`);
+            if (sessionsRes.ok) {
+              const sessionsData = await sessionsRes.json();
+              setSessions(sessionsData.data || sessionsData || []);
+            }
+          } catch (e) {
+            console.error("Error fetching sessions:", e);
+          }
+
+          // Fetch pricing categories
+          try {
+            if (eventsData[0]?.pricingCategories && eventsData[0].pricingCategories.length > 0) {
+              setPricingCategories(eventsData[0].pricingCategories);
+            } else {
+              const eventRes = await fetch(`/api/events/${eventsData[0].id}`);
+              if (eventRes.ok) {
+                const eventJson = await eventRes.json();
+                const eventDetail = eventJson.data || eventJson;
+                setPricingCategories(eventDetail.pricingCategories || []);
+              }
+            }
+          } catch (e) {
+            console.error("Error fetching pricing:", e);
+          }
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -256,6 +420,7 @@ export default function TenantHomePage() {
   const hasRealTestimonials = testimonials.length > 0;
   const featuredEvents = events.slice(0, 3);
   const hasEvents = featuredEvents.length > 0;
+  const nextEvent = events.find(e => e.startDate && new Date(e.startDate) > new Date()) || events[0];
   const hasSponsors = sponsors.length > 0;
   const hasGallery = galleryImages.length > 0 || galleryVideos.length > 0;
 
@@ -269,8 +434,36 @@ export default function TenantHomePage() {
     return () => clearInterval(interval);
   }, [aboutImageCount]);
 
+  // Lightbox keyboard navigation (ArrowLeft, ArrowRight, Escape)
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setLightboxOpen(false);
+      } else if (e.key === "ArrowLeft") {
+        setLightboxIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+      } else if (e.key === "ArrowRight") {
+        setLightboxIndex((prev) => (prev + 1) % galleryImages.length);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxOpen, galleryImages.length]);
+
+  // Video modal Escape key handler
+  useEffect(() => {
+    if (!playingVideoId) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setPlayingVideoId(null);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [playingVideoId]);
+
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background overflow-x-hidden pb-20 md:pb-0">
       {/* Custom CSS for animations */}
       <style jsx global>{`
         @keyframes float {
@@ -304,17 +497,17 @@ export default function TenantHomePage() {
       `}</style>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-xl shadow-sm">
+      <header className={cn("sticky top-0 z-50 transition-all duration-300", scrolled ? "bg-white/95 backdrop-blur-xl shadow-md border-b" : "bg-transparent")}>
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex h-16 lg:h-20 items-center justify-between">
             <Link href="/" className="flex items-center gap-2 group">
               <div
-                className="h-8 w-8 rounded-xl flex items-center justify-center shadow-md"
+                className="h-9 w-9 rounded-xl flex items-center justify-center shadow-md"
                 style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
               >
-                <GraduationCap className="h-4 w-4 text-white" />
+                <GraduationCap className="h-5 w-5 text-white" />
               </div>
-              <span className="font-bold text-base lg:text-lg tracking-tight">{branding.name}</span>
+              <span className="font-bold text-base lg:text-lg tracking-tight">CARE in Neuromodulation</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-8">
@@ -329,9 +522,17 @@ export default function TenantHomePage() {
             </nav>
 
             <div className="flex items-center gap-3">
-              <Link href={"/auth/login"}>
+              {/* Mobile hamburger */}
+              <button
+                className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+              <Link href={`/auth/login?tenant=${tenantSlug}`}>
                 <Button
-                  className="text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                  className="text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 text-xs sm:text-sm"
                   style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
                 >
                   Login / Register
@@ -339,73 +540,100 @@ export default function TenantHomePage() {
               </Link>
             </div>
           </div>
+
+          {/* Mobile nav dropdown */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t bg-white/95 backdrop-blur-xl pb-4 px-4">
+              <nav className="flex flex-col gap-1 pt-2">
+                {sections.hero && <a href="#hero" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Home</a>}
+                {sections.events && hasEvents && <a href="#events" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Events</a>}
+                {sections.gallery && hasGallery && <a href="#gallery" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Gallery</a>}
+                {(sections.ongoingResearch !== false) && researchItems.length > 0 && <a href="#research" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Research</a>}
+                {sections.testimonials && hasRealTestimonials && <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Testimonials</a>}
+                {sections.about && <a href="#about" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">About</a>}
+                {sections.contact && <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Contact</a>}
+                {(sections.faq !== false) && faqs.length > 0 && <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">FAQ</a>}
+              </nav>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Background wrapper: hero through events */}
-      <div
-        className="relative"
-        style={hero.bgImage ? {
-          backgroundImage: `url(${hero.bgImage})`,
-          backgroundPosition: 'center',
-          backgroundSize: 'cover',
-          backgroundAttachment: 'fixed',
-        } : undefined}
-      >
-        {/* Fade overlay on top of background image */}
-        {hero.bgImage && (
-          <div className="absolute inset-0 bg-white/45 pointer-events-none z-0" />
-        )}
+      {/* Background wrapper: hero only */}
+      <div className="relative">
 
       {/* Hero Section */}
       {sections.hero && (
         <section
           id="hero"
-          className="relative min-h-[90vh] flex items-center overflow-hidden"
-          style={!hero.bgImage ? {
+          className="relative min-h-[65vh] sm:min-h-[70vh] lg:min-h-[75vh] flex items-center overflow-hidden pb-10 md:pb-14"
+          style={hero.bgImage ? {
+            backgroundImage: `url(${hero.bgImage})`,
+            backgroundPosition: 'center',
+            backgroundSize: 'cover',
+          } : {
             background: `linear-gradient(135deg, ${theme.primaryColor}08 0%, ${theme.secondaryColor}08 50%, ${theme.accentColor}08 100%)`,
-          } : undefined}
+          }}
         >
-          <DecorativeBackground />
+          {!hero.bgImage && <DecorativeBackground />}
 
-          {/* Subtle top/bottom gradient for depth */}
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/10 via-transparent to-black/10" />
+          {/* Dark overlay for background image */}
+          {hero.bgImage && (
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/70 pointer-events-none" />
+          )}
 
-          {/* Hero Logos — pinned to edges */}
+          {/* Hero Logos — absolute left/right on lg+, inline on smaller screens */}
           {branding.logo && (
-            <div className="absolute left-8 lg:left-24 top-[40%] -translate-y-1/2 z-10 h-40 w-40 md:h-52 md:w-52 lg:h-64 lg:w-64 rounded-full bg-white shadow-xl flex items-center justify-center p-8">
-              <img src={branding.logo} alt={branding.name} className="h-full w-full object-contain" />
+            <div className="hidden lg:flex absolute left-[5%] xl:left-[8%] 2xl:left-[12%] top-[45%] -translate-y-1/2 z-10">
+              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-full bg-white shadow-xl flex items-center justify-center p-3 overflow-hidden">
+                <img src={branding.logo} alt={branding.name} className="max-h-full max-w-full object-contain" />
+              </div>
             </div>
           )}
           {branding.secondaryLogo && (
-            <div className="absolute right-8 lg:right-24 top-[40%] -translate-y-1/2 z-10 h-40 w-40 md:h-52 md:w-52 lg:h-64 lg:w-64 rounded-full bg-white shadow-xl overflow-hidden flex items-center justify-center p-5">
-              <img src={branding.secondaryLogo} alt="Secondary Logo" className="h-full w-full object-contain rounded-full" />
+            <div className="hidden lg:flex absolute right-[5%] xl:right-[8%] 2xl:right-[12%] top-[45%] -translate-y-1/2 z-10">
+              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-full bg-white shadow-xl flex items-center justify-center p-3 overflow-hidden">
+                <img src={branding.secondaryLogo} alt="Secondary Logo" className="max-h-full max-w-full object-contain" />
+              </div>
             </div>
           )}
 
-          <div className="container mx-auto px-4 lg:px-8 relative z-10">
+          <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-8 sm:pt-10">
             <div className={cn(
               "text-center max-w-4xl mx-auto",
               isVisible ? "animate-fadeInUp" : "opacity-0"
             )}>
-              <div className="mb-8 animate-scaleIn flex items-center justify-center gap-4">
-                <div className="h-px w-12 lg:w-20 bg-gray-800/40" />
-                <span className="text-sm lg:text-base font-bold tracking-[0.2em] uppercase text-gray-800">
+              <div className="mb-4 animate-scaleIn flex items-center justify-center gap-4">
+                <div className={cn("h-px w-12 lg:w-20", hero.bgImage ? "bg-white/50" : "bg-gray-800/40")} />
+                <span className={cn("text-sm lg:text-base font-bold tracking-[0.2em] uppercase", hero.bgImage ? "text-white/90" : "text-gray-800")}>
                   {branding.tagline || "Welcome to"}
                 </span>
-                <div className="h-px w-12 lg:w-20 bg-gray-800/40" />
+                <div className={cn("h-px w-12 lg:w-20", hero.bgImage ? "bg-white/50" : "bg-gray-800/40")} />
               </div>
 
-              <div className="text-center mb-6">
-                <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-none text-gray-900 drop-shadow-sm">
-                  Centre for Advanced Research and Excellence
-                </h1>
-                <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-none mt-2 text-gray-900 drop-shadow-sm">
-                  (CARE) in Neuromodulation
+              {/* Mobile/Tablet: logos inline above title */}
+              {(branding.logo || branding.secondaryLogo) && (
+                <div className="flex lg:hidden items-center justify-center gap-4 sm:gap-6 mb-6">
+                  {branding.logo && (
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-full bg-white shadow-lg flex items-center justify-center p-2 flex-shrink-0 overflow-hidden">
+                      <img src={branding.logo} alt={branding.name} className="max-h-full max-w-full object-contain" />
+                    </div>
+                  )}
+                  {branding.secondaryLogo && (
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-full bg-white shadow-lg flex items-center justify-center p-2 flex-shrink-0 overflow-hidden">
+                      <img src={branding.secondaryLogo} alt="Secondary Logo" className="max-h-full max-w-full object-contain" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="text-center mb-4">
+                <h1 className={cn("text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight drop-shadow-sm", hero.bgImage ? "text-white" : "text-gray-900")}>
+                  {hero.title || branding.name}
                 </h1>
               </div>
 
-              <p className="text-lg lg:text-xl text-gray-700 font-medium max-w-2xl mx-auto mb-10 animation-delay-200 animate-fadeInUp">
+              <p className={cn("text-lg lg:text-xl font-medium max-w-2xl mx-auto mb-6 animation-delay-200 animate-fadeInUp", hero.bgImage ? "text-white/85" : "text-gray-700")}>
                 {hero.subtitle || "Register for the upcoming CME and workshop programs."}
               </p>
 
@@ -422,7 +650,7 @@ export default function TenantHomePage() {
                     </Button>
                   </a>
                 ) : (
-                  <Link href="/events">
+                  <a href="#events">
                     <Button
                       size="lg"
                       className="text-white rounded-full px-8 shadow-xl hover:shadow-2xl transition-all hover:scale-105 group"
@@ -431,42 +659,50 @@ export default function TenantHomePage() {
                       Explore Events
                       <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
-                  </Link>
+                  </a>
                 )}
                 <a href="#about">
                   <Button
                     size="lg"
                     variant="outline"
-                    className="rounded-full px-8 border-2 bg-white/80 backdrop-blur-sm hover:bg-white transition-all font-semibold"
+                    className={cn("rounded-full px-8 border-2 backdrop-blur-sm transition-all font-semibold", hero.bgImage ? "bg-white/20 border-white/40 text-white hover:bg-white/30" : "bg-white/80 hover:bg-white")}
                   >
                     Learn More
                   </Button>
                 </a>
               </div>
 
+              {nextEvent && nextEvent.startDate && new Date(nextEvent.startDate) > new Date() && (
+                <div className="mt-6 animation-delay-400 animate-fadeInUp" data-scroll-reveal>
+                  <p className={cn("text-sm mb-4 font-medium", hero.bgImage ? "text-white/70" : "text-gray-600")}>
+                    Next Event: <span className={cn("font-bold", hero.bgImage ? "text-white" : "text-gray-900")}>{nextEvent.title}</span>
+                  </p>
+                  <CountdownTimer targetDate={nextEvent.startDate} theme={theme} />
+                </div>
+              )}
               {/* Yearly Stats */}
               {yearlyStats && (yearlyStats.events || yearlyStats.attendees || yearlyStats.speakers) && (
-                <div className="grid grid-cols-3 gap-4 lg:gap-6 mt-16 max-w-xl mx-auto animation-delay-600 animate-fadeInUp">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6 mt-6 sm:mt-8 max-w-xl mx-auto animation-delay-600 animate-fadeInUp">
                   {yearlyStats.events && (
-                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50">
-                      <p className="text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
-                        {yearlyStats.events}
+                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50" data-scroll-reveal data-scroll-delay="1">
+                      <p className="text-xl sm:text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
+                        <AnimatedCounter value={yearlyStats.events} />
                       </p>
                       <p className="text-xs lg:text-sm text-muted-foreground mt-1">Events in {yearlyStats.year || new Date().getFullYear()}</p>
                     </div>
                   )}
                   {yearlyStats.attendees && (
-                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50">
-                      <p className="text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
-                        {yearlyStats.attendees}
+                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50" data-scroll-reveal data-scroll-delay="2">
+                      <p className="text-xl sm:text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
+                        <AnimatedCounter value={yearlyStats.attendees} />
                       </p>
                       <p className="text-xs lg:text-sm text-muted-foreground mt-1">Attendees in {yearlyStats.year || new Date().getFullYear()}</p>
                     </div>
                   )}
                   {yearlyStats.speakers && (
-                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50">
-                      <p className="text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
-                        {yearlyStats.speakers}
+                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50" data-scroll-reveal data-scroll-delay="3">
+                      <p className="text-xl sm:text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
+                        <AnimatedCounter value={yearlyStats.speakers} />
                       </p>
                       <p className="text-xs lg:text-sm text-muted-foreground mt-1">Speakers in {yearlyStats.year || new Date().getFullYear()}</p>
                     </div>
@@ -476,31 +712,32 @@ export default function TenantHomePage() {
             </div>
           </div>
 
-          {!hero.bgImage && <WaveDivider fill="#ffffff" />}
+          {/* Bottom gradient fade — smooth blend out of hero bg */}
+          <div className="absolute bottom-0 left-0 right-0 h-24 md:h-32 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" style={hasSponsors ? { background: 'linear-gradient(to top, #f9fafb, rgba(249,250,251,0.8) 50%, transparent)' } : undefined} />
         </section>
+      )}
+
+      {/* Trust Signals - Scrolling sponsor logos */}
+      {hasSponsors && (
+        <div className="relative py-3 bg-gray-50 border-y overflow-hidden">
+          <div className="marquee-container">
+            <div className="flex animate-marquee gap-12 items-center">
+              {[...sponsors, ...sponsors].map((s, i) => (
+                <div key={i} className="flex-shrink-0 h-12 w-32 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
+                  {s.logo ? <img src={s.logo} alt={s.name} className="h-full object-contain" /> : <span className="text-sm font-medium text-muted-foreground">{s.name}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Events Carousel Section */}
       {sections.events && featuredEvents.length > 0 && (
-        <section id="events" className={cn("py-20 lg:py-28 relative overflow-hidden", hero.bgImage ? "bg-transparent" : "bg-white")}>
+        <section id="events" className="pt-6 pb-4 lg:pt-8 lg:pb-6 relative overflow-hidden bg-white">
           <DecorativeBackground />
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="text-center mb-16">
-              <Badge
-                variant="outline"
-                className="mb-4 px-5 py-1.5 rounded-full"
-                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
-              >
-                <Calendar className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
-                Upcoming Events
-              </Badge>
-              <h2 className="text-3xl lg:text-5xl font-bold mb-4 tracking-tight text-gray-900">Featured Events</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto font-medium">
-                Discover our upcoming conferences, workshops, and training programs
-              </p>
-            </div>
-
             {/* Carousel */}
             <div className="relative max-w-5xl mx-auto">
               <div className="overflow-hidden rounded-3xl">
@@ -510,13 +747,15 @@ export default function TenantHomePage() {
                 >
                   {featuredEvents.map((event, index) => (
                     <div key={event.id} className="w-full flex-shrink-0 px-4">
-                      <div className="relative h-[400px] md:h-[500px] rounded-3xl overflow-hidden group">
+                      <div className="relative h-[250px] sm:h-[300px] md:h-[380px] lg:h-[420px] rounded-3xl overflow-hidden group">
                         {event.bannerImage ? (
                           <Image
                             src={event.bannerImage}
                             alt={event.title}
                             fill
                             className="object-cover transition-transform duration-700 group-hover:scale-105"
+                            placeholder="empty"
+                            {...(index === 0 ? { priority: true } : {})}
                           />
                         ) : (
                           <div
@@ -526,11 +765,11 @@ export default function TenantHomePage() {
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-                        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white">
                           <Badge className="mb-4 bg-white/20 backdrop-blur-sm border-0">
                             {event.type || "Conference"}
                           </Badge>
-                          <h3 className="text-2xl md:text-3xl font-bold mb-3">{event.title}</h3>
+                          <h3 className="text-lg sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3">{event.title}</h3>
                           <div className="flex flex-wrap gap-4 text-sm mb-6">
                             {event.startDate && (
                               <span className="flex items-center gap-2">
@@ -545,7 +784,7 @@ export default function TenantHomePage() {
                               </span>
                             )}
                           </div>
-                          <Link href={`/events/${event.id}`}>
+                          <Link href={`/events/${event.id}/register?tenant=${tenantSlug}`}>
                             <Button className="rounded-full bg-white text-black hover:bg-white/90">
                               Register Now
                               <ArrowRight className="ml-2 h-4 w-4" />
@@ -562,29 +801,32 @@ export default function TenantHomePage() {
               {featuredEvents.length > 1 && (
                 <>
                   <button
+                    aria-label="Previous event slide"
                     onClick={() => setCurrentSlide((prev) => (prev - 1 + featuredEvents.length) % featuredEvents.length)}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center hover:scale-110 transition-transform"
+                    className="absolute left-1 sm:left-0 top-1/2 -translate-y-1/2 sm:-translate-x-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-xl flex items-center justify-center hover:scale-110 transition-transform z-10"
                     style={{ color: theme.primaryColor }}
                   >
-                    <ChevronLeft className="h-6 w-6" />
+                    <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
                   </button>
                   <button
+                    aria-label="Next event slide"
                     onClick={() => setCurrentSlide((prev) => (prev + 1) % featuredEvents.length)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center hover:scale-110 transition-transform"
+                    className="absolute right-1 sm:right-0 top-1/2 -translate-y-1/2 sm:translate-x-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-xl flex items-center justify-center hover:scale-110 transition-transform z-10"
                     style={{ color: theme.primaryColor }}
                   >
                     <ChevronRight className="h-6 w-6" />
                   </button>
 
                   {/* Dots */}
-                  <div className="flex justify-center gap-2 mt-8">
+                  <div className="flex justify-center gap-2 mt-4">
                     {featuredEvents.map((_, index) => (
                       <button
                         key={index}
+                        aria-label={`Go to event slide ${index + 1}`}
                         onClick={() => setCurrentSlide(index)}
                         className={cn(
-                          "h-2 rounded-full transition-all duration-300",
-                          currentSlide === index ? "w-8" : "w-2 bg-gray-300 hover:bg-gray-400"
+                          "h-2.5 rounded-full transition-all duration-300 py-0 min-h-[10px]",
+                          currentSlide === index ? "w-8" : "w-2.5 bg-gray-300 hover:bg-gray-400"
                         )}
                         style={{ backgroundColor: currentSlide === index ? theme.primaryColor : undefined }}
                       />
@@ -596,7 +838,7 @@ export default function TenantHomePage() {
 
             {/* Event Cards Grid */}
             {events.length > 3 && (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-16">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                 {events.slice(3, 6).map((event, index) => (
                   <Card
                     key={event.id}
@@ -610,6 +852,7 @@ export default function TenantHomePage() {
                           alt={event.title}
                           fill
                           className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          placeholder="empty"
                         />
                       ) : (
                         <div
@@ -646,12 +889,12 @@ export default function TenantHomePage() {
                           </div>
                         )}
                       </div>
-                      <Link href={`/events/${event.id}`}>
+                      <Link href={`/events/${event.id}/register?tenant=${tenantSlug}`}>
                         <Button
                           className="w-full text-white"
                           style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
                         >
-                          View Details
+                          Register Now
                         </Button>
                       </Link>
                     </CardContent>
@@ -660,37 +903,313 @@ export default function TenantHomePage() {
               </div>
             )}
 
-            <div className="text-center mt-12">
-              <Link href="/events">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="rounded-full px-8 border-2 hover:scale-105 transition-all"
-                  style={{ borderColor: theme.primaryColor, color: theme.primaryColor, backgroundColor: "rgba(255,255,255,0.8)" }}
-                >
-                  View All Events
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-
           </div>
         </section>
       )}
 
       </div>{/* End background wrapper */}
 
+      {/* Speakers Section */}
+      {sections.events && speakers.length > 0 && (
+        <section
+          id="speakers"
+          className="py-6 lg:py-8 relative overflow-hidden"
+          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}
+        >
+          <div className="container mx-auto px-4 lg:px-8 relative z-10">
+            <div className="text-center mb-5" data-scroll-reveal>
+              <Badge
+                variant="outline"
+                className="mb-4 px-5 py-1.5 rounded-full"
+                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
+              >
+                <Users className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
+                Our Faculty
+              </Badge>
+              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Distinguished Speakers</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Meet the experts and thought leaders sharing their knowledge
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+              {speakers.map((speaker: any, index: number) => (
+                <div
+                  key={speaker.id || index}
+                  className="group text-center p-6 rounded-2xl bg-white border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                >
+                  <div className="relative mx-auto mb-4 h-24 w-24">
+                    <div
+                      className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{
+                        background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
+                        padding: '3px',
+                        borderRadius: '9999px',
+                      }}
+                    >
+                      <div className="w-full h-full rounded-full bg-white" />
+                    </div>
+                    {speaker.photo || speaker.photoUrl || speaker.image ? (
+                      <img
+                        src={speaker.photo || speaker.photoUrl || speaker.image}
+                        alt={speaker.name}
+                        className="h-24 w-24 rounded-full object-cover relative z-10"
+                      />
+                    ) : (
+                      <div
+                        className="h-24 w-24 rounded-full flex items-center justify-center text-white text-2xl font-bold relative z-10"
+                        style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+                      >
+                        {speaker.name?.charAt(0) || 'S'}
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="font-bold text-base lg:text-lg">{speaker.name}</h3>
+                  {speaker.designation && (
+                    <p className="text-sm text-muted-foreground mt-1">{speaker.designation}</p>
+                  )}
+                  {speaker.institution && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{speaker.institution}</p>
+                  )}
+                  {speaker.department && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{speaker.department}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Schedule / Agenda Section */}
+      {sections.events && sessions.length > 0 && (
+        <section
+          id="schedule"
+          className="py-6 lg:py-8 relative overflow-hidden bg-white"
+        >
+          <div className="container mx-auto px-4 lg:px-8 relative z-10">
+            <div className="text-center mb-5" data-scroll-reveal>
+              <Badge
+                variant="outline"
+                className="mb-4 px-5 py-1.5 rounded-full"
+                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
+              >
+                <Calendar className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
+                Schedule
+              </Badge>
+              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Event Agenda</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Explore the full schedule of sessions, workshops, and keynotes
+              </p>
+            </div>
+
+            {(() => {
+              const groupedByDate = sessions.reduce((acc: Record<string, any[]>, session: any) => {
+                const dateKey = session.sessionDate || session.date || 'TBD';
+                if (!acc[dateKey]) acc[dateKey] = [];
+                acc[dateKey].push(session);
+                return acc;
+              }, {});
+              const dateKeys = Object.keys(groupedByDate).sort();
+
+              return (
+                <div className="max-w-4xl mx-auto">
+                  {dateKeys.length > 1 && (
+                    <div className="flex justify-center gap-2 mb-10 flex-wrap">
+                      {dateKeys.map((dateKey, idx) => (
+                        <button
+                          key={dateKey}
+                          onClick={() => setActiveScheduleDay(idx)}
+                          className={cn(
+                            "px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300",
+                            activeScheduleDay === idx
+                              ? "text-white shadow-lg"
+                              : "bg-white text-gray-600 hover:bg-gray-50 border"
+                          )}
+                          style={activeScheduleDay === idx ? {
+                            background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`
+                          } : undefined}
+                        >
+                          {new Date(dateKey + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {(groupedByDate[dateKeys[activeScheduleDay]] || [])
+                      .sort((a: any, b: any) => (a.startTime || '').localeCompare(b.startTime || ''))
+                      .map((session: any, idx: number) => {
+                        const title = (session.title || '').toLowerCase();
+                        let accentColor = theme.primaryColor;
+                        if (title.includes('keynote')) accentColor = theme.primaryColor;
+                        else if (title.includes('workshop')) accentColor = theme.secondaryColor;
+                        else if (title.includes('break') || title.includes('lunch')) accentColor = '#9CA3AF';
+
+                        return (
+                          <div key={session.id || idx} className="flex gap-4 lg:gap-6 group">
+                            <div className="flex-shrink-0 w-28 lg:w-36 text-right pt-4">
+                              <p className="font-bold text-sm lg:text-base" style={{ color: accentColor }}>
+                                {session.startTime || '--:--'}
+                              </p>
+                              {session.endTime && (
+                                <p className="text-xs text-muted-foreground">{session.endTime}</p>
+                              )}
+                            </div>
+                            <div className="relative flex flex-col items-center">
+                              <div
+                                className="w-3 h-3 rounded-full mt-5 flex-shrink-0 ring-4 ring-white"
+                                style={{ backgroundColor: accentColor }}
+                              />
+                              {idx < (groupedByDate[dateKeys[activeScheduleDay]] || []).length - 1 && (
+                                <div className="w-0.5 flex-1 bg-gray-200 mt-1" />
+                              )}
+                            </div>
+                            <div className="flex-1 pb-8">
+                              <div className="bg-white rounded-xl p-4 lg:p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group-hover:-translate-y-0.5">
+                                <h4 className="font-semibold text-lg">{session.title}</h4>
+                                {session.description && (
+                                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{session.description}</p>
+                                )}
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                  {session.venue && (
+                                    <Badge variant="secondary" className="text-xs rounded-full">
+                                      <MapPin className="h-3 w-3 mr-1" />
+                                      {session.venue}
+                                    </Badge>
+                                  )}
+                                  {(session.speakerName || session.speaker?.name) && (
+                                    <Badge variant="outline" className="text-xs rounded-full">
+                                      <Users className="h-3 w-3 mr-1" />
+                                      {session.speakerName || session.speaker?.name}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </section>
+      )}
+
+      {/* Pricing / Registration Section */}
+      {sections.events && pricingCategories.length > 0 && (
+        <section
+          id="pricing"
+          className="py-6 lg:py-8 relative overflow-hidden"
+          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}
+        >
+          <div className="container mx-auto px-4 lg:px-8 relative z-10">
+            <div className="text-center mb-5" data-scroll-reveal>
+              <Badge
+                variant="outline"
+                className="mb-4 px-5 py-1.5 rounded-full"
+                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
+              >
+                <Ticket className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
+                Registration
+              </Badge>
+              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Register Now</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Choose your registration category
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {pricingCategories.map((category: any, index: number) => {
+                const isMiddle = pricingCategories.length >= 3 ? index === Math.floor(pricingCategories.length / 2) : index === 0;
+                const hasEarlyBird = category.earlyBirdPrice && category.earlyBirdDeadline && new Date(category.earlyBirdDeadline) > new Date();
+                const displayPrice = hasEarlyBird ? category.earlyBirdPrice : category.price;
+                const slotsUsed = category.totalSlots ? (category.totalSlots - (category.availableSlots ?? category.totalSlots)) : 0;
+                const slotsPercent = category.totalSlots ? Math.min((slotsUsed / category.totalSlots) * 100, 100) : 0;
+
+                return (
+                  <div
+                    key={category.id || index}
+                    className={cn(
+                      "relative rounded-2xl border bg-white p-6 lg:p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
+                      isMiddle ? "border-2 shadow-lg scale-[1.03]" : "border-gray-100 shadow-sm"
+                    )}
+                    style={isMiddle ? { borderColor: theme.primaryColor } : undefined}
+                  >
+                    {isMiddle && (
+                      <div
+                        className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white"
+                        style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+                      >
+                        Popular
+                      </div>
+                    )}
+
+                    <h3 className="font-bold text-lg mb-4">{category.name}</h3>
+
+                    <div className="mb-6">
+                      {hasEarlyBird && (
+                        <p className="text-sm text-muted-foreground line-through mb-1">
+                          ₹{Number(category.price).toLocaleString('en-IN')}
+                        </p>
+                      )}
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-bold" style={{ color: theme.primaryColor }}>
+                          ₹{Number(displayPrice).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      {hasEarlyBird && (
+                        <p className="text-xs mt-1" style={{ color: theme.primaryColor }}>
+                          Early bird until {new Date(category.earlyBirdDeadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+
+                    {category.totalSlots && (
+                      <div className="mb-6">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                          <span>{category.availableSlots ?? category.totalSlots} slots available</span>
+                          <span>{category.totalSlots} total</span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${slotsPercent}%`,
+                              background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <Link href={events[0] ? `/events/${events[0].id}/register?tenant=${tenantSlug}` : "#events"}>
+                      <Button
+                        className="w-full rounded-full text-white hover:shadow-lg hover:scale-105 transition-all"
+                        style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+                      >
+                        Register
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Ongoing Research Section */}
       {(sections.ongoingResearch !== false) && researchItems.length > 0 && (
         <section
           id="research"
-          className="py-20 lg:py-28 relative overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}
+          className="py-6 lg:py-8 relative overflow-hidden bg-white"
         >
-          <WaveDivider fill="#ffffff" flip />
-
-          <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-12">
-            <div className="text-center mb-16">
+          <div className="container mx-auto px-4 lg:px-8 relative z-10">
+            <div className="text-center mb-5" data-scroll-reveal>
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
@@ -699,7 +1218,7 @@ export default function TenantHomePage() {
                 <FlaskConical className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
                 Ongoing Research
               </Badge>
-              <h2 className="text-3xl lg:text-5xl font-bold mb-4 tracking-tight">Our Research</h2>
+              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Our Research</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Pioneering studies advancing the frontiers of neuromodulation and neuroscience
               </p>
@@ -743,18 +1262,16 @@ export default function TenantHomePage() {
               })}
             </div>
           </div>
-
-          <WaveDivider fill="#ffffff" />
         </section>
       )}
 
       {/* Gallery Section */}
       {sections.gallery && hasGallery && (
-        <section id="gallery" className="py-20 lg:py-28 bg-white relative overflow-hidden">
+        <section id="gallery" className="py-6 lg:py-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}>
           <DecorativeBackground />
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="text-center mb-16">
+            <div className="text-center mb-5" data-scroll-reveal>
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
@@ -763,73 +1280,142 @@ export default function TenantHomePage() {
                 <Camera className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
                 Gallery
               </Badge>
-              <h2 className="text-3xl lg:text-5xl font-bold mb-4 tracking-tight">Event Highlights</h2>
+              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Event Highlights</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Moments captured from our past events and conferences
               </p>
             </div>
 
-            {galleryImages.length > 0 ? (
-              <>
-                {/* Masonry Gallery */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {galleryImages.slice(0, 8).map((image, index) => {
-                    const isFeatured = index === 0 || index === 5;
-                    return (
-                    <div
-                      key={image.id}
-                      className={cn(
-                        "relative group cursor-pointer overflow-hidden rounded-2xl",
-                        isFeatured ? "col-span-2 row-span-2" : "",
-                        isFeatured ? "h-[300px] md:h-[400px]" : "h-[180px] md:h-[200px]"
-                      )}
-                      onClick={() => {
-                        setLightboxIndex(index);
-                        setLightboxOpen(true);
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={image.src}
-                        alt={image.alt}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
-
-                      <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0">
-                        <Badge className="w-fit mb-2 bg-white/20 backdrop-blur-sm text-white border-0 text-xs">
-                          {image.category}
-                        </Badge>
-                        <p className="text-white font-medium text-sm">{image.alt}</p>
+            {/* Photos and Videos side by side when both exist, centered when only one */}
+            <div className={cn(
+              "grid gap-8",
+              galleryImages.length > 0 && galleryVideos.length > 0 ? "lg:grid-cols-2" : "grid-cols-1"
+            )}>
+              {/* Photos */}
+              {galleryImages.length > 0 && (
+                <div>
+                  {galleryVideos.length > 0 && (
+                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                      <Camera className="h-5 w-5" style={{ color: theme.primaryColor }} />
+                      Photos
+                    </h3>
+                  )}
+                  <div className={cn(
+                    "grid gap-3 sm:gap-4",
+                    galleryVideos.length > 0
+                      ? "grid-cols-2 sm:grid-cols-2"
+                      : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                  )}>
+                    {galleryImages.slice(0, galleryVideos.length > 0 ? 6 : 8).map((image, index) => {
+                      const isFeatured = galleryVideos.length === 0 && (index === 0 || index === 5);
+                      return (
+                      <div
+                        key={image.id}
+                        role="button"
+                        data-scroll-reveal="scale"
+                        data-scroll-delay={String(index + 1)}
+                        tabIndex={0}
+                        aria-label={`View gallery image: ${image.alt}`}
+                        className={cn(
+                          "relative group cursor-pointer overflow-hidden rounded-2xl",
+                          isFeatured ? "sm:col-span-2 sm:row-span-2" : "",
+                          isFeatured ? "h-[220px] sm:h-[280px] md:h-[400px]" : "h-[180px] md:h-[200px]"
+                        )}
+                        onClick={() => {
+                          setLightboxIndex(index);
+                          setLightboxOpen(true);
+                        }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLightboxIndex(index); setLightboxOpen(true); } }}
+                      >
+                        <img
+                          src={image.src}
+                          alt={image.alt}
+                          width={600}
+                          height={400}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                        <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0">
+                          <Badge className="w-fit mb-2 bg-white/20 backdrop-blur-sm text-white border-0 text-xs">
+                            {image.category}
+                          </Badge>
+                          <p className="text-white font-medium text-sm">{image.alt}</p>
+                        </div>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100" aria-hidden="true">
+                          <Eye className="h-6 w-6 text-white" />
+                          <span className="sr-only">View image</span>
+                        </div>
                       </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100">
-                        <Eye className="h-6 w-6 text-white" />
+              {/* Videos */}
+              {galleryVideos.length > 0 && (
+                <div>
+                  {galleryImages.length > 0 && (
+                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                      <Play className="h-5 w-5" style={{ color: theme.primaryColor }} />
+                      Videos
+                    </h3>
+                  )}
+                  <div className={cn(
+                    "grid gap-3 sm:gap-4",
+                    galleryImages.length > 0
+                      ? "grid-cols-1 sm:grid-cols-2"
+                      : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
+                  )}>
+                    {galleryVideos.slice(0, galleryImages.length > 0 ? 4 : 6).map((video) => (
+                      <div
+                        key={video.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Play video: ${video.title}`}
+                        className="relative group cursor-pointer overflow-hidden rounded-2xl h-[180px] md:h-[200px]"
+                        onClick={() => setPlayingVideoId(video.youtubeId)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPlayingVideoId(video.youtubeId); } }}
+                      >
+                        <img
+                          src={video.thumbnail || `https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
+                          alt={video.title}
+                          width={480}
+                          height={360}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all duration-300" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                          <Play className="h-6 w-6 ml-1" style={{ color: theme.primaryColor }} />
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                          <p className="text-white font-medium text-sm truncate">{video.title}</p>
+                          {video.duration && (
+                            <span className="text-white/70 text-xs">{video.duration}</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
+              )}
+            </div>
 
-                <div className="text-center mt-12">
-                  <Link href="/gallery">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="rounded-full px-8 border-2 hover:scale-105 transition-all"
-                      style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}
-                    >
-                      View Full Gallery
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-12">
-                <Camera className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
-                <p className="text-muted-foreground">Gallery coming soon</p>
+            {(galleryImages.length > 0 || galleryVideos.length > 0) && (
+              <div className="text-center mt-12">
+                <Link href="/gallery">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="rounded-full px-8 border-2 hover:scale-105 transition-all"
+                    style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}
+                  >
+                    View Full Gallery
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
               </div>
             )}
           </div>
@@ -840,16 +1426,14 @@ export default function TenantHomePage() {
       {sections.testimonials && hasRealTestimonials && (
         <section
           id="testimonials"
-          className="py-20 lg:py-28 relative overflow-hidden"
-          style={{ background: `linear-gradient(160deg, ${theme.primaryColor}0a, ${theme.secondaryColor}12, ${theme.accentColor}08)` }}
+          className="py-6 lg:py-8 relative overflow-hidden bg-white"
         >
-          <WaveDivider fill="#ffffff" flip />
 
           {/* 3D floating bubbles & shapes */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             {/* Large glassmorphic sphere — top left */}
             <div
-              className="absolute -top-12 -left-12 w-64 h-64 rounded-full animate-[float_8s_ease-in-out_infinite]"
+              className="absolute -top-12 -left-12 w-32 h-32 md:w-64 md:h-64 rounded-full animate-[float_8s_ease-in-out_infinite]"
               style={{
                 background: `radial-gradient(circle at 35% 35%, ${theme.primaryColor}18, ${theme.primaryColor}06 60%, transparent 70%)`,
                 boxShadow: `inset -8px -8px 20px ${theme.primaryColor}08, inset 6px 6px 16px rgba(255,255,255,0.4), 0 8px 32px ${theme.primaryColor}0a`,
@@ -857,7 +1441,7 @@ export default function TenantHomePage() {
             />
             {/* Medium sphere — right */}
             <div
-              className="absolute top-[18%] -right-8 w-48 h-48 rounded-full animate-[float_6s_ease-in-out_1s_infinite]"
+              className="absolute top-[18%] -right-8 w-24 h-24 md:w-48 md:h-48 rounded-full animate-[float_6s_ease-in-out_1s_infinite]"
               style={{
                 background: `radial-gradient(circle at 30% 30%, ${theme.secondaryColor}20, ${theme.secondaryColor}08 55%, transparent 70%)`,
                 boxShadow: `inset -6px -6px 16px ${theme.secondaryColor}0a, inset 4px 4px 12px rgba(255,255,255,0.5), 0 6px 24px ${theme.secondaryColor}08`,
@@ -917,18 +1501,18 @@ export default function TenantHomePage() {
             <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: `radial-gradient(${theme.primaryColor} 1px, transparent 1px)`, backgroundSize: "32px 32px" }} />
           </div>
 
-          <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-12">
+          <div className="container mx-auto px-4 lg:px-8 relative z-10">
             {/* Section header */}
-            <div className="text-center mb-16">
+            <div className="text-center mb-5" data-scroll-reveal>
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full backdrop-blur-sm"
-                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: "rgba(255,255,255,0.8)" }}
+                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
               >
                 <Star className="h-3.5 w-3.5 mr-2 fill-yellow-400 text-yellow-400" />
                 Testimonials
               </Badge>
-              <h2 className="text-3xl lg:text-5xl font-bold mb-4 tracking-tight">
+              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">
                 Trusted by{" "}
                 <span className="bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}>
                   Professionals
@@ -1026,8 +1610,13 @@ export default function TenantHomePage() {
                 </div>
               );
 
-              return testimonials.length <= 3 ? (
-                <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
+              const visibleCount = testimonialVisibleCount;
+              const maxSlide = Math.max(0, testimonials.length - visibleCount);
+              const clampedSlide = Math.min(testimonialSlide, maxSlide);
+              const widthClass = visibleCount === 1 ? "w-full" : visibleCount === 2 ? "w-1/2" : "w-1/3";
+
+              return testimonials.length <= visibleCount ? (
+                <div className={cn("grid gap-6 lg:gap-8 max-w-5xl mx-auto", visibleCount === 1 ? "grid-cols-1" : visibleCount === 2 ? "grid-cols-2" : "grid-cols-1 md:grid-cols-3")}>
                   {testimonials.map((t, i) => renderTestimonialCard(t, i))}
                 </div>
               ) : (
@@ -1036,10 +1625,10 @@ export default function TenantHomePage() {
                   <div className="overflow-hidden rounded-xl">
                     <div
                       className="flex transition-transform duration-500 ease-in-out -mx-3"
-                      style={{ transform: `translateX(-${testimonialSlide * (100 / 3)}%)` }}
+                      style={{ transform: `translateX(-${clampedSlide * (100 / visibleCount)}%)` }}
                     >
                       {testimonials.map((t, i) => (
-                        <div key={t.id} className="w-1/3 flex-shrink-0 px-3">
+                        <div key={t.id} className={cn(widthClass, "flex-shrink-0 px-3")}>
                           {renderTestimonialCard(t, i)}
                         </div>
                       ))}
@@ -1047,19 +1636,21 @@ export default function TenantHomePage() {
                   </div>
 
                   {/* Navigation arrows */}
-                  {testimonialSlide > 0 && (
+                  {clampedSlide > 0 && (
                     <button
-                      onClick={() => setTestimonialSlide((s) => s - 1)}
-                      className="absolute -left-5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white shadow-lg border border-gray-100 flex items-center justify-center hover:scale-110 transition-all duration-300 z-10 hover:shadow-xl"
+                      aria-label="Previous testimonial"
+                      onClick={() => setTestimonialSlide((s) => Math.max(0, s - 1))}
+                      className="absolute -left-5 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white shadow-lg border border-gray-100 flex items-center justify-center hover:scale-110 transition-all duration-300 z-10 hover:shadow-xl"
                       style={{ color: theme.primaryColor }}
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
                   )}
-                  {testimonialSlide < testimonials.length - 3 && (
+                  {clampedSlide < maxSlide && (
                     <button
-                      onClick={() => setTestimonialSlide((s) => s + 1)}
-                      className="absolute -right-5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white shadow-lg border border-gray-100 flex items-center justify-center hover:scale-110 transition-all duration-300 z-10 hover:shadow-xl"
+                      aria-label="Next testimonial"
+                      onClick={() => setTestimonialSlide((s) => Math.min(maxSlide, s + 1))}
+                      className="absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white shadow-lg border border-gray-100 flex items-center justify-center hover:scale-110 transition-all duration-300 z-10 hover:shadow-xl"
                       style={{ color: theme.primaryColor }}
                     >
                       <ChevronRight className="h-5 w-5" />
@@ -1068,15 +1659,16 @@ export default function TenantHomePage() {
 
                   {/* Dots */}
                   <div className="flex justify-center gap-2 mt-10">
-                    {Array.from({ length: testimonials.length - 2 }).map((_, i) => (
+                    {Array.from({ length: maxSlide + 1 }).map((_, i) => (
                       <button
                         key={i}
+                        aria-label={`Go to testimonial slide ${i + 1}`}
                         onClick={() => setTestimonialSlide(i)}
                         className={cn(
                           "h-2.5 rounded-full transition-all duration-300",
-                          testimonialSlide === i ? "w-8" : "w-2.5 bg-gray-300 hover:bg-gray-400"
+                          clampedSlide === i ? "w-8" : "w-2.5 bg-gray-300 hover:bg-gray-400"
                         )}
-                        style={{ backgroundColor: testimonialSlide === i ? theme.primaryColor : undefined }}
+                        style={{ backgroundColor: clampedSlide === i ? theme.primaryColor : undefined }}
                       />
                     ))}
                   </div>
@@ -1084,27 +1676,25 @@ export default function TenantHomePage() {
               );
             })()}
           </div>
-
-          <WaveDivider fill="#ffffff" />
         </section>
       )}
 
       {/* About Section */}
       {sections.about && (
-        <section id="about" className="py-20 lg:py-28 bg-white relative overflow-hidden">
+        <section id="about" className="py-6 lg:py-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }} data-scroll-reveal>
           <DecorativeBackground />
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             {/* Two-column: Slideshow + Text */}
-            <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+            <div className="grid lg:grid-cols-2 gap-10 items-center mb-8">
               {/* Image Slideshow */}
               {about.images && about.images.length > 0 && (
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl" style={{ minHeight: "400px" }}>
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3] min-h-[300px]">
                 {about.images.map((img: string, idx: number) => (
                   <img
                     key={idx}
                     src={img}
-                    alt={`About image ${idx + 1}`}
+                    alt={`About ${branding.name} - photo ${idx + 1}`}
                     className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
                     style={{ opacity: aboutSlide === idx ? 1 : 0 }}
                   />
@@ -1153,6 +1743,8 @@ export default function TenantHomePage() {
                   return (
                     <Card
                       key={index}
+                      data-scroll-reveal
+                      data-scroll-delay={String(index + 1)}
                       className="text-center p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg"
                     >
                       <div
@@ -1194,13 +1786,11 @@ export default function TenantHomePage() {
         return (
         <section
           id="contact"
-          className="py-20 lg:py-28 relative overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}
+          className="py-6 lg:py-8 relative overflow-hidden bg-white"
+          data-scroll-reveal
         >
-          <WaveDivider fill="#ffffff" flip />
-
-          <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-12">
-            <div className="text-center mb-16">
+          <div className="container mx-auto px-4 lg:px-8 relative z-10">
+            <div className="text-center mb-5">
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full bg-white"
@@ -1209,7 +1799,7 @@ export default function TenantHomePage() {
                 <Mail className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
                 Contact
               </Badge>
-              <h2 className="text-3xl lg:text-5xl font-bold mb-4 tracking-tight">Get In Touch</h2>
+              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Get In Touch</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Have questions? We&apos;d love to hear from you.
               </p>
@@ -1218,7 +1808,7 @@ export default function TenantHomePage() {
             <div className={cn("max-w-5xl mx-auto grid gap-6", gridCols)}>
               {contactCards.map((card) => {
                 const content = (
-                  <Card key={card.label} className="text-center p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white">
+                  <Card key={card.label} className="text-center p-5 sm:p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white">
                     <div
                       className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
                       style={{ background: `linear-gradient(135deg, ${theme.primaryColor}20, ${theme.secondaryColor}20)` }}
@@ -1252,7 +1842,7 @@ export default function TenantHomePage() {
                     </div>
                     <h3 className="font-bold text-lg">Business Hours</h3>
                     <p className="text-sm font-medium mt-1" style={{ color: theme.primaryColor }}>
-                      Centre for Advanced Research and Excellence (CARE) in Neuromodulation
+                      {branding.name}
                     </p>
                   </div>
                   <div className="space-y-3">
@@ -1285,7 +1875,7 @@ export default function TenantHomePage() {
                 <iframe
                   src={contact.mapUrl}
                   width="100%"
-                  height="300"
+                  className="w-full h-[200px] sm:h-[250px] md:h-[300px]"
                   style={{ border: 0 }}
                   allowFullScreen
                   loading="lazy"
@@ -1303,6 +1893,7 @@ export default function TenantHomePage() {
                     href={social.facebook}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Visit our Facebook page"
                     className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl hover:-translate-y-1 transition-all"
                     style={{ color: theme.primaryColor }}
                   >
@@ -1314,6 +1905,7 @@ export default function TenantHomePage() {
                     href={social.twitter}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Visit our Twitter profile"
                     className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl hover:-translate-y-1 transition-all"
                     style={{ color: theme.primaryColor }}
                   >
@@ -1325,6 +1917,7 @@ export default function TenantHomePage() {
                     href={social.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Visit our LinkedIn page"
                     className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl hover:-translate-y-1 transition-all"
                     style={{ color: theme.primaryColor }}
                   >
@@ -1336,6 +1929,7 @@ export default function TenantHomePage() {
                     href={social.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Visit our Instagram profile"
                     className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl hover:-translate-y-1 transition-all"
                     style={{ color: theme.primaryColor }}
                   >
@@ -1347,6 +1941,7 @@ export default function TenantHomePage() {
                     href={social.youtube}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Visit our YouTube channel"
                     className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl hover:-translate-y-1 transition-all"
                     style={{ color: theme.primaryColor }}
                   >
@@ -1364,89 +1959,129 @@ export default function TenantHomePage() {
       {(sections.faq !== false) && <FAQSection theme={theme} faqs={faqs} />}
 
       {/* Footer */}
-      <footer
-        className="py-16 text-white relative overflow-hidden"
-        style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
-      >
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
-          <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl -top-20 -left-20" />
-          <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl -bottom-20 -right-20" />
+      <footer className="text-white relative overflow-hidden mb-16 md:mb-0">
+        {/* Smooth wavy transition into footer */}
+        <div className="relative h-12 md:h-16" style={{ background: faqs.length > 0 ? `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` : "#ffffff" }}>
+          <svg className="absolute bottom-0 left-0 right-0 w-full h-full" viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <path d="M0,50 C360,80 720,20 1080,50 C1260,65 1380,40 1440,50 L1440,80 L0,80 Z" fill={theme.primaryColor} />
+          </svg>
         </div>
 
-        <div className="container mx-auto px-4 lg:px-8 relative z-10">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <GraduationCap className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="font-bold text-xl">{branding.name}</p>
-                  {branding.tagline && <p className="text-sm text-white/70">{branding.tagline}</p>}
-                </div>
-              </div>
-              {footer.text && <p className="text-white/70 max-w-md">{footer.text}</p>}
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-white/70">
-                <li><a href="#events" className="hover:text-white transition-colors">Events</a></li>
-                <li><a href="#research" className="hover:text-white transition-colors">Research</a></li>
-                <li><a href="#gallery" className="hover:text-white transition-colors">Gallery</a></li>
-                <li><a href="#about" className="hover:text-white transition-colors">About</a></li>
-                <li><a href="#contact" className="hover:text-white transition-colors">Contact</a></li>
-                <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Contact</h4>
-              <ul className="space-y-2 text-white/70">
-                {contact.email && <li>{contact.email}</li>}
-                {contact.phone && <li>{contact.phone}</li>}
-                {contact.city && contact.country && <li>{contact.city}, {contact.country}</li>}
-              </ul>
-            </div>
+        {/* Main footer with theme gradient + bubbles */}
+        <div
+          className="py-8 pb-0 relative overflow-hidden"
+          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+        >
+          {/* Floating bubbles background */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute w-16 h-16 rounded-full bg-white/[0.07] -top-4 left-[10%] animate-[float_6s_ease-in-out_infinite]" />
+            <div className="absolute w-24 h-24 rounded-full bg-white/[0.05] top-12 right-[15%] animate-[float_8s_ease-in-out_infinite_1s]" />
+            <div className="absolute w-10 h-10 rounded-full bg-white/[0.08] top-1/3 left-[5%] animate-[float_7s_ease-in-out_infinite_2s]" />
+            <div className="absolute w-32 h-32 rounded-full bg-white/[0.04] -bottom-8 left-[20%] animate-[float_9s_ease-in-out_infinite_0.5s]" />
+            <div className="absolute w-20 h-20 rounded-full bg-white/[0.06] top-1/4 right-[8%] animate-[float_7s_ease-in-out_infinite_3s]" />
+            <div className="absolute w-14 h-14 rounded-full bg-white/[0.07] bottom-1/3 right-[25%] animate-[float_6s_ease-in-out_infinite_1.5s]" />
+            <div className="absolute w-8 h-8 rounded-full bg-white/[0.09] top-[60%] left-[40%] animate-[float_5s_ease-in-out_infinite_2.5s]" />
+            <div className="absolute w-28 h-28 rounded-full bg-white/[0.03] -top-10 right-[35%] animate-[float_10s_ease-in-out_infinite_4s]" />
+            <div className="absolute w-12 h-12 rounded-full bg-white/[0.08] bottom-[20%] left-[60%] animate-[float_6s_ease-in-out_infinite_3.5s]" />
+            <div className="absolute w-6 h-6 rounded-full bg-white/[0.10] top-[45%] right-[45%] animate-[float_5s_ease-in-out_infinite_1s]" />
           </div>
 
-          <div className="border-t border-white/20 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-white/70">
-              &copy; {new Date().getFullYear()} {footer.copyrightText || `${branding.name}. All rights reserved.`}
-            </p>
-            <p className="text-sm text-white/50">
-              Powered by ICMS
-            </p>
+          <div className="container mx-auto px-4 lg:px-8 relative z-10">
+            <div className="grid md:grid-cols-4 gap-12">
+              <div className="md:col-span-2">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
+                    <GraduationCap className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xl">{branding.name}</p>
+                    {branding.tagline && <p className="text-sm text-white/70">{branding.tagline}</p>}
+                  </div>
+                </div>
+                {footer.text && <p className="text-white/70 max-w-md">{footer.text}</p>}
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-4">Quick Links</h4>
+                <ul className="space-y-2 text-white/70">
+                  <li><a href="#events" className="hover:text-white transition-colors">Events</a></li>
+                  <li><a href="#research" className="hover:text-white transition-colors">Research</a></li>
+                  <li><a href="#gallery" className="hover:text-white transition-colors">Gallery</a></li>
+                  <li><a href="#about" className="hover:text-white transition-colors">About</a></li>
+                  <li><a href="#contact" className="hover:text-white transition-colors">Contact</a></li>
+                  <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-4">Contact</h4>
+                <ul className="space-y-2 text-white/70">
+                  {contact.email && <li>{contact.email}</li>}
+                  {contact.phone && <li>{contact.phone}</li>}
+                  {contact.city && contact.country && <li>{contact.city}, {contact.country}</li>}
+                </ul>
+              </div>
+            </div>
+
+            {/* Footer sponsor logos */}
+            {hasSponsors && (
+              <div className="border-t border-white/20 py-8 mb-8">
+                <p className="text-sm text-white/50 text-center mb-4">Our Partners</p>
+                <div className="flex flex-wrap items-center justify-center gap-8">
+                  {sponsors.slice(0, 6).map((s) => (
+                    <div key={s.id} className="h-10 opacity-70 hover:opacity-100 transition-opacity">
+                      {s.logo ? <img src={s.logo} alt={s.name} className="h-full object-contain brightness-0 invert" /> : <span className="text-sm text-white/60">{s.name}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bottom bar — seamless, no separator */}
+            <div className="border-t border-white/15 mt-8 py-6 flex flex-col md:flex-row items-center justify-between gap-5">
+              <p className="text-sm font-medium text-white/80">
+                &copy; {new Date().getFullYear()} {footer.copyrightText || `${branding.name}. All rights reserved.`}
+              </p>
+              <a href="https://summitsolutions.co.in" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:scale-105 transition-all duration-300">
+                <span className="text-xs font-semibold uppercase tracking-widest text-white/60">Powered by</span>
+                <div className="bg-white/95 rounded-xl px-5 py-2.5 shadow-lg group-hover:shadow-xl group-hover:bg-white transition-all">
+                  <img src="/summit-logo.png" alt="Summit Solutions" className="h-9 inline-block" />
+                </div>
+              </a>
+            </div>
           </div>
         </div>
       </footer>
 
       {/* Lightbox */}
+      {/* Photo Lightbox */}
       {lightboxOpen && galleryImages[lightboxIndex] && (
         <div
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center backdrop-blur-sm"
           onClick={() => setLightboxOpen(false)}
         >
           <button
-            className="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            aria-label="Close lightbox"
+            className="absolute top-4 right-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
             onClick={() => setLightboxOpen(false)}
           >
-            <X className="h-6 w-6 text-white" />
+            <X className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </button>
           <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            aria-label="Previous image"
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
             onClick={(e) => { e.stopPropagation(); setLightboxIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length); }}
           >
-            <ChevronLeft className="h-6 w-6 text-white" />
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </button>
           <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            aria-label="Next image"
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
             onClick={(e) => { e.stopPropagation(); setLightboxIndex((prev) => (prev + 1) % galleryImages.length); }}
           >
-            <ChevronRight className="h-6 w-6 text-white" />
+            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </button>
-          <div className="max-w-5xl max-h-[85vh] mx-4" onClick={(e) => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+          <div className="max-w-5xl max-h-[85vh] mx-2 sm:mx-4" onClick={(e) => e.stopPropagation()}>
             <img
               src={galleryImages[lightboxIndex].src}
               alt={galleryImages[lightboxIndex].alt}
@@ -1459,6 +2094,46 @@ export default function TenantHomePage() {
           </div>
         </div>
       )}
+
+      {/* Video Modal */}
+      {playingVideoId && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center backdrop-blur-sm"
+          onClick={() => setPlayingVideoId(null)}
+        >
+          <button
+            aria-label="Close video"
+            className="absolute top-4 right-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+            onClick={() => setPlayingVideoId(null)}
+          >
+            <X className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+          </button>
+          <div className="w-full max-w-4xl mx-2 sm:mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+              <iframe
+                className="absolute inset-0 w-full h-full rounded-2xl"
+                src={`https://www.youtube.com/embed/${playingVideoId}?autoplay=1&mute=1`}
+                title="Video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile sticky register button */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-xl border-t shadow-lg md:hidden">
+        <Link href={events[0] ? `/events/${events[0].id}/register?tenant=${tenantSlug}` : `/auth/login?tenant=${tenantSlug}`} className="block">
+          <Button
+            className="w-full text-white rounded-full font-semibold py-3"
+            style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+          >
+            Register Now
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }

@@ -53,6 +53,7 @@ export interface Tenant {
   aboutTitle: string | null;
   aboutDescription: string | null;
   aboutFeatures: unknown | null;
+  aboutImages: unknown | null;
   galleryImages: unknown | null;
   galleryVideos: unknown | null;
   testimonials: unknown | null;

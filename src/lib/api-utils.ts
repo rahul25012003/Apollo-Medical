@@ -136,12 +136,19 @@ export function getPaginationParams(searchParams: URLSearchParams): {
   limit: number;
   skip: number;
 } {
+  const MAX_OFFSET = 10000; // Maximum total records that can be skipped to prevent abuse
+
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const limit = Math.min(
     100,
     Math.max(1, parseInt(searchParams.get("limit") || "10", 10))
   );
-  const skip = (page - 1) * limit;
+  let skip = (page - 1) * limit;
+
+  // Enforce maximum offset to prevent excessive database scanning
+  if (skip > MAX_OFFSET) {
+    skip = MAX_OFFSET;
+  }
 
   return { page, limit, skip };
 }
@@ -213,12 +220,11 @@ export function withErrorHandler<TContext>(
         }
         // Prisma unknown field error
         if (error.message.includes("Unknown argument") || error.message.includes("Unknown field")) {
-          return Errors.badRequest(error.message);
+          return Errors.badRequest("Invalid request parameters");
         }
       }
 
-      const errMsg = error instanceof Error ? error.message : "Internal server error";
-      return Errors.internalError(errMsg);
+      return Errors.internalError("An unexpected error occurred. Please try again later.");
     }
   };
 }

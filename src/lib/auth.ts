@@ -89,6 +89,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   providers: [
     Credentials({
+      id: "credentials",
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -129,6 +130,74 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!isValid) {
           return null;
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          image: user.avatar,
+          tenantId: user.tenantId,
+        };
+      },
+    }),
+    Credentials({
+      id: "otp-login",
+      name: "otp-login",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        code: { label: "OTP Code", type: "text" },
+      },
+      async authorize(credentials) {
+        const email = credentials?.email as string | undefined;
+        const code = credentials?.code as string | undefined;
+
+        if (!email || !code || code.length !== 6) {
+          return null;
+        }
+
+        // Verify OTP directly against the database
+        const otp = await prisma.oTP.findFirst({
+          where: {
+            email: email.toLowerCase(),
+            code,
+            purpose: "LOGIN",
+            used: false,
+            expiresAt: { gt: new Date() },
+          },
+        });
+
+        if (!otp) {
+          throw new Error("Invalid or expired OTP");
+        }
+
+        // Mark OTP as used
+        await prisma.oTP.update({
+          where: { id: otp.id },
+          data: { used: true },
+        });
+
+        // Look up the user
+        const user = await prisma.user.findUnique({
+          where: { email: email.toLowerCase() },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            isActive: true,
+            avatar: true,
+            tenantId: true,
+          },
+        });
+
+        if (!user) {
+          return null;
+        }
+
+        if (!user.isActive) {
+          throw new Error("Account is deactivated");
         }
 
         return {

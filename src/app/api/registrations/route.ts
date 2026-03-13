@@ -13,6 +13,7 @@ import {
 } from "@/lib/api-utils";
 import { Prisma } from "@prisma/client";
 import { getEffectiveTenantId, tenantWhereClause } from "@/lib/tenant-scope";
+import { createNotification } from "@/lib/notifications-db";
 
 // GET /api/registrations - List all registrations (with filters)
 export const GET = withErrorHandler(async (request: NextRequest) => {
@@ -151,6 +152,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     select: {
       id: true,
       title: true,
+      tenantId: true,
       capacity: true,
       isRegistrationOpen: true,
       registrationDeadline: true,
@@ -179,6 +181,13 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   // Check if user is admin/staff - they can bypass registration restrictions
   const isAdminRegistration = session && canAccess(session.user.role, "registrations");
+
+  // Tenant isolation: admin can only create registrations for their tenant's events
+  if (isAdminRegistration && session.user.role !== "SUPER_ADMIN") {
+    if (session.user.tenantId && event.tenantId !== session.user.tenantId) {
+      return Errors.forbidden("You can only create registrations for your own tenant's events");
+    }
+  }
 
   // Only enforce registration restrictions for public (non-admin) registrations
   if (!isAdminRegistration) {
@@ -294,6 +303,16 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         },
       },
     },
+  });
+
+  // Create in-app notification for admins (non-blocking)
+  createNotification({
+    type: "NEW_REGISTRATION",
+    title: "New Registration",
+    message: `${registration.name} registered for "${registration.event.title}".`,
+    link: `/dashboard/registrations`,
+    tenantId: event.tenantId,
+    excludeUserId: session?.user?.id,
   });
 
   return successResponse(registration, "Registration successful", 201);

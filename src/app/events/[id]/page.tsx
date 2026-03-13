@@ -345,11 +345,11 @@ export default function EventDetailPage() {
 
                         {/* Tabs */}
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-fadeIn stagger-1">
-                            <TabsList className="grid w-full grid-cols-4">
-                                <TabsTrigger value="overview">Overview</TabsTrigger>
-                                <TabsTrigger value="schedule">Schedule</TabsTrigger>
-                                <TabsTrigger value="speakers">Speakers</TabsTrigger>
-                                <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
+                            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                                <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+                                <TabsTrigger value="schedule" className="text-xs sm:text-sm">Schedule</TabsTrigger>
+                                <TabsTrigger value="speakers" className="text-xs sm:text-sm">Speakers</TabsTrigger>
+                                <TabsTrigger value="sponsors" className="text-xs sm:text-sm">Sponsors</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="overview" className="space-y-6 mt-6">
@@ -510,7 +510,7 @@ export default function EventDetailPage() {
                                             <CardContent>
                                                 <div className={cn(
                                                     "grid gap-4",
-                                                    tier === "platinum" ? "grid-cols-1 md:grid-cols-2" : tier === "bronze" ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3"
+                                                    tier === "platinum" ? "grid-cols-1 md:grid-cols-2" : tier === "bronze" ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
                                                 )}>
                                                     {tierSponsors.map((sponsor) => (
                                                         <a
@@ -547,7 +547,7 @@ export default function EventDetailPage() {
                     </div>
 
                     {/* Sidebar */}
-                    <div className="space-y-6 sticky top-24 self-start">
+                    <div className="space-y-6 lg:sticky lg:top-24 self-start">
                         {/* Registration Card */}
                         <Card className="animate-fadeIn">
                             <CardHeader>

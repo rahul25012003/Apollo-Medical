@@ -40,7 +40,6 @@ export default function LoginPage() {
     const onSubmit = async (data: LoginFormData) => {
         setIsLoading(true);
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        console.log("Login data:", data);
         setIsLoading(false);
         router.push("/dashboard");
     };
@@ -138,53 +137,12 @@ export default function LoginPage() {
                 </Button>
             </form>
 
-            {/* Divider */}
-            <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border"></div>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-3 text-muted-foreground font-medium">
-                        Demo Access
-                    </span>
-                </div>
-            </div>
-
-            {/* Demo Credentials Card */}
-            <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-muted/50 to-muted p-4">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                <div className="relative">
-                    <div className="flex items-center gap-2 mb-3">
-                        <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-                            <Sparkles className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                            Test Credentials
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Email</p>
-                            <p className="text-sm font-mono font-medium text-foreground bg-background/60 px-2 py-1 rounded border border-border/50">
-                                admin@icms.com
-                            </p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Password</p>
-                            <p className="text-sm font-mono font-medium text-foreground bg-background/60 px-2 py-1 rounded border border-border/50">
-                                admin123
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Footer */}
             <p className="mt-8 text-center text-sm text-muted-foreground">
                 Need help?{" "}
-                <Link href="/support" className="font-medium text-primary hover:text-primary/80 transition-colors">
+                <a href="mailto:support@icms.com" className="font-medium text-primary hover:text-primary/80 transition-colors">
                     Contact support
-                </Link>
+                </a>
             </p>
         </div>
     );

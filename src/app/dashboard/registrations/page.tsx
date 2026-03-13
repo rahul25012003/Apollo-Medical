@@ -370,7 +370,7 @@ function RegistrationsContent() {
             if (response.success) {
                 // Refresh registrations
                 const regsRes = await registrationsService.getAll(
-                    eventIdParam ? { eventId: eventIdParam } : {}
+                    { ...(eventIdParam ? { eventId: eventIdParam } : {}), ...tenantFilterParams }
                 );
                 if (regsRes.success && regsRes.data) {
                     setRegistrations(Array.isArray(regsRes.data) ? regsRes.data : []);
@@ -392,6 +392,7 @@ function RegistrationsContent() {
             }
         } catch (error) {
             console.error("Failed to create registration:", error);
+            alert({ title: "Error", description: "Failed to create registration. Please try again.", variant: "error" });
         } finally {
             setSubmitting(false);
         }
@@ -403,7 +404,7 @@ function RegistrationsContent() {
     // Refresh registrations helper
     const refreshRegistrations = async () => {
         const regsRes = await registrationsService.getAll(
-            eventIdParam ? { eventId: eventIdParam } : {}
+            { ...(eventIdParam ? { eventId: eventIdParam } : {}), ...tenantFilterParams }
         );
         if (regsRes.success && regsRes.data) {
             setRegistrations(Array.isArray(regsRes.data) ? regsRes.data : []);
@@ -420,6 +421,7 @@ function RegistrationsContent() {
             }
         } catch (error) {
             console.error("Failed to confirm registration:", error);
+            alert({ title: "Error", description: "Failed to confirm registration.", variant: "error" });
         } finally {
             setActionInProgress(null);
         }
@@ -435,6 +437,7 @@ function RegistrationsContent() {
             }
         } catch (error) {
             console.error("Failed to move to confirmed:", error);
+            alert({ title: "Error", description: "Failed to move to confirmed.", variant: "error" });
         } finally {
             setActionInProgress(null);
         }
@@ -450,6 +453,7 @@ function RegistrationsContent() {
             }
         } catch (error) {
             console.error("Failed to mark as paid:", error);
+            alert({ title: "Error", description: "Failed to mark as paid.", variant: "error" });
         } finally {
             setActionInProgress(null);
         }
@@ -468,6 +472,7 @@ function RegistrationsContent() {
             }
         } catch (error) {
             console.error("Failed to mark as free:", error);
+            alert({ title: "Error", description: "Failed to mark as free.", variant: "error" });
         } finally {
             setActionInProgress(null);
         }
@@ -485,6 +490,7 @@ function RegistrationsContent() {
             }
         } catch (error) {
             console.error("Failed to mark as attended:", error);
+            alert({ title: "Error", description: "Failed to mark as attended.", variant: "error" });
         } finally {
             setActionInProgress(null);
         }
@@ -500,6 +506,7 @@ function RegistrationsContent() {
             }
         } catch (error) {
             console.error("Failed to cancel registration:", error);
+            alert({ title: "Error", description: "Failed to cancel registration.", variant: "error" });
         } finally {
             setActionInProgress(null);
         }

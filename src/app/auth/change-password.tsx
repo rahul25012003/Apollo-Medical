@@ -55,7 +55,6 @@ export default function ChangePasswordPage() {
         setIsLoading(true);
         // Simulate API call
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        console.log("Change password data:", data);
         setIsLoading(false);
         setIsSuccess(true);
     };

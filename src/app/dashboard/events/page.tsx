@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,7 @@ const eventTypes = ["All Types", ...EVENT_TYPES.map(t => t.value)];
 const statuses = ["All Status", ...EVENT_STATUSES.map(s => s.value)];
 
 export default function EventsPage() {
+    const router = useRouter();
     const { tenantFilterParams, effectiveTenantId, sessionLoading } = useTenantFilter();
     const [events, setEvents] = useState<DisplayEvent[]>([]);
     const [loading, setLoading] = useState(true);
@@ -203,7 +205,7 @@ export default function EventsPage() {
             const response = await eventsService.duplicate(eventId);
             if (response.success && response.data) {
                 // Redirect to edit the new event
-                window.location.href = `/dashboard/events/${response.data.id}/edit`;
+                router.push(`/dashboard/events/${response.data.id}/edit`);
             } else {
                 const errorMessage = typeof response.error === 'string'
                     ? response.error
