@@ -222,6 +222,13 @@ export interface TenantModel {
   updatedAt: Date;
 }
 
+/** Normalize a stored image URL: ensures local uploads start with '/' */
+function normalizeUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")) return url;
+  return "/" + url;
+}
+
 // Convert database model to TenantConfig
 export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
   return {
@@ -231,9 +238,9 @@ export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
 
     branding: {
       name: tenant.name,
-      logo: tenant.logo || undefined,
-      favicon: tenant.favicon || undefined,
-      secondaryLogo: tenant.secondaryLogo || undefined,
+      logo: normalizeUrl(tenant.logo),
+      favicon: normalizeUrl(tenant.favicon),
+      secondaryLogo: normalizeUrl(tenant.secondaryLogo),
       tagline: tenant.tagline || undefined,
     },
 
@@ -276,22 +283,22 @@ export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
     hero: {
       title: tenant.heroTitle || undefined,
       subtitle: tenant.heroSubtitle || undefined,
-      bgImage: tenant.heroBgImage || undefined,
+      bgImage: normalizeUrl(tenant.heroBgImage),
     },
 
     about: {
       title: tenant.aboutTitle || undefined,
       description: tenant.aboutDescription || undefined,
       features: (tenant.aboutFeatures as AboutFeature[]) || undefined,
-      images: (tenant.aboutImages as string[]) || undefined,
+      images: ((tenant.aboutImages as string[]) || undefined)?.map(normalizeUrl) as string[] | undefined,
     },
 
     gallery: {
-      images: (tenant.galleryImages as GalleryImage[]) || undefined,
+      images: ((tenant.galleryImages as GalleryImage[]) || undefined)?.map((img) => ({ ...img, src: normalizeUrl(img.src) ?? img.src })),
       videos: (tenant.galleryVideos as GalleryVideo[]) || undefined,
     },
 
-    testimonials: (tenant.testimonials as Testimonial[]) || undefined,
+    testimonials: ((tenant.testimonials as Testimonial[]) || undefined)?.map((t) => ({ ...t, avatar: normalizeUrl(t.avatar) ?? t.avatar })),
     yearlyStats: (tenant.yearlyStats as YearlyStats) || undefined,
     faqs: (tenant.faqs as FAQItem[]) || undefined,
     researchItems: (tenant.researchItems as ResearchItem[]) || undefined,

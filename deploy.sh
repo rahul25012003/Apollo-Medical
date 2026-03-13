@@ -396,7 +396,34 @@ setup_apache() {
 <VirtualHost *:80>
     ServerName ${DOMAIN}
 
+    # Redirect all HTTP to HTTPS
+    RewriteEngine On
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+    # Upload size limit
+    LimitRequestBody 10485760
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName ${DOMAIN}
+
+    # SSL (managed by certbot - update paths if needed)
+    # SSLEngine on
+    # SSLCertificateFile    /etc/letsencrypt/live/${DOMAIN}/fullchain.pem
+    # SSLCertificateKeyFile /etc/letsencrypt/live/${DOMAIN}/privkey.pem
+
     ProxyPreserveHost On
+
+    # Serve uploaded files directly from disk (bypasses Node.js proxy)
+    Alias /uploads ${VPS_DIR}/public/uploads
+    <Directory ${VPS_DIR}/public/uploads>
+        Options -Indexes
+        AllowOverride None
+        Require all granted
+    </Directory>
+    ProxyPass /uploads !
+
+    # Proxy everything else to Node.js
     ProxyPass / http://127.0.0.1:${APP_PORT}/
     ProxyPassReverse / http://127.0.0.1:${APP_PORT}/
 

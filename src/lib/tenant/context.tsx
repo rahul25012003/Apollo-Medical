@@ -2,6 +2,12 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { TenantConfig, TenantTheme } from "./types";
+
+function normalizeUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")) return url;
+  return "/" + url;
+}
 import { defaultTenantConfig, mergeTenantConfig } from "./defaults";
 
 // ---------------------------------------------------------------------------
@@ -171,8 +177,9 @@ export function TenantProvider({
               isActive: raw.isActive,
               branding: {
                 name: raw.name,
-                logo: raw.logo || undefined,
-                favicon: raw.favicon || undefined,
+                logo: normalizeUrl(raw.logo),
+                favicon: normalizeUrl(raw.favicon),
+                secondaryLogo: normalizeUrl(raw.secondaryLogo),
                 tagline: raw.tagline || undefined,
               },
               theme: {
@@ -200,7 +207,7 @@ export function TenantProvider({
               hero: {
                 title: raw.heroTitle || undefined,
                 subtitle: raw.heroSubtitle || undefined,
-                bgImage: raw.heroBgImage || undefined,
+                bgImage: normalizeUrl(raw.heroBgImage),
               },
               about: {
                 title: raw.aboutTitle || undefined,
