@@ -52,7 +52,11 @@ function LoginPageInner() {
     const [tenantBranding, setTenantBranding] = React.useState<TenantBranding | null>(null);
 
     // Compute the "home" URL based on tenant context
-    const homeHref = tenantSlug ? `/t/${tenantSlug}` : "/";
+    // On custom domain, middleware rewrites / to /t/{slug} internally, so just use /
+    const isCustomDomain = typeof window !== 'undefined' &&
+        !window.location.hostname.includes('localhost') &&
+        !window.location.hostname.includes('127.0.0.1');
+    const homeHref = isCustomDomain ? "/" : (tenantSlug ? `/t/${tenantSlug}` : "/");
 
     // Fetch tenant branding from query param or hostname (domain-based lookup)
     React.useEffect(() => {

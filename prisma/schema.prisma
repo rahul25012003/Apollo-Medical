@@ -186,6 +186,10 @@ model Tenant {
   paymentQrCode     String?            // QR code image URL for manual payments
   paymentUpiId      String?            // UPI ID displayed with QR code
   paymentInstructions String? @db.Text // Instructions shown during QR payment
+  bankAccountNumber String?            // Bank account number for direct transfer
+  bankIfscCode      String?            // IFSC code
+  bankName          String?            // Bank name
+  bankBeneficiary   String?            // Beneficiary name
 
   // Settings
   isActive          Boolean  @default(true)
@@ -730,6 +734,7 @@ model EventSession {
   hall             EventHall?       @relation(fields: [hallId], references: [id], onDelete: SetNull)
   sessionSpeakers  SessionSpeaker[]
   certificates     Certificate[]
+  engagements      EventEngagement[]
 
   @@index([eventId])
   @@index([speakerId])
@@ -780,6 +785,10 @@ model EventEngagement {
   isActive     Boolean  @default(false)
   displayOrder Int      @default(0)
 
+  // Optional session link for session-specific engagements
+  sessionId    String?
+  session      EventSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -788,6 +797,7 @@ model EventEngagement {
   responses    EngagementResponse[]
 
   @@index([eventId])
+  @@index([sessionId])
   @@map("event_engagements")
 }
 

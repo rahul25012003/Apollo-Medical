@@ -16,6 +16,10 @@ const paymentSettingsSchema = z.object({
   paymentQrCode: z.string().optional().nullable(),
   paymentUpiId: z.string().optional().nullable(),
   paymentInstructions: z.string().optional().nullable(),
+  bankAccountNumber: z.string().optional().nullable(),
+  bankIfscCode: z.string().optional().nullable(),
+  bankName: z.string().optional().nullable(),
+  bankBeneficiary: z.string().optional().nullable(),
 });
 
 // GET /api/tenants/my/payment - Get current tenant's payment settings
@@ -44,6 +48,10 @@ export const GET = withErrorHandler(async () => {
       paymentQrCode: true,
       paymentUpiId: true,
       paymentInstructions: true,
+      bankAccountNumber: true,
+      bankIfscCode: true,
+      bankName: true,
+      bankBeneficiary: true,
     },
   });
 
@@ -111,6 +119,10 @@ export const PUT = withErrorHandler(async (request: NextRequest) => {
     if (data.paymentQrCode !== undefined) updateData.paymentQrCode = data.paymentQrCode || null;
     if (data.paymentUpiId !== undefined) updateData.paymentUpiId = data.paymentUpiId || null;
     if (data.paymentInstructions !== undefined) updateData.paymentInstructions = data.paymentInstructions || null;
+    if (data.bankAccountNumber !== undefined) updateData.bankAccountNumber = data.bankAccountNumber || null;
+    if (data.bankIfscCode !== undefined) updateData.bankIfscCode = data.bankIfscCode || null;
+    if (data.bankName !== undefined) updateData.bankName = data.bankName || null;
+    if (data.bankBeneficiary !== undefined) updateData.bankBeneficiary = data.bankBeneficiary || null;
     // Clear Razorpay fields when switching to QR
     updateData.razorpayKeyId = null;
     updateData.razorpayKeySecret = null;
@@ -121,6 +133,10 @@ export const PUT = withErrorHandler(async (request: NextRequest) => {
     updateData.paymentQrCode = null;
     updateData.paymentUpiId = null;
     updateData.paymentInstructions = null;
+    updateData.bankAccountNumber = null;
+    updateData.bankIfscCode = null;
+    updateData.bankName = null;
+    updateData.bankBeneficiary = null;
   }
 
   const tenant = await prisma.tenant.update({
@@ -132,6 +148,10 @@ export const PUT = withErrorHandler(async (request: NextRequest) => {
       paymentQrCode: true,
       paymentUpiId: true,
       paymentInstructions: true,
+      bankAccountNumber: true,
+      bankIfscCode: true,
+      bankName: true,
+      bankBeneficiary: true,
     },
   });
 

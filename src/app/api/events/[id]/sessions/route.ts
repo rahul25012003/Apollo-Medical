@@ -206,7 +206,7 @@ export const POST = withErrorHandler(
           data: data.sessionSpeakers.map((sp) => ({
             sessionId: created.id,
             speakerId: sp.speakerId,
-            talkTitle: sp.talkTitle || null,
+            talkTitle: sp.talkTitle || data.title, // Auto-fill from session title
             talkDescription: sp.talkDescription || null,
             talkDuration: sp.talkDuration || null,
             displayOrder: sp.displayOrder,
@@ -337,11 +337,13 @@ export const PUT = withErrorHandler(
         });
 
         if (data.sessionSpeakers && data.sessionSpeakers.length > 0) {
+          // Use the updated title if provided, otherwise fall back to existing session title
+          const sessionTitle = data.title || existing.title;
           await tx.sessionSpeaker.createMany({
             data: data.sessionSpeakers.map((sp) => ({
               sessionId,
               speakerId: sp.speakerId,
-              talkTitle: sp.talkTitle || null,
+              talkTitle: sp.talkTitle || sessionTitle, // Auto-fill from session title
               talkDescription: sp.talkDescription || null,
               talkDuration: sp.talkDuration || null,
               displayOrder: sp.displayOrder,

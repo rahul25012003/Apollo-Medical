@@ -132,7 +132,10 @@ export function Header({ title, subtitle }: HeaderProps) {
         : null;
 
     const handleSignOut = () => {
-        signOut({ callbackUrl: tenantSlug ? `/t/${tenantSlug}` : "/" });
+        const isCustomDomain = typeof window !== 'undefined' &&
+            !window.location.hostname.includes('localhost') &&
+            !window.location.hostname.includes('127.0.0.1');
+        signOut({ callbackUrl: isCustomDomain ? "/" : (tenantSlug ? `/t/${tenantSlug}` : "/") });
     };
 
     return (

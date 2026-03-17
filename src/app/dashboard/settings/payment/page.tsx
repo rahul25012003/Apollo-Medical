@@ -21,6 +21,7 @@ import {
     Eye,
     EyeOff,
     Shield,
+    Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
@@ -34,6 +35,10 @@ interface PaymentSettings {
     paymentQrCode: string | null;
     paymentUpiId: string | null;
     paymentInstructions: string | null;
+    bankAccountNumber: string | null;
+    bankIfscCode: string | null;
+    bankName: string | null;
+    bankBeneficiary: string | null;
 }
 
 export default function PaymentSettingsPage() {
@@ -44,6 +49,10 @@ export default function PaymentSettingsPage() {
         paymentQrCode: null,
         paymentUpiId: null,
         paymentInstructions: null,
+        bankAccountNumber: null,
+        bankIfscCode: null,
+        bankName: null,
+        bankBeneficiary: null,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -66,6 +75,10 @@ export default function PaymentSettingsPage() {
                         paymentQrCode: data.data.paymentQrCode || null,
                         paymentUpiId: data.data.paymentUpiId || null,
                         paymentInstructions: data.data.paymentInstructions || null,
+                        bankAccountNumber: data.data.bankAccountNumber || null,
+                        bankIfscCode: data.data.bankIfscCode || null,
+                        bankName: data.data.bankName || null,
+                        bankBeneficiary: data.data.bankBeneficiary || null,
                     });
                 }
             } catch {
@@ -333,6 +346,55 @@ export default function PaymentSettingsPage() {
                                 />
                                 <p className="text-xs text-muted-foreground">
                                     Displayed below the QR code for manual UPI payment
+                                </p>
+                            </div>
+
+                            {/* Bank Account Details */}
+                            <div className="pt-4 border-t">
+                                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                    <Landmark className="h-4 w-4 text-purple-600" />
+                                    Bank Account Details (Optional)
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="bankBeneficiary">Beneficiary Name</Label>
+                                        <Input
+                                            id="bankBeneficiary"
+                                            placeholder="e.g., CARE in Neuromodulation"
+                                            value={settings.bankBeneficiary || ""}
+                                            onChange={(e) => setSettings(prev => ({ ...prev, bankBeneficiary: e.target.value }))}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="bankAccountNumber">Account Number</Label>
+                                        <Input
+                                            id="bankAccountNumber"
+                                            placeholder="e.g., 1234567890123"
+                                            value={settings.bankAccountNumber || ""}
+                                            onChange={(e) => setSettings(prev => ({ ...prev, bankAccountNumber: e.target.value }))}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="bankIfscCode">IFSC Code</Label>
+                                        <Input
+                                            id="bankIfscCode"
+                                            placeholder="e.g., SBIN0001234"
+                                            value={settings.bankIfscCode || ""}
+                                            onChange={(e) => setSettings(prev => ({ ...prev, bankIfscCode: e.target.value.toUpperCase() }))}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="bankName">Bank Name</Label>
+                                        <Input
+                                            id="bankName"
+                                            placeholder="e.g., State Bank of India"
+                                            value={settings.bankName || ""}
+                                            onChange={(e) => setSettings(prev => ({ ...prev, bankName: e.target.value }))}
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    Bank details shown to attendees for direct bank transfer payments
                                 </p>
                             </div>
 

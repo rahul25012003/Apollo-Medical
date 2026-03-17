@@ -1037,19 +1037,18 @@ export default function EventDetailPage() {
                     <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:w-auto lg:inline-grid lg:grid-cols-9">
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="registrations">Registrations</TabsTrigger>
-                        <TabsTrigger value="scientific-program" className="gap-1.5">
-                            <Mic2 className="h-3.5 w-3.5" />
-                            Program
-                        </TabsTrigger>
-                        <TabsTrigger value="speakers">Speakers</TabsTrigger>
-                        <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
                         <TabsTrigger value="venues" className="gap-1.5">
                             <Building2 className="h-3.5 w-3.5" />
                             Venues
                         </TabsTrigger>
+                        <TabsTrigger value="speakers">Speakers</TabsTrigger>
+                        <TabsTrigger value="scientific-program" className="gap-1.5">
+                            <Mic2 className="h-3.5 w-3.5" />
+                            Program
+                        </TabsTrigger>
                         <TabsTrigger value="badges" className="gap-1.5">
                             <QrCode className="h-3.5 w-3.5" />
-                            Badges
+                            Badges (ID Cards)
                         </TabsTrigger>
                         <TabsTrigger value="access-control" className="gap-1.5">
                             <Shield className="h-3.5 w-3.5" />
@@ -1604,82 +1603,7 @@ export default function EventDetailPage() {
                         </Card>
                     </TabsContent>
 
-                    {/* Sponsors Tab */}
-                    <TabsContent value="sponsors" className="space-y-6">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle>Sponsors</CardTitle>
-                                    <CardDescription>{event.sponsors.length} sponsors for this event</CardDescription>
-                                </div>
-                                {event.status !== "completed" && (
-                                    <Button variant="outline" size="sm" className="gap-2" onClick={() => setAddSponsorOpen(true)}>
-                                        <Building2 className="h-4 w-4" />
-                                        Add Sponsor
-                                    </Button>
-                                )}
-                            </CardHeader>
-                            <CardContent>
-                                {event.sponsors.length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <Building2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                                        <p className="text-muted-foreground mb-4">
-                                            {event.status !== "completed"
-                                                ? "No sponsors added yet"
-                                                : "No sponsors were assigned to this event"}
-                                        </p>
-                                        {event.status !== "completed" && (
-                                            <Button size="sm" className="gap-2" onClick={() => setAddSponsorOpen(true)}>
-                                                <Building2 className="h-4 w-4" />
-                                                Add First Sponsor
-                                            </Button>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                                        {event.sponsors.map((sponsor) => {
-                                            const tier = tierConfig[sponsor.tier as keyof typeof tierConfig] || tierConfig.silver;
-                                            return (
-                                                <div
-                                                    key={sponsor.id}
-                                                    className={cn(
-                                                        "group relative p-5 rounded-xl border-2 bg-gradient-to-br hover:shadow-xl transition-all duration-300 hover:-translate-y-1",
-                                                        tier.cardBg,
-                                                        tier.cardBorder
-                                                    )}
-                                                >
-                                                    {/* Tier Badge - Top Right */}
-                                                    <div className="absolute -top-3 -right-2">
-                                                        <Badge className={cn("shadow-md px-3 py-1", tier.className)}>
-                                                            {tier.label}
-                                                        </Badge>
-                                                    </div>
-
-                                                    {/* Logo/Avatar */}
-                                                    <div className="flex justify-center mb-4 pt-2">
-                                                        <div className="w-20 h-20 rounded-xl bg-white shadow-md border-2 border-white flex items-center justify-center overflow-hidden">
-                                                            {sponsor.logo ? (
-                                                                <img src={sponsor.logo} alt={sponsor.name} className="w-full h-full object-contain p-2" />
-                                                            ) : (
-                                                                <span className="text-2xl font-bold text-primary/70">
-                                                                    {sponsor.name.slice(0, 2).toUpperCase()}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Sponsor Name */}
-                                                    <p className="font-semibold text-center truncate" title={sponsor.name}>
-                                                        {sponsor.name}
-                                                    </p>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
+                    {/* Sponsors Tab - Hidden until explicitly needed. Data/API preserved. */}
 
                     {/* Venues & Halls Tab */}
                     <TabsContent value="venues" className="space-y-6">

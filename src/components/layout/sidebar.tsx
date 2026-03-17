@@ -120,14 +120,15 @@ const menuItems = [
         tenantModule: "moduleCertificates" as keyof TenantSections,
         group: "Management",
     },
-    {
-        title: "Sponsors",
-        href: "/dashboard/sponsors",
-        icon: Building2,
-        roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
-        tenantModule: "moduleSponsors" as keyof TenantSections,
-        group: "Management",
-    },
+    // Sponsors hidden from sidebar until explicitly needed
+    // {
+    //     title: "Sponsors",
+    //     href: "/dashboard/sponsors",
+    //     icon: Building2,
+    //     roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
+    //     tenantModule: "moduleSponsors" as keyof TenantSections,
+    //     group: "Management",
+    // },
     {
         title: "Communications",
         href: "/dashboard/communications",
@@ -309,8 +310,13 @@ export function Sidebar() {
         : null;
 
     // Handle logout — redirect to tenant home page if user belongs to a tenant
+    // On custom domain, middleware rewrites / to /t/{slug} internally
+    // So we just redirect to / — the URL bar stays clean
     const handleLogout = () => {
-        signOut({ callbackUrl: tenantSlug ? `/t/${tenantSlug}` : "/" });
+        const isCustomDomain = typeof window !== 'undefined' &&
+            !window.location.hostname.includes('localhost') &&
+            !window.location.hostname.includes('127.0.0.1');
+        signOut({ callbackUrl: isCustomDomain ? "/" : (tenantSlug ? `/t/${tenantSlug}` : "/") });
     };
 
     // Prevent hydration mismatch by only applying client state after mount

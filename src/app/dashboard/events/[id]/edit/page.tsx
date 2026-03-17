@@ -1178,7 +1178,7 @@ export default function EditEventPage() {
 
                 {/* Main Form */}
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-6 h-10 sm:h-12">
+                    <TabsList className="grid w-full grid-cols-5 h-10 sm:h-12">
                         <TabsTrigger value="basic" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
                             <FileText className="h-4 w-4 hidden md:block" />
                             <span className="hidden sm:inline">Basic Info</span>
@@ -1198,10 +1198,6 @@ export default function EditEventPage() {
                             <Megaphone className="h-4 w-4 hidden md:block" />
                             <span className="hidden sm:inline">Engagement</span>
                             <span className="sm:hidden">Engage</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="sponsors" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
-                            <Building2 className="h-4 w-4 hidden md:block" />
-                            Sponsors
                         </TabsTrigger>
                         <TabsTrigger value="settings" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
                             <Award className="h-4 w-4 hidden md:block" />
@@ -1413,14 +1409,17 @@ export default function EditEventPage() {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <Label htmlFor="registrationDeadline">Registration Deadline</Label>
-                                            <Input
-                                                id="registrationDeadline"
-                                                type="date"
-                                                value={formData.registrationDeadline}
-                                                onChange={e => handleChange("registrationDeadline", e.target.value)}
-                                            />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="registrationDeadline">Registration Deadline</Label>
+                                                <Input
+                                                    id="registrationDeadline"
+                                                    type="date"
+                                                    className="w-full"
+                                                    value={formData.registrationDeadline}
+                                                    onChange={e => handleChange("registrationDeadline", e.target.value)}
+                                                />
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -2307,337 +2306,7 @@ export default function EditEventPage() {
                         </Card>
                     </TabsContent>
 
-                    {/* Sponsors Tab */}
-                    <TabsContent value="sponsors" className="space-y-6 mt-6">
-                        <Card>
-                            <CardHeader className="pb-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                    <div>
-                                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                                            <div className="icon-container icon-container-purple h-8 w-8 sm:h-10 sm:w-10">
-                                                <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                                            </div>
-                                            Event Sponsors
-                                        </CardTitle>
-                                        <CardDescription className="text-xs sm:text-sm mt-1">
-                                            Add sponsors supporting this event
-                                        </CardDescription>
-                                    </div>
-                                    <Button onClick={addEventSponsor} size="sm" className="gap-2 w-full sm:w-auto">
-                                        <Plus className="h-4 w-4" />
-                                        Add Sponsor
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                {eventSponsors.length === 0 ? (
-                                    <div className="text-center py-12 border-2 border-dashed rounded-xl">
-                                        <Building2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                                        <h3 className="text-lg font-medium mb-2">No sponsors yet</h3>
-                                        <p className="text-sm text-muted-foreground mb-4">
-                                            Add sponsors to showcase event partners
-                                        </p>
-                                        <Button onClick={addEventSponsor} variant="outline" className="gap-2">
-                                            <Plus className="h-4 w-4" />
-                                            Add First Sponsor
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {eventSponsors.map((sponsor, index) => (
-                                            <div
-                                                key={sponsor.id}
-                                                className="p-3 sm:p-4 rounded-xl border border-border bg-card hover:shadow-md transition-shadow animate-fadeIn"
-                                            >
-                                                {/* Mobile: Header */}
-                                                <div className="flex items-center justify-between mb-3 sm:hidden">
-                                                    <div className="flex items-center gap-2">
-                                                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                        <span className="text-sm font-medium">Sponsor {index + 1}</span>
-                                                    </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => removeEventSponsor(sponsor)}
-                                                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-
-                                                {/* Desktop: Original layout */}
-                                                <div className="hidden sm:flex items-start gap-4">
-                                                    <div className="p-2 text-muted-foreground">
-                                                        <Building2 className="h-5 w-5" />
-                                                    </div>
-                                                    <div className="flex-1 space-y-4">
-                                                        {/* Sponsor Selection Toggle */}
-                                                        <div className="flex items-center justify-between">
-                                                            <Label>Sponsor</Label>
-                                                            {/* Only show toggle for new sponsors or when sponsor is not selected */}
-                                                            {(!sponsor.isSaved || !sponsor.sponsorId) && (
-                                                                <div className="flex gap-2">
-                                                                    <Button
-                                                                        type="button"
-                                                                        size="sm"
-                                                                        variant={sponsor.isExistingSponsor ? "default" : "outline"}
-                                                                        onClick={() => updateEventSponsor(sponsor.id, "isExistingSponsor", true)}
-                                                                    >
-                                                                        Select Existing
-                                                                    </Button>
-                                                                    <Button
-                                                                        type="button"
-                                                                        size="sm"
-                                                                        variant={!sponsor.isExistingSponsor ? "default" : "outline"}
-                                                                        onClick={() => updateEventSponsor(sponsor.id, "isExistingSponsor", false)}
-                                                                    >
-                                                                        Create New
-                                                                    </Button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {sponsor.isExistingSponsor ? (
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <div className="space-y-2">
-                                                                    <Label>Select Sponsor *</Label>
-                                                                    <Select
-                                                                        value={sponsor.sponsorId || undefined}
-                                                                        onValueChange={(v) => {
-                                                                            if (!v) return;
-                                                                            const s = existingSponsors.find(sp => sp.id === v);
-                                                                            setEventSponsors(prev => prev.map(sp =>
-                                                                                sp.id === sponsor.id
-                                                                                    ? { ...sp, sponsorId: v, sponsorName: s?.name || "" }
-                                                                                    : sp
-                                                                            ));
-                                                                        }}
-                                                                    >
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select a sponsor" />
-                                                                        </SelectTrigger>
-                                                                        <SelectContent>
-                                                                            {existingSponsors.length === 0 ? (
-                                                                                <div className="p-2 text-sm text-muted-foreground text-center">
-                                                                                    No active sponsors found
-                                                                                </div>
-                                                                            ) : (
-                                                                                existingSponsors.map((s) => (
-                                                                                    <SelectItem key={s.id} value={s.id}>
-                                                                                        {s.name}
-                                                                                    </SelectItem>
-                                                                                ))
-                                                                            )}
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <Label>Tier *</Label>
-                                                                    <Select
-                                                                        value={sponsor.tier}
-                                                                        onValueChange={(v) => updateEventSponsor(sponsor.id, "tier", v)}
-                                                                    >
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select tier" />
-                                                                        </SelectTrigger>
-                                                                        <SelectContent>
-                                                                            {sponsorTiers.map((tier) => (
-                                                                                <SelectItem key={tier} value={tier}>{tier}</SelectItem>
-                                                                            ))}
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="space-y-4">
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                    <div className="space-y-2">
-                                                                        <Label>Sponsor Name *</Label>
-                                                                        <Input
-                                                                            placeholder="e.g., Medtronic"
-                                                                            value={sponsor.newSponsorName}
-                                                                            onChange={(e) => updateEventSponsor(sponsor.id, "newSponsorName", e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label>Email</Label>
-                                                                        <Input
-                                                                            placeholder="sponsor@example.com"
-                                                                            type="email"
-                                                                            value={sponsor.newSponsorEmail}
-                                                                            onChange={(e) => updateEventSponsor(sponsor.id, "newSponsorEmail", e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label>Tier *</Label>
-                                                                        <Select
-                                                                            value={sponsor.tier}
-                                                                            onValueChange={(v) => updateEventSponsor(sponsor.id, "tier", v)}
-                                                                        >
-                                                                            <SelectTrigger>
-                                                                                <SelectValue placeholder="Select tier" />
-                                                                            </SelectTrigger>
-                                                                            <SelectContent>
-                                                                                {sponsorTiers.map((tier) => (
-                                                                                    <SelectItem key={tier} value={tier}>{tier}</SelectItem>
-                                                                                ))}
-                                                                            </SelectContent>
-                                                                        </Select>
-                                                                    </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label>Logo URL</Label>
-                                                                        <Input
-                                                                            placeholder="https://..."
-                                                                            value={sponsor.newSponsorLogo}
-                                                                            onChange={(e) => updateEventSponsor(sponsor.id, "newSponsorLogo", e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <Label>Website</Label>
-                                                                    <Input
-                                                                        placeholder="https://..."
-                                                                        value={sponsor.newSponsorWebsite}
-                                                                        onChange={(e) => updateEventSponsor(sponsor.id, "newSponsorWebsite", e.target.value)}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => removeEventSponsor(sponsor)}
-                                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-
-                                                {/* Mobile: Stacked form */}
-                                                <div className="sm:hidden space-y-3">
-                                                    {/* Mobile Sponsor Selection Toggle */}
-                                                    <div className="flex items-center justify-between">
-                                                        <Label className="text-xs">Sponsor</Label>
-                                                        {/* Only show toggle for new sponsors or when sponsor is not selected */}
-                                                        {(!sponsor.isSaved || !sponsor.sponsorId) && (
-                                                            <div className="flex gap-1">
-                                                                <Button
-                                                                    type="button"
-                                                                    size="sm"
-                                                                    className="h-7 text-xs px-2"
-                                                                    variant={sponsor.isExistingSponsor ? "default" : "outline"}
-                                                                    onClick={() => updateEventSponsor(sponsor.id, "isExistingSponsor", true)}
-                                                                >
-                                                                    Existing
-                                                                </Button>
-                                                                <Button
-                                                                    type="button"
-                                                                    size="sm"
-                                                                    className="h-7 text-xs px-2"
-                                                                    variant={!sponsor.isExistingSponsor ? "default" : "outline"}
-                                                                    onClick={() => updateEventSponsor(sponsor.id, "isExistingSponsor", false)}
-                                                                >
-                                                                    New
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {sponsor.isExistingSponsor ? (
-                                                        <>
-                                                            <Select
-                                                                value={sponsor.sponsorId || undefined}
-                                                                onValueChange={(v) => {
-                                                                    if (!v) return;
-                                                                    const s = existingSponsors.find(sp => sp.id === v);
-                                                                    setEventSponsors(prev => prev.map(sp =>
-                                                                        sp.id === sponsor.id
-                                                                            ? { ...sp, sponsorId: v, sponsorName: s?.name || "" }
-                                                                            : sp
-                                                                    ));
-                                                                }}
-                                                            >
-                                                                <SelectTrigger className="h-9">
-                                                                    <SelectValue placeholder="Select sponsor" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {existingSponsors.length === 0 ? (
-                                                                        <div className="p-2 text-sm text-muted-foreground text-center">
-                                                                            No active sponsors found
-                                                                        </div>
-                                                                    ) : (
-                                                                        existingSponsors.map((s) => (
-                                                                            <SelectItem key={s.id} value={s.id}>
-                                                                                {s.name}
-                                                                            </SelectItem>
-                                                                        ))
-                                                                    )}
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <div className="space-y-2">
-                                                                <Label className="text-xs">Tier *</Label>
-                                                                <Select
-                                                                    value={sponsor.tier}
-                                                                    onValueChange={(v) => updateEventSponsor(sponsor.id, "tier", v)}
-                                                                >
-                                                                    <SelectTrigger className="h-9">
-                                                                        <SelectValue placeholder="Select tier" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        {sponsorTiers.map((tier) => (
-                                                                            <SelectItem key={tier} value={tier}>{tier}</SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div className="space-y-2">
-                                                                <Label className="text-xs">Sponsor Name *</Label>
-                                                                <Input
-                                                                    placeholder="e.g., Medtronic"
-                                                                    className="h-9"
-                                                                    value={sponsor.newSponsorName}
-                                                                    onChange={(e) => updateEventSponsor(sponsor.id, "newSponsorName", e.target.value)}
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label className="text-xs">Tier *</Label>
-                                                                <Select
-                                                                    value={sponsor.tier}
-                                                                    onValueChange={(v) => updateEventSponsor(sponsor.id, "tier", v)}
-                                                                >
-                                                                    <SelectTrigger className="h-9">
-                                                                        <SelectValue placeholder="Select tier" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        {sponsorTiers.map((tier) => (
-                                                                            <SelectItem key={tier} value={tier}>{tier}</SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label className="text-xs">Logo URL</Label>
-                                                                <Input
-                                                                    placeholder="https://..."
-                                                                    className="h-9"
-                                                                    value={sponsor.newSponsorLogo}
-                                                                    onChange={(e) => updateEventSponsor(sponsor.id, "newSponsorLogo", e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
+                    {/* Sponsors Tab - Hidden until explicitly needed. Data/API preserved. */}
 
                     {/* Settings Tab */}
                     <TabsContent value="settings" className="space-y-4 sm:space-y-6 mt-6">

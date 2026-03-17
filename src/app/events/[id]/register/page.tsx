@@ -592,7 +592,7 @@ export default function RegisterPage() {
     };
 
     const handleQrPaymentSubmit = async () => {
-        if (!registrationId || !paymentProofUrl) return;
+        if (!registrationId) return;
         setIsSubmitting(true);
         try {
             const res = await fetch("/api/payments/qr-confirm", {
@@ -1578,11 +1578,11 @@ export default function RegisterPage() {
                                                 </div>
                                             )}
 
-                                            {/* Warning if payment proof not uploaded (QR_CODE or NONE mode) */}
+                                            {/* Info if payment proof not uploaded (QR_CODE or NONE mode) — screenshot is optional */}
                                             {totalPrice > 0 && (paymentConfig?.paymentMode === "QR_CODE" || !paymentConfig || paymentConfig.paymentMode === "NONE") && !paymentProofUrl && (
-                                                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-2">
-                                                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-                                                    <p className="text-sm text-amber-700">Please upload your payment screenshot to proceed</p>
+                                                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-center gap-2">
+                                                    <AlertCircle className="h-4 w-4 text-blue-500 shrink-0" />
+                                                    <p className="text-sm text-blue-700">Payment screenshot is optional. You can upload it now or share it later with the organizer.</p>
                                                 </div>
                                             )}
 
@@ -1593,7 +1593,7 @@ export default function RegisterPage() {
                                                 </Button>
                                                 <Button
                                                     onClick={handlePayment}
-                                                    disabled={isSubmitting || (totalPrice > 0 && (paymentConfig?.paymentMode === "QR_CODE" || !paymentConfig || paymentConfig.paymentMode === "NONE") && !paymentProofUrl)}
+                                                    disabled={isSubmitting}
                                                     className="gap-2 gradient-medical text-white"
                                                     size="lg"
                                                 >

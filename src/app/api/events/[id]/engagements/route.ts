@@ -19,6 +19,7 @@ const createEngagementSchema = z.object({
   content: z.any().optional().nullable(),
   isActive: z.boolean().default(false),
   displayOrder: z.number().int().nonnegative().default(0),
+  sessionId: z.string().optional().nullable(),
 });
 
 const updateEngagementSchema = createEngagementSchema.partial();
@@ -51,8 +52,20 @@ export const GET = withErrorHandler(
       return Errors.forbidden("You don't have access to this event");
     }
 
+    // Optional sessionId filter
+    const { searchParams } = new URL(request.url);
+    const sessionIdFilter = searchParams.get("sessionId");
+
     const engagements = await prisma.eventEngagement.findMany({
-      where: { eventId },
+      where: {
+        eventId,
+        ...(sessionIdFilter ? { sessionId: sessionIdFilter } : {}),
+      },
+      include: {
+        session: {
+          select: { id: true, title: true, sessionType: true },
+        },
+      },
       orderBy: { displayOrder: "asc" },
     });
 
@@ -111,6 +124,7 @@ export const POST = withErrorHandler(
         content: data.content || null,
         isActive: data.isActive,
         displayOrder: data.displayOrder,
+        sessionId: data.sessionId || null,
       },
     });
 
@@ -178,6 +192,7 @@ export const PUT = withErrorHandler(
     if (data.content !== undefined) updateFields.content = data.content || null;
     if (data.isActive !== undefined) updateFields.isActive = data.isActive;
     if (data.displayOrder !== undefined) updateFields.displayOrder = data.displayOrder;
+    if (data.sessionId !== undefined) updateFields.sessionId = data.sessionId || null;
 
     const engagement = await prisma.eventEngagement.update({
       where: { id: engagementId },
