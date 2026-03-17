@@ -25,6 +25,12 @@ export interface CertificateData {
     }[];
     issuedAt?: string;
     verifyUrl?: string;
+    // Role-specific fields
+    certificateType?: string;
+    certificateTitle?: string; // Override title from DB
+    sessionTitle?: string;
+    quizTitle?: string;
+    position?: number; // Quiz winner position
 }
 
 interface CertificateTemplateProps {
@@ -91,8 +97,22 @@ const eventTypeStyles: Record<EventType, {
     },
 };
 
+// Role-specific style overrides
+const certTypeOverrides: Record<string, { primary: string; secondary: string; accent: string; border: string; title: string; certType: string }> = {
+    SPEAKER_SESSION: { primary: "#1e3a8a", secondary: "#3b82f6", accent: "#dbeafe", border: "#2563eb", title: "Speaker Certificate", certType: "Speaker Session Certificate" },
+    ORGANIZATION: { primary: "#581c87", secondary: "#8b5cf6", accent: "#ede9fe", border: "#7c3aed", title: "Certificate of Organization", certType: "Organizing Committee Certificate" },
+    JUDGE: { primary: "#78350f", secondary: "#d97706", accent: "#fef3c7", border: "#b45309", title: "Certificate of Adjudication", certType: "Judge / Adjudicator Certificate" },
+    QUIZ_WINNER: { primary: "#713f12", secondary: "#ca8a04", accent: "#fef9c3", border: "#a16207", title: "Winner Certificate", certType: "Quiz Winner Certificate" },
+    QUIZ_FINALIST: { primary: "#374151", secondary: "#6b7280", accent: "#f3f4f6", border: "#4b5563", title: "Finalist Certificate", certType: "Quiz Finalist Certificate" },
+    QUIZ_PARTICIPATION: { primary: "#065f46", secondary: "#10b981", accent: "#d1fae5", border: "#059669", title: "Participation Certificate", certType: "Quiz Participation Certificate" },
+    VOLUNTEER: { primary: "#065f46", secondary: "#10b981", accent: "#d1fae5", border: "#059669", title: "Volunteer Certificate", certType: "Volunteer Service Certificate" },
+    CHAIRPERSON: { primary: "#1e3a5f", secondary: "#1d4ed8", accent: "#dbeafe", border: "#1e40af", title: "Chairperson Certificate", certType: "Chairperson / Moderator Certificate" },
+};
+
 export function CertificateTemplate({ data, className = "" }: CertificateTemplateProps) {
-    const style = eventTypeStyles[data.eventType] || eventTypeStyles.CONFERENCE;
+    // Use role-specific style if certificateType is provided
+    const baseStyle = eventTypeStyles[data.eventType] || eventTypeStyles.CONFERENCE;
+    const style = (data.certificateType && certTypeOverrides[data.certificateType]) || baseStyle;
 
     const formatEventDate = () => {
         const start = format(new Date(data.eventDate), "MMMM d, yyyy");
@@ -214,8 +234,24 @@ export function CertificateTemplate({ data, className = "" }: CertificateTemplat
                             letterSpacing: "3px",
                         }}
                     >
-                        {style.title}
+                        {data.certificateTitle || style.title}
                     </h1>
+
+                    {/* Quiz position badge */}
+                    {data.position && (
+                        <div style={{
+                            display: "inline-block",
+                            padding: "2mm 8mm",
+                            background: `linear-gradient(135deg, ${style.primary}, ${style.secondary})`,
+                            color: "#fff",
+                            fontSize: "14pt",
+                            fontWeight: "bold",
+                            borderRadius: "3px",
+                            marginBottom: "3mm",
+                        }}>
+                            {data.position === 1 ? "🥇 1st Place" : data.position === 2 ? "🥈 2nd Place" : data.position === 3 ? "🥉 3rd Place" : `${data.position}th Place`}
+                        </div>
+                    )}
 
                     <p
                         style={{
@@ -254,18 +290,62 @@ export function CertificateTemplate({ data, className = "" }: CertificateTemplat
                             lineHeight: "1.4",
                         }}
                     >
-                        has successfully {data.eventType === "WORKSHOP" ? "completed" : "attended"} the
+                        {data.certificateType === "SPEAKER_SESSION"
+                            ? "has delivered a presentation at"
+                            : data.certificateType === "ORGANIZATION"
+                            ? "has served as an organizer for"
+                            : data.certificateType === "JUDGE"
+                            ? "has served as a judge/adjudicator at"
+                            : data.certificateType?.startsWith("QUIZ_")
+                            ? "has participated in"
+                            : data.certificateType === "VOLUNTEER"
+                            ? "has volunteered at"
+                            : data.certificateType === "CHAIRPERSON"
+                            ? "has chaired sessions at"
+                            : `has successfully ${data.eventType === "WORKSHOP" ? "completed" : "attended"} the`}
                     </p>
+
+                    {/* Session title for speakers */}
+                    {data.sessionTitle && (
+                        <h3
+                            style={{
+                                fontSize: "16pt",
+                                fontWeight: "bold",
+                                color: style.primary,
+                                margin: "2mm 0 1mm",
+                                fontFamily: "'Times New Roman', Georgia, serif",
+                            }}
+                        >
+                            Session: {data.sessionTitle}
+                        </h3>
+                    )}
+
+                    {/* Quiz title */}
+                    {data.quizTitle && (
+                        <h3
+                            style={{
+                                fontSize: "16pt",
+                                fontWeight: "bold",
+                                color: style.primary,
+                                margin: "2mm 0 1mm",
+                                fontFamily: "'Times New Roman', Georgia, serif",
+                            }}
+                        >
+                            {data.quizTitle}
+                        </h3>
+                    )}
+
+                    {/* Event title */}
                     <h3
                         style={{
-                            fontSize: "18pt",
+                            fontSize: data.sessionTitle || data.quizTitle ? "14pt" : "18pt",
                             fontWeight: "bold",
                             color: style.secondary,
                             margin: "2mm 0",
                             fontFamily: "'Times New Roman', Georgia, serif",
                         }}
                     >
-                        {data.eventTitle}
+                        {data.sessionTitle || data.quizTitle ? `at ${data.eventTitle}` : data.eventTitle}
                     </h3>
                     <p
                         style={{

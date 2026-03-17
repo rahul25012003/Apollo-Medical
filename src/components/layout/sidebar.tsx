@@ -17,13 +17,22 @@ import {
     Building2,
     Landmark,
     Settings,
+    CreditCard,
     LogOut,
     ChevronLeft,
     Brain,
     Menu,
     X,
     User,
+    BookOpen,
+    Shield,
+    QrCode,
+    MessageSquare,
+    ChevronDown,
+    BarChart3,
+    Mail,
 } from "lucide-react";
+import { eventsService, Event } from "@/services/events";
 
 // Define user roles
 type UserRole = "SUPER_ADMIN" | "ADMIN" | "EVENT_MANAGER" | "REGISTRATION_MANAGER" | "CERTIFICATE_MANAGER" | "ATTENDEE";
@@ -49,12 +58,14 @@ const menuItems = [
         href: "/dashboard",
         icon: LayoutDashboard,
         roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER", "CERTIFICATE_MANAGER", "ATTENDEE"] as UserRole[],
+        group: "Main",
     },
     {
         title: "Events",
         href: "/dashboard/events",
         icon: Calendar,
         roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
+        group: "Main",
     },
     {
         title: "Registrations",
@@ -62,18 +73,28 @@ const menuItems = [
         icon: Users,
         roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER"] as UserRole[],
         tenantModule: "moduleRegistrations" as keyof TenantSections,
+        group: "Main",
     },
     {
         title: "Browse Events",
         href: "/dashboard/browse-events",
         icon: Calendar,
         roles: ["ATTENDEE"] as UserRole[],
+        group: "Main",
     },
     {
         title: "My Registrations",
         href: "/dashboard/my-registrations",
         icon: Users,
         roles: ["ATTENDEE"] as UserRole[],
+        group: "Main",
+    },
+    {
+        title: "My Sessions",
+        href: "/dashboard/my-sessions",
+        icon: Mic2,
+        roles: ["ATTENDEE"] as UserRole[],
+        group: "Main",
     },
     {
         title: "Speakers",
@@ -81,6 +102,7 @@ const menuItems = [
         icon: Mic2,
         roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
         tenantModule: "moduleSpeakers" as keyof TenantSections,
+        group: "Management",
     },
     {
         title: "Certificates",
@@ -88,6 +110,7 @@ const menuItems = [
         icon: Award,
         roles: ["SUPER_ADMIN", "ADMIN", "CERTIFICATE_MANAGER"] as UserRole[],
         tenantModule: "moduleCertificates" as keyof TenantSections,
+        group: "Management",
     },
     {
         title: "My Certificates",
@@ -95,6 +118,7 @@ const menuItems = [
         icon: Award,
         roles: ["ATTENDEE"] as UserRole[],
         tenantModule: "moduleCertificates" as keyof TenantSections,
+        group: "Management",
     },
     {
         title: "Sponsors",
@@ -102,49 +126,83 @@ const menuItems = [
         icon: Building2,
         roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
         tenantModule: "moduleSponsors" as keyof TenantSections,
+        group: "Management",
+    },
+    {
+        title: "Communications",
+        href: "/dashboard/communications",
+        icon: Mail,
+        roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
+        group: "Management",
+    },
+    {
+        title: "Reports",
+        href: "/dashboard/reports",
+        icon: BarChart3,
+        roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
+        group: "Management",
     },
     {
         title: "User Management",
         href: "/dashboard/users",
         icon: UserCog,
         roles: ["SUPER_ADMIN", "ADMIN"] as UserRole[],
+        group: "System",
     },
     {
         title: "Tenants",
         href: "/dashboard/tenants",
         icon: Landmark,
         roles: ["SUPER_ADMIN"] as UserRole[],
+        group: "System",
     },
     {
         title: "Organization",
         href: "/dashboard/organization",
         icon: Building2,
         roles: ["ADMIN"] as UserRole[],
+        group: "System",
     },
     {
         title: "Profile",
         href: "/dashboard/profile",
         icon: User,
         roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER", "CERTIFICATE_MANAGER", "ATTENDEE"] as UserRole[],
+        group: "System",
+    },
+    {
+        title: "Payment Settings",
+        href: "/dashboard/settings/payment",
+        icon: CreditCard,
+        roles: ["SUPER_ADMIN", "ADMIN"] as UserRole[],
+        group: "System",
     },
     {
         title: "Settings",
         href: "/dashboard/settings",
         icon: Settings,
         roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
+        group: "System",
     },
 ];
 
+// Admin roles for event-specific menu items
+const ADMIN_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"];
+
 export function Sidebar() {
     const pathname = usePathname();
-    const { sidebarCollapsed, toggleSidebarCollapse, sidebarOpen, setSidebarOpen } = useUIStore();
+    const { sidebarCollapsed, toggleSidebarCollapse, sidebarOpen, setSidebarOpen, selectedEventId, setSelectedEventId } = useUIStore();
     const { data: session } = useSession();
     const [mounted, setMounted] = useState(false);
     const [tenantSections, setTenantSections] = useState<TenantSections | null>(null);
+    const [eventsList, setEventsList] = useState<Event[]>([]);
+    const [eventsLoading, setEventsLoading] = useState(false);
+    const [eventSelectorOpen, setEventSelectorOpen] = useState(false);
 
     // Get user role from session
     const userRole = (session?.user?.role as UserRole) || "ATTENDEE";
     const tenantId = (session?.user as any)?.tenantId as string | null | undefined;
+    const isAdmin = ADMIN_ROLES.includes(userRole);
 
     // Fetch tenant sections config for non-super-admin users
     useEffect(() => {
@@ -170,6 +228,62 @@ export function Sidebar() {
         fetchTenantSections();
     }, [tenantId, userRole]);
 
+    // Fetch events for admin event selector
+    useEffect(() => {
+        if (!isAdmin || !session) return;
+        setEventsLoading(true);
+        eventsService.getAll({ limit: 100, sortBy: "startDate", sortOrder: "desc" })
+            .then((res) => {
+                if (res.success && Array.isArray(res.data)) {
+                    setEventsList(res.data);
+                }
+            })
+            .catch(() => { /* silently fail */ })
+            .finally(() => setEventsLoading(false));
+    }, [isAdmin, session]);
+
+    // Selected event name for display
+    const selectedEventName = eventsList.find((e) => e.id === selectedEventId)?.title || null;
+
+    // Event-specific menu items (only shown when an event is selected)
+    const eventMenuItems = selectedEventId && isAdmin ? [
+        {
+            title: "ID Cards",
+            href: "/dashboard/id-cards",
+            icon: CreditCard,
+            roles: ADMIN_ROLES,
+            group: "Event",
+        },
+        {
+            title: "Scientific Program",
+            href: "/dashboard/scientific-program",
+            icon: BookOpen,
+            roles: ADMIN_ROLES,
+            group: "Event",
+        },
+        {
+            title: "Access Control",
+            href: "/dashboard/access-control",
+            icon: Shield,
+            roles: ADMIN_ROLES,
+            group: "Event",
+        },
+        {
+            title: "Scanner",
+            href: "/dashboard/scanner",
+            icon: QrCode,
+            roles: ADMIN_ROLES,
+            group: "Event",
+        },
+        {
+            title: "Engagement",
+            href: "/dashboard/engagement",
+            icon: MessageSquare,
+            roles: ADMIN_ROLES,
+            group: "Event",
+        },
+    ] : [];
+
     // Filter menu items based on user role + tenant module config
     const filteredMenuItems = menuItems.filter((item) => {
         // Role check first
@@ -194,7 +308,7 @@ export function Sidebar() {
         ? tenant.slug
         : null;
 
-    // Handle logout — redirect to tenant homepage if tenant user, otherwise main home
+    // Handle logout — redirect to tenant home page if user belongs to a tenant
     const handleLogout = () => {
         signOut({ callbackUrl: tenantSlug ? `/t/${tenantSlug}` : "/" });
     };
@@ -208,16 +322,32 @@ export function Sidebar() {
     const isCollapsed = mounted ? sidebarCollapsed : false;
     const isOpen = mounted ? sidebarOpen : false;
 
+    // Combine all menu items (existing + event-specific)
+    const allFilteredItems = [...filteredMenuItems, ...eventMenuItems];
+
+    // Group filtered items by section
+    const groupedItems = allFilteredItems.reduce<Record<string, typeof allFilteredItems>>((acc, item) => {
+        const group = item.group || "Main";
+        if (!acc[group]) acc[group] = [];
+        acc[group].push(item);
+        return acc;
+    }, {});
+
+    const groupOrder = ["Main", "Event", "Management", "System"];
+
     // Don't render dynamic parts until mounted to prevent hydration mismatch
     if (!mounted) {
         return (
-            <aside className="fixed top-0 left-0 z-50 h-full bg-[var(--sidebar-bg,#0f172a)] flex flex-col transition-all duration-300 ease-in-out lg:w-64 w-[280px] -translate-x-full lg:translate-x-0">
-                <div className="flex items-center h-16 border-b border-white/10 px-4 justify-between">
+            <aside className="fixed top-0 left-0 z-50 h-full bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 flex flex-col transition-all duration-300 ease-in-out lg:w-64 w-[280px] -translate-x-full lg:translate-x-0">
+                {/* Right edge accent line */}
+                <div className="absolute top-0 right-0 w-[1px] h-full bg-gradient-to-b from-teal-500/40 via-cyan-500/20 to-transparent" />
+                <div className="flex items-center h-16 border-b border-white/[0.06] px-4 justify-between">
                     <Link href="/dashboard" className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl gradient-medical flex items-center justify-center">
+                        <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-teal-500/25">
                             <Award className="w-5 h-5 text-white" />
+                            <span className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-400/20 to-transparent animate-pulse" />
                         </div>
-                        <span className="text-lg font-bold text-white">ICMS</span>
+                        <span className="text-lg font-bold text-white tracking-tight">ICMS</span>
                     </Link>
                 </div>
             </aside>
@@ -229,7 +359,7 @@ export function Sidebar() {
             {/* Mobile overlay */}
             <div
                 className={cn(
-                    "fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300",
+                    "fixed inset-0 bg-black/70 backdrop-blur-md z-40 lg:hidden transition-opacity duration-300",
                     isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
                 onClick={() => setSidebarOpen(false)}
@@ -238,7 +368,7 @@ export function Sidebar() {
             {/* Sidebar */}
             <aside
                 className={cn(
-                    "fixed top-0 left-0 z-50 h-full bg-[var(--sidebar-bg,#0f172a)] flex flex-col transition-all duration-300 ease-in-out",
+                    "fixed top-0 left-0 z-50 h-full bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 flex flex-col transition-all duration-300 ease-in-out",
                     // Desktop width based on collapse state
                     isCollapsed ? "lg:w-[72px]" : "lg:w-64",
                     // Mobile: full width drawer
@@ -246,27 +376,33 @@ export function Sidebar() {
                     // Transform for mobile
                     isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
                     // Shadow for mobile
-                    isOpen && "shadow-2xl lg:shadow-none"
+                    isOpen && "shadow-2xl shadow-black/50 lg:shadow-none"
                 )}
             >
+                {/* Right edge accent line */}
+                <div className="absolute top-0 right-0 w-[1px] h-full bg-gradient-to-b from-teal-500/40 via-cyan-500/20 to-transparent pointer-events-none z-10" />
+
                 {/* Logo Header */}
                 <div className={cn(
-                    "flex items-center h-16 border-b border-white/10 px-4",
+                    "flex items-center h-16 border-b border-white/[0.06] px-4",
                     isCollapsed ? "lg:justify-center lg:px-0" : "justify-between"
                 )}>
                     <Link href="/dashboard" className={cn(
                         "flex items-center gap-3",
                         isCollapsed && "lg:justify-center"
                     )}>
-                        <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center flex-shrink-0 border border-white/10">
-                            <Brain className="w-6 h-6 text-white" />
+                        <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-teal-500/25">
+                            <Brain className="w-6 h-6 text-white relative z-10" />
+                            {/* Pulse ring animation */}
+                            <span className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-400/30 to-transparent animate-pulse" />
+                            <span className="absolute -inset-0.5 rounded-xl bg-teal-500/20 animate-ping opacity-20" />
                         </div>
                         <div className={cn(
                             "transition-all duration-200",
                             isCollapsed ? "lg:hidden" : "block"
                         )}>
-                            <h1 className="text-white font-bold text-lg leading-tight">ICMS</h1>
-                            <p className="text-white/50 text-[10px] leading-tight">
+                            <h1 className="text-white font-bold text-lg leading-tight tracking-tight">ICMS</h1>
+                            <p className="text-teal-400/60 text-[10px] leading-tight font-medium tracking-wider uppercase">
                                 Conference Management
                             </p>
                         </div>
@@ -275,7 +411,7 @@ export function Sidebar() {
                     {/* Mobile close button */}
                     <button
                         onClick={() => setSidebarOpen(false)}
-                        className="lg:hidden p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                        className="lg:hidden p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -283,61 +419,184 @@ export function Sidebar() {
 
                 {/* Navigation */}
                 <nav className="flex-1 py-4 px-3 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                    <ul className="space-y-1">
-                        {filteredMenuItems.map((item) => {
-                            const isActive = pathname === item.href ||
-                                (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
-                            return (
-                                <li key={item.href}>
-                                    <Link
-                                        href={item.href}
-                                        onClick={() => setSidebarOpen(false)}
-                                        className={cn(
-                                            "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative",
-                                            isCollapsed && "lg:justify-center lg:px-0",
-                                            isActive
-                                                ? "bg-white/15 text-white shadow-lg"
-                                                : "text-white/60 hover:text-white hover:bg-white/10"
+                    {/* Event Selector - only for admins */}
+                    {isAdmin && !isCollapsed && (
+                        <div className="mb-2 mt-1 px-2">
+                            <div className={cn(
+                                "h-[1px] mb-3",
+                                "bg-gradient-to-r from-white/10 via-white/[0.06] to-transparent"
+                            )} />
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-white/25 px-1 mb-1.5 block">
+                                Active Event
+                            </span>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setEventSelectorOpen(!eventSelectorOpen)}
+                                    className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-sm transition-all duration-200"
+                                >
+                                    <span className={cn(
+                                        "truncate text-left",
+                                        selectedEventName ? "text-teal-300 font-medium" : "text-white/40"
+                                    )}>
+                                        {eventsLoading ? "Loading..." : selectedEventName || "Select event..."}
+                                    </span>
+                                    <ChevronDown className={cn(
+                                        "w-3.5 h-3.5 text-white/40 flex-shrink-0 transition-transform duration-200",
+                                        eventSelectorOpen && "rotate-180"
+                                    )} />
+                                </button>
+                                {eventSelectorOpen && (
+                                    <div className="absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg bg-slate-800 border border-white/10 shadow-xl shadow-black/30 z-50">
+                                        {selectedEventId && (
+                                            <button
+                                                onClick={() => { setSelectedEventId(null); setEventSelectorOpen(false); }}
+                                                className="w-full px-3 py-2 text-left text-xs text-white/40 hover:bg-white/[0.06] hover:text-white/60 transition-colors border-b border-white/[0.06]"
+                                            >
+                                                Clear selection
+                                            </button>
                                         )}
-                                        title={isCollapsed ? item.title : undefined}
-                                    >
-                                        {/* Active indicator */}
-                                        {isActive && (
-                                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+                                        {eventsList.map((evt) => (
+                                            <button
+                                                key={evt.id}
+                                                onClick={() => { setSelectedEventId(evt.id); setEventSelectorOpen(false); }}
+                                                className={cn(
+                                                    "w-full px-3 py-2 text-left text-sm hover:bg-white/[0.06] transition-colors truncate",
+                                                    evt.id === selectedEventId
+                                                        ? "text-teal-300 bg-teal-500/10"
+                                                        : "text-white/70"
+                                                )}
+                                            >
+                                                {evt.title}
+                                            </button>
+                                        ))}
+                                        {eventsList.length === 0 && !eventsLoading && (
+                                            <div className="px-3 py-2 text-xs text-white/30">No events found</div>
                                         )}
-                                        <item.icon
-                                            className={cn(
-                                                "w-5 h-5 flex-shrink-0 transition-all",
-                                                isActive && "text-white"
-                                            )}
-                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    {/* Collapsed event selector indicator */}
+                    {isAdmin && isCollapsed && (
+                        <div className="mb-2 mt-1 px-2 hidden lg:block">
+                            <div className="h-[1px] mb-2 mx-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                            <div
+                                className={cn(
+                                    "flex items-center justify-center p-2 rounded-lg cursor-pointer group relative",
+                                    selectedEventId ? "bg-teal-500/10" : "bg-white/[0.04]"
+                                )}
+                                title={selectedEventName || "No event selected"}
+                            >
+                                <Calendar className={cn(
+                                    "w-5 h-5",
+                                    selectedEventId ? "text-teal-400" : "text-white/30"
+                                )} />
+                                {selectedEventId && (
+                                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_6px_rgba(20,184,166,0.6)]" />
+                                )}
+                                <span className="hidden lg:group-hover:flex absolute left-full ml-3 px-2.5 py-1.5 rounded-lg bg-slate-800 text-white text-xs font-medium whitespace-nowrap shadow-xl shadow-black/30 border border-white/10 z-50 pointer-events-none">
+                                    {selectedEventName || "No event selected"}
+                                    <span className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45 border-l border-b border-white/10" />
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {groupOrder.map((groupName) => {
+                        const items = groupedItems[groupName];
+                        if (!items || items.length === 0) return null;
+                        return (
+                            <div key={groupName} className="mb-2">
+                                {/* Section label */}
+                                {groupName !== "Main" && (
+                                    <div className={cn(
+                                        "mb-2 mt-3",
+                                        isCollapsed ? "lg:px-0" : "px-3"
+                                    )}>
+                                        {/* Divider line */}
+                                        <div className={cn(
+                                            "h-[1px] mb-3",
+                                            isCollapsed
+                                                ? "lg:mx-2 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                                                : "bg-gradient-to-r from-white/10 via-white/[0.06] to-transparent"
+                                        )} />
                                         <span className={cn(
-                                            "font-medium text-sm whitespace-nowrap transition-all duration-200",
-                                            isCollapsed ? "lg:hidden" : "block"
+                                            "text-[10px] font-semibold uppercase tracking-[0.15em] text-white/25",
+                                            isCollapsed && "lg:hidden"
                                         )}>
-                                            {item.title}
+                                            {groupName}
                                         </span>
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
+                                    </div>
+                                )}
+                                <ul className="space-y-0.5">
+                                    {items.map((item) => {
+                                        const isActive = pathname === item.href ||
+                                            (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
+                                        return (
+                                            <li key={item.href}>
+                                                <Link
+                                                    href={item.href}
+                                                    onClick={() => setSidebarOpen(false)}
+                                                    className={cn(
+                                                        "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
+                                                        isCollapsed && "lg:justify-center lg:px-0",
+                                                        isActive
+                                                            ? "bg-gradient-to-r from-teal-500/20 via-cyan-500/10 to-transparent text-white shadow-[0_0_20px_-5px_rgba(20,184,166,0.3)]"
+                                                            : "text-white/50 hover:text-white hover:bg-white/[0.06] hover:translate-x-0.5"
+                                                    )}
+                                                    title={isCollapsed ? item.title : undefined}
+                                                >
+                                                    {/* Active indicator bar */}
+                                                    {isActive && (
+                                                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-gradient-to-b from-teal-400 to-cyan-500 rounded-r-full shadow-[0_0_8px_rgba(20,184,166,0.6)]" />
+                                                    )}
+                                                    <item.icon
+                                                        className={cn(
+                                                            "w-5 h-5 flex-shrink-0 transition-all duration-200",
+                                                            isActive
+                                                                ? "text-teal-400 drop-shadow-[0_0_6px_rgba(20,184,166,0.5)]"
+                                                                : "group-hover:text-teal-300/70 group-hover:scale-110"
+                                                        )}
+                                                    />
+                                                    <span className={cn(
+                                                        "font-medium text-sm whitespace-nowrap transition-all duration-200",
+                                                        isCollapsed ? "lg:hidden" : "block"
+                                                    )}>
+                                                        {item.title}
+                                                    </span>
+
+                                                    {/* Collapsed tooltip */}
+                                                    {isCollapsed && (
+                                                        <span className="hidden lg:group-hover:flex absolute left-full ml-3 px-2.5 py-1.5 rounded-lg bg-slate-800 text-white text-xs font-medium whitespace-nowrap shadow-xl shadow-black/30 border border-white/10 z-50 pointer-events-none">
+                                                            {item.title}
+                                                            <span className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45 border-l border-b border-white/10" />
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </div>
+                        );
+                    })}
                 </nav>
 
                 {/* Footer Actions */}
-                <div className="p-3 border-t border-white/10 space-y-1">
+                <div className="p-3 border-t border-white/[0.06] space-y-0.5">
                     {/* Collapse toggle - desktop only */}
                     <button
                         onClick={toggleSidebarCollapse}
                         className={cn(
-                            "hidden lg:flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all",
+                            "hidden lg:flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/[0.06] transition-all duration-200 group",
                             isCollapsed && "justify-center px-0"
                         )}
                         title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     >
                         <ChevronLeft
                             className={cn(
-                                "w-5 h-5 transition-transform duration-300",
+                                "w-5 h-5 transition-all duration-300 group-hover:text-teal-400",
                                 isCollapsed && "rotate-180"
                             )}
                         />
@@ -353,12 +612,12 @@ export function Sidebar() {
                     <button
                         onClick={handleLogout}
                         className={cn(
-                            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/60 hover:text-red-300 hover:bg-red-500/10 transition-all w-full",
+                            "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/40 hover:text-red-300 hover:bg-red-500/10 hover:shadow-[0_0_15px_-3px_rgba(239,68,68,0.2)] transition-all duration-200 w-full",
                             isCollapsed && "lg:justify-center lg:px-0"
                         )}
                         title={isCollapsed ? "Logout" : undefined}
                     >
-                        <LogOut className="w-5 h-5 flex-shrink-0" />
+                        <LogOut className="w-5 h-5 flex-shrink-0 transition-all duration-200 group-hover:scale-110" />
                         <span className={cn(
                             "font-medium text-sm",
                             isCollapsed ? "lg:hidden" : "block"

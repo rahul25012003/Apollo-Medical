@@ -128,6 +128,8 @@ interface DisplayEvent {
     image: string | null;
     featured: boolean;
     status: string;
+    tenantSlug: string | null;
+    tenantName: string | null;
 }
 
 // Sponsor type for display
@@ -288,6 +290,8 @@ export default function PublicHomePage() {
                         image: getEventImage(event.bannerImage, event.thumbnailImage, event.type),
                         featured: event.isFeatured,
                         status: event.status,
+                        tenantSlug: event.tenant?.slug || null,
+                        tenantName: event.tenant?.name || null,
                     }));
                     setUpcomingEvents(mappedEvents);
                 }
@@ -783,7 +787,7 @@ export default function PublicHomePage() {
                                                             <p className="text-xs text-emerald-400 font-medium mt-1">Early bird pricing</p>
                                                         )}
                                                     </div>
-                                                    <Link href={`/events/${event.id}/register`}>
+                                                    <Link href={`/events/${event.id}/register${event.tenantSlug ? `?tenant=${event.tenantSlug}` : ""}`}>
                                                         <Button className="bg-white text-primary hover:bg-white/90 gap-2 shadow-lg hover:shadow-xl transition-all duration-300 rounded-full px-6">
                                                             <Ticket className="h-4 w-4" />
                                                             Register Now
@@ -953,6 +957,12 @@ export default function PublicHomePage() {
                                                 <h3 className="font-semibold text-white leading-snug text-base line-clamp-2">
                                                     {event.title}
                                                 </h3>
+                                                {event.tenantName && (
+                                                    <p className="text-xs text-white/70 mt-1 flex items-center gap-1">
+                                                        <Building2 className="h-3 w-3" />
+                                                        {event.tenantName}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
 
@@ -988,7 +998,7 @@ export default function PublicHomePage() {
 
                                                 {/* Action Buttons */}
                                                 <div className="flex gap-2">
-                                                    <Link href={`/events/${event.id}`} className="flex-1">
+                                                    <Link href={`/events/${event.id}${event.tenantSlug ? `?tenant=${event.tenantSlug}` : ""}`} className="flex-1">
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
@@ -998,7 +1008,7 @@ export default function PublicHomePage() {
                                                             Details
                                                         </Button>
                                                     </Link>
-                                                    <Link href={`/events/${event.id}/register`} className="flex-1">
+                                                    <Link href={`/events/${event.id}/register${event.tenantSlug ? `?tenant=${event.tenantSlug}` : ""}`} className="flex-1">
                                                         <Button
                                                             size="sm"
                                                             className={cn(

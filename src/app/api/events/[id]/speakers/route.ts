@@ -9,6 +9,7 @@ import {
   withErrorHandler,
   parseBody,
 } from "@/lib/api-utils";
+import { findOrCreateUserAccount } from "@/lib/auto-account";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -116,6 +117,50 @@ export const POST = withErrorHandler(
         speaker: true,
       },
     });
+
+    // Auto-create a SPEAKER registration so they can receive certificates
+    try {
+      // Check if registration already exists for this speaker + event
+      const existingReg = await prisma.registration.findUnique({
+        where: { email_eventId: { email: speaker.email.toLowerCase(), eventId } },
+      });
+
+      if (!existingReg) {
+        // Create user account if needed
+        const { userId } = await findOrCreateUserAccount({
+          email: speaker.email,
+          name: speaker.name,
+          phone: speaker.phone,
+          tenantId: event.tenantId,
+        });
+
+        await prisma.registration.create({
+          data: {
+            name: speaker.name,
+            email: speaker.email.toLowerCase(),
+            phone: speaker.phone,
+            organization: speaker.institution,
+            designation: speaker.designation,
+            participantRole: "SPEAKER",
+            eventId,
+            status: "CONFIRMED",
+            paymentStatus: "FREE",
+            amount: 0,
+            currency: "INR",
+            userId,
+            registeredById: session.user.id,
+          },
+        });
+      } else if (existingReg.participantRole !== "SPEAKER") {
+        // Update existing registration role to SPEAKER
+        await prisma.registration.update({
+          where: { id: existingReg.id },
+          data: { participantRole: "SPEAKER" },
+        });
+      }
+    } catch (err) {
+      console.error("Auto-registration for speaker failed:", err);
+    }
 
     return successResponse(eventSpeaker, "Speaker added to event", 201);
   }

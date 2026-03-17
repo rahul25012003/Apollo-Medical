@@ -143,6 +143,14 @@ function DecorativeBackground() {
   );
 }
 
+// Adaptive grid: centers 1 item, 2 cols for 2, expands for 3+
+function adaptiveGrid(count: number, maxCols: 2 | 3 | 4 = 3): string {
+  if (count === 1) return "grid-cols-1 max-w-md mx-auto";
+  if (count === 2) return "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto";
+  if (maxCols === 4) return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
+  if (maxCols === 2) return "grid-cols-1 sm:grid-cols-2";
+  return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
+}
 
 
 
@@ -154,11 +162,11 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
   return (
     <section
       id="faq"
-      className="py-6 lg:py-8 relative overflow-hidden"
-      style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}
+      className="py-12 lg:py-20 relative overflow-hidden"
+      style={{ background: `linear-gradient(180deg, #ffffff, ${theme.primaryColor}06, ${theme.secondaryColor}04)` }}
     >
       <div className="container mx-auto px-4 lg:px-8 relative z-10">
-        <div className="text-center mb-5" data-scroll-reveal>
+        <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
           <Badge
             variant="outline"
             className="mb-4 px-5 py-1.5 rounded-full"
@@ -177,7 +185,7 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
+              className="bg-white rounded-2xl shadow-md hover:shadow-lg hover:bg-slate-50/80 transition-all duration-300 overflow-hidden"
             >
               <button
                 type="button"
@@ -243,7 +251,7 @@ function CountdownTimer({ targetDate, theme }: { targetDate: string; theme: { pr
       {units.map((unit) => (
         <div key={unit.label} className="text-center">
           <div
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white text-2xl sm:text-3xl font-bold shadow-lg"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white text-2xl sm:text-3xl font-bold shadow-lg backdrop-blur-sm border border-white/20"
             style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
           >
             {String(unit.value).padStart(2, "0")}
@@ -466,6 +474,7 @@ export default function TenantHomePage() {
     <div className="min-h-screen bg-background overflow-x-hidden pb-20 md:pb-0">
       {/* Custom CSS for animations */}
       <style jsx global>{`
+        /* ── Animations ── */
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-20px); }
@@ -486,21 +495,141 @@ export default function TenantHomePage() {
           from { opacity: 0; transform: scale(0.9); }
           to { opacity: 1; transform: scale(1); }
         }
+        @keyframes glowPulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(var(--primary-rgb, 13 148 136) / 0.15); }
+          50% { box-shadow: 0 0 40px rgba(var(--primary-rgb, 13 148 136) / 0.25); }
+        }
+        @keyframes borderShift {
+          0%, 100% { border-color: rgba(var(--primary-rgb, 13 148 136) / 0.2); }
+          50% { border-color: rgba(var(--primary-rgb, 13 148 136) / 0.4); }
+        }
         .animate-float { animation: float 6s ease-in-out infinite; }
-        .animate-fadeInUp { animation: fadeInUp 0.8s ease-out forwards; }
-        .animate-fadeInLeft { animation: fadeInLeft 0.8s ease-out forwards; }
-        .animate-fadeInRight { animation: fadeInRight 0.8s ease-out forwards; }
-        .animate-scaleIn { animation: scaleIn 0.6s ease-out forwards; }
+        .animate-fadeInUp { animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fadeInLeft { animation: fadeInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fadeInRight { animation: fadeInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-scaleIn { animation: scaleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .animation-delay-200 { animation-delay: 0.2s; }
         .animation-delay-400 { animation-delay: 0.4s; }
         .animation-delay-600 { animation-delay: 0.6s; }
+        .animation-delay-800 { animation-delay: 0.8s; }
+
+        /* ── Tenant page premium polish ── */
+
+        /* Header — glass morphism with soft border */
+        header.sticky {
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        /* Section headings — refined spacing */
+        section { scroll-margin-top: 80px; }
+
+        /* Event cards — premium lift + glow on hover */
+        .group[class*="rounded-2xl"][class*="border"],
+        .group[class*="rounded-xl"][class*="border"] {
+          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                      box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                      border-color 0.3s ease !important;
+        }
+
+        .group[class*="rounded-2xl"][class*="border"]:hover,
+        .group[class*="rounded-xl"][class*="border"]:hover {
+          transform: translateY(-6px) !important;
+          box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.12),
+                      0 0 0 1px rgba(0, 0, 0, 0.03) !important;
+        }
+
+        /* CTA buttons — glow effect */
+        a[class*="rounded-xl"][class*="text-white"],
+        button[class*="rounded-xl"][class*="text-white"] {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        a[class*="rounded-xl"][class*="text-white"]:hover,
+        button[class*="rounded-xl"][class*="text-white"]:hover {
+          transform: translateY(-2px) !important;
+          filter: brightness(1.08);
+        }
+
+        /* Stats/countdown numbers — tabular nums */
+        .text-3xl.font-bold, .text-4xl.font-bold, .text-5xl.font-bold {
+          font-variant-numeric: tabular-nums;
+          font-feature-settings: "tnum";
+        }
+
+        /* Gallery images — smooth zoom */
+        [class*="overflow-hidden"] img {
+          transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        [class*="overflow-hidden"]:hover img {
+          transform: scale(1.08) !important;
+        }
+
+        /* Speaker cards — refined hover */
+        [class*="text-center"][class*="group"] {
+          transition: transform 0.35s ease, box-shadow 0.35s ease !important;
+        }
+
+        /* FAQ items — smooth expand */
+        details summary {
+          cursor: pointer;
+          transition: color 0.2s ease;
+        }
+
+        details[open] summary {
+          color: var(--primary);
+        }
+
+        /* Smooth anchor scrolling for nav */
+        html { scroll-behavior: smooth; }
+
+        /* Hero text — refined shadow for readability on images */
+        [class*="text-white"][class*="font-bold"][class*="text-5xl"],
+        [class*="text-white"][class*="font-bold"][class*="text-6xl"],
+        [class*="text-white"][class*="font-bold"][class*="text-4xl"] {
+          text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Footer — subtle top border glow */
+        footer {
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Mobile nav — smooth slide */
+        [class*="fixed"][class*="inset-0"][class*="bg-white"] {
+          animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Testimonial cards — glass feel */
+        [class*="bg-white/80"][class*="backdrop-blur"] {
+          transition: transform 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        [class*="bg-white/80"][class*="backdrop-blur"]:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Countdown timer boxes — subtle pulse on active */
+        [class*="rounded-xl"][class*="shadow-lg"][class*="text-center"] {
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Research/about section images — parallax-like depth */
+        [class*="rounded-2xl"][class*="shadow-2xl"] img {
+          transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [class*="rounded-2xl"][class*="shadow-2xl"]:hover img {
+          transform: scale(1.03);
+        }
       `}</style>
 
       {/* Header */}
-      <header className={cn("sticky top-0 z-50 transition-all duration-300", scrolled ? "bg-white/95 backdrop-blur-xl shadow-md border-b" : "bg-transparent")}>
+      <header className={cn("sticky top-0 z-50 transition-all duration-500", scrolled ? "bg-white/90 backdrop-blur-2xl shadow-xl shadow-slate-900/5 border-b border-slate-200/50 py-0" : "bg-white/60 backdrop-blur-xl border-b border-transparent py-1")}>
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex h-16 lg:h-20 items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 group">
+            <Link href={`/t/${tenantSlug}`} className="flex items-center gap-2 group">
               <div
                 className="h-9 w-9 rounded-xl flex items-center justify-center shadow-md"
                 style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
@@ -510,7 +639,7 @@ export default function TenantHomePage() {
               <span className="font-bold text-base lg:text-lg tracking-tight">CARE in Neuromodulation</span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-6 lg:gap-8">
               {sections.hero && <a href="#hero" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Home</a>}
               {sections.events && hasEvents && <a href="#events" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Events</a>}
               {sections.gallery && hasGallery && <a href="#gallery" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Gallery</a>}
@@ -566,34 +695,40 @@ export default function TenantHomePage() {
       {sections.hero && (
         <section
           id="hero"
-          className="relative min-h-[65vh] sm:min-h-[70vh] lg:min-h-[75vh] flex items-center overflow-hidden pb-10 md:pb-14"
-          style={hero.bgImage ? {
-            backgroundImage: `url(${hero.bgImage})`,
-            backgroundPosition: 'center',
-            backgroundSize: 'cover',
-          } : {
+          className="relative min-h-screen flex items-center overflow-hidden pb-16 md:pb-20"
+          style={hero.bgImage ? {} : {
             background: `linear-gradient(135deg, ${theme.primaryColor}08 0%, ${theme.secondaryColor}08 50%, ${theme.accentColor}08 100%)`,
           }}
         >
+          {/* Background image — use img tag for full quality (no compression) */}
+          {hero.bgImage && (
+            <img
+              src={hero.bgImage}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="eager"
+            />
+          )}
+
           {!hero.bgImage && <DecorativeBackground />}
 
           {/* Dark overlay for background image */}
           {hero.bgImage && (
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/70 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60 pointer-events-none" />
           )}
 
           {/* Hero Logos — absolute left/right on lg+, inline on smaller screens */}
           {branding.logo && (
             <div className="hidden lg:flex absolute left-[5%] xl:left-[8%] 2xl:left-[12%] top-[45%] -translate-y-1/2 z-10">
-              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-full bg-white shadow-xl flex items-center justify-center p-3 overflow-hidden">
-                <img src={branding.logo} alt={branding.name} className="max-h-full max-w-full object-contain" />
+              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-2xl bg-white shadow-xl flex items-center justify-center p-2 overflow-hidden">
+                <img src={branding.logo} alt={branding.name} className="w-full h-full object-contain" />
               </div>
             </div>
           )}
           {branding.secondaryLogo && (
             <div className="hidden lg:flex absolute right-[5%] xl:right-[8%] 2xl:right-[12%] top-[45%] -translate-y-1/2 z-10">
-              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-full bg-white shadow-xl flex items-center justify-center p-3 overflow-hidden">
-                <img src={branding.secondaryLogo} alt="Secondary Logo" className="max-h-full max-w-full object-contain" />
+              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-2xl bg-white shadow-xl flex items-center justify-center p-2 overflow-hidden">
+                <img src={branding.secondaryLogo} alt="Secondary Logo" className="w-full h-full object-contain" />
               </div>
             </div>
           )}
@@ -615,20 +750,20 @@ export default function TenantHomePage() {
               {(branding.logo || branding.secondaryLogo) && (
                 <div className="flex lg:hidden items-center justify-center gap-4 sm:gap-6 mb-6">
                   {branding.logo && (
-                    <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-full bg-white shadow-lg flex items-center justify-center p-2 flex-shrink-0 overflow-hidden">
-                      <img src={branding.logo} alt={branding.name} className="max-h-full max-w-full object-contain" />
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-2xl bg-white shadow-lg flex items-center justify-center p-1.5 flex-shrink-0 overflow-hidden">
+                      <img src={branding.logo} alt={branding.name} className="w-full h-full object-contain" />
                     </div>
                   )}
                   {branding.secondaryLogo && (
-                    <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-full bg-white shadow-lg flex items-center justify-center p-2 flex-shrink-0 overflow-hidden">
-                      <img src={branding.secondaryLogo} alt="Secondary Logo" className="max-h-full max-w-full object-contain" />
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-2xl bg-white shadow-lg flex items-center justify-center p-1.5 flex-shrink-0 overflow-hidden">
+                      <img src={branding.secondaryLogo} alt="Secondary Logo" className="w-full h-full object-contain" />
                     </div>
                   )}
                 </div>
               )}
 
               <div className="text-center mb-4">
-                <h1 className={cn("text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight drop-shadow-sm", hero.bgImage ? "text-white" : "text-gray-900")}>
+                <h1 className={cn("text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight drop-shadow-md", hero.bgImage ? "text-white" : "text-gray-900")}>
                   {hero.title || branding.name}
                 </h1>
               </div>
@@ -712,8 +847,8 @@ export default function TenantHomePage() {
             </div>
           </div>
 
-          {/* Bottom gradient fade — smooth blend out of hero bg */}
-          <div className="absolute bottom-0 left-0 right-0 h-24 md:h-32 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" style={hasSponsors ? { background: 'linear-gradient(to top, #f9fafb, rgba(249,250,251,0.8) 50%, transparent)' } : undefined} />
+          {/* Bottom gradient fade — dims background into next section */}
+          <div className="absolute bottom-0 left-0 right-0 h-32 md:h-40 pointer-events-none" style={{ background: `linear-gradient(to top, ${hasSponsors ? '#f9fafb' : '#ffffff'} 0%, ${hasSponsors ? 'rgba(249,250,251,0.7)' : 'rgba(255,255,255,0.7)'} 40%, transparent 100%)` }} />
         </section>
       )}
 
@@ -732,9 +867,39 @@ export default function TenantHomePage() {
         </div>
       )}
 
+      {/* No Events — Coming Soon placeholder */}
+      {sections.events && featuredEvents.length === 0 && (
+        <section id="events" className="py-12 lg:py-20 relative overflow-hidden bg-white">
+          <div className="container mx-auto px-4 lg:px-8 text-center">
+            <div className="max-w-lg mx-auto py-8">
+              <div
+                className="w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center"
+                style={{ background: `linear-gradient(135deg, ${theme.primaryColor}15, ${theme.secondaryColor}15)` }}
+              >
+                <Calendar className="h-10 w-10" style={{ color: theme.primaryColor }} />
+              </div>
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">Events Coming Soon</h2>
+              <p className="text-gray-500 mb-5">
+                We&apos;re preparing exciting conferences, workshops, and training programs. Stay tuned for updates!
+              </p>
+              <a href="#contact">
+                <Button
+                  variant="outline"
+                  className="rounded-full px-6 border-2"
+                  style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Get Notified
+                </Button>
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Events Carousel Section */}
       {sections.events && featuredEvents.length > 0 && (
-        <section id="events" className="pt-6 pb-4 lg:pt-8 lg:pb-6 relative overflow-hidden bg-white">
+        <section id="events" className="pt-12 pb-8 lg:pt-20 lg:pb-14 relative overflow-hidden bg-white">
           <DecorativeBackground />
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
@@ -785,7 +950,7 @@ export default function TenantHomePage() {
                             )}
                           </div>
                           <Link href={`/events/${event.id}/register?tenant=${tenantSlug}`}>
-                            <Button className="rounded-full bg-white text-black hover:bg-white/90">
+                            <Button className="rounded-full bg-white text-black hover:bg-white/90 shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 relative overflow-hidden">
                               Register Now
                               <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
@@ -838,11 +1003,11 @@ export default function TenantHomePage() {
 
             {/* Event Cards Grid */}
             {events.length > 3 && (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              <div className={cn("grid gap-6 mt-6", adaptiveGrid(Math.min(events.length - 3, 3)))}>
                 {events.slice(3, 6).map((event, index) => (
                   <Card
                     key={event.id}
-                    className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group"
+                    className="overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 hover:-translate-y-2 group"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
                     <div className="relative h-48 overflow-hidden">
@@ -891,7 +1056,7 @@ export default function TenantHomePage() {
                       </div>
                       <Link href={`/events/${event.id}/register?tenant=${tenantSlug}`}>
                         <Button
-                          className="w-full text-white"
+                          className="w-full text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 relative overflow-hidden"
                           style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
                         >
                           Register Now
@@ -913,11 +1078,11 @@ export default function TenantHomePage() {
       {sections.events && speakers.length > 0 && (
         <section
           id="speakers"
-          className="py-6 lg:py-8 relative overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}
+          className="py-12 lg:py-20 relative overflow-hidden"
+          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}08, ${theme.secondaryColor}06, #f8fafc)` }}
         >
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="text-center mb-5" data-scroll-reveal>
+            <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
@@ -932,11 +1097,11 @@ export default function TenantHomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className={cn("grid gap-6", adaptiveGrid(speakers.length, 4))}>
               {speakers.map((speaker: any, index: number) => (
                 <div
                   key={speaker.id || index}
-                  className="group text-center p-6 rounded-2xl bg-white border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  className="group text-center p-6 rounded-2xl bg-white border border-gray-100 hover:shadow-xl hover:-translate-y-1 hover:bg-primary/5 transition-all duration-300"
                 >
                   <div className="relative mx-auto mb-4 h-24 w-24">
                     <div
@@ -953,18 +1118,18 @@ export default function TenantHomePage() {
                       <img
                         src={speaker.photo || speaker.photoUrl || speaker.image}
                         alt={speaker.name}
-                        className="h-24 w-24 rounded-full object-cover relative z-10"
+                        className="h-24 w-24 rounded-full object-cover relative z-10 ring-2 ring-white shadow-lg"
                       />
                     ) : (
                       <div
-                        className="h-24 w-24 rounded-full flex items-center justify-center text-white text-2xl font-bold relative z-10"
+                        className="h-24 w-24 rounded-full flex items-center justify-center text-white text-2xl font-bold relative z-10 ring-2 ring-white shadow-lg"
                         style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
                       >
                         {speaker.name?.charAt(0) || 'S'}
                       </div>
                     )}
                   </div>
-                  <h3 className="font-bold text-base lg:text-lg">{speaker.name}</h3>
+                  <h3 className="font-bold text-base lg:text-lg group-hover:text-primary transition-colors">{speaker.name}</h3>
                   {speaker.designation && (
                     <p className="text-sm text-muted-foreground mt-1">{speaker.designation}</p>
                   )}
@@ -988,7 +1153,7 @@ export default function TenantHomePage() {
           className="py-6 lg:py-8 relative overflow-hidden bg-white"
         >
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="text-center mb-5" data-scroll-reveal>
+            <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
@@ -1106,7 +1271,7 @@ export default function TenantHomePage() {
           style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}
         >
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="text-center mb-5" data-scroll-reveal>
+            <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
@@ -1121,7 +1286,7 @@ export default function TenantHomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className={cn("grid gap-6", adaptiveGrid(pricingCategories.length))}>
               {pricingCategories.map((category: any, index: number) => {
                 const isMiddle = pricingCategories.length >= 3 ? index === Math.floor(pricingCategories.length / 2) : index === 0;
                 const hasEarlyBird = category.earlyBirdPrice && category.earlyBirdDeadline && new Date(category.earlyBirdDeadline) > new Date();
@@ -1187,7 +1352,7 @@ export default function TenantHomePage() {
 
                     <Link href={events[0] ? `/events/${events[0].id}/register?tenant=${tenantSlug}` : "#events"}>
                       <Button
-                        className="w-full rounded-full text-white hover:shadow-lg hover:scale-105 transition-all"
+                        className="w-full rounded-full text-white shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 relative overflow-hidden"
                         style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
                       >
                         Register
@@ -1206,10 +1371,10 @@ export default function TenantHomePage() {
       {(sections.ongoingResearch !== false) && researchItems.length > 0 && (
         <section
           id="research"
-          className="py-6 lg:py-8 relative overflow-hidden bg-white"
+          className="py-12 lg:py-20 relative overflow-hidden bg-white"
         >
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="text-center mb-5" data-scroll-reveal>
+            <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
@@ -1224,7 +1389,7 @@ export default function TenantHomePage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className={cn("grid gap-8", adaptiveGrid(researchItems.length))}>
               {researchItems.map((research, index) => {
                 const IconComponent = iconMap[research.icon] || FlaskConical;
                 return (
@@ -1267,11 +1432,11 @@ export default function TenantHomePage() {
 
       {/* Gallery Section */}
       {sections.gallery && hasGallery && (
-        <section id="gallery" className="py-6 lg:py-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}>
+        <section id="gallery" className="py-12 lg:py-20 relative overflow-hidden" style={{ background: `linear-gradient(180deg, #ffffff, ${theme.primaryColor}08, ${theme.secondaryColor}06)` }}>
           <DecorativeBackground />
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="text-center mb-5" data-scroll-reveal>
+            <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
@@ -1302,9 +1467,10 @@ export default function TenantHomePage() {
                   )}
                   <div className={cn(
                     "grid gap-3 sm:gap-4",
-                    galleryVideos.length > 0
-                      ? "grid-cols-2 sm:grid-cols-2"
-                      : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                    adaptiveGrid(
+                      galleryImages.slice(0, galleryVideos.length > 0 ? 6 : 8).length,
+                      galleryVideos.length > 0 ? 2 : 4
+                    )
                   )}>
                     {galleryImages.slice(0, galleryVideos.length > 0 ? 6 : 8).map((image, index) => {
                       const isFeatured = galleryVideos.length === 0 && (index === 0 || index === 5);
@@ -1317,7 +1483,7 @@ export default function TenantHomePage() {
                         tabIndex={0}
                         aria-label={`View gallery image: ${image.alt}`}
                         className={cn(
-                          "relative group cursor-pointer overflow-hidden rounded-2xl",
+                          "relative group cursor-pointer overflow-hidden rounded-xl shadow-md hover:shadow-2xl transition-all duration-500",
                           isFeatured ? "sm:col-span-2 sm:row-span-2" : "",
                           isFeatured ? "h-[220px] sm:h-[280px] md:h-[400px]" : "h-[180px] md:h-[200px]"
                         )}
@@ -1364,9 +1530,10 @@ export default function TenantHomePage() {
                   )}
                   <div className={cn(
                     "grid gap-3 sm:gap-4",
-                    galleryImages.length > 0
-                      ? "grid-cols-1 sm:grid-cols-2"
-                      : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
+                    adaptiveGrid(
+                      galleryVideos.slice(0, galleryImages.length > 0 ? 4 : 6).length,
+                      galleryImages.length > 0 ? 2 : 3
+                    )
                   )}>
                     {galleryVideos.slice(0, galleryImages.length > 0 ? 4 : 6).map((video) => (
                       <div
@@ -1374,7 +1541,7 @@ export default function TenantHomePage() {
                         role="button"
                         tabIndex={0}
                         aria-label={`Play video: ${video.title}`}
-                        className="relative group cursor-pointer overflow-hidden rounded-2xl h-[180px] md:h-[200px]"
+                        className="relative group cursor-pointer overflow-hidden rounded-xl shadow-md hover:shadow-2xl transition-all duration-500 h-[180px] md:h-[200px]"
                         onClick={() => setPlayingVideoId(video.youtubeId)}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPlayingVideoId(video.youtubeId); } }}
                       >
@@ -1405,7 +1572,7 @@ export default function TenantHomePage() {
 
             {(galleryImages.length > 0 || galleryVideos.length > 0) && (
               <div className="text-center mt-12">
-                <Link href="/gallery">
+                <Link href={`/t/${tenantSlug}/gallery`}>
                   <Button
                     variant="outline"
                     size="lg"
@@ -1426,7 +1593,7 @@ export default function TenantHomePage() {
       {sections.testimonials && hasRealTestimonials && (
         <section
           id="testimonials"
-          className="py-6 lg:py-8 relative overflow-hidden bg-white"
+          className="py-12 lg:py-20 relative overflow-hidden bg-white"
         >
 
           {/* 3D floating bubbles & shapes */}
@@ -1503,7 +1670,7 @@ export default function TenantHomePage() {
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             {/* Section header */}
-            <div className="text-center mb-5" data-scroll-reveal>
+            <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full backdrop-blur-sm"
@@ -1528,7 +1695,7 @@ export default function TenantHomePage() {
               const renderTestimonialCard = (testimonial: typeof testimonials[0], index: number) => (
                 <div
                   key={testimonial.id}
-                  className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden"
+                  className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden border border-primary/10 hover:border-primary/20"
                 >
                   {/* Top accent bar */}
                   <div
@@ -1550,7 +1717,7 @@ export default function TenantHomePage() {
                           />
                         ))}
                       </div>
-                      <Quote className="h-8 w-8 opacity-10 group-hover:opacity-20 transition-opacity duration-300" style={{ color: theme.primaryColor }} />
+                      <Quote className="h-8 w-8 text-primary/20 group-hover:text-primary/30 transition-all duration-300" style={{ color: theme.primaryColor }} />
                     </div>
 
                     {/* Testimonial content */}
@@ -1616,7 +1783,7 @@ export default function TenantHomePage() {
               const widthClass = visibleCount === 1 ? "w-full" : visibleCount === 2 ? "w-1/2" : "w-1/3";
 
               return testimonials.length <= visibleCount ? (
-                <div className={cn("grid gap-6 lg:gap-8 max-w-5xl mx-auto", visibleCount === 1 ? "grid-cols-1" : visibleCount === 2 ? "grid-cols-2" : "grid-cols-1 md:grid-cols-3")}>
+                <div className={cn("grid gap-6 lg:gap-8", adaptiveGrid(testimonials.length))}>
                   {testimonials.map((t, i) => renderTestimonialCard(t, i))}
                 </div>
               ) : (
@@ -1681,7 +1848,7 @@ export default function TenantHomePage() {
 
       {/* About Section */}
       {sections.about && (
-        <section id="about" className="py-6 lg:py-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }} data-scroll-reveal>
+        <section id="about" className="py-12 lg:py-20 relative overflow-hidden" style={{ background: `linear-gradient(180deg, ${theme.primaryColor}06, #f8fafc, ${theme.secondaryColor}04)` }} data-scroll-reveal>
           <DecorativeBackground />
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
@@ -1689,7 +1856,7 @@ export default function TenantHomePage() {
             <div className="grid lg:grid-cols-2 gap-10 items-center mb-8">
               {/* Image Slideshow */}
               {about.images && about.images.length > 0 && (
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3] min-h-[300px]">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-shadow duration-500 aspect-[4/3] min-h-[300px]">
                 {about.images.map((img: string, idx: number) => (
                   <img
                     key={idx}
@@ -1728,7 +1895,7 @@ export default function TenantHomePage() {
                     return (
                       <div key={idx}>
                         {heading && <h3 className="text-xl font-bold mb-2" style={{ color: theme.primaryColor }}>{heading}</h3>}
-                        <p className="text-muted-foreground text-base leading-relaxed">{text}</p>
+                        <p className="text-slate-600 text-base leading-relaxed">{text}</p>
                       </div>
                     );
                   })}
@@ -1780,17 +1947,17 @@ export default function TenantHomePage() {
           contact.website && { icon: Globe, label: "Website", value: contact.website.replace(/^https?:\/\//, ""), href: contact.website, external: true },
         ].filter(Boolean) as { icon: typeof Mail; label: string; value: string; href?: string; external?: boolean }[];
 
-        // Grid column count adapts to how many cards there are
-        const gridCols = contactCards.length >= 4 ? "md:grid-cols-4" : contactCards.length === 3 ? "md:grid-cols-3" : contactCards.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1 max-w-md";
+        // Grid column count adapts — center 1, expand for more
+        const gridCols = adaptiveGrid(contactCards.length, 4);
 
         return (
         <section
           id="contact"
-          className="py-6 lg:py-8 relative overflow-hidden bg-white"
+          className="py-12 lg:py-20 relative overflow-hidden bg-white"
           data-scroll-reveal
         >
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="text-center mb-5">
+            <div className="text-center mb-10 lg:mb-14">
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full bg-white"
@@ -1808,9 +1975,9 @@ export default function TenantHomePage() {
             <div className={cn("max-w-5xl mx-auto grid gap-6", gridCols)}>
               {contactCards.map((card) => {
                 const content = (
-                  <Card key={card.label} className="text-center p-5 sm:p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white">
+                  <Card key={card.label} className="text-center p-5 sm:p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white h-full flex flex-col items-center justify-center">
                     <div
-                      className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                      className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center flex-shrink-0"
                       style={{ background: `linear-gradient(135deg, ${theme.primaryColor}20, ${theme.secondaryColor}20)` }}
                     >
                       <card.icon className="h-7 w-7" style={{ color: theme.primaryColor }} />
@@ -1820,11 +1987,11 @@ export default function TenantHomePage() {
                   </Card>
                 );
                 return card.href ? (
-                  <a key={card.label} href={card.href} target={card.external ? "_blank" : undefined} rel={card.external ? "noopener noreferrer" : undefined} className="hover:no-underline">
+                  <a key={card.label} href={card.href} target={card.external ? "_blank" : undefined} rel={card.external ? "noopener noreferrer" : undefined} className="hover:no-underline h-full">
                     {content}
                   </a>
                 ) : (
-                  <div key={card.label}>{content}</div>
+                  <div key={card.label} className="h-full">{content}</div>
                 );
               })}
             </div>
@@ -1885,71 +2052,35 @@ export default function TenantHomePage() {
               </div>
             )}
 
-            {/* Social Links */}
-            {hasSocial && (
-              <div className="flex justify-center gap-4 mt-12">
-                {social.facebook && (
-                  <a
-                    href={social.facebook}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Visit our Facebook page"
-                    className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl hover:-translate-y-1 transition-all"
-                    style={{ color: theme.primaryColor }}
-                  >
-                    <Facebook className="h-5 w-5" />
-                  </a>
-                )}
-                {social.twitter && (
-                  <a
-                    href={social.twitter}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Visit our Twitter profile"
-                    className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl hover:-translate-y-1 transition-all"
-                    style={{ color: theme.primaryColor }}
-                  >
-                    <Twitter className="h-5 w-5" />
-                  </a>
-                )}
-                {social.linkedin && (
-                  <a
-                    href={social.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Visit our LinkedIn page"
-                    className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl hover:-translate-y-1 transition-all"
-                    style={{ color: theme.primaryColor }}
-                  >
-                    <Linkedin className="h-5 w-5" />
-                  </a>
-                )}
-                {social.instagram && (
-                  <a
-                    href={social.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Visit our Instagram profile"
-                    className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl hover:-translate-y-1 transition-all"
-                    style={{ color: theme.primaryColor }}
-                  >
-                    <Instagram className="h-5 w-5" />
-                  </a>
-                )}
-                {social.youtube && (
-                  <a
-                    href={social.youtube}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Visit our YouTube channel"
-                    className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl hover:-translate-y-1 transition-all"
-                    style={{ color: theme.primaryColor }}
-                  >
-                    <Youtube className="h-5 w-5" />
-                  </a>
-                )}
-              </div>
-            )}
+            {/* Social Links — same card style as contact cards */}
+            {hasSocial && (() => {
+              const socialCards = [
+                social.facebook && { icon: Facebook, label: "Facebook", href: social.facebook },
+                social.twitter && { icon: Twitter, label: "Twitter", href: social.twitter },
+                social.linkedin && { icon: Linkedin, label: "LinkedIn", href: social.linkedin },
+                social.instagram && { icon: Instagram, label: "Instagram", href: social.instagram },
+                social.youtube && { icon: Youtube, label: "YouTube", href: social.youtube },
+              ].filter(Boolean) as { icon: typeof Facebook; label: string; href: string }[];
+
+              return (
+                <div className={cn("max-w-5xl mx-auto grid gap-6 mt-8", adaptiveGrid(socialCards.length, socialCards.length >= 4 ? 4 : 3))}>
+                  {socialCards.map((s) => (
+                    <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="hover:no-underline h-full">
+                      <Card className="text-center p-5 sm:p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white h-full flex flex-col items-center justify-center">
+                        <div
+                          className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center flex-shrink-0 hover:scale-110 transition-all duration-300"
+                          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}20, ${theme.secondaryColor}20)` }}
+                        >
+                          <s.icon className="h-7 w-7 hover:text-primary transition-all duration-300" style={{ color: theme.primaryColor }} />
+                        </div>
+                        <h3 className="font-bold mb-1">{s.label}</h3>
+                        <p className="text-muted-foreground text-xs">Follow us</p>
+                      </Card>
+                    </a>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </section>
         );
@@ -1959,7 +2090,7 @@ export default function TenantHomePage() {
       {(sections.faq !== false) && <FAQSection theme={theme} faqs={faqs} />}
 
       {/* Footer */}
-      <footer className="text-white relative overflow-hidden mb-16 md:mb-0">
+      <footer className="text-white relative overflow-hidden mb-16 md:mb-0 border-t border-slate-200/50">
         {/* Smooth wavy transition into footer */}
         <div className="relative h-12 md:h-16" style={{ background: faqs.length > 0 ? `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` : "#ffffff" }}>
           <svg className="absolute bottom-0 left-0 right-0 w-full h-full" viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
@@ -2004,12 +2135,12 @@ export default function TenantHomePage() {
               <div>
                 <h4 className="font-semibold mb-4">Quick Links</h4>
                 <ul className="space-y-2 text-white/70">
-                  <li><a href="#events" className="hover:text-white transition-colors">Events</a></li>
-                  <li><a href="#research" className="hover:text-white transition-colors">Research</a></li>
-                  <li><a href="#gallery" className="hover:text-white transition-colors">Gallery</a></li>
-                  <li><a href="#about" className="hover:text-white transition-colors">About</a></li>
-                  <li><a href="#contact" className="hover:text-white transition-colors">Contact</a></li>
-                  <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
+                  <li><a href="#events" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">Events</a></li>
+                  <li><a href="#research" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">Research</a></li>
+                  <li><a href="#gallery" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">Gallery</a></li>
+                  <li><a href="#about" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">About</a></li>
+                  <li><a href="#contact" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">Contact</a></li>
+                  <li><a href="#faq" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">FAQ</a></li>
                 </ul>
               </div>
 
@@ -2042,7 +2173,7 @@ export default function TenantHomePage() {
               <p className="text-sm font-medium text-white/80">
                 &copy; {new Date().getFullYear()} {footer.copyrightText || `${branding.name}. All rights reserved.`}
               </p>
-              <a href="https://summitsolutions.co.in" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:scale-105 transition-all duration-300">
+              <a href="https://summitsolutions.in" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:scale-105 transition-all duration-300">
                 <span className="text-xs font-semibold uppercase tracking-widest text-white/60">Powered by</span>
                 <div className="bg-white/95 rounded-xl px-5 py-2.5 shadow-lg group-hover:shadow-xl group-hover:bg-white transition-all">
                   <img src="/summit-logo.png" alt="Summit Solutions" className="h-9 inline-block" />

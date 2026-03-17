@@ -75,6 +75,13 @@ export const PUT = withErrorHandler(
       delete bodyAny.domain;
       delete bodyAny.defaultCurrency;
       delete bodyAny.defaultTimezone;
+      // Payment fields are super admin only
+      delete bodyAny.paymentMode;
+      delete bodyAny.razorpayKeyId;
+      delete bodyAny.razorpayKeySecret;
+      delete bodyAny.paymentQrCode;
+      delete bodyAny.paymentUpiId;
+      delete bodyAny.paymentInstructions;
       if (bodyAny.sections) {
         delete bodyAny.sections.moduleSpeakers;
         delete bodyAny.sections.moduleSponsors;
@@ -98,6 +105,9 @@ export const PUT = withErrorHandler(
       "footerText", "copyrightText",
       // Admin-only fields (already stripped for non-super-admins above)
       "slug", "isActive", "domain", "defaultCurrency", "defaultTimezone",
+      // Payment fields (super admin only)
+      "paymentMode", "razorpayKeyId", "razorpayKeySecret",
+      "paymentQrCode", "paymentUpiId", "paymentInstructions",
     ];
 
     const updateData: Record<string, unknown> = {};

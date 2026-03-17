@@ -137,33 +137,34 @@ export function Header({ title, subtitle }: HeaderProps) {
 
     return (
         <header className={cn(
-            "fixed top-0 right-0 z-30 h-16 bg-background/80 backdrop-blur-md border-b border-border transition-all duration-300",
+            "fixed top-0 right-0 z-30 h-16 transition-all duration-300",
+            // Frosted glass effect
+            "bg-background/60 backdrop-blur-xl backdrop-saturate-150",
+            // Border replaced by gradient line at bottom
+            "border-b border-white/[0.08]",
             // Adjust left margin based on sidebar state
             sidebarCollapsed ? "lg:left-[72px]" : "lg:left-64",
             "left-0"
         )}>
+            {/* Animated gradient border at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-teal-500/50 via-cyan-500/30 to-teal-500/10" />
+
             <div className="flex items-center justify-between h-full px-4 lg:px-6">
                 {/* Left side */}
                 <div className="flex items-center gap-3 min-w-0">
                     <MobileMenuButton />
-                    <div className="min-w-0">
-                        <h1 className="text-lg font-semibold text-foreground truncate">{title}</h1>
-                        {subtitle && (
-                            <p className="text-sm text-muted-foreground truncate hidden sm:block">{subtitle}</p>
-                        )}
-                    </div>
                 </div>
 
                 {/* Right side */}
                 <div className="flex items-center gap-2 sm:gap-3">
                     {/* Search - Desktop */}
                     <div className="hidden md:flex items-center">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <div className="relative group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-teal-500" />
                             <input
                                 type="text"
                                 placeholder="Search..."
-                                className="h-9 w-44 lg:w-56 pl-9 pr-4 bg-muted rounded-lg border-0 outline-none text-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-all"
+                                className="h-9 w-44 lg:w-56 pl-9 pr-4 bg-muted/50 backdrop-blur-sm rounded-xl border border-white/[0.08] outline-none text-sm placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/30 focus:bg-muted/80 transition-all duration-300"
                             />
                         </div>
                     </div>
@@ -171,7 +172,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                     {/* Search - Mobile toggle */}
                     <button
                         onClick={() => setSearchOpen(!searchOpen)}
-                        className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+                        className="md:hidden p-2 rounded-xl hover:bg-muted/80 transition-all duration-200"
                         aria-label="Search"
                     >
                         <Search className="w-5 h-5 text-muted-foreground" />
@@ -183,22 +184,29 @@ export function Header({ title, subtitle }: HeaderProps) {
                     {/* Notifications */}
                     <DropdownMenu onOpenChange={(open) => { if (open) fetchNotifications(); }}>
                         <DropdownMenuTrigger asChild>
-                            <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
-                                <Bell className="w-5 h-5 text-muted-foreground" />
+                            <button className="relative p-2 rounded-xl hover:bg-muted/80 transition-all duration-200 group">
+                                <Bell className={cn(
+                                    "w-5 h-5 text-muted-foreground transition-all duration-200 group-hover:text-foreground",
+                                    unreadCount > 0 && "text-foreground"
+                                )} />
                                 {unreadCount > 0 && (
-                                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full ring-2 ring-background px-1">
-                                        {unreadCount > 99 ? "99+" : unreadCount}
-                                    </span>
+                                    <>
+                                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-[10px] font-bold rounded-full ring-2 ring-background px-1 shadow-lg shadow-teal-500/30">
+                                            {unreadCount > 99 ? "99+" : unreadCount}
+                                        </span>
+                                        {/* Pulse animation for unread */}
+                                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-teal-500/40 animate-ping" />
+                                    </>
                                 )}
                             </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-80">
-                            <DropdownMenuLabel className="flex items-center justify-between">
-                                Notifications
+                        <DropdownMenuContent align="end" className="w-80 rounded-xl shadow-xl shadow-black/10 border border-border/50 backdrop-blur-xl">
+                            <DropdownMenuLabel className="flex items-center justify-between py-3">
+                                <span className="text-sm font-semibold">Notifications</span>
                                 {unreadCount > 0 && (
                                     <button
                                         onClick={markAllAsRead}
-                                        className="text-xs font-normal text-primary cursor-pointer hover:underline bg-transparent border-0 p-0"
+                                        className="text-xs font-medium text-teal-600 cursor-pointer hover:text-teal-700 hover:underline bg-transparent border-0 p-0 transition-colors"
                                     >
                                         Mark all as read
                                     </button>
@@ -207,17 +215,20 @@ export function Header({ title, subtitle }: HeaderProps) {
                             <DropdownMenuSeparator />
                             <div className="max-h-[350px] overflow-y-auto">
                                 {notifications.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                                        <Bell className="w-8 h-8 mb-2 opacity-30" />
-                                        <p className="text-sm">No notifications yet</p>
+                                    <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+                                        <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                                            <Bell className="w-6 h-6 opacity-30" />
+                                        </div>
+                                        <p className="text-sm font-medium">No notifications yet</p>
+                                        <p className="text-xs text-muted-foreground/60 mt-1">We will notify you when something arrives</p>
                                     </div>
                                 ) : (
                                     notifications.map((n) => (
                                         <DropdownMenuItem
                                             key={n.id}
                                             className={cn(
-                                                "flex flex-col items-start gap-1 p-3 cursor-pointer",
-                                                !n.isRead && "bg-primary/5"
+                                                "flex flex-col items-start gap-1 p-3 cursor-pointer rounded-lg mx-1 my-0.5 transition-all duration-200",
+                                                !n.isRead && "bg-teal-500/[0.04] border-l-2 border-teal-500/50"
                                             )}
                                             asChild={!!n.link}
                                         >
@@ -260,42 +271,46 @@ export function Header({ title, subtitle }: HeaderProps) {
                     </DropdownMenu>
 
                     {/* Help - desktop only */}
-                    <button className="hidden lg:flex p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Help">
-                        <HelpCircle className="w-5 h-5 text-muted-foreground" />
+                    <button className="hidden lg:flex p-2 rounded-xl hover:bg-muted/80 transition-all duration-200" aria-label="Help">
+                        <HelpCircle className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
                     </button>
 
                     {/* Divider */}
-                    <div className="hidden sm:block w-px h-6 bg-border mx-1" />
+                    <div className="hidden sm:block w-px h-6 bg-gradient-to-b from-transparent via-border to-transparent mx-1" />
 
                     {/* Profile */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <button className="flex items-center gap-2 p-1 sm:p-1.5 sm:pr-2 rounded-lg hover:bg-muted transition-colors">
+                            <button className="flex items-center gap-2 p-1 sm:p-1.5 sm:pr-3 rounded-xl hover:bg-muted/80 transition-all duration-200 group">
                                 {status === "loading" ? (
                                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                                         <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                                     </div>
                                 ) : (
                                     <>
-                                        <Avatar className="w-8 h-8 ring-2 ring-background">
-                                            <AvatarImage src={user?.image || undefined} alt={displayName} />
-                                            <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                                                {initials}
-                                            </AvatarFallback>
-                                        </Avatar>
+                                        <div className="relative">
+                                            <Avatar className="w-8 h-8 ring-2 ring-teal-500/20 group-hover:ring-teal-500/40 transition-all duration-200">
+                                                <AvatarImage src={user?.image || undefined} alt={displayName} />
+                                                <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white text-sm font-medium">
+                                                    {initials}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            {/* Online status indicator */}
+                                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-background shadow-sm" />
+                                        </div>
                                         <div className="hidden sm:block text-left max-w-[120px]">
                                             <p className="text-sm font-medium leading-tight truncate">{displayName}</p>
                                             <p className="text-xs text-muted-foreground truncate">{displayRole}</p>
                                         </div>
-                                        <ChevronDown className="hidden sm:block w-4 h-4 text-muted-foreground" />
+                                        <ChevronDown className="hidden sm:block w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                                     </>
                                 )}
                             </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl shadow-black/10 border border-border/50">
                             <DropdownMenuLabel>
                                 <div className="flex flex-col">
-                                    <span>{displayName}</span>
+                                    <span className="font-semibold">{displayName}</span>
                                     <span className="text-xs font-normal text-muted-foreground">{user?.email || ""}</span>
                                 </div>
                             </DropdownMenuLabel>
@@ -357,14 +372,14 @@ export function Header({ title, subtitle }: HeaderProps) {
 
             {/* Mobile Search Expanded */}
             {searchOpen && (
-                <div className="md:hidden absolute top-full left-0 right-0 p-3 bg-background border-b border-border">
+                <div className="md:hidden absolute top-full left-0 right-0 p-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder="Search events, registrations..."
                             autoFocus
-                            className="w-full h-10 pl-10 pr-4 bg-muted rounded-lg border-0 outline-none text-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
+                            className="w-full h-10 pl-10 pr-4 bg-muted/50 rounded-xl border border-white/[0.08] outline-none text-sm placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/30"
                             onBlur={() => setSearchOpen(false)}
                         />
                     </div>

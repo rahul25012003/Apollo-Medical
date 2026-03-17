@@ -233,6 +233,10 @@ export const defaultTenantConfig: TenantConfig = {
     defaultCurrency: "INR",
     defaultTimezone: "Asia/Kolkata",
   },
+
+  payment: {
+    paymentMode: "NONE",
+  },
 };
 
 // Merge tenant config with defaults (for partial configs)

@@ -116,7 +116,7 @@ export async function getActiveChannel(
   channel: NotificationChannelType,
   tenantId?: string | null
 ) {
-  // Try tenant-specific first, then platform-level
+  // Try tenant-specific first, then platform-level, then any active channel as fallback
   const where = tenantId
     ? [
         { channel, tenantId, isActive: true, isDefault: true },
@@ -133,7 +133,13 @@ export async function getActiveChannel(
     const ch = await prisma.notificationChannel.findFirst({ where: w });
     if (ch) return ch;
   }
-  return null;
+
+  // Final fallback: find ANY active channel of this type (regardless of tenant)
+  const fallback = await prisma.notificationChannel.findFirst({
+    where: { channel, isActive: true },
+    orderBy: { isDefault: "desc" },
+  });
+  return fallback;
 }
 
 // ============================================================================

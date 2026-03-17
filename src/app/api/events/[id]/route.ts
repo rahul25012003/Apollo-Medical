@@ -41,8 +41,35 @@ export const GET = withErrorHandler(
                 photo: true,
               },
             },
+            sessionSpeakers: {
+              include: {
+                speaker: {
+                  select: {
+                    id: true,
+                    name: true,
+                    designation: true,
+                    institution: true,
+                    photo: true,
+                  },
+                },
+              },
+              orderBy: { displayOrder: "asc" },
+            },
+            hall: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
           orderBy: [{ sessionDate: "asc" }, { sessionOrder: "asc" }],
+        },
+        engagements: {
+          where: session ? {} : { isActive: true },
+          orderBy: { displayOrder: "asc" },
+        },
+        halls: {
+          orderBy: { displayOrder: "asc" },
         },
         eventSponsors: {
           where: session ? {} : { isPublished: true },
@@ -120,6 +147,11 @@ export const PUT = withErrorHandler(
 
     const { pricingCategories, ...data } = parsed.data;
 
+    // Extract dynamic config fields (JSON columns not in zod schema)
+    const participantRoles = body.participantRoles;
+    const sessionTypes = body.sessionTypes;
+    const certificateConfig = body.certificateConfig;
+
     // If slug is being changed, check for uniqueness
     if (data.slug && data.slug !== existingEvent.slug) {
       const slugExists = await prisma.event.findUnique({
@@ -145,6 +177,17 @@ export const PUT = withErrorHandler(
     if (data.endDate) {
       updateData.endDate = new Date(data.endDate);
     }
+    // Save dynamic config JSON fields if provided
+    if (participantRoles !== undefined) {
+      updateData.participantRoles = participantRoles;
+    }
+    if (sessionTypes !== undefined) {
+      updateData.sessionTypes = sessionTypes;
+    }
+    if (certificateConfig !== undefined) {
+      updateData.certificateConfig = certificateConfig;
+    }
+
     // Handle optional date fields - empty string means null
     if (data.registrationDeadline !== undefined) {
       updateData.registrationDeadline = data.registrationDeadline
@@ -246,19 +289,21 @@ export const DELETE = withErrorHandler(
       return Errors.forbidden("You don't have access to this event");
     }
 
-    // Prevent deletion if event has registrations
-    if (existingEvent._count.registrations > 0) {
-      return Errors.badRequest(
-        "Cannot delete event with existing registrations. Cancel registrations first."
-      );
-    }
-
-    // Delete linked speakers and sponsors first, then delete the event
-    const [deletedSpeakers, deletedSponsors, deletedEvent] = await prisma.$transaction([
+    // Delete all related records and the event in a transaction
+    const [deletedRegistrations, deletedSpeakers, deletedSponsors, deletedSessions, deletedPricing, deletedEvent] = await prisma.$transaction([
+      prisma.registration.deleteMany({
+        where: { eventId: id },
+      }),
       prisma.eventSpeaker.deleteMany({
         where: { eventId: id },
       }),
       prisma.eventSponsor.deleteMany({
+        where: { eventId: id },
+      }),
+      prisma.eventSession.deleteMany({
+        where: { eventId: id },
+      }),
+      prisma.eventPricing.deleteMany({
         where: { eventId: id },
       }),
       prisma.event.delete({
@@ -269,8 +314,11 @@ export const DELETE = withErrorHandler(
     return successResponse(
       {
         id: deletedEvent.id,
+        deletedRegistrations: deletedRegistrations.count,
         unlinkedSpeakers: deletedSpeakers.count,
         unlinkedSponsors: deletedSponsors.count,
+        deletedSessions: deletedSessions.count,
+        deletedPricing: deletedPricing.count,
       },
       "Event deleted successfully"
     );

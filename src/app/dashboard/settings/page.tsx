@@ -53,6 +53,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { usersService, User as UserType, UserSession } from "@/services/users";
 import { tenantsService, Tenant } from "@/services/tenants";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
@@ -506,9 +507,7 @@ export default function SettingsPage() {
     if (loading) {
         return (
             <DashboardLayout title="Settings" subtitle="Manage your account settings">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
@@ -531,22 +530,24 @@ export default function SettingsPage() {
                         ) : tenant ? (
                             <>
                                 {/* Tenant Contact */}
-                                <div className="bg-background rounded-xl border border-border p-6">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <div className="p-2 rounded-lg bg-primary/10">
-                                            <Building2 className="w-5 h-5 text-primary" />
+                                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
+                                            <Building2 className="w-5 h-5 text-teal-600" />
                                         </div>
                                         <div>
                                             <h2 className="font-semibold text-foreground">Tenant Information</h2>
                                             <p className="text-sm text-muted-foreground">Basic details and contact for this tenant</p>
                                         </div>
                                     </div>
+                                    <div className="h-px bg-gradient-to-r from-teal-500/50 via-cyan-500/30 to-transparent mt-2 mb-6" />
 
                                     <div className="grid gap-6 sm:grid-cols-2">
                                         <div className="space-y-2 sm:col-span-2">
                                             <Label htmlFor="tenantName">Tenant Name</Label>
                                             <Input
                                                 id="tenantName"
+                                                className="rounded-xl"
                                                 value={tenantForm.name}
                                                 onChange={(e) => setTenantForm((prev) => ({ ...prev, name: e.target.value }))}
                                                 icon={<Building2 className="w-4 h-4" />}
@@ -556,6 +557,7 @@ export default function SettingsPage() {
                                             <Label htmlFor="tenantEmail">Contact Email</Label>
                                             <Input
                                                 id="tenantEmail"
+                                                className="rounded-xl"
                                                 type="email"
                                                 value={tenantForm.email}
                                                 onChange={(e) => setTenantForm((prev) => ({ ...prev, email: e.target.value }))}
@@ -566,6 +568,7 @@ export default function SettingsPage() {
                                             <Label htmlFor="tenantPhone">Contact Phone</Label>
                                             <Input
                                                 id="tenantPhone"
+                                                className="rounded-xl"
                                                 type="tel"
                                                 value={tenantForm.phone}
                                                 onChange={(e) => setTenantForm((prev) => ({ ...prev, phone: e.target.value }))}
@@ -576,6 +579,7 @@ export default function SettingsPage() {
                                             <Label htmlFor="tenantWebsite">Website</Label>
                                             <Input
                                                 id="tenantWebsite"
+                                                className="rounded-xl"
                                                 type="url"
                                                 value={tenantForm.website}
                                                 onChange={(e) => setTenantForm((prev) => ({ ...prev, website: e.target.value }))}
@@ -586,19 +590,20 @@ export default function SettingsPage() {
                                 </div>
 
                                 {/* Tenant Modules */}
-                                <div className="bg-background rounded-xl border border-border p-6">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <div className="p-2 rounded-lg bg-primary/10">
-                                            <LayoutGrid className="w-5 h-5 text-primary" />
+                                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
+                                            <LayoutGrid className="w-5 h-5 text-teal-600" />
                                         </div>
                                         <div>
                                             <h2 className="font-semibold text-foreground">Enabled Modules</h2>
                                             <p className="text-sm text-muted-foreground">Choose which features are available for this tenant</p>
                                         </div>
                                     </div>
+                                    <div className="h-px bg-gradient-to-r from-teal-500/50 via-cyan-500/30 to-transparent mt-2 mb-6" />
 
                                     <div className="space-y-4">
-                                        <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                                        <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                                             <div>
                                                 <p className="font-medium text-foreground">Speakers</p>
                                                 <p className="text-sm text-muted-foreground">Manage event speakers and sessions</p>
@@ -608,7 +613,7 @@ export default function SettingsPage() {
                                                 onCheckedChange={(val) => setTenantModules((prev) => ({ ...prev, moduleSpeakers: val }))}
                                             />
                                         </div>
-                                        <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                                        <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                                             <div>
                                                 <p className="font-medium text-foreground">Sponsors</p>
                                                 <p className="text-sm text-muted-foreground">Manage event sponsors and partnerships</p>
@@ -618,7 +623,7 @@ export default function SettingsPage() {
                                                 onCheckedChange={(val) => setTenantModules((prev) => ({ ...prev, moduleSponsors: val }))}
                                             />
                                         </div>
-                                        <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                                        <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                                             <div>
                                                 <p className="font-medium text-foreground">Certificates</p>
                                                 <p className="text-sm text-muted-foreground">Generate and issue certificates</p>
@@ -628,7 +633,7 @@ export default function SettingsPage() {
                                                 onCheckedChange={(val) => setTenantModules((prev) => ({ ...prev, moduleCertificates: val }))}
                                             />
                                         </div>
-                                        <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                                        <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                                             <div>
                                                 <p className="font-medium text-foreground">Registrations</p>
                                                 <p className="text-sm text-muted-foreground">Handle event registrations and attendees</p>
@@ -642,16 +647,17 @@ export default function SettingsPage() {
                                 </div>
 
                                 {/* Tenant Defaults */}
-                                <div className="bg-background rounded-xl border border-border p-6">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <div className="p-2 rounded-lg bg-primary/10">
-                                            <DollarSign className="w-5 h-5 text-primary" />
+                                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
+                                            <DollarSign className="w-5 h-5 text-teal-600" />
                                         </div>
                                         <div>
                                             <h2 className="font-semibold text-foreground">Defaults</h2>
                                             <p className="text-sm text-muted-foreground">Default currency and timezone for this tenant</p>
                                         </div>
                                     </div>
+                                    <div className="h-px bg-gradient-to-r from-teal-500/50 via-cyan-500/30 to-transparent mt-2 mb-6" />
 
                                     <div className="grid gap-6 sm:grid-cols-2">
                                         <div className="space-y-2">
@@ -660,7 +666,7 @@ export default function SettingsPage() {
                                                 value={tenantForm.defaultCurrency}
                                                 onValueChange={(val) => setTenantForm((prev) => ({ ...prev, defaultCurrency: val }))}
                                             >
-                                                <SelectTrigger>
+                                                <SelectTrigger className="rounded-xl">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -677,7 +683,7 @@ export default function SettingsPage() {
                                                 value={tenantForm.defaultTimezone}
                                                 onValueChange={(val) => setTenantForm((prev) => ({ ...prev, defaultTimezone: val }))}
                                             >
-                                                <SelectTrigger>
+                                                <SelectTrigger className="rounded-xl">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -696,19 +702,20 @@ export default function SettingsPage() {
                                 </div>
 
                                 {/* Tenant Notification Settings */}
-                                <div className="bg-background rounded-xl border border-border p-6">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <div className="p-2 rounded-lg bg-primary/10">
-                                            <Bell className="w-5 h-5 text-primary" />
+                                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
+                                            <Bell className="w-5 h-5 text-teal-600" />
                                         </div>
                                         <div>
                                             <h2 className="font-semibold text-foreground">Notification Settings</h2>
                                             <p className="text-sm text-muted-foreground">Control which notification types are available for this tenant&apos;s users</p>
                                         </div>
                                     </div>
+                                    <div className="h-px bg-gradient-to-r from-teal-500/50 via-cyan-500/30 to-transparent mt-2 mb-6" />
 
                                     <div className="space-y-4">
-                                        <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                                        <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                                             <div>
                                                 <p className="font-medium text-foreground">Registration Alerts</p>
                                                 <p className="text-sm text-muted-foreground">Allow users to receive new registration notifications</p>
@@ -718,7 +725,7 @@ export default function SettingsPage() {
                                                 onCheckedChange={(val) => setTenantNotifications((prev) => ({ ...prev, notifyRegistrations: val }))}
                                             />
                                         </div>
-                                        <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                                        <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                                             <div>
                                                 <p className="font-medium text-foreground">Payment Notifications</p>
                                                 <p className="text-sm text-muted-foreground">Allow users to receive payment confirmation notifications</p>
@@ -733,7 +740,7 @@ export default function SettingsPage() {
 
                                 {/* Save Tenant Settings */}
                                 <div className="flex justify-end">
-                                    <Button onClick={handleSaveTenantSettings} disabled={savingTenant}>
+                                    <Button onClick={handleSaveTenantSettings} disabled={savingTenant} className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20">
                                         {savingTenant && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         Save Tenant Settings
                                     </Button>
@@ -742,34 +749,36 @@ export default function SettingsPage() {
                         ) : null}
 
                         {/* Divider between tenant and personal settings */}
-                        <div className="relative">
+                        <div className="relative my-2">
                             <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t border-border" />
+                                <span className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                             </div>
                             <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-muted/30 px-3 text-muted-foreground">Personal Settings</span>
+                                <span className="bg-background px-4 py-1 text-muted-foreground font-medium tracking-wider rounded-full border border-border/50">Personal Settings</span>
                             </div>
                         </div>
                     </>
                 )}
 
                 {/* Profile Section */}
-                <div className="bg-background rounded-xl border border-border p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                            <User className="w-5 h-5 text-primary" />
+                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                    <div className="flex items-center gap-3 mb-1">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
+                            <User className="w-5 h-5 text-teal-600" />
                         </div>
                         <div>
                             <h2 className="font-semibold text-foreground">Profile Settings</h2>
                             <p className="text-sm text-muted-foreground">Manage your personal information</p>
                         </div>
                     </div>
+                    <div className="h-px bg-gradient-to-r from-teal-500/50 via-cyan-500/30 to-transparent mt-2 mb-6" />
 
                     <div className="grid gap-6 sm:grid-cols-2">
                         <div className="space-y-2">
                             <Label htmlFor="firstName">First Name</Label>
                             <Input
                                 id="firstName"
+                                className="rounded-xl"
                                 value={profileForm.firstName}
                                 onChange={(e) => setProfileForm((prev) => ({ ...prev, firstName: e.target.value }))}
                             />
@@ -778,6 +787,7 @@ export default function SettingsPage() {
                             <Label htmlFor="lastName">Last Name</Label>
                             <Input
                                 id="lastName"
+                                className="rounded-xl"
                                 value={profileForm.lastName}
                                 onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))}
                             />
@@ -789,7 +799,7 @@ export default function SettingsPage() {
                                 type="email"
                                 value={user?.email || ""}
                                 disabled
-                                className="bg-muted"
+                                className="bg-muted rounded-xl"
                             />
                             <p className="text-xs text-muted-foreground">Email cannot be changed</p>
                         </div>
@@ -797,6 +807,7 @@ export default function SettingsPage() {
                             <Label htmlFor="phone">Phone Number</Label>
                             <Input
                                 id="phone"
+                                className="rounded-xl"
                                 type="tel"
                                 value={profileForm.phone}
                                 onChange={(e) => setProfileForm((prev) => ({ ...prev, phone: e.target.value }))}
@@ -805,7 +816,7 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="mt-6 pt-6 border-t border-border flex justify-end">
-                        <Button onClick={handleSaveProfile} disabled={saving}>
+                        <Button onClick={handleSaveProfile} disabled={saving} className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20">
                             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Save Changes
                         </Button>
@@ -813,19 +824,20 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Security Section */}
-                <div className="bg-background rounded-xl border border-border p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                            <Lock className="w-5 h-5 text-primary" />
+                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                    <div className="flex items-center gap-3 mb-1">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
+                            <Lock className="w-5 h-5 text-teal-600" />
                         </div>
                         <div>
                             <h2 className="font-semibold text-foreground">Security</h2>
                             <p className="text-sm text-muted-foreground">Password and authentication settings</p>
                         </div>
                     </div>
+                    <div className="h-px bg-gradient-to-r from-teal-500/50 via-cyan-500/30 to-transparent mt-2 mb-6" />
 
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                        <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                             <div>
                                 <p className="font-medium text-foreground">Change Password</p>
                                 <p className="text-sm text-muted-foreground">Update your password regularly</p>
@@ -835,7 +847,7 @@ export default function SettingsPage() {
                             </Button>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                        <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                             <div>
                                 <p className="font-medium text-foreground">Active Sessions</p>
                                 <p className="text-sm text-muted-foreground">Manage your logged in devices</p>
@@ -848,19 +860,20 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Notifications Section */}
-                <div className="bg-background rounded-xl border border-border p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                            <Bell className="w-5 h-5 text-primary" />
+                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                    <div className="flex items-center gap-3 mb-1">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
+                            <Bell className="w-5 h-5 text-teal-600" />
                         </div>
                         <div>
                             <h2 className="font-semibold text-foreground">Notifications</h2>
                             <p className="text-sm text-muted-foreground">Configure how you receive notifications</p>
                         </div>
                     </div>
+                    <div className="h-px bg-gradient-to-r from-teal-500/50 via-cyan-500/30 to-transparent mt-2 mb-6" />
 
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                        <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                             <div>
                                 <p className="font-medium text-foreground">Email Notifications</p>
                                 <p className="text-sm text-muted-foreground">Receive updates via email</p>
@@ -873,7 +886,7 @@ export default function SettingsPage() {
                         </div>
 
                         {canShowRegistrationNotify && (
-                            <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                                 <div>
                                     <p className="font-medium text-foreground">New Registration Alerts</p>
                                     <p className="text-sm text-muted-foreground">Get notified for new registrations</p>
@@ -887,7 +900,7 @@ export default function SettingsPage() {
                         )}
 
                         {canShowPaymentNotify && (
-                            <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                            <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-slate-50/80 to-white hover:from-slate-50 hover:to-slate-50/80 transition-colors dark:from-slate-900/80 dark:to-slate-950 dark:hover:from-slate-900 dark:hover:to-slate-950/80">
                                 <div>
                                     <p className="font-medium text-foreground">Payment Notifications</p>
                                     <p className="text-sm text-muted-foreground">Receive payment confirmations</p>
@@ -904,10 +917,10 @@ export default function SettingsPage() {
 
                 {/* Notification Channels Section (Admin only) */}
                 {isAdmin && (
-                    <div className="bg-background rounded-xl border border-border p-6">
-                        <div className="flex items-center justify-between mb-6">
+                    <div className="card-premium bg-background rounded-xl border border-border p-6">
+                        <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-teal-500/10">
+                                <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
                                     <Mail className="w-5 h-5 text-teal-600" />
                                 </div>
                                 <div>
@@ -918,11 +931,12 @@ export default function SettingsPage() {
                             <Button
                                 size="sm"
                                 onClick={() => { setEditingNotifChannel(null); setNotifDialogOpen(true); }}
-                                className="bg-teal-600 hover:bg-teal-700"
+                                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20"
                             >
                                 <Plus className="w-4 h-4 mr-1" /> Add Channel
                             </Button>
                         </div>
+                        <div className="h-px bg-gradient-to-r from-teal-500/50 via-cyan-500/30 to-transparent mt-2 mb-6" />
 
                         {notifLoading ? (
                             <div className="flex justify-center py-8">
@@ -941,8 +955,8 @@ export default function SettingsPage() {
                                         : type === "SMS" ? <Phone className="w-4 h-4 text-blue-600" />
                                         : <MessageSquare className="w-4 h-4 text-green-600" />;
                                     return (
-                                        <div key={type} className="border rounded-lg overflow-hidden">
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b text-sm font-medium">
+                                        <div key={type} className="border rounded-xl overflow-hidden shadow-sm">
+                                            <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-800/50 border-b text-sm font-medium">
                                                 {icon} {type === "WHATSAPP" ? "WhatsApp" : type.charAt(0) + type.slice(1).toLowerCase()} <span className="text-muted-foreground ml-auto text-xs">{items.length}</span>
                                             </div>
                                             <div className="divide-y">
@@ -1002,7 +1016,7 @@ export default function SettingsPage() {
 
             {/* Change Password Dialog */}
             <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[425px] border-border/50 shadow-2xl">
                     <DialogHeader>
                         <DialogTitle>Change Password</DialogTitle>
                         <DialogDescription>
@@ -1015,6 +1029,7 @@ export default function SettingsPage() {
                             <div className="relative">
                                 <Input
                                     id="currentPassword"
+                                    className="rounded-xl"
                                     type={showCurrentPassword ? "text" : "password"}
                                     value={passwordForm.currentPassword}
                                     onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
@@ -1035,6 +1050,7 @@ export default function SettingsPage() {
                             <div className="relative">
                                 <Input
                                     id="newPassword"
+                                    className="rounded-xl"
                                     type={showNewPassword ? "text" : "password"}
                                     value={passwordForm.newPassword}
                                     onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
@@ -1055,6 +1071,7 @@ export default function SettingsPage() {
                             <Label htmlFor="confirmPassword">Confirm New Password</Label>
                             <Input
                                 id="confirmPassword"
+                                className="rounded-xl"
                                 type="password"
                                 value={passwordForm.confirmPassword}
                                 onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
@@ -1072,6 +1089,7 @@ export default function SettingsPage() {
                         <Button
                             onClick={handleChangePassword}
                             disabled={changingPassword || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+                            className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white"
                         >
                             {changingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Change Password
@@ -1082,7 +1100,7 @@ export default function SettingsPage() {
 
             {/* Active Sessions Dialog */}
             <Dialog open={isSessionsDialogOpen} onOpenChange={setIsSessionsDialogOpen}>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent className="sm:max-w-[600px] border-border/50 shadow-2xl">
                     <DialogHeader>
                         <DialogTitle>Active Sessions</DialogTitle>
                         <DialogDescription>
@@ -1104,11 +1122,11 @@ export default function SettingsPage() {
                                 {sessions.map((session) => (
                                     <div
                                         key={session.id}
-                                        className={`p-4 rounded-lg border ${session.isCurrent ? "border-primary bg-primary/5" : "border-border"}`}
+                                        className={`p-4 rounded-xl border transition-colors ${session.isCurrent ? "border-teal-500/30 bg-gradient-to-r from-teal-50/50 to-cyan-50/30 dark:from-teal-950/30 dark:to-cyan-950/20" : "border-border hover:border-border/80 hover:bg-slate-50/50 dark:hover:bg-slate-900/50"}`}
                                     >
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex items-start gap-3">
-                                                <div className="p-2 rounded-lg bg-muted">
+                                                <div className="p-2 rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900">
                                                     {getDeviceIcon(session.deviceType)}
                                                 </div>
                                                 <div className="space-y-1">
@@ -1328,7 +1346,7 @@ function NotifChannelDialog({
 
     return (
         <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto border-border/50 shadow-2xl">
                 <DialogHeader>
                     <DialogTitle>{editing ? "Edit Notification Channel" : "Add Notification Channel"}</DialogTitle>
                     <DialogDescription>Choose a channel and provider, then enter the configuration details</DialogDescription>
@@ -1343,8 +1361,8 @@ function NotifChannelDialog({
                                 key={ch}
                                 onClick={() => !editing && handleChannelSwitch(ch)}
                                 disabled={!!editing}
-                                className={`flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                                    channel === ch ? "border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-400" : "border-border hover:border-muted-foreground/30"
+                                className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                                    channel === ch ? "border-teal-500 bg-gradient-to-b from-teal-50 to-cyan-50/50 text-teal-700 shadow-sm dark:from-teal-950 dark:to-cyan-950/50 dark:text-teal-400" : "border-border hover:border-muted-foreground/30 hover:bg-slate-50/50 dark:hover:bg-slate-900/50"
                                 } ${editing ? "opacity-70 cursor-not-allowed" : ""}`}
                             >
                                 {ch === "EMAIL" ? <Mail className="w-5 h-5" /> : ch === "SMS" ? <Phone className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
@@ -1358,7 +1376,7 @@ function NotifChannelDialog({
                 <div className="space-y-2">
                     <Label>Provider</Label>
                     <Select value={provider} onValueChange={(v) => { setProvider(v); if (!editing) setConfig({}); }} disabled={!!editing}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                         <SelectContent>
                             {NOTIF_PROVIDERS[channel].map((p) => (
                                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
@@ -1376,6 +1394,7 @@ function NotifChannelDialog({
                             <Label>{meta.label}</Label>
                             <div className="relative">
                                 <Input
+                                    className="rounded-xl"
                                     type={isPw && !showPw[field] ? "password" : (meta.type === "password" ? "text" : meta.type)}
                                     value={(config[field] as string) || ""}
                                     onChange={(e) => setConfig((p) => ({ ...p, [field]: e.target.value }))}
@@ -1394,7 +1413,7 @@ function NotifChannelDialog({
                 {/* Name */}
                 <div className="space-y-2">
                     <Label>Display Name</Label>
-                    <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Auto-generated" />
+                    <Input className="rounded-xl" value={name} onChange={(e) => setName(e.target.value)} placeholder="Auto-generated" />
                 </div>
 
                 {/* Default checkbox */}
@@ -1411,7 +1430,7 @@ function NotifChannelDialog({
 
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSave} disabled={dlgSaving} className="bg-teal-600 hover:bg-teal-700">
+                    <Button onClick={handleSave} disabled={dlgSaving} className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20">
                         {dlgSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         {editing ? "Update Configuration" : "Save Configuration"}
                     </Button>

@@ -26,6 +26,7 @@ import {
     Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { format } from "date-fns";
 import { registrationsService } from "@/services/registrations";
 
@@ -141,17 +142,18 @@ export default function RegisterPage() {
         if (event.pricingCategories && event.pricingCategories.length > 0) {
             const category = event.pricingCategories.find(c => c.id === selectedCategory);
             if (category) {
-                // Check if early bird is applicable
                 const isEarlyBird = category.earlyBirdPrice && category.earlyBirdDeadline &&
                     new Date() <= new Date(category.earlyBirdDeadline);
-                return isEarlyBird ? Number(category.earlyBirdPrice) : Number(category.price);
+                const price = isEarlyBird ? Number(category.earlyBirdPrice) : Number(category.price);
+                return isNaN(price) ? 0 : price;
             }
         }
 
         // Fallback to event-level pricing
         const isEarlyBird = event.earlyBirdPrice && event.earlyBirdDeadline &&
             new Date() <= new Date(event.earlyBirdDeadline);
-        return isEarlyBird ? Number(event.earlyBirdPrice) : Number(event.price);
+        const price = isEarlyBird ? Number(event.earlyBirdPrice) : Number(event.price);
+        return isNaN(price) ? 0 : price;
     };
 
     const getSelectedCategoryName = () => {
@@ -287,9 +289,7 @@ export default function RegisterPage() {
     if (loading) {
         return (
             <DashboardLayout title="Register" subtitle="Loading...">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }

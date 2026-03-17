@@ -55,6 +55,12 @@ export const GET = withErrorHandler(
             },
           },
         },
+        session: {
+          select: { id: true, title: true, sessionDate: true },
+        },
+        quiz: {
+          select: { id: true, title: true },
+        },
       },
     });
 

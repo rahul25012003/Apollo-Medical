@@ -14,6 +14,15 @@ export interface TenantDetectionResult {
 }
 
 // Main domains that should not be treated as tenant subdomains
+// Auto-includes the production domain from NEXTAUTH_URL env variable
+const _extraDomain = (() => {
+  try {
+    const url = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+    if (url) return new URL(url).hostname;
+  } catch { /* ignore */ }
+  return null;
+})();
+
 const MAIN_DOMAINS = [
   "localhost",
   "medconf.com",
@@ -21,6 +30,7 @@ const MAIN_DOMAINS = [
   "app.medconf.com",
   "admin.medconf.com",
   "api.medconf.com",
+  ...(_extraDomain && !["localhost"].includes(_extraDomain) ? [_extraDomain] : []),
 ];
 
 // Reserved slugs that cannot be used as tenant identifiers

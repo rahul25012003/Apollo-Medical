@@ -20,6 +20,7 @@ import {
     Video,
     Upload,
     Link2,
+    CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -136,6 +137,12 @@ const defaultFormData: TenantFormData = {
     domain: "",
     defaultCurrency: "INR",
     defaultTimezone: "Asia/Kolkata",
+    paymentMode: "NONE" as "NONE" | "RAZORPAY" | "QR_CODE",
+    razorpayKeyId: "",
+    razorpayKeySecret: "",
+    paymentQrCode: "",
+    paymentUpiId: "",
+    paymentInstructions: "",
 };
 
 function extractYoutubeId(input: string): string {
@@ -551,7 +558,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                     (cleanedData as any)[field] = null;
                 }
             }
-            const optionalStringFields = ["email", "tagline", "phone", "address", "city", "state", "country", "domain", "heroTitle", "heroSubtitle", "aboutTitle", "aboutDescription", "footerText", "copyrightText"] as const;
+            const optionalStringFields = ["email", "tagline", "phone", "address", "city", "state", "country", "domain", "heroTitle", "heroSubtitle", "aboutTitle", "aboutDescription", "footerText", "copyrightText", "razorpayKeyId", "razorpayKeySecret", "paymentQrCode", "paymentUpiId", "paymentInstructions"] as const;
             for (const field of optionalStringFields) {
                 if (cleanedData[field] === "") {
                     (cleanedData as any)[field] = null;
@@ -587,7 +594,10 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
         { id: "sections", label: "Sections", icon: LayoutGrid },
         { id: "content", label: "Content", icon: FileText },
         { id: "contact", label: "Contact & Social", icon: Phone },
-        ...(!restrictedMode ? [{ id: "settings", label: "Settings", icon: Settings2 }] : []),
+        ...(!restrictedMode ? [
+            { id: "payment", label: "Payment", icon: CreditCard },
+            { id: "settings", label: "Settings", icon: Settings2 },
+        ] : []),
     ];
 
     return (
@@ -2138,6 +2148,146 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                     />
                                 </div>
                             </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Payment Settings Tab */}
+                <TabsContent value="payment" className="space-y-4 mt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Payment Configuration</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                Configure how this tenant accepts payments for event registrations
+                            </p>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* Payment Mode Selection */}
+                            <div className="space-y-3">
+                                <Label className="text-base font-semibold">Payment Mode</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    {[
+                                        { value: "NONE", label: "No Online Payment", desc: "Registrations only, no payment collection" },
+                                        { value: "RAZORPAY", label: "Razorpay Gateway", desc: "Accept cards, UPI, net banking via Razorpay" },
+                                        { value: "QR_CODE", label: "QR Code / UPI", desc: "Display QR code, attendees upload payment proof" },
+                                    ].map((mode) => (
+                                        <div
+                                            key={mode.value}
+                                            onClick={() => updateField("paymentMode", mode.value as "NONE" | "RAZORPAY" | "QR_CODE")}
+                                            className={cn(
+                                                "border-2 rounded-lg p-4 cursor-pointer transition-all",
+                                                formData.paymentMode === mode.value
+                                                    ? "border-primary bg-primary/5"
+                                                    : "border-muted hover:border-muted-foreground/30"
+                                            )}
+                                        >
+                                            <div className="font-medium">{mode.label}</div>
+                                            <p className="text-xs text-muted-foreground mt-1">{mode.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Razorpay Settings */}
+                            {formData.paymentMode === "RAZORPAY" && (
+                                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                                    <h4 className="font-semibold">Razorpay Configuration</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="razorpayKeyId">Razorpay Key ID</Label>
+                                            <Input
+                                                id="razorpayKeyId"
+                                                placeholder="rzp_live_..."
+                                                value={formData.razorpayKeyId || ""}
+                                                onChange={(e) => updateField("razorpayKeyId", e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="razorpayKeySecret">Razorpay Key Secret</Label>
+                                            <Input
+                                                id="razorpayKeySecret"
+                                                type="password"
+                                                placeholder="Enter secret key"
+                                                value={formData.razorpayKeySecret || ""}
+                                                onChange={(e) => updateField("razorpayKeySecret", e.target.value)}
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                This is stored securely and never exposed to the frontend
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* QR Code Settings */}
+                            {formData.paymentMode === "QR_CODE" && (
+                                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                                    <h4 className="font-semibold">QR Code Payment Configuration</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="paymentUpiId">UPI ID</Label>
+                                            <Input
+                                                id="paymentUpiId"
+                                                placeholder="yourname@upi"
+                                                value={formData.paymentUpiId || ""}
+                                                onChange={(e) => updateField("paymentUpiId", e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-4">
+                                            <Label>QR Code Image</Label>
+                                            {formData.paymentQrCode ? (
+                                                <div className="relative inline-block">
+                                                    <img
+                                                        src={formData.paymentQrCode}
+                                                        alt="Payment QR Code"
+                                                        className="w-40 h-40 object-contain border rounded"
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        className="absolute -top-2 -right-2 h-6 w-6"
+                                                        onClick={() => updateField("paymentQrCode", "")}
+                                                    >
+                                                        <Trash2 className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <Input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (!file) return;
+                                                            const result = await uploadFile(file, "qr-codes");
+                                                            if (result.success && result.data?.url) {
+                                                                updateField("paymentQrCode", result.data.url);
+                                                            }
+                                                        }}
+                                                    />
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        Upload your UPI/bank QR code image
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="paymentInstructions">Payment Instructions</Label>
+                                        <Textarea
+                                            id="paymentInstructions"
+                                            placeholder="Please scan the QR code and upload the payment screenshot after completing the payment..."
+                                            value={formData.paymentInstructions || ""}
+                                            onChange={(e) => updateField("paymentInstructions", e.target.value)}
+                                            rows={3}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            These instructions will be shown to attendees during registration payment
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

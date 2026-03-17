@@ -23,6 +23,9 @@ import {
     Mic2,
     Building2,
     User,
+    MessageSquare,
+    Megaphone,
+    DoorOpen,
 } from "lucide-react";
 import { eventsService, speakersService, sponsorsService, uploadFile } from "@/services";
 import { toast } from "sonner";
@@ -58,22 +61,69 @@ interface SlotCategory {
     earlyBirdDeadline: string;
 }
 
-interface Session {
+interface SessionSpeakerEntry {
     id: string;
-    title: string;
-    date: string;
-    startTime: string;
-    endTime: string;
-    venue: string;
     speakerId: string;
     speakerName: string;
     isExistingSpeaker: boolean;
-    description: string;
+    talkTitle: string;
+    talkDescription: string;
     newSpeakerName: string;
     newSpeakerEmail: string;
     newSpeakerDesignation: string;
     newSpeakerInstitution: string;
 }
+
+interface Session {
+    id: string;
+    title: string;
+    sessionType: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    venue: string;
+    description: string;
+    speakers: SessionSpeakerEntry[];
+    // Legacy single speaker fields (kept for backward compat)
+    speakerId: string;
+    speakerName: string;
+    isExistingSpeaker: boolean;
+    newSpeakerName: string;
+    newSpeakerEmail: string;
+    newSpeakerDesignation: string;
+    newSpeakerInstitution: string;
+}
+
+interface EngagementEntry {
+    id: string;
+    title: string;
+    type: string;
+    description: string;
+    content: unknown;
+    isActive: boolean;
+}
+
+interface HallEntry {
+    id: string;
+    name: string;
+}
+
+const SESSION_TYPES = [
+    { value: "PLENARY", label: "Plenary" },
+    { value: "KEYNOTE", label: "Keynote" },
+    { value: "WORKSHOP", label: "Workshop" },
+    { value: "PANEL", label: "Panel Discussion" },
+    { value: "BREAK", label: "Break / Lunch" },
+    { value: "OTHER", label: "Other" },
+];
+
+const ENGAGEMENT_TYPES = [
+    { value: "POLL", label: "Poll" },
+    { value: "QA", label: "Q&A Session" },
+    { value: "FEEDBACK", label: "Feedback Form" },
+    { value: "ANNOUNCEMENT", label: "Announcement" },
+    { value: "QUIZ", label: "Quiz" },
+];
 
 interface EventSponsorEntry {
     id: string;
@@ -119,6 +169,8 @@ export default function CreateEventPage() {
         },
     ]);
     const [sessions, setSessions] = useState<Session[]>([]);
+    const [engagements, setEngagements] = useState<EngagementEntry[]>([]);
+    const [halls, setHalls] = useState<HallEntry[]>([]);
     const [eventSponsors, setEventSponsors] = useState<EventSponsorEntry[]>([]);
     const [existingSpeakers, setExistingSpeakers] = useState<ExistingSpeaker[]>([]);
     const [existingSponsors, setExistingSponsors] = useState<ExistingSponsor[]>([]);
@@ -203,8 +255,8 @@ export default function CreateEventPage() {
         const fetchData = async () => {
             try {
                 const [speakersRes, sponsorsRes] = await Promise.all([
-                    speakersService.getAll({ isActive: true }),
-                    sponsorsService.getAll({ isActive: true }),
+                    speakersService.getAll({ isActive: true, limit: 500 }),
+                    sponsorsService.getAll({ isActive: true, limit: 500 }),
                 ]);
 
                 if (speakersRes.data) {
@@ -278,14 +330,16 @@ export default function CreateEventPage() {
             {
                 id: Date.now().toString(),
                 title: "",
+                sessionType: "OTHER",
                 date: "",
                 startTime: "",
                 endTime: "",
                 venue: "",
+                description: "",
+                speakers: [],
                 speakerId: "",
                 speakerName: "",
                 isExistingSpeaker: true,
-                description: "",
                 newSpeakerName: "",
                 newSpeakerEmail: "",
                 newSpeakerDesignation: "",
@@ -296,6 +350,87 @@ export default function CreateEventPage() {
 
     const removeSession = (id: string) => {
         setSessions(sessions.filter((session) => session.id !== id));
+    };
+
+    const addSessionSpeaker = (sessionId: string) => {
+        setSessions(prev => prev.map(s =>
+            s.id === sessionId
+                ? {
+                    ...s,
+                    speakers: [...s.speakers, {
+                        id: Date.now().toString(),
+                        speakerId: "",
+                        speakerName: "",
+                        isExistingSpeaker: true,
+                        talkTitle: "",
+                        talkDescription: "",
+                        newSpeakerName: "",
+                        newSpeakerEmail: "",
+                        newSpeakerDesignation: "",
+                        newSpeakerInstitution: "",
+                    }]
+                }
+                : s
+        ));
+    };
+
+    const removeSessionSpeaker = (sessionId: string, speakerEntryId: string) => {
+        setSessions(prev => prev.map(s =>
+            s.id === sessionId
+                ? { ...s, speakers: s.speakers.filter(sp => sp.id !== speakerEntryId) }
+                : s
+        ));
+    };
+
+    const updateSessionSpeaker = (sessionId: string, speakerEntryId: string, field: string, value: unknown) => {
+        setSessions(prev => prev.map(s =>
+            s.id === sessionId
+                ? {
+                    ...s,
+                    speakers: s.speakers.map(sp =>
+                        sp.id === speakerEntryId ? { ...sp, [field]: value } : sp
+                    )
+                }
+                : s
+        ));
+    };
+
+    const addHall = () => {
+        setHalls([...halls, { id: Date.now().toString(), name: "" }]);
+    };
+    const removeHall = (id: string) => {
+        setHalls(halls.filter(h => h.id !== id));
+    };
+    const updateHallName = (id: string, name: string) => {
+        setHalls(halls.map(h => h.id === id ? { ...h, name } : h));
+    };
+
+    const addEngagement = () => {
+        setEngagements([
+            ...engagements,
+            {
+                id: Date.now().toString(),
+                title: "",
+                type: "ANNOUNCEMENT",
+                description: "",
+                content: null,
+                isActive: false,
+            },
+        ]);
+    };
+
+    const removeEngagement = (id: string) => {
+        setEngagements(engagements.filter((e) => e.id !== id));
+    };
+
+    const updateEngagement = (id: string, field: string, value: unknown) => {
+        setEngagements(prev => prev.map(e => {
+            if (e.id !== id) return e;
+            if (field === "type" && value !== e.type) {
+                return { ...e, type: value as string, content: null };
+            }
+            return { ...e, [field]: value };
+        }));
     };
 
     const updateSession = (id: string, field: keyof Session, value: string | boolean) => {
@@ -457,57 +592,80 @@ export default function CreateEventPage() {
 
             const createdEventId = eventRes.data.id;
 
-            // 2. Create speakers and link to event
-            for (const session of sessions) {
-                if (session.isExistingSpeaker && session.speakerId) {
-                    // Link existing speaker
-                    await eventsService.addSpeaker(createdEventId, {
-                        speakerId: session.speakerId,
-                        topic: session.title || undefined,
-                        sessionDescription: session.description || undefined,
-                        sessionDate: session.date || undefined,
-                        sessionTime: session.startTime || undefined,
-                        sessionEndTime: session.endTime || undefined,
-                        sessionVenue: session.venue || undefined,
-                    });
-                } else if (!session.isExistingSpeaker && session.newSpeakerName && session.newSpeakerEmail) {
-                    // Create new speaker first
-                    const speakerRes = await speakersService.create({
-                        name: session.newSpeakerName,
-                        email: session.newSpeakerEmail,
-                        designation: session.newSpeakerDesignation || undefined,
-                        institution: session.newSpeakerInstitution || undefined,
-                    });
-
-                    if (speakerRes.success && speakerRes.data) {
-                        const newSpeaker = speakerRes.data;
-                        // Link the new speaker to event
-                        await eventsService.addSpeaker(createdEventId, {
-                            speakerId: newSpeaker.id,
-                            topic: session.title || undefined,
-                            sessionDescription: session.description || undefined,
-                            sessionDate: session.date || undefined,
-                            sessionTime: session.startTime || undefined,
-                            sessionEndTime: session.endTime || undefined,
-                            sessionVenue: session.venue || undefined,
-                        });
-
-                        // Add to existing speakers list so it appears immediately
-                        setExistingSpeakers((prev) => [
-                            ...prev,
-                            {
-                                id: newSpeaker.id,
-                                name: newSpeaker.name,
-                                email: newSpeaker.email,
-                                designation: newSpeaker.designation,
-                                institution: newSpeaker.institution,
-                            },
-                        ]);
-                    }
-                }
+            // 2. Create halls
+            const validHalls = halls.filter(h => h.name.trim());
+            if (validHalls.length > 0) {
+                await eventsService.updateHalls(createdEventId, validHalls.map((h, i) => ({
+                    name: h.name.trim(),
+                    displayOrder: i,
+                })));
             }
 
-            // 3. Create sponsors and link to event
+            // 3. Create sessions with speakers
+            for (const session of sessions) {
+                if (!session.title?.trim()) continue;
+
+                // Resolve session speakers — create new ones first
+                const resolvedSpeakers: { speakerId: string; talkTitle?: string; talkDescription?: string; displayOrder: number }[] = [];
+
+                for (let i = 0; i < session.speakers.length; i++) {
+                    const sp = session.speakers[i];
+                    let speakerId = sp.speakerId;
+
+                    if (!sp.isExistingSpeaker && sp.newSpeakerName && sp.newSpeakerEmail) {
+                        const speakerRes = await speakersService.create({
+                            name: sp.newSpeakerName,
+                            email: sp.newSpeakerEmail,
+                            designation: sp.newSpeakerDesignation || undefined,
+                            institution: sp.newSpeakerInstitution || undefined,
+                        });
+                        if (speakerRes.success && speakerRes.data) {
+                            speakerId = speakerRes.data.id;
+                            setExistingSpeakers(prev => [...prev, {
+                                id: speakerRes.data!.id,
+                                name: speakerRes.data!.name,
+                                email: speakerRes.data!.email,
+                                designation: speakerRes.data!.designation || null,
+                                institution: speakerRes.data!.institution || null,
+                            }]);
+                        }
+                    }
+
+                    if (speakerId) {
+                        resolvedSpeakers.push({
+                            speakerId,
+                            talkTitle: sp.talkTitle || undefined,
+                            talkDescription: sp.talkDescription || undefined,
+                            displayOrder: i,
+                        });
+                    }
+                }
+
+                await eventsService.createSession(createdEventId, {
+                    title: session.title,
+                    sessionType: session.sessionType || "OTHER",
+                    description: session.description || undefined,
+                    sessionDate: session.date || undefined,
+                    startTime: session.startTime || undefined,
+                    endTime: session.endTime || undefined,
+                    venue: session.venue || undefined,
+                    sessionSpeakers: resolvedSpeakers.length > 0 ? resolvedSpeakers : undefined,
+                });
+            }
+
+            // 3. Create engagements
+            for (const engagement of engagements) {
+                if (!engagement.title?.trim()) continue;
+                await eventsService.createEngagement(createdEventId, {
+                    title: engagement.title,
+                    type: engagement.type,
+                    description: engagement.description || undefined,
+                    content: engagement.content || undefined,
+                    isActive: engagement.isActive,
+                });
+            }
+
+            // 4. Create sponsors and link to event
             for (const sponsor of eventSponsors) {
                 if (sponsor.isExistingSponsor && sponsor.sponsorId) {
                     // Link existing sponsor
@@ -661,7 +819,7 @@ export default function CreateEventPage() {
 
                 {/* Main Form */}
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-5 h-10 sm:h-12">
+                    <TabsList className="grid w-full grid-cols-6 h-10 sm:h-12">
                         <TabsTrigger value="basic" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
                             <FileText className="h-4 w-4 hidden md:block" />
                             <span className="hidden sm:inline">Basic Info</span>
@@ -674,7 +832,13 @@ export default function CreateEventPage() {
                         </TabsTrigger>
                         <TabsTrigger value="sessions" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
                             <Mic2 className="h-4 w-4 hidden md:block" />
-                            Sessions
+                            <span className="hidden sm:inline">Scientific Program</span>
+                            <span className="sm:hidden">Program</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="engagement" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
+                            <Megaphone className="h-4 w-4 hidden md:block" />
+                            <span className="hidden sm:inline">Engagement</span>
+                            <span className="sm:hidden">Engage</span>
                         </TabsTrigger>
                         <TabsTrigger value="sponsors" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
                             <Building2 className="h-4 w-4 hidden md:block" />
@@ -1467,8 +1631,50 @@ export default function CreateEventPage() {
                         </Card>
                     </TabsContent>
 
-                    {/* Sessions Tab */}
+                    {/* Scientific Program Tab */}
                     <TabsContent value="sessions" className="space-y-6 mt-6">
+                        {/* Halls/Venues */}
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                                        <DoorOpen className="h-4 w-4 text-muted-foreground" />
+                                        Event Halls / Venues
+                                    </CardTitle>
+                                    <Button onClick={addHall} size="sm" variant="outline" className="gap-1 h-7 text-xs">
+                                        <Plus className="h-3 w-3" /> Add Hall
+                                    </Button>
+                                </div>
+                                <CardDescription className="text-xs">
+                                    Define halls/venues for this event. These will appear as options when assigning sessions.
+                                </CardDescription>
+                            </CardHeader>
+                            {halls.length > 0 && (
+                                <CardContent className="pt-0">
+                                    <div className="flex flex-wrap gap-2">
+                                        {halls.map((hall) => (
+                                            <div key={hall.id} className="flex items-center gap-1.5 border rounded-lg px-3 py-1.5 bg-muted/30">
+                                                <Input
+                                                    value={hall.name}
+                                                    onChange={(e) => updateHallName(hall.id, e.target.value)}
+                                                    placeholder="Hall name"
+                                                    className="h-7 w-32 text-sm border-0 bg-transparent p-0 focus-visible:ring-0"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeHall(hall.id)}
+                                                    className="text-muted-foreground hover:text-destructive"
+                                                >
+                                                    <X className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            )}
+                        </Card>
+
+                        {/* Sessions */}
                         <Card>
                             <CardHeader className="pb-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1477,10 +1683,10 @@ export default function CreateEventPage() {
                                             <div className="icon-container icon-container-blue h-8 w-8 sm:h-10 sm:w-10">
                                                 <Mic2 className="h-4 w-4 sm:h-5 sm:w-5" />
                                             </div>
-                                            Event Sessions
+                                            Scientific Program
                                         </CardTitle>
                                         <CardDescription className="text-xs sm:text-sm mt-1">
-                                            Add individual sessions, talks, or workshops with speakers
+                                            Manage sessions, talks, and workshops with speakers and topics
                                         </CardDescription>
                                     </div>
                                     <Button onClick={addSession} size="sm" className="gap-2 w-full sm:w-auto">
@@ -1495,7 +1701,7 @@ export default function CreateEventPage() {
                                         <Mic2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                                         <h3 className="text-lg font-medium mb-2">No sessions yet</h3>
                                         <p className="text-sm text-muted-foreground mb-4">
-                                            Add sessions to build your event schedule
+                                            Add sessions to build your scientific program
                                         </p>
                                         <Button onClick={addSession} variant="outline" className="gap-2">
                                             <Plus className="h-4 w-4" />
@@ -1507,13 +1713,17 @@ export default function CreateEventPage() {
                                         {sessions.map((session, index) => (
                                             <div
                                                 key={session.id}
-                                                className="p-3 sm:p-4 rounded-xl border border-border bg-card hover:shadow-md transition-shadow animate-fadeIn"
+                                                className="p-4 rounded-xl border border-border bg-card hover:shadow-md transition-shadow animate-fadeIn"
                                             >
-                                                {/* Mobile: Header */}
-                                                <div className="flex items-center justify-between mb-3 sm:hidden">
+                                                <div className="flex items-center justify-between mb-4">
                                                     <div className="flex items-center gap-2">
                                                         <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                                        <span className="text-sm font-medium">Session {index + 1}</span>
+                                                        <span className="text-sm font-semibold">Session {index + 1}</span>
+                                                        {session.sessionType && session.sessionType !== "OTHER" && (
+                                                            <Badge variant="outline" className="text-[10px]">
+                                                                {SESSION_TYPES.find(t => t.value === session.sessionType)?.label || session.sessionType}
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                     <Button
                                                         variant="ghost"
@@ -1525,315 +1735,321 @@ export default function CreateEventPage() {
                                                     </Button>
                                                 </div>
 
-                                                {/* Desktop: Original layout */}
-                                                <div className="hidden sm:flex items-start gap-4">
-                                                    <div className="cursor-grab p-2 text-muted-foreground hover:text-foreground">
-                                                        <GripVertical className="h-5 w-5" />
-                                                    </div>
-                                                    <div className="flex-1 space-y-4">
+                                                <div className="space-y-4">
+                                                    {/* Session Type + Title */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                                         <div className="space-y-2">
-                                                            <Label>Session Title *</Label>
+                                                            <Label className="text-xs">Session Type *</Label>
+                                                            <Select
+                                                                value={session.sessionType}
+                                                                onValueChange={(v) => updateSession(session.id, "sessionType", v)}
+                                                            >
+                                                                <SelectTrigger>
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {SESSION_TYPES.map((t) => (
+                                                                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                        <div className="md:col-span-3 space-y-2">
+                                                            <Label className="text-xs">Session Title *</Label>
                                                             <Input
                                                                 value={session.title}
                                                                 onChange={(e) => updateSession(session.id, "title", e.target.value)}
                                                                 placeholder="e.g., Keynote: Future of Neurostimulation"
                                                             />
                                                         </div>
+                                                    </div>
 
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                            <div className="space-y-2">
-                                                                <Label>Date *</Label>
-                                                                <Input
-                                                                    type="date"
-                                                                    value={session.date}
-                                                                    onChange={(e) => updateSession(session.id, "date", e.target.value)}
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label>Start Time *</Label>
-                                                                <Input
-                                                                    type="time"
-                                                                    value={session.startTime}
-                                                                    onChange={(e) => updateSession(session.id, "startTime", e.target.value)}
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <Label>End Time *</Label>
-                                                                <Input
-                                                                    type="time"
-                                                                    value={session.endTime}
-                                                                    onChange={(e) => updateSession(session.id, "endTime", e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-
+                                                    {/* Date / Time / Venue */}
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                         <div className="space-y-2">
-                                                            <Label>Venue/Room</Label>
-                                                            <Input
-                                                                value={session.venue}
-                                                                onChange={(e) => updateSession(session.id, "venue", e.target.value)}
-                                                                placeholder="e.g., Hall A, Room 101"
-                                                            />
+                                                            <Label className="text-xs">Date</Label>
+                                                            <Input type="date" value={session.date} onChange={(e) => updateSession(session.id, "date", e.target.value)} />
                                                         </div>
-
-                                                        {/* Speaker Selection */}
-                                                        <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
-                                                            <div className="flex items-center justify-between">
-                                                                <Label className="flex items-center gap-2">
-                                                                    <User className="h-4 w-4" />
-                                                                    Speaker
-                                                                </Label>
-                                                                <div className="flex items-center gap-2">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => updateSession(session.id, "isExistingSpeaker", true)}
-                                                                        className={cn(
-                                                                            "px-3 py-1 text-xs rounded-l-md border transition-colors",
-                                                                            session.isExistingSpeaker
-                                                                                ? "bg-primary text-primary-foreground border-primary"
-                                                                                : "bg-background border-border hover:bg-muted"
-                                                                        )}
-                                                                    >
-                                                                        Select Existing
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => updateSession(session.id, "isExistingSpeaker", false)}
-                                                                        className={cn(
-                                                                            "px-3 py-1 text-xs rounded-r-md border transition-colors",
-                                                                            !session.isExistingSpeaker
-                                                                                ? "bg-primary text-primary-foreground border-primary"
-                                                                                : "bg-background border-border hover:bg-muted"
-                                                                        )}
-                                                                    >
-                                                                        Create New
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-
-                                                            {session.isExistingSpeaker ? (
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs">Start Time</Label>
+                                                            <Input type="time" value={session.startTime} onChange={(e) => updateSession(session.id, "startTime", e.target.value)} />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs">End Time</Label>
+                                                            <Input type="time" value={session.endTime} onChange={(e) => updateSession(session.id, "endTime", e.target.value)} />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs">Hall / Venue</Label>
+                                                            {halls.filter(h => h.name.trim()).length > 0 ? (
                                                                 <Select
-                                                                    value={session.speakerId || undefined}
-                                                                    onValueChange={(value) => {
-                                                                        if (!value) return;
-                                                                        const speaker = existingSpeakers.find((s) => s.id === value);
-                                                                        setSessions(prev => prev.map(s =>
-                                                                            s.id === session.id
-                                                                                ? { ...s, speakerId: value, speakerName: speaker?.name || "" }
-                                                                                : s
-                                                                        ));
-                                                                    }}
+                                                                    value={session.venue || "none"}
+                                                                    onValueChange={(v) => updateSession(session.id, "venue", v === "none" ? "" : v)}
                                                                 >
                                                                     <SelectTrigger>
-                                                                        <SelectValue placeholder="Select a speaker" />
+                                                                        <SelectValue placeholder="Select hall" />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
-                                                                        {existingSpeakers.length === 0 ? (
-                                                                            <div className="p-2 text-sm text-muted-foreground text-center">
-                                                                                No speakers found
-                                                                            </div>
-                                                                        ) : (
-                                                                            existingSpeakers.map((speaker) => (
-                                                                                <SelectItem key={speaker.id} value={speaker.id}>
-                                                                                    <div className="flex flex-col">
-                                                                                        <span>{speaker.name}</span>
-                                                                                        {speaker.designation && (
-                                                                                            <span className="text-xs text-muted-foreground">
-                                                                                                {speaker.designation}
-                                                                                            </span>
-                                                                                        )}
-                                                                                    </div>
-                                                                                </SelectItem>
-                                                                            ))
-                                                                        )}
+                                                                        <SelectItem value="none">
+                                                                            <span className="text-muted-foreground">No hall</span>
+                                                                        </SelectItem>
+                                                                        {halls.filter(h => h.name.trim()).map((hall) => (
+                                                                            <SelectItem key={hall.id} value={hall.name}>{hall.name}</SelectItem>
+                                                                        ))}
                                                                     </SelectContent>
                                                                 </Select>
                                                             ) : (
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                    <div className="space-y-2">
-                                                                        <Label className="text-xs">Name *</Label>
-                                                                        <Input
-                                                                            value={session.newSpeakerName}
-                                                                            onChange={(e) => updateSession(session.id, "newSpeakerName", e.target.value)}
-                                                                            placeholder="Speaker name"
-                                                                        />
+                                                                <Input value={session.venue} onChange={(e) => updateSession(session.id, "venue", e.target.value)} placeholder="e.g., Hall A" />
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Description */}
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs">Description</Label>
+                                                        <Textarea
+                                                            value={session.description}
+                                                            onChange={(e) => updateSession(session.id, "description", e.target.value)}
+                                                            placeholder="Describe what will be covered"
+                                                            rows={2}
+                                                        />
+                                                    </div>
+
+                                                    {/* Speakers Section (hidden for BREAK type) */}
+                                                    {session.sessionType !== "BREAK" && (
+                                                        <div className="space-y-3 p-4 rounded-lg border bg-blue-50/50">
+                                                            <div className="flex items-center justify-between">
+                                                                <Label className="flex items-center gap-2 text-sm font-semibold">
+                                                                    <User className="h-4 w-4" />
+                                                                    Speakers ({session.speakers.length})
+                                                                </Label>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => addSessionSpeaker(session.id)}
+                                                                    className="gap-1 h-7 text-xs"
+                                                                >
+                                                                    <Plus className="h-3 w-3" />
+                                                                    Add Speaker
+                                                                </Button>
+                                                            </div>
+
+                                                            {session.speakers.length === 0 && (
+                                                                <p className="text-xs text-muted-foreground text-center py-3">
+                                                                    No speakers added yet. Click &quot;Add Speaker&quot; to assign speakers to this session.
+                                                                </p>
+                                                            )}
+
+                                                            {session.speakers.map((sp, spIndex) => (
+                                                                <div key={sp.id} className="p-3 rounded-lg border bg-white space-y-3">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="text-xs font-medium text-muted-foreground">Speaker {spIndex + 1}</span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="flex items-center gap-0">
+                                                                                <button type="button" onClick={() => updateSessionSpeaker(session.id, sp.id, "isExistingSpeaker", true)}
+                                                                                    className={cn("px-2 py-0.5 text-[10px] rounded-l border", sp.isExistingSpeaker ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border")}>
+                                                                                    Existing
+                                                                                </button>
+                                                                                <button type="button" onClick={() => updateSessionSpeaker(session.id, sp.id, "isExistingSpeaker", false)}
+                                                                                    className={cn("px-2 py-0.5 text-[10px] rounded-r border", !sp.isExistingSpeaker ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border")}>
+                                                                                    New
+                                                                                </button>
+                                                                            </div>
+                                                                            <Button variant="ghost" size="sm" onClick={() => removeSessionSpeaker(session.id, sp.id)}
+                                                                                className="text-destructive h-6 w-6 p-0">
+                                                                                <X className="h-3 w-3" />
+                                                                            </Button>
+                                                                        </div>
                                                                     </div>
+
+                                                                    {sp.isExistingSpeaker ? (
+                                                                        <Select value={sp.speakerId || undefined} onValueChange={(value) => {
+                                                                            const speaker = existingSpeakers.find(s => s.id === value);
+                                                                            updateSessionSpeaker(session.id, sp.id, "speakerId", value);
+                                                                            updateSessionSpeaker(session.id, sp.id, "speakerName", speaker?.name || "");
+                                                                        }}>
+                                                                            <SelectTrigger className="h-9">
+                                                                                <SelectValue placeholder="Select a speaker" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {existingSpeakers.map((speaker) => (
+                                                                                    <SelectItem key={speaker.id} value={speaker.id}>
+                                                                                        <span>{speaker.name}</span>
+                                                                                        {speaker.designation && <span className="text-xs text-muted-foreground ml-1">({speaker.designation})</span>}
+                                                                                    </SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    ) : (
+                                                                        <div className="grid grid-cols-2 gap-2">
+                                                                            <Input value={sp.newSpeakerName} onChange={(e) => updateSessionSpeaker(session.id, sp.id, "newSpeakerName", e.target.value)} placeholder="Name *" className="h-8 text-sm" />
+                                                                            <Input type="email" value={sp.newSpeakerEmail} onChange={(e) => updateSessionSpeaker(session.id, sp.id, "newSpeakerEmail", e.target.value)} placeholder="Email *" className="h-8 text-sm" />
+                                                                            <Input value={sp.newSpeakerDesignation} onChange={(e) => updateSessionSpeaker(session.id, sp.id, "newSpeakerDesignation", e.target.value)} placeholder="Designation" className="h-8 text-sm" />
+                                                                            <Input value={sp.newSpeakerInstitution} onChange={(e) => updateSessionSpeaker(session.id, sp.id, "newSpeakerInstitution", e.target.value)} placeholder="Institution" className="h-8 text-sm" />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Talk Topic */}
                                                                     <div className="space-y-2">
-                                                                        <Label className="text-xs">Email *</Label>
+                                                                        <Label className="text-xs">Talk Topic / Title</Label>
                                                                         <Input
-                                                                            type="email"
-                                                                            value={session.newSpeakerEmail}
-                                                                            onChange={(e) => updateSession(session.id, "newSpeakerEmail", e.target.value)}
-                                                                            placeholder="speaker@email.com"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label className="text-xs">Designation</Label>
-                                                                        <Input
-                                                                            value={session.newSpeakerDesignation}
-                                                                            onChange={(e) => updateSession(session.id, "newSpeakerDesignation", e.target.value)}
-                                                                            placeholder="e.g., Professor"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label className="text-xs">Institution</Label>
-                                                                        <Input
-                                                                            value={session.newSpeakerInstitution}
-                                                                            onChange={(e) => updateSession(session.id, "newSpeakerInstitution", e.target.value)}
-                                                                            placeholder="e.g., Medical College"
+                                                                            value={sp.talkTitle}
+                                                                            onChange={(e) => updateSessionSpeaker(session.id, sp.id, "talkTitle", e.target.value)}
+                                                                            placeholder="What will this speaker discuss?"
+                                                                            className="h-9"
                                                                         />
                                                                     </div>
                                                                 </div>
-                                                            )}
+                                                            ))}
                                                         </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                                                        <div className="space-y-2">
-                                                            <Label>Session Description</Label>
-                                                            <Textarea
-                                                                value={session.description}
-                                                                onChange={(e) => updateSession(session.id, "description", e.target.value)}
-                                                                placeholder="Describe what will be covered in this session"
-                                                                rows={2}
+                    {/* Engagement Tab */}
+                    <TabsContent value="engagement" className="space-y-6 mt-6">
+                        <Card>
+                            <CardHeader className="pb-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                                            <div className="icon-container icon-container-purple h-8 w-8 sm:h-10 sm:w-10">
+                                                <Megaphone className="h-4 w-4 sm:h-5 sm:w-5" />
+                                            </div>
+                                            Event Engagement
+                                        </CardTitle>
+                                        <CardDescription className="text-xs sm:text-sm mt-1">
+                                            Add polls, Q&A sessions, feedback forms, and announcements
+                                        </CardDescription>
+                                    </div>
+                                    <Button onClick={addEngagement} size="sm" className="gap-2 w-full sm:w-auto">
+                                        <Plus className="h-4 w-4" />
+                                        Add Engagement
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                {engagements.length === 0 ? (
+                                    <div className="text-center py-12 border-2 border-dashed rounded-xl">
+                                        <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                                        <h3 className="text-lg font-medium mb-2">No engagements yet</h3>
+                                        <p className="text-sm text-muted-foreground mb-4">
+                                            Add polls, Q&A, feedback forms to engage your attendees
+                                        </p>
+                                        <Button onClick={addEngagement} variant="outline" className="gap-2">
+                                            <Plus className="h-4 w-4" />
+                                            Add First Engagement
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {engagements.map((engagement, index) => (
+                                            <div
+                                                key={engagement.id}
+                                                className="p-4 rounded-xl border border-border bg-card hover:shadow-md transition-shadow animate-fadeIn"
+                                            >
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-semibold">Engagement {index + 1}</span>
+                                                        <Badge variant="outline" className="text-[10px]">
+                                                            {ENGAGEMENT_TYPES.find(t => t.value === engagement.type)?.label || engagement.type}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <Label className="text-xs">Active</Label>
+                                                            <Switch
+                                                                checked={engagement.isActive}
+                                                                onCheckedChange={(checked) => updateEngagement(engagement.id, "isActive", checked)}
                                                             />
                                                         </div>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeEngagement(engagement.id)}
+                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => removeSession(session.id)}
-                                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
                                                 </div>
 
-                                                {/* Mobile: Stacked form */}
-                                                <div className="sm:hidden space-y-3">
-                                                    <div className="space-y-2">
-                                                        <Label className="text-xs">Session Title *</Label>
-                                                        <Input
-                                                            value={session.title}
-                                                            onChange={(e) => updateSession(session.id, "title", e.target.value)}
-                                                            placeholder="e.g., Keynote Session"
-                                                            className="h-9"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label className="text-xs">Date *</Label>
-                                                        <Input
-                                                            type="date"
-                                                            value={session.date}
-                                                            onChange={(e) => updateSession(session.id, "date", e.target.value)}
-                                                            className="h-9"
-                                                        />
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-3">
+                                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                                         <div className="space-y-2">
-                                                            <Label className="text-xs">Start Time *</Label>
-                                                            <Input
-                                                                type="time"
-                                                                value={session.startTime}
-                                                                onChange={(e) => updateSession(session.id, "startTime", e.target.value)}
-                                                                className="h-9"
-                                                            />
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs">End Time *</Label>
-                                                            <Input
-                                                                type="time"
-                                                                value={session.endTime}
-                                                                onChange={(e) => updateSession(session.id, "endTime", e.target.value)}
-                                                                className="h-9"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label className="text-xs">Venue/Room</Label>
-                                                        <Input
-                                                            value={session.venue}
-                                                            onChange={(e) => updateSession(session.id, "venue", e.target.value)}
-                                                            placeholder="e.g., Hall A"
-                                                            className="h-9"
-                                                        />
-                                                    </div>
-
-                                                    {/* Mobile Speaker Selection */}
-                                                    <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
-                                                        <div className="flex items-center justify-between">
-                                                            <Label className="text-xs flex items-center gap-1">
-                                                                <User className="h-3 w-3" />
-                                                                Speaker
-                                                            </Label>
-                                                            <div className="flex items-center gap-1">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => updateSession(session.id, "isExistingSpeaker", true)}
-                                                                    className={cn(
-                                                                        "px-2 py-0.5 text-[10px] rounded-l border transition-colors",
-                                                                        session.isExistingSpeaker
-                                                                            ? "bg-primary text-primary-foreground border-primary"
-                                                                            : "bg-background border-border"
-                                                                    )}
-                                                                >
-                                                                    Existing
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => updateSession(session.id, "isExistingSpeaker", false)}
-                                                                    className={cn(
-                                                                        "px-2 py-0.5 text-[10px] rounded-r border transition-colors",
-                                                                        !session.isExistingSpeaker
-                                                                            ? "bg-primary text-primary-foreground border-primary"
-                                                                            : "bg-background border-border"
-                                                                    )}
-                                                                >
-                                                                    New
-                                                                </button>
-                                                            </div>
-                                                        </div>
-
-                                                        {session.isExistingSpeaker ? (
+                                                            <Label className="text-xs">Type *</Label>
                                                             <Select
-                                                                value={session.speakerId || undefined}
-                                                                onValueChange={(value) => {
-                                                                    if (!value) return;
-                                                                    const speaker = existingSpeakers.find((s) => s.id === value);
-                                                                    setSessions(prev => prev.map(s =>
-                                                                        s.id === session.id
-                                                                            ? { ...s, speakerId: value, speakerName: speaker?.name || "" }
-                                                                            : s
-                                                                    ));
-                                                                }}
+                                                                value={engagement.type}
+                                                                onValueChange={(v) => updateEngagement(engagement.id, "type", v)}
                                                             >
-                                                                <SelectTrigger className="h-9">
-                                                                    <SelectValue placeholder="Select speaker" />
+                                                                <SelectTrigger>
+                                                                    <SelectValue />
                                                                 </SelectTrigger>
                                                                 <SelectContent>
-                                                                    {existingSpeakers.map((speaker) => (
-                                                                        <SelectItem key={speaker.id} value={speaker.id}>
-                                                                            {speaker.name}
-                                                                        </SelectItem>
+                                                                    {ENGAGEMENT_TYPES.map((t) => (
+                                                                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                                                                     ))}
                                                                 </SelectContent>
                                                             </Select>
-                                                        ) : (
-                                                            <div className="space-y-2">
-                                                                <Input
-                                                                    value={session.newSpeakerName}
-                                                                    onChange={(e) => updateSession(session.id, "newSpeakerName", e.target.value)}
-                                                                    placeholder="Speaker name"
-                                                                    className="h-8 text-sm"
-                                                                />
-                                                                <Input
-                                                                    type="email"
-                                                                    value={session.newSpeakerEmail}
-                                                                    onChange={(e) => updateSession(session.id, "newSpeakerEmail", e.target.value)}
-                                                                    placeholder="Email"
-                                                                    className="h-8 text-sm"
-                                                                />
-                                                            </div>
-                                                        )}
+                                                        </div>
+                                                        <div className="md:col-span-3 space-y-2">
+                                                            <Label className="text-xs">Title *</Label>
+                                                            <Input
+                                                                value={engagement.title}
+                                                                onChange={(e) => updateEngagement(engagement.id, "title", e.target.value)}
+                                                                placeholder="e.g., Post-session feedback, Live Q&A"
+                                                            />
+                                                        </div>
                                                     </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs">Description</Label>
+                                                        <Textarea
+                                                            value={engagement.description}
+                                                            onChange={(e) => updateEngagement(engagement.id, "description", e.target.value)}
+                                                            placeholder="Describe this engagement activity"
+                                                            rows={2}
+                                                        />
+                                                    </div>
+
+                                                    {/* Poll options */}
+                                                    {engagement.type === "POLL" && (
+                                                        <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
+                                                            <Label className="text-xs font-medium">Poll Options</Label>
+                                                            {((engagement.content as { options?: string[] })?.options || []).map((option: string, optIndex: number) => (
+                                                                <div key={optIndex} className="flex items-center gap-2">
+                                                                    <Input
+                                                                        value={option}
+                                                                        onChange={(e) => {
+                                                                            const opts = [...((engagement.content as { options?: string[] })?.options || [])];
+                                                                            opts[optIndex] = e.target.value;
+                                                                            updateEngagement(engagement.id, "content", { options: opts });
+                                                                        }}
+                                                                        placeholder={`Option ${optIndex + 1}`}
+                                                                        className="h-8 text-sm"
+                                                                    />
+                                                                    <Button variant="ghost" size="sm" onClick={() => {
+                                                                        const opts = [...((engagement.content as { options?: string[] })?.options || [])];
+                                                                        opts.splice(optIndex, 1);
+                                                                        updateEngagement(engagement.id, "content", { options: opts });
+                                                                    }} className="h-8 w-8 p-0 text-destructive">
+                                                                        <X className="h-3 w-3" />
+                                                                    </Button>
+                                                                </div>
+                                                            ))}
+                                                            <Button variant="outline" size="sm" onClick={() => {
+                                                                const opts = [...((engagement.content as { options?: string[] })?.options || []), ""];
+                                                                updateEngagement(engagement.id, "content", { options: opts });
+                                                            }} className="gap-1 h-7 text-xs">
+                                                                <Plus className="h-3 w-3" /> Add Option
+                                                            </Button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}

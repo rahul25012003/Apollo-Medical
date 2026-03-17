@@ -14,6 +14,7 @@ import {
 import { Prisma } from "@prisma/client";
 import { getEffectiveTenantId, tenantWhereClause } from "@/lib/tenant-scope";
 import { createNotification } from "@/lib/notifications-db";
+import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
 
 // GET /api/registrations - List all registrations (with filters)
 export const GET = withErrorHandler(async (request: NextRequest) => {
@@ -60,6 +61,9 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   }
 
   const search = searchParams.get("search");
+  if (search && search.length > 200) {
+    return Errors.badRequest("Search query too long");
+  }
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -112,7 +116,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
             email: true,
           },
         },
-        certificate: {
+        certificates: {
           select: {
             id: true,
             certificateCode: true,
@@ -277,6 +281,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       organization: data.organization,
       designation: data.designation,
       category: data.category,
+      participantRole: data.participantRole,
       eventId: data.eventId,
       status,
       paymentStatus,
@@ -314,6 +319,38 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     tenantId: event.tenantId,
     excludeUserId: session?.user?.id,
   });
+
+  // Auto-create delegate account for free/auto-confirmed registrations
+  if (status === "CONFIRMED") {
+    try {
+      const { userId, isNew } = await findOrCreateUserAccount({
+        email: data.email,
+        name: data.name,
+        phone: data.phone,
+        tenantId: event.tenantId,
+      });
+      if (!registration.userId) {
+        await prisma.registration.update({
+          where: { id: registration.id },
+          data: { userId },
+        });
+      }
+      if (isNew) {
+        const baseUrl = request.headers.get("origin") || request.headers.get("host") || "";
+        const loginUrl = `${baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`}/auth/login`;
+        sendAccountCreatedEmail({
+          email: data.email,
+          name: data.name,
+          eventTitle: registration.event.title,
+          role: data.participantRole || "delegate",
+          loginUrl,
+          tenantId: event.tenantId,
+        });
+      }
+    } catch (err) {
+      console.error("Auto-account creation failed for free registration:", err);
+    }
+  }
 
   return successResponse(registration, "Registration successful", 201);
 });

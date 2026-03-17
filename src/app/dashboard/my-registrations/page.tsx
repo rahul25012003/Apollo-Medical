@@ -11,13 +11,13 @@ import {
     Clock,
     Eye,
     Download,
-    Loader2,
     Ticket,
     CheckCircle2,
     XCircle,
     AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { format } from "date-fns";
 
 interface MyRegistration {
@@ -34,10 +34,10 @@ interface MyRegistration {
         location: string | null;
         city: string | null;
     };
-    certificate?: {
+    certificates?: {
         id: string;
         certificateCode: string;
-    } | null;
+    }[];
 }
 
 export default function MyRegistrationsPage() {
@@ -66,15 +66,15 @@ export default function MyRegistrationsPage() {
     const getStatusConfig = (status: string) => {
         switch (status) {
             case "CONFIRMED":
-                return { label: "Confirmed", className: "bg-green-100 text-green-700", icon: CheckCircle2 };
+                return { label: "Confirmed", className: "bg-green-100 text-green-700 shadow-sm font-semibold", icon: CheckCircle2 };
             case "PENDING":
-                return { label: "Pending", className: "bg-yellow-100 text-yellow-700", icon: AlertCircle };
+                return { label: "Pending", className: "bg-yellow-100 text-yellow-700 shadow-sm font-semibold", icon: AlertCircle };
             case "CANCELLED":
-                return { label: "Cancelled", className: "bg-red-100 text-red-700", icon: XCircle };
+                return { label: "Cancelled", className: "bg-red-100 text-red-700 shadow-sm font-semibold", icon: XCircle };
             case "ATTENDED":
-                return { label: "Attended", className: "bg-blue-100 text-blue-700", icon: CheckCircle2 };
+                return { label: "Attended", className: "bg-blue-100 text-blue-700 shadow-sm font-semibold", icon: CheckCircle2 };
             default:
-                return { label: status, className: "bg-gray-100 text-gray-700", icon: AlertCircle };
+                return { label: status, className: "bg-gray-100 text-gray-700 shadow-sm font-semibold", icon: AlertCircle };
         }
     };
 
@@ -98,9 +98,7 @@ export default function MyRegistrationsPage() {
     if (loading) {
         return (
             <DashboardLayout title="My Registrations" subtitle="View your event registrations">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
@@ -131,7 +129,7 @@ export default function MyRegistrationsPage() {
                             return (
                                 <div
                                     key={registration.id}
-                                    className="bg-background rounded-xl border border-border p-5 hover:shadow-md transition-all"
+                                    className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200/60 p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                                 >
                                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                                         <div className="flex-1 min-w-0">
@@ -143,7 +141,7 @@ export default function MyRegistrationsPage() {
                                                 <Badge variant="outline" className={cn("text-xs", paymentConfig.className)}>
                                                     {paymentConfig.label}
                                                 </Badge>
-                                                {registration.certificate && (
+                                                {registration.certificates && registration.certificates.length > 0 && (
                                                     <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700">
                                                         Certificate Issued
                                                     </Badge>
@@ -182,14 +180,14 @@ export default function MyRegistrationsPage() {
 
                                         <div className="flex items-center gap-2">
                                             <Link href={`/events/${registration.event.id}`}>
-                                                <Button variant="outline" size="sm">
+                                                <Button variant="outline" size="sm" className="hover:shadow-md transition-all">
                                                     <Eye className="w-4 h-4 mr-2" />
                                                     View Event
                                                 </Button>
                                             </Link>
-                                            {registration.certificate && (
-                                                <Link href={`/dashboard/certificates/${registration.certificate.id}/view`}>
-                                                    <Button size="sm" className="gap-2">
+                                            {registration.certificates && registration.certificates.length > 0 && (
+                                                <Link href={`/dashboard/certificates/${registration.certificates[0].id}/view`}>
+                                                    <Button size="sm" className="gap-2 hover:shadow-md transition-all">
                                                         <Download className="w-4 h-4" />
                                                         Certificate
                                                     </Button>

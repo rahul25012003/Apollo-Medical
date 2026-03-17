@@ -52,8 +52,19 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   // Check user existence without revealing it to the caller
   const existingUser = await prisma.user.findUnique({
     where: { email: email.toLowerCase() },
-    select: { id: true },
+    select: { id: true, role: true, tenantId: true },
   });
+
+  // Block OTP login for admin/staff accounts — they must use password-based login
+  if (
+    purpose === "LOGIN" &&
+    existingUser &&
+    existingUser.role !== "ATTENDEE"
+  ) {
+    return Errors.badRequest(
+      "This email uses password-based login. Please use the admin sign-in."
+    );
+  }
 
   // For registration: if user already exists, return generic success (no leak)
   if (purpose === "REGISTRATION" && existingUser) {
@@ -63,8 +74,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     );
   }
 
-  // For login/password reset: if user doesn't exist, return generic success (no leak)
-  if ((purpose === "LOGIN" || purpose === "PASSWORD_RESET") && !existingUser) {
+  // For password reset: if user doesn't exist, return generic success (no leak)
+  // For LOGIN: always proceed — user account will be auto-created at OTP verification
+  if (purpose === "PASSWORD_RESET" && !existingUser) {
     return successResponse(
       { message: "If an account with this email exists, an OTP has been sent" },
       "If an account with this email exists, an OTP has been sent"
@@ -98,12 +110,31 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     },
   });
 
-  // Send OTP via email (non-blocking — don't fail registration if email fails)
-  sendEmail({
-    to: email,
-    subject: `Your OTP Code — ${code}`,
-    html: otpEmailHtml(code, purpose),
-  }).catch((err) => console.error("OTP email send error:", err));
+  // Determine tenantId for email channel lookup
+  let tenantId = existingUser?.tenantId || null;
+  if (!tenantId) {
+    // Try to find tenantId from existing registration
+    const reg = await prisma.registration.findFirst({
+      where: { email: { equals: email.toLowerCase(), mode: "insensitive" } },
+      select: { event: { select: { tenantId: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    tenantId = reg?.event?.tenantId || null;
+  }
+
+  // Send OTP via email — await to detect delivery failures
+  let emailSent = false;
+  try {
+    emailSent = await sendEmail({
+      to: email,
+      subject: `Your OTP Code — ${code}`,
+      html: otpEmailHtml(code, purpose),
+      tenantId,
+    });
+  } catch (err) {
+    console.error("OTP email send error:", err);
+    emailSent = false;
+  }
 
   // Also try SMS if user has a phone (best-effort)
   if (existingUser?.id) {
@@ -114,8 +145,15 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     }
   }
 
+  if (!emailSent) {
+    return successResponse(
+      { message: "OTP created but email delivery failed. Please check your email configuration or try again.", emailSent: false },
+      "OTP created but email may not have been delivered"
+    );
+  }
+
   return successResponse(
-    { message: "If an account with this email exists, an OTP has been sent" },
+    { message: "If an account with this email exists, an OTP has been sent", emailSent: true },
     "If an account with this email exists, an OTP has been sent"
   );
 });

@@ -33,19 +33,47 @@ async function getTenantSlugByDomain(domain: string): Promise<string | null> {
 }
 
 // Routes that require authentication
-const protectedRoutes = ["/dashboard", "/api/users", "/api/events", "/api/registrations", "/api/speakers", "/api/sponsors", "/api/certificates", "/api/upload", "/api/dashboard"];
+const protectedRoutes = ["/dashboard", "/api/users", "/api/events", "/api/registrations", "/api/speakers", "/api/sponsors", "/api/certificates", "/api/upload", "/api/dashboard", "/api/communications", "/api/reports"];
 
 // Routes that are public
 const publicRoutes = ["/", "/auth", "/events", "/api/auth", "/api/events/public", "/api/certificates/verify", "/api/registrations/public", "/api/health"];
 
-// Routes that require specific roles
+// Routes that require specific roles (admin/staff only — ATTENDEE cannot access)
+const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER", "CERTIFICATE_MANAGER"];
 const roleRoutes: Record<string, string[]> = {
   "/dashboard/users": ["SUPER_ADMIN", "ADMIN"],
   "/api/users": ["SUPER_ADMIN", "ADMIN"],
+  "/dashboard/events/create": ADMIN_ROLES,
+  "/dashboard/events/new": ADMIN_ROLES,
+  "/dashboard/registrations": ADMIN_ROLES,
+  "/dashboard/certificates": ADMIN_ROLES,
+  "/dashboard/speakers": ADMIN_ROLES,
+  "/dashboard/sponsors": ADMIN_ROLES,
+  "/dashboard/settings": ADMIN_ROLES,
+  "/dashboard/tenants": ["SUPER_ADMIN", "ADMIN"],
+  "/dashboard/id-cards": ADMIN_ROLES,
+  "/dashboard/scientific-program": ADMIN_ROLES,
+  "/dashboard/access-control": ADMIN_ROLES,
+  "/dashboard/scanner": ADMIN_ROLES,
+  "/dashboard/engagement": ADMIN_ROLES,
+  "/dashboard/communications": ADMIN_ROLES,
+  "/dashboard/reports": ADMIN_ROLES,
+  "/api/communications": ADMIN_ROLES,
+  "/api/reports": ADMIN_ROLES,
 };
 
 // Routes that are exceptions to role-based access (accessible by any authenticated user)
-const roleExceptions = ["/api/users/me", "/api/users/me/registrations", "/api/users/me/certificates"];
+const roleExceptions = [
+  "/api/users/me",
+  "/api/users/me/registrations",
+  "/api/users/me/certificates",
+  "/api/users/me/speaker-sessions",
+  "/dashboard/browse-events",
+  "/dashboard/my-sessions",
+  "/dashboard/my-registrations",
+  "/dashboard/my-certificates",
+  "/dashboard/profile",
+];
 
 // ---------------------------------------------------------------------------
 // CORS helper: compute allowed origin and attach headers to any response
@@ -114,10 +142,21 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host")?.split(":")[0] || "";
   const tenantSlug = await getTenantSlugByDomain(hostname);
 
-  if (tenantSlug && pathname === "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = `/t/${tenantSlug}`;
-    return withCorsHeaders(NextResponse.rewrite(url), request);
+  if (tenantSlug) {
+    if (pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = `/t/${tenantSlug}`;
+      return withCorsHeaders(NextResponse.rewrite(url), request);
+    }
+
+    // For event pages on tenant domains, inject tenant context via query param
+    if (pathname.startsWith("/events")) {
+      const url = request.nextUrl.clone();
+      if (!url.searchParams.has("tenant")) {
+        url.searchParams.set("tenant", tenantSlug);
+        return withCorsHeaders(NextResponse.redirect(url), request);
+      }
+    }
   }
 
   // Check if it's a public route
@@ -162,7 +201,11 @@ export async function middleware(request: NextRequest) {
   // Check if route is an exception to role-based access
   const isRoleException = roleExceptions.some(
     (route) => pathname === route || pathname.startsWith(route + "/")
-  );
+  )
+    // Allow any authenticated user to view individual certificate pages (for download)
+    || /^\/dashboard\/certificates\/[^/]+\/view/.test(pathname)
+    // Allow any authenticated user to fetch individual certificate data
+    || /^\/api\/certificates\/[^/]+$/.test(pathname);
 
   // Check role-based access (skip if it's an exception)
   if (!isRoleException) {

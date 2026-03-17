@@ -35,6 +35,15 @@ export const bulkCertificateSchema = z.object({
   cmeCredits: z.number().int().nonnegative().optional(),
 });
 
+export const roleBasedCertificateSchema = z.object({
+  eventId: z.string().cuid(),
+  participantRole: z.string().min(1, "Role is required"),
+  limit: z.number().int().positive().optional(), // Admin sets max count
+  title: z.string().optional(),
+  description: z.string().optional(),
+  cmeCredits: z.number().int().nonnegative().optional(),
+});
+
 export const certificateQuerySchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),

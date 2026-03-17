@@ -60,6 +60,10 @@ export const POST = withErrorHandler(
         eventSpeakers: true,
         eventSessions: true,
         eventSponsors: true,
+        halls: true,
+        zones: { include: { accessRules: true } },
+        accessPoints: true,
+        foodZones: true,
       },
     });
 
@@ -160,6 +164,13 @@ export const POST = withErrorHandler(
           isPublished: false, // Always unpublished
           isFeatured: false, // Reset featured status
           tenantId: originalEvent.tenantId, // Preserve tenant ownership
+          // Copy custom config
+          idCardRequirePhoto: originalEvent.idCardRequirePhoto,
+          idCardSingleSided: originalEvent.idCardSingleSided,
+          badgeCategories: originalEvent.badgeCategories ?? undefined,
+          participantRoles: originalEvent.participantRoles ?? undefined,
+          sessionTypes: originalEvent.sessionTypes ?? undefined,
+          certificateConfig: originalEvent.certificateConfig ?? undefined,
         },
       });
 
@@ -253,6 +264,65 @@ export const POST = withErrorHandler(
             tier: sponsor.tier,
             displayOrder: sponsor.displayOrder,
             isPublished: false, // Unpublished until review
+          })),
+        });
+      }
+
+      // Duplicate halls
+      if (originalEvent.halls.length > 0) {
+        await tx.eventHall.createMany({
+          data: originalEvent.halls.map((hall) => ({
+            eventId: newEvent.id,
+            name: hall.name,
+            displayOrder: hall.displayOrder,
+          })),
+        });
+      }
+
+      // Duplicate zones with access rules
+      if (originalEvent.zones.length > 0) {
+        for (const zone of originalEvent.zones) {
+          const newZone = await tx.eventZone.create({
+            data: {
+              eventId: newEvent.id,
+              name: zone.name,
+              description: zone.description,
+              displayOrder: zone.displayOrder,
+            },
+          });
+          if (zone.accessRules.length > 0) {
+            await tx.zoneAccessRule.createMany({
+              data: zone.accessRules.map((rule) => ({
+                zoneId: newZone.id,
+                category: rule.category,
+                allowed: rule.allowed,
+              })),
+            });
+          }
+        }
+      }
+
+      // Duplicate access points
+      if (originalEvent.accessPoints.length > 0) {
+        await tx.accessPoint.createMany({
+          data: originalEvent.accessPoints.map((ap) => ({
+            eventId: newEvent.id,
+            name: ap.name,
+            type: ap.type,
+            direction: ap.direction,
+            isActive: ap.isActive,
+          })),
+        });
+      }
+
+      // Duplicate food zones
+      if (originalEvent.foodZones.length > 0) {
+        await tx.foodZone.createMany({
+          data: originalEvent.foodZones.map((fz) => ({
+            eventId: newEvent.id,
+            name: fz.name,
+            maxServings: fz.maxServings,
+            isActive: fz.isActive,
           })),
         });
       }

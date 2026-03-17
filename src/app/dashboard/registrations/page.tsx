@@ -65,6 +65,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DEFAULT_PARTICIPANT_ROLES } from "@/lib/config/event-defaults";
 import {
     Table,
     TableBody,
@@ -74,6 +75,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { registrationsService, Registration } from "@/services/registrations";
 import { eventsService, Event } from "@/services/events";
 import { certificatesService } from "@/services/certificates";
@@ -85,9 +87,7 @@ export default function RegistrationsPage() {
     return (
         <Suspense fallback={
             <DashboardLayout title="Registrations" subtitle="Manage event registrations">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         }>
             <RegistrationsContent />
@@ -129,6 +129,7 @@ function RegistrationsContent() {
         organization: "",
         designation: "",
         category: "",
+        participantRole: "DELEGATE",
         amount: 0,
         notes: "",
         specialRequests: "",
@@ -172,8 +173,8 @@ function RegistrationsContent() {
             try {
                 setLoading(true);
                 const [eventsRes, regsRes] = await Promise.all([
-                    eventsService.getAll({ ...tenantFilterParams }),
-                    registrationsService.getAll({ ...(eventIdParam ? { eventId: eventIdParam } : {}), ...tenantFilterParams }),
+                    eventsService.getAll({ ...tenantFilterParams, limit: 200 }),
+                    registrationsService.getAll({ ...(eventIdParam ? { eventId: eventIdParam } : {}), ...tenantFilterParams, limit: 500, sortBy: "createdAt", sortOrder: "desc" }),
                 ]);
 
                 if (eventsRes.success && eventsRes.data) {
@@ -267,7 +268,7 @@ function RegistrationsContent() {
         const config = statusConfig[status] || statusConfig.PENDING;
         const Icon = config.icon;
         return (
-            <Badge variant="outline" className={cn("gap-1 border-0", config.class)}>
+            <Badge variant="outline" className={cn("gap-1 border-0 font-semibold tracking-wide rounded-full", config.class)}>
                 <Icon className="h-3 w-3" />
                 {config.label}
             </Badge>
@@ -285,7 +286,7 @@ function RegistrationsContent() {
         const config = paymentConfig[status] || paymentConfig.PENDING;
         const Icon = config.icon;
         return (
-            <Badge variant="outline" className={cn("text-xs border-0 gap-1", config.class)}>
+            <Badge variant="outline" className={cn("text-xs border-0 gap-1 font-semibold tracking-wide rounded-full", config.class)}>
                 {Icon && <Icon className="h-3 w-3" />}
                 {config.label}
             </Badge>
@@ -302,7 +303,7 @@ function RegistrationsContent() {
             return (
                 <Badge
                     variant="outline"
-                    className="gap-1 border-0 bg-violet-50 text-violet-700"
+                    className="gap-1 border-0 bg-violet-50 text-violet-700 font-semibold tracking-wide rounded-full"
                     title={`Registered by ${reg.registeredBy?.name || reg.registeredBy?.email || "Admin"}`}
                 >
                     <UserCheck className="h-3 w-3" />
@@ -313,7 +314,7 @@ function RegistrationsContent() {
         return (
             <Badge
                 variant="outline"
-                className="gap-1 border-0 bg-cyan-50 text-cyan-700"
+                className="gap-1 border-0 bg-cyan-50 text-cyan-700 font-semibold tracking-wide rounded-full"
                 title="Self-registered via public form"
             >
                 <Globe className="h-3 w-3" />
@@ -362,6 +363,7 @@ function RegistrationsContent() {
                 organization: formData.organization || undefined,
                 designation: formData.designation || undefined,
                 category: formData.category || undefined,
+                participantRole: formData.participantRole || "DELEGATE",
                 amount: Number(formData.amount) || 0,
                 notes: formData.notes || undefined,
                 specialRequests: formData.specialRequests || undefined,
@@ -370,7 +372,7 @@ function RegistrationsContent() {
             if (response.success) {
                 // Refresh registrations
                 const regsRes = await registrationsService.getAll(
-                    { ...(eventIdParam ? { eventId: eventIdParam } : {}), ...tenantFilterParams }
+                    { ...(eventIdParam ? { eventId: eventIdParam } : {}), ...tenantFilterParams, limit: 500, sortBy: "createdAt", sortOrder: "desc" }
                 );
                 if (regsRes.success && regsRes.data) {
                     setRegistrations(Array.isArray(regsRes.data) ? regsRes.data : []);
@@ -385,6 +387,7 @@ function RegistrationsContent() {
                     organization: "",
                     designation: "",
                     category: "",
+                    participantRole: "DELEGATE",
                     amount: Number(selectedEvent?.price) || 0,
                     notes: "",
                     specialRequests: "",
@@ -404,7 +407,7 @@ function RegistrationsContent() {
     // Refresh registrations helper
     const refreshRegistrations = async () => {
         const regsRes = await registrationsService.getAll(
-            { ...(eventIdParam ? { eventId: eventIdParam } : {}), ...tenantFilterParams }
+            { ...(eventIdParam ? { eventId: eventIdParam } : {}), ...tenantFilterParams, limit: 500, sortBy: "createdAt", sortOrder: "desc" }
         );
         if (regsRes.success && regsRes.data) {
             setRegistrations(Array.isArray(regsRes.data) ? regsRes.data : []);
@@ -413,6 +416,33 @@ function RegistrationsContent() {
 
     // Handle confirm registration (PENDING -> CONFIRMED)
     const handleConfirmRegistration = async (regId: string) => {
+        const reg = registrations.find(r => r.id === regId);
+        const hasProof = reg?.paymentProof;
+
+        const confirmed = await confirm({
+            title: "Confirm Registration",
+            description: hasProof
+                ? "Review the payment proof below and confirm this registration."
+                : `Confirm registration for ${reg?.name || "this attendee"}?`,
+            confirmText: "Confirm",
+            cancelText: "Cancel",
+            variant: "success",
+            body: hasProof ? (
+                <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Payment Proof:</p>
+                    <a href={reg!.paymentProof!} target="_blank" rel="noopener noreferrer">
+                        <img
+                            src={reg!.paymentProof!}
+                            alt="Payment proof"
+                            className="max-w-full max-h-48 rounded-lg border object-contain bg-white cursor-pointer hover:opacity-90"
+                        />
+                    </a>
+                </div>
+            ) : undefined,
+        });
+
+        if (!confirmed) return;
+
         try {
             setActionInProgress(regId);
             const response = await registrationsService.confirm(regId);
@@ -445,6 +475,33 @@ function RegistrationsContent() {
 
     // Handle mark as paid
     const handleMarkAsPaid = async (regId: string) => {
+        const reg = registrations.find(r => r.id === regId);
+        const hasProof = reg?.paymentProof;
+
+        const confirmed = await confirm({
+            title: "Mark as Paid",
+            description: hasProof
+                ? "Review the payment proof and mark this registration as paid."
+                : `Mark payment as received for ${reg?.name || "this attendee"}?`,
+            confirmText: "Mark Paid",
+            cancelText: "Cancel",
+            variant: "success",
+            body: hasProof ? (
+                <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Payment Proof:</p>
+                    <a href={reg!.paymentProof!} target="_blank" rel="noopener noreferrer">
+                        <img
+                            src={reg!.paymentProof!}
+                            alt="Payment proof"
+                            className="max-w-full max-h-48 rounded-lg border object-contain bg-white cursor-pointer hover:opacity-90"
+                        />
+                    </a>
+                </div>
+            ) : undefined,
+        });
+
+        if (!confirmed) return;
+
         try {
             setActionInProgress(regId);
             const response = await registrationsService.markPaid(regId);
@@ -454,6 +511,66 @@ function RegistrationsContent() {
         } catch (error) {
             console.error("Failed to mark as paid:", error);
             alert({ title: "Error", description: "Failed to mark as paid.", variant: "error" });
+        } finally {
+            setActionInProgress(null);
+        }
+    };
+
+    // Handle approve registration (confirm + mark paid in one action)
+    const handleApproveRegistration = async (regId: string) => {
+        const reg = registrations.find(r => r.id === regId);
+        const hasProof = reg?.paymentProof;
+        const isFree = !reg?.amount || Number(reg.amount) === 0;
+
+        const confirmed = await confirm({
+            title: "Approve Registration",
+            description: isFree
+                ? `Approve registration for ${reg?.name || "this attendee"}? This will confirm registration.`
+                : hasProof
+                    ? "Review the payment screenshot below and approve this registration. This will confirm registration and mark payment as received."
+                    : `Approve registration for ${reg?.name || "this attendee"}? This will confirm registration and mark payment as received.`,
+            confirmText: "Approve",
+            cancelText: "Cancel",
+            variant: "success",
+            body: hasProof ? (
+                <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Payment Screenshot:</p>
+                    <a href={reg!.paymentProof!} target="_blank" rel="noopener noreferrer">
+                        <img
+                            src={reg!.paymentProof!}
+                            alt="Payment screenshot"
+                            className="max-w-full max-h-48 rounded-lg border object-contain bg-white cursor-pointer hover:opacity-90"
+                        />
+                    </a>
+                    {reg!.paymentId && (
+                        <p className="text-xs text-muted-foreground">
+                            Transaction ID: <span className="font-mono font-semibold">{reg!.paymentId}</span>
+                        </p>
+                    )}
+                    <p className="text-sm font-semibold mt-2">Amount: ₹{reg!.amount.toLocaleString()}</p>
+                </div>
+            ) : undefined,
+        });
+
+        if (!confirmed) return;
+
+        try {
+            setActionInProgress(regId);
+            if (isFree) {
+                // For free events, just confirm
+                const response = await registrationsService.update(regId, {
+                    status: "CONFIRMED",
+                    paymentStatus: "FREE",
+                });
+                if (response.success) await refreshRegistrations();
+            } else {
+                // Approve: confirm + mark paid
+                const response = await registrationsService.approve(regId);
+                if (response.success) await refreshRegistrations();
+            }
+        } catch (error) {
+            console.error("Failed to approve registration:", error);
+            alert({ title: "Error", description: "Failed to approve registration.", variant: "error" });
         } finally {
             setActionInProgress(null);
         }
@@ -537,7 +654,7 @@ function RegistrationsContent() {
         }
 
         // Check if certificate already exists
-        if (reg.certificate) {
+        if (reg.certificates && reg.certificates.length > 0) {
             alert({
                 title: "Certificate Already Exists",
                 description: "A certificate has already been generated for this registration. Use 'Regenerate' to create a new one.",
@@ -623,14 +740,16 @@ function RegistrationsContent() {
 
     // Handle view/download certificate
     const handleViewCertificate = (reg: Registration) => {
-        if (reg.certificate?.id) {
-            window.open(`/dashboard/certificates/${reg.certificate.id}/view`, "_blank");
+        const cert = reg.certificates?.[0];
+        if (cert?.id) {
+            window.open(`/dashboard/certificates/${cert.id}/view`, "_blank");
         }
     };
 
     // Handle regenerate certificate
     const handleRegenerateCertificate = async (reg: Registration) => {
-        if (!reg.certificate?.id) return;
+        const cert = reg.certificates?.[0];
+        if (!cert?.id) return;
 
         const confirmed = await confirm({
             title: "Regenerate Certificate",
@@ -646,7 +765,7 @@ function RegistrationsContent() {
             setActionInProgress(reg.id);
 
             // Use atomic regenerate endpoint
-            const response = await certificatesService.regenerate(reg.certificate.id);
+            const response = await certificatesService.regenerate(cert.id);
 
             if (response.success && response.data) {
                 // Refresh registrations to update certificate status
@@ -679,16 +798,14 @@ function RegistrationsContent() {
     if (loading) {
         return (
             <DashboardLayout title="Registrations" subtitle="Manage event registrations">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
 
     return (
         <DashboardLayout title="Registrations" subtitle="Manage event registrations and attendees">
-            <div className="space-y-6 animate-fadeIn">
+            <div className="space-y-6 p-4 sm:p-6 lg:p-8 animate-fadeIn bg-gradient-to-br from-slate-50 via-white to-teal-50/30 min-h-screen">
                 {/* Back Button when coming from event */}
                 {eventIdParam && selectedEvent && (
                     <div className="flex items-center justify-between">
@@ -704,54 +821,58 @@ function RegistrationsContent() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                    <Card className="card-hover">
-                        <CardContent className="p-3 sm:pt-6 sm:p-6">
-                            <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-teal h-10 w-10 sm:h-12 sm:w-12">
+                    <Card className="group card-premium overflow-hidden border-0">
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-400 to-teal-600" />
+                        <CardContent className="relative p-4 sm:pt-6 sm:p-6">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
                                     <Users className="h-5 w-5 sm:h-6 sm:w-6" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{registrations.length}</p>
-                                    <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
+                                    <p className="text-2xl sm:text-3xl font-bold tracking-tight animate-count">{registrations.length}</p>
+                                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Total</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
-                        <CardContent className="p-3 sm:pt-6 sm:p-6">
-                            <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-green h-10 w-10 sm:h-12 sm:w-12">
+                    <Card className="group card-premium overflow-hidden border-0">
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 to-green-600" />
+                        <CardContent className="relative p-4 sm:pt-6 sm:p-6">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
                                     <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{confirmedCount}</p>
-                                    <p className="text-xs sm:text-sm text-muted-foreground">Confirmed</p>
+                                    <p className="text-2xl sm:text-3xl font-bold tracking-tight animate-count">{confirmedCount}</p>
+                                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Confirmed</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
-                        <CardContent className="p-3 sm:pt-6 sm:p-6">
-                            <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-orange h-10 w-10 sm:h-12 sm:w-12">
+                    <Card className="group card-premium overflow-hidden border-0">
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 to-orange-500" />
+                        <CardContent className="relative p-4 sm:pt-6 sm:p-6">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
                                     <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{pendingCount + waitlistCount}</p>
-                                    <p className="text-xs sm:text-sm text-muted-foreground">Pending</p>
+                                    <p className="text-2xl sm:text-3xl font-bold tracking-tight animate-count">{pendingCount + waitlistCount}</p>
+                                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Pending</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
-                        <CardContent className="p-3 sm:pt-6 sm:p-6">
-                            <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-purple h-10 w-10 sm:h-12 sm:w-12 shrink-0">
+                    <Card className="group card-premium overflow-hidden border-0">
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-violet-400 to-purple-600" />
+                        <CardContent className="relative p-4 sm:pt-6 sm:p-6">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-violet-500/20 shrink-0">
                                     <IndianRupee className="h-5 w-5 sm:h-6 sm:w-6" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-xl sm:text-2xl font-bold truncate">{formatRevenue(totalRevenue)}</p>
-                                    <p className="text-xs sm:text-sm text-muted-foreground">Revenue</p>
+                                    <p className="text-2xl sm:text-3xl font-bold tracking-tight truncate animate-count">{formatRevenue(totalRevenue)}</p>
+                                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Revenue</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -762,11 +883,11 @@ function RegistrationsContent() {
                 <div className="flex flex-col gap-3">
                     {/* Search Row */}
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <div className="relative flex-1 search-premium rounded-xl">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 placeholder="Search by name or email..."
-                                className="pl-10 pr-10 h-9 sm:h-10"
+                                className="pl-10 pr-10 h-11 rounded-xl border-border/60 bg-background"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -816,7 +937,7 @@ function RegistrationsContent() {
                             </SelectContent>
                         </Select>
                         <Button
-                            className="gap-2 gradient-medical text-white hover:opacity-90"
+                            className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 shadow-lg shadow-teal-500/20 hover:shadow-teal-500/30 hover:-translate-y-0.5 transition-all text-white"
                             onClick={() => setIsAddOpen(true)}
                         >
                             <UserPlus className="w-4 h-4" />
@@ -851,9 +972,14 @@ function RegistrationsContent() {
                                     <span className="hidden sm:inline">Email</span> ({selectedRegistrations.length})
                                 </Button>
                             )}
-                            <Button variant="outline" size="sm" className="gap-2">
+                            <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                                const params = new URLSearchParams();
+                                if (selectedEventFilter !== "all") params.set("eventId", selectedEventFilter);
+                                if (tenantFilterParams.tenantId) params.set("tenantId", tenantFilterParams.tenantId);
+                                window.open(`/api/registrations/export?${params.toString()}`, "_blank");
+                            }}>
                                 <Download className="w-4 h-4" />
-                                <span className="hidden sm:inline">Export</span>
+                                <span className="hidden sm:inline">Export CSV</span>
                             </Button>
                         </div>
                     </div>
@@ -861,7 +987,7 @@ function RegistrationsContent() {
 
                 {/* Add Registration Dialog */}
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-white/95">
                         <DialogHeader>
                             <DialogTitle>Add New Registration</DialogTitle>
                             <DialogDescription>
@@ -971,6 +1097,22 @@ function RegistrationsContent() {
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
+                                    <Label htmlFor="participantRole">Role</Label>
+                                    <Select
+                                        value={formData.participantRole}
+                                        onValueChange={(value) => setFormData({ ...formData, participantRole: value })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select role" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {DEFAULT_PARTICIPANT_ROLES.map(role => (
+                                                <SelectItem key={role.id} value={role.id}>{role.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="amount">Amount (₹)</Label>
                                     <Input
                                         id="amount"
@@ -1027,7 +1169,7 @@ function RegistrationsContent() {
 
                 {/* View Registration Dialog */}
                 <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-white/95">
                         {selectedReg && (
                             <>
                                 <DialogHeader>
@@ -1088,6 +1230,16 @@ function RegistrationsContent() {
                                         </div>
                                     </div>
 
+                                    {/* Participant Role */}
+                                    {selectedReg.participantRole && (
+                                        <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+                                            <p className="text-xs text-muted-foreground mb-1">Participant Role</p>
+                                            <Badge variant="outline" className="bg-indigo-100 text-indigo-700 border-indigo-300">
+                                                {selectedReg.participantRole.charAt(0) + selectedReg.participantRole.slice(1).toLowerCase()}
+                                            </Badge>
+                                        </div>
+                                    )}
+
                                     {/* Payment Info */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="p-4 rounded-lg bg-muted/50">
@@ -1130,6 +1282,45 @@ function RegistrationsContent() {
                                         </div>
                                     </div>
 
+                                    {/* Payment Proof Section */}
+                                    {selectedReg.amount > 0 && (
+                                        <div className={cn(
+                                            "p-4 rounded-lg border",
+                                            selectedReg.paymentProof
+                                                ? "bg-purple-50 border-purple-200"
+                                                : "bg-amber-50 border-amber-200"
+                                        )}>
+                                            <p className="text-xs text-muted-foreground mb-2 font-medium flex items-center gap-1.5">
+                                                <CreditCard className="h-3.5 w-3.5" />
+                                                Payment Proof
+                                            </p>
+                                            {selectedReg.paymentProof ? (
+                                                <>
+                                                    <a
+                                                        href={selectedReg.paymentProof}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="block"
+                                                    >
+                                                        <img
+                                                            src={selectedReg.paymentProof}
+                                                            alt="Payment proof screenshot"
+                                                            className="max-w-full max-h-64 rounded-lg border border-purple-300 object-contain bg-white cursor-pointer hover:opacity-90 transition-opacity"
+                                                        />
+                                                    </a>
+                                                    <p className="text-xs text-purple-600 mt-2">Click image to view full size</p>
+                                                    {selectedReg.paymentId && (
+                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                            Transaction ID: <span className="font-mono font-semibold">{selectedReg.paymentId}</span>
+                                                        </p>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <p className="text-sm text-amber-700">No payment proof uploaded yet</p>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {selectedReg.notes && (
                                         <div className="p-4 rounded-lg bg-muted/50">
                                             <p className="text-xs text-muted-foreground mb-1">Notes</p>
@@ -1137,7 +1328,7 @@ function RegistrationsContent() {
                                         </div>
                                     )}
                                 </div>
-                                <DialogFooter>
+                                <DialogFooter className="flex-wrap gap-2">
                                     <Button variant="outline" onClick={() => setIsViewOpen(false)}>
                                         Close
                                     </Button>
@@ -1151,10 +1342,43 @@ function RegistrationsContent() {
                                             {selectedReg.paymentStatus === "FREE" ? "Download Confirmation" : "Download Receipt"}
                                         </Button>
                                     )}
-                                    <Button className="gap-2">
-                                        <Mail className="h-4 w-4" />
-                                        Send Email
-                                    </Button>
+                                    {/* Single Approve button: confirms registration + marks payment as paid */}
+                                    {(selectedReg.status === "PENDING" || selectedReg.status === "WAITLIST") && (
+                                        <Button
+                                            className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                                            disabled={actionInProgress === selectedReg.id}
+                                            onClick={async () => {
+                                                setIsViewOpen(false);
+                                                await handleApproveRegistration(selectedReg.id);
+                                            }}
+                                        >
+                                            {actionInProgress === selectedReg.id ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <CheckCircle2 className="h-4 w-4" />
+                                            )}
+                                            Approve Registration
+                                        </Button>
+                                    )}
+                                    {/* If already confirmed but payment still pending, allow marking paid */}
+                                    {selectedReg.status === "CONFIRMED" && selectedReg.paymentStatus === "PENDING" && selectedReg.amount > 0 && (
+                                        <Button
+                                            className="gap-2"
+                                            variant="outline"
+                                            disabled={actionInProgress === selectedReg.id}
+                                            onClick={async () => {
+                                                setIsViewOpen(false);
+                                                await handleMarkAsPaid(selectedReg.id);
+                                            }}
+                                        >
+                                            {actionInProgress === selectedReg.id ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <IndianRupee className="h-4 w-4" />
+                                            )}
+                                            Mark as Paid
+                                        </Button>
+                                    )}
                                 </DialogFooter>
                             </>
                         )}
@@ -1165,7 +1389,7 @@ function RegistrationsContent() {
                 <Card>
                     <CardHeader className="pb-3 px-3 sm:px-6">
                         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                            <TabsList className="w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 p-1">
+                            <TabsList className="w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 bg-slate-100/80 backdrop-blur-sm p-1 rounded-xl">
                                 <TabsTrigger value="all" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5">
                                     All ({registrations.length})
                                 </TabsTrigger>
@@ -1186,10 +1410,10 @@ function RegistrationsContent() {
                     </CardHeader>
                     <CardContent className="px-3 sm:px-6">
                         {/* Desktop Table View */}
-                        <div className="hidden sm:block rounded-lg border">
-                            <Table>
+                        <div className="hidden sm:block rounded-xl border border-border/60 overflow-hidden backdrop-blur-sm bg-white/80">
+                            <Table className="table-premium">
                                 <TableHeader>
-                                    <TableRow className="bg-muted/50">
+                                    <TableRow className="bg-gradient-to-b from-muted/60 to-muted/30">
                                         <TableHead className="w-12">
                                             <Checkbox
                                                 checked={selectedRegistrations.length === filteredRegistrations.length && filteredRegistrations.length > 0}
@@ -1236,7 +1460,14 @@ function RegistrationsContent() {
                                                 <p className="text-sm truncate max-w-[200px]">{reg.event?.title || "N/A"}</p>
                                             </TableCell>
                                             <TableCell className="hidden lg:table-cell">
-                                                <Badge variant="outline">{reg.category || "N/A"}</Badge>
+                                                <div className="flex flex-col gap-1">
+                                                    <Badge variant="outline">{reg.category || "N/A"}</Badge>
+                                                    {reg.participantRole && (
+                                                        <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px]">
+                                                            {reg.participantRole.charAt(0) + reg.participantRole.slice(1).toLowerCase()}
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="space-y-1">
@@ -1244,7 +1475,15 @@ function RegistrationsContent() {
                                                         {getStatusBadge(reg.status)}
                                                         {getRegistrationSourceBadge(reg)}
                                                     </div>
-                                                    <div>{getPaymentBadge(reg.paymentStatus, reg.amount)}</div>
+                                                    <div className="flex items-center gap-1">
+                                                        {getPaymentBadge(reg.paymentStatus, reg.amount)}
+                                                        {reg.paymentProof && (
+                                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-purple-600 border-purple-300 bg-purple-50">
+                                                                <Eye className="h-2.5 w-2.5 mr-0.5" />
+                                                                Proof
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -1299,7 +1538,7 @@ function RegistrationsContent() {
                                                                 </DropdownMenuItem>
                                                             )}
                                                             {(reg.status === "ATTENDED" || reg.event?.status === "COMPLETED") && (
-                                                                reg.certificate ? (
+                                                                reg.certificates && reg.certificates.length > 0 ? (
                                                                     <>
                                                                         <DropdownMenuItem
                                                                             onClick={() => handleViewCertificate(reg)}
@@ -1334,30 +1573,19 @@ function RegistrationsContent() {
                                                                 )
                                                             )}
                                                             <DropdownMenuSeparator />
-                                                            {reg.status === "PENDING" && (
+                                                            {/* Approve: combined confirm + mark paid */}
+                                                            {(reg.status === "PENDING" || reg.status === "WAITLIST") && (
                                                                 <DropdownMenuItem
-                                                                    onClick={() => handleConfirmRegistration(reg.id)}
+                                                                    onClick={() => handleApproveRegistration(reg.id)}
                                                                     disabled={actionInProgress === reg.id}
+                                                                    className="text-green-700"
                                                                 >
                                                                     {actionInProgress === reg.id ? (
                                                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                                                     ) : (
                                                                         <CheckCircle2 className="mr-2 h-4 w-4" />
                                                                     )}
-                                                                    Confirm Registration
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            {reg.status === "WAITLIST" && (
-                                                                <DropdownMenuItem
-                                                                    onClick={() => handleMoveToConfirmed(reg.id)}
-                                                                    disabled={actionInProgress === reg.id}
-                                                                >
-                                                                    {actionInProgress === reg.id ? (
-                                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                                    ) : (
-                                                                        <RefreshCw className="mr-2 h-4 w-4" />
-                                                                    )}
-                                                                    Move to Confirmed
+                                                                    Approve Registration
                                                                 </DropdownMenuItem>
                                                             )}
                                                             {reg.status === "CONFIRMED" && (
@@ -1373,7 +1601,8 @@ function RegistrationsContent() {
                                                                     Mark as Attended
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            {reg.paymentStatus === "PENDING" && (
+                                                            {/* Mark paid separately only if already confirmed but payment pending */}
+                                                            {reg.status === "CONFIRMED" && reg.paymentStatus === "PENDING" && (
                                                                 <>
                                                                     <DropdownMenuItem
                                                                         onClick={() => handleMarkAsPaid(reg.id)}
@@ -1431,7 +1660,7 @@ function RegistrationsContent() {
                             {filteredRegistrations.map((reg, index) => (
                                 <div
                                     key={reg.id}
-                                    className="p-3 rounded-lg border bg-card animate-fadeIn"
+                                    className="p-3 rounded-lg border bg-card animate-fadeIn hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                                     style={{ animationDelay: `${index * 0.03}s` }}
                                 >
                                     <div className="flex items-start justify-between gap-2">
@@ -1470,7 +1699,7 @@ function RegistrationsContent() {
                                                     </DropdownMenuItem>
                                                 )}
                                                 {(reg.status === "ATTENDED" || reg.event?.status === "COMPLETED") && (
-                                                    reg.certificate ? (
+                                                    reg.certificates && reg.certificates.length > 0 ? (
                                                         <>
                                                             <DropdownMenuItem
                                                                 onClick={() => handleViewCertificate(reg)}
@@ -1505,30 +1734,18 @@ function RegistrationsContent() {
                                                     )
                                                 )}
                                                 <DropdownMenuSeparator />
-                                                {reg.status === "PENDING" && (
+                                                {(reg.status === "PENDING" || reg.status === "WAITLIST") && (
                                                     <DropdownMenuItem
-                                                        onClick={() => handleConfirmRegistration(reg.id)}
+                                                        onClick={() => handleApproveRegistration(reg.id)}
                                                         disabled={actionInProgress === reg.id}
+                                                        className="text-green-700"
                                                     >
                                                         {actionInProgress === reg.id ? (
                                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                                         ) : (
                                                             <CheckCircle2 className="mr-2 h-4 w-4" />
                                                         )}
-                                                        Confirm
-                                                    </DropdownMenuItem>
-                                                )}
-                                                {reg.status === "WAITLIST" && (
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleMoveToConfirmed(reg.id)}
-                                                        disabled={actionInProgress === reg.id}
-                                                    >
-                                                        {actionInProgress === reg.id ? (
-                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                        ) : (
-                                                            <RefreshCw className="mr-2 h-4 w-4" />
-                                                        )}
-                                                        Confirm
+                                                        Approve
                                                     </DropdownMenuItem>
                                                 )}
                                                 {reg.status === "CONFIRMED" && (
@@ -1544,31 +1761,18 @@ function RegistrationsContent() {
                                                         Mark Attended
                                                     </DropdownMenuItem>
                                                 )}
-                                                {reg.paymentStatus === "PENDING" && (
-                                                    <>
-                                                        <DropdownMenuItem
-                                                            onClick={() => handleMarkAsPaid(reg.id)}
-                                                            disabled={actionInProgress === reg.id}
-                                                        >
-                                                            {actionInProgress === reg.id ? (
-                                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                <CreditCard className="mr-2 h-4 w-4" />
-                                                            )}
-                                                            Mark Paid
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onClick={() => handleMarkAsFree(reg.id)}
-                                                            disabled={actionInProgress === reg.id}
-                                                        >
-                                                            {actionInProgress === reg.id ? (
-                                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                <Gift className="mr-2 h-4 w-4" />
-                                                            )}
-                                                            Mark Free
-                                                        </DropdownMenuItem>
-                                                    </>
+                                                {reg.status === "CONFIRMED" && reg.paymentStatus === "PENDING" && (
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleMarkAsPaid(reg.id)}
+                                                        disabled={actionInProgress === reg.id}
+                                                    >
+                                                        {actionInProgress === reg.id ? (
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <CreditCard className="mr-2 h-4 w-4" />
+                                                        )}
+                                                        Mark Paid
+                                                    </DropdownMenuItem>
                                                 )}
                                                 {reg.status !== "ATTENDED" && reg.status !== "CANCELLED" && reg.event?.status !== "COMPLETED" && (
                                                     <>
@@ -1597,6 +1801,12 @@ function RegistrationsContent() {
                                                 {getStatusBadge(reg.status)}
                                                 {getRegistrationSourceBadge(reg)}
                                                 {getPaymentBadge(reg.paymentStatus, reg.amount)}
+                                                {reg.paymentProof && (
+                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-purple-600 border-purple-300 bg-purple-50">
+                                                        <Eye className="h-2.5 w-2.5 mr-0.5" />
+                                                        Proof
+                                                    </Badge>
+                                                )}
                                             </div>
                                             <p className="text-sm font-semibold">₹{reg.amount.toLocaleString()}</p>
                                         </div>
@@ -1634,7 +1844,7 @@ function RegistrationsContent() {
                     }
                 }
             }}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="sm:max-w-[500px] backdrop-blur-xl bg-white/95">
                     <DialogHeader>
                         <DialogTitle>Generate Certificate</DialogTitle>
                         <DialogDescription>

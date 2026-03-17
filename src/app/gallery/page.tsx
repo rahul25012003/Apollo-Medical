@@ -121,7 +121,7 @@ export default function GalleryPage() {
             <header className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur-xl">
                 <div className="container mx-auto px-4 lg:px-8">
                     <div className="flex h-16 lg:h-20 items-center justify-between">
-                        <Link href="/" className="flex items-center gap-3 group">
+                        <Link href="/dashboard" className="flex items-center gap-3 group">
                             <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-2xl gradient-medical flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
                                 <GraduationCap className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
                             </div>
@@ -131,7 +131,7 @@ export default function GalleryPage() {
                             </div>
                         </Link>
 
-                        <Link href="/">
+                        <Link href="/dashboard">
                             <Button variant="outline" className="gap-2 rounded-full">
                                 <ArrowLeft className="h-4 w-4" />
                                 Back to Home
@@ -206,7 +206,7 @@ export default function GalleryPage() {
                             <p className="text-muted-foreground max-w-md mb-8">
                                 Photos and videos from events will appear here once they are uploaded.
                             </p>
-                            <Link href="/">
+                            <Link href="/dashboard">
                                 <Button variant="outline" className="gap-2 rounded-full">
                                     <ArrowLeft className="h-4 w-4" />
                                     Back to Home

@@ -14,7 +14,6 @@ import {
     Award,
     Ticket,
     ArrowLeft,
-    Loader2,
     Mail,
     Phone,
     Globe,
@@ -23,6 +22,7 @@ import {
     CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { format } from "date-fns";
 
 interface EventDetails {
@@ -116,9 +116,7 @@ export default function EventDetailsPage() {
     if (loading) {
         return (
             <DashboardLayout title="Event Details" subtitle="Loading...">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }

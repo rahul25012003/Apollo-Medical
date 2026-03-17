@@ -68,8 +68,16 @@ import {
     Phone,
     Globe,
     Loader2,
+    Megaphone,
+    Settings,
+    DoorOpen,
+    HelpCircle,
+    MessageSquare,
+    Shield,
+    ScanLine,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { getEventImage } from "@/lib/event-utils";
 import { validateEventForPublish, calculateEventStatus } from "@/lib/event-validations";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -77,16 +85,36 @@ import { eventsService, Event, EventSpeaker, EventSponsor, EventSession } from "
 import { registrationsService, Registration } from "@/services/registrations";
 import { speakersService, Speaker } from "@/services/speakers";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
+import { BadgesTab } from "@/components/events/badges-tab";
+import { AccessControlTab } from "@/components/events/access-control-tab";
+import { AccessControlDashboard } from "@/components/events/access-control-dashboard";
+import { ScientificProgramTab } from "@/components/events/scientific-program-tab";
+import { VenuesTab } from "@/components/events/venues-tab";
+import { EventConfigTab } from "@/components/events/event-config-tab";
 
 // Display session type
+interface DisplaySessionSpeaker {
+    id: string;
+    name: string;
+    designation: string | null;
+    institution: string | null;
+    photo: string | null;
+    talkTitle: string | null;
+}
+
 interface DisplaySession {
     id: string;
     title: string;
     description: string | null;
+    sessionType: string;
     date: string | null;
+    dateRaw: string | null;
     startTime: string | null;
     endTime: string | null;
     venue: string | null;
+    hallName: string | null;
+    hallId: string | null;
+    speakers: DisplaySessionSpeaker[];
     speaker?: {
         id: string;
         name: string;
@@ -95,6 +123,32 @@ interface DisplaySession {
         photo: string | null;
     } | null;
 }
+
+interface DisplayEngagement {
+    id: string;
+    title: string;
+    type: string;
+    description: string | null;
+    content: unknown;
+    isActive: boolean;
+}
+
+const SESSION_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
+    PLENARY: { label: "Plenary", color: "bg-purple-100 text-purple-700" },
+    KEYNOTE: { label: "Keynote", color: "bg-blue-100 text-blue-700" },
+    WORKSHOP: { label: "Workshop", color: "bg-green-100 text-green-700" },
+    PANEL: { label: "Panel", color: "bg-orange-100 text-orange-700" },
+    BREAK: { label: "Break", color: "bg-gray-100 text-gray-500" },
+    OTHER: { label: "Session", color: "bg-slate-100 text-slate-600" },
+};
+
+const ENGAGEMENT_ICON_MAP: Record<string, typeof Megaphone> = {
+    POLL: BarChart3,
+    QA: HelpCircle,
+    FEEDBACK: MessageSquare,
+    ANNOUNCEMENT: Megaphone,
+    QUIZ: Award,
+};
 
 // Display type for the UI
 interface DisplayEvent {
@@ -135,8 +189,10 @@ interface DisplayEvent {
     website: string | null;
     speakers: { id: string; name: string; designation: string | null; institution: string | null; photo: string | null; topic: string | null }[];
     sessions: DisplaySession[];
+    engagements: DisplayEngagement[];
     sponsors: { id: string; name: string; tier: string; logo: string | null }[];
     includes: string[];
+    pricingCategories: { id: string; name: string }[];
 }
 
 const tierConfig = {
@@ -306,15 +362,28 @@ export default function EventDetailPage() {
                         contactEmail: e.contactEmail,
                         contactPhone: e.contactPhone,
                         website: e.website,
-                        // Get sessions from eventSessions
-                        sessions: e.eventSessions?.map((es: EventSession) => ({
+                        // Get sessions from eventSessions with sessionSpeakers, sessionType, hall
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        sessions: e.eventSessions?.map((es: any) => ({
                             id: es.id,
                             title: es.title,
                             description: es.description,
+                            sessionType: es.sessionType || "OTHER",
                             date: es.sessionDate ? new Date(es.sessionDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null,
+                            dateRaw: es.sessionDate || null,
                             startTime: es.startTime,
                             endTime: es.endTime,
                             venue: es.venue,
+                            hallName: es.hall?.name || null,
+                            hallId: es.hallId || es.hall?.id || null,
+                            speakers: (es.sessionSpeakers || []).map((sp: any) => ({
+                                id: sp.speaker?.id || sp.speakerId,
+                                name: sp.speaker?.name || "Unknown",
+                                designation: sp.speaker?.designation || null,
+                                institution: sp.speaker?.institution || null,
+                                photo: sp.speaker?.photo || null,
+                                talkTitle: sp.talkTitle || null,
+                            })),
                             speaker: es.speaker ? {
                                 id: es.speaker.id,
                                 name: es.speaker.name,
@@ -323,11 +392,38 @@ export default function EventDetailPage() {
                                 photo: es.speaker.photo,
                             } : null,
                         })) || [],
+                        // Engagements
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        engagements: (e as any).engagements?.map((eng: any) => ({
+                            id: eng.id,
+                            title: eng.title,
+                            type: eng.type,
+                            description: eng.description,
+                            content: eng.content,
+                            isActive: eng.isActive,
+                        })) || [],
                         // Derive unique speakers from sessions
                         speakers: (() => {
                             const speakerMap = new Map<string, { id: string; name: string; designation: string | null; institution: string | null; photo: string | null; topic: string | null }>();
-                            // First add speakers from eventSessions (new model)
-                            e.eventSessions?.forEach((es: EventSession) => {
+                            // First add speakers from sessionSpeakers (new model)
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            e.eventSessions?.forEach((es: any) => {
+                                if (es.sessionSpeakers) {
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    es.sessionSpeakers.forEach((sp: any) => {
+                                        if (sp.speaker && !speakerMap.has(sp.speaker.id)) {
+                                            speakerMap.set(sp.speaker.id, {
+                                                id: sp.speaker.id,
+                                                name: sp.speaker.name,
+                                                designation: sp.speaker.designation,
+                                                institution: sp.speaker.institution,
+                                                photo: sp.speaker.photo,
+                                                topic: sp.talkTitle || es.title,
+                                            });
+                                        }
+                                    });
+                                }
+                                // Legacy single speaker fallback
                                 if (es.speaker && !speakerMap.has(es.speaker.id)) {
                                     speakerMap.set(es.speaker.id, {
                                         id: es.speaker.id,
@@ -335,7 +431,7 @@ export default function EventDetailPage() {
                                         designation: es.speaker.designation,
                                         institution: es.speaker.institution,
                                         photo: es.speaker.photo,
-                                        topic: es.title, // Use session title as topic
+                                        topic: es.title,
                                     });
                                 }
                             });
@@ -363,6 +459,11 @@ export default function EventDetailPage() {
                             logo: es.sponsor.logo,
                         })) || [],
                         includes: e.includes || [],
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        pricingCategories: (e as any).pricingCategories?.map((pc: any) => ({
+                            id: pc.id,
+                            name: pc.name,
+                        })) || [],
                     });
                 } else {
                     setError("Event not found");
@@ -474,7 +575,7 @@ export default function EventDetailPage() {
     // Fetch all active speakers when modal opens
     useEffect(() => {
         if (addSpeakerOpen && allSpeakers.length === 0) {
-            speakersService.getAll({ isActive: true }).then(res => {
+            speakersService.getAll({ isActive: true, limit: 500 }).then(res => {
                 if (res.success && res.data) {
                     setAllSpeakers(Array.isArray(res.data) ? res.data : []);
                 }
@@ -485,7 +586,7 @@ export default function EventDetailPage() {
     // Fetch all active sponsors when modal opens
     useEffect(() => {
         if (addSponsorOpen && allSponsors.length === 0) {
-            sponsorsService.getAll({ isActive: true }).then(res => {
+            sponsorsService.getAll({ isActive: true, limit: 500 }).then(res => {
                 if (res.success && res.data) {
                     setAllSponsors(Array.isArray(res.data) ? res.data : []);
                 }
@@ -696,9 +797,7 @@ export default function EventDetailPage() {
     if (loading) {
         return (
             <DashboardLayout title="Event Details" subtitle="Loading...">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
@@ -783,6 +882,12 @@ export default function EventDetailPage() {
                                 {publishLoading ? "Publishing..." : "Publish"}
                             </Button>
                         )}
+                        <Link href={`/dashboard/events/${event.id}/scan`}>
+                            <Button variant="outline" size="sm" className="gap-1.5">
+                                <ScanLine className="h-4 w-4" />
+                                Scanner
+                            </Button>
+                        </Link>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
@@ -929,12 +1034,37 @@ export default function EventDetailPage() {
 
                 {/* Tabs */}
                 <Tabs defaultValue="overview" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 lg:w-auto lg:inline-grid">
+                    <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:w-auto lg:inline-grid lg:grid-cols-9">
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="registrations">Registrations</TabsTrigger>
-                        <TabsTrigger value="schedule">Schedule</TabsTrigger>
+                        <TabsTrigger value="scientific-program" className="gap-1.5">
+                            <Mic2 className="h-3.5 w-3.5" />
+                            Program
+                        </TabsTrigger>
                         <TabsTrigger value="speakers">Speakers</TabsTrigger>
                         <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
+                        <TabsTrigger value="venues" className="gap-1.5">
+                            <Building2 className="h-3.5 w-3.5" />
+                            Venues
+                        </TabsTrigger>
+                        <TabsTrigger value="badges" className="gap-1.5">
+                            <QrCode className="h-3.5 w-3.5" />
+                            Badges
+                        </TabsTrigger>
+                        <TabsTrigger value="access-control" className="gap-1.5">
+                            <Shield className="h-3.5 w-3.5" />
+                            Access
+                        </TabsTrigger>
+                        {event.engagements.length > 0 && (
+                            <TabsTrigger value="engagement" className="gap-1.5">
+                                <Megaphone className="h-3.5 w-3.5" />
+                                Engagement
+                            </TabsTrigger>
+                        )}
+                        <TabsTrigger value="config" className="gap-1.5">
+                            <Settings className="h-3.5 w-3.5" />
+                            Config
+                        </TabsTrigger>
                     </TabsList>
 
                     {/* Overview Tab */}
@@ -1141,10 +1271,151 @@ export default function EventDetailPage() {
 
                     {/* Registrations Tab */}
                     <TabsContent value="registrations" className="space-y-6">
+                        {/* Payment & Transaction Summary */}
+                        {registrations.length > 0 && (() => {
+                            const totalRevenue = registrations.filter(r => r.paymentStatus === "PAID").reduce((sum, r) => sum + Number(r.amount), 0);
+                            const pendingAmount = registrations.filter(r => r.paymentStatus === "PENDING").reduce((sum, r) => sum + Number(r.amount), 0);
+                            const paidCount = registrations.filter(r => r.paymentStatus === "PAID").length;
+                            const pendingCount = registrations.filter(r => r.paymentStatus === "PENDING").length;
+                            const freeCount = registrations.filter(r => r.paymentStatus === "FREE").length;
+                            const failedCount = registrations.filter(r => r.paymentStatus === "FAILED").length;
+                            const refundedCount = registrations.filter(r => r.paymentStatus === "REFUNDED").length;
+                            return (
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <Card className="bg-gradient-to-br from-green-50 to-emerald-100/50 border-green-200/50">
+                                        <CardContent className="pt-4 pb-3 px-4">
+                                            <p className="text-xs text-green-600/70 font-medium">Collected</p>
+                                            <p className="text-xl font-bold text-green-700">₹{totalRevenue.toLocaleString("en-IN")}</p>
+                                            <p className="text-xs text-green-600/50">{paidCount} paid</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className="bg-gradient-to-br from-amber-50 to-yellow-100/50 border-amber-200/50">
+                                        <CardContent className="pt-4 pb-3 px-4">
+                                            <p className="text-xs text-amber-600/70 font-medium">Pending</p>
+                                            <p className="text-xl font-bold text-amber-700">₹{pendingAmount.toLocaleString("en-IN")}</p>
+                                            <p className="text-xs text-amber-600/50">{pendingCount} awaiting</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50">
+                                        <CardContent className="pt-4 pb-3 px-4">
+                                            <p className="text-xs text-blue-600/70 font-medium">Free</p>
+                                            <p className="text-xl font-bold text-blue-700">{freeCount}</p>
+                                            <p className="text-xs text-blue-600/50">registrations</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className="bg-gradient-to-br from-red-50 to-red-100/50 border-red-200/50">
+                                        <CardContent className="pt-4 pb-3 px-4">
+                                            <p className="text-xs text-red-600/70 font-medium">Failed</p>
+                                            <p className="text-xl font-bold text-red-700">{failedCount}</p>
+                                            <p className="text-xs text-red-600/50">payments</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className="bg-gradient-to-br from-gray-50 to-gray-100/50 border-gray-200/50">
+                                        <CardContent className="pt-4 pb-3 px-4">
+                                            <p className="text-xs text-gray-600/70 font-medium">Refunded</p>
+                                            <p className="text-xl font-bold text-gray-700">{refundedCount}</p>
+                                            <p className="text-xs text-gray-600/50">transactions</p>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Transaction Details Table */}
+                        {registrations.length > 0 && (
+                            <Card>
+                                <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+                                    <div>
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <TrendingUp className="h-5 w-5" />
+                                            Payment Transactions
+                                        </CardTitle>
+                                        <CardDescription>Transaction details for all registrations</CardDescription>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="rounded-lg border overflow-hidden">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow className="bg-muted/30">
+                                                    <TableHead>Delegate</TableHead>
+                                                    <TableHead className="hidden md:table-cell">Category</TableHead>
+                                                    <TableHead>Amount</TableHead>
+                                                    <TableHead>Payment</TableHead>
+                                                    <TableHead className="hidden md:table-cell">Method</TableHead>
+                                                    <TableHead className="hidden lg:table-cell">Transaction ID</TableHead>
+                                                    <TableHead className="hidden lg:table-cell">Paid At</TableHead>
+                                                    <TableHead className="hidden md:table-cell">Screenshot</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {registrations.map((reg) => (
+                                                    <TableRow key={reg.id} className="hover:bg-muted/20">
+                                                        <TableCell>
+                                                            <div>
+                                                                <p className="font-medium text-sm">{reg.name}</p>
+                                                                <p className="text-xs text-muted-foreground">{reg.email}</p>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="hidden md:table-cell">
+                                                            {reg.category ? (
+                                                                <Badge variant="outline" className="text-xs">{reg.category}</Badge>
+                                                            ) : "-"}
+                                                        </TableCell>
+                                                        <TableCell className="font-medium">
+                                                            {Number(reg.amount) > 0 ? `₹${Number(reg.amount).toLocaleString("en-IN")}` : "Free"}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    "text-xs",
+                                                                    reg.paymentStatus === "PAID" && "bg-green-100 text-green-700 border-green-200",
+                                                                    reg.paymentStatus === "PENDING" && "bg-yellow-100 text-yellow-700 border-yellow-200",
+                                                                    reg.paymentStatus === "FREE" && "bg-blue-100 text-blue-700 border-blue-200",
+                                                                    reg.paymentStatus === "REFUNDED" && "bg-gray-100 text-gray-700 border-gray-200",
+                                                                    reg.paymentStatus === "FAILED" && "bg-red-100 text-red-700 border-red-200"
+                                                                )}
+                                                            >
+                                                                {reg.paymentStatus}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="hidden md:table-cell text-sm">
+                                                            {reg.paymentMethod || "-"}
+                                                        </TableCell>
+                                                        <TableCell className="hidden lg:table-cell">
+                                                            {reg.razorpayPaymentId ? (
+                                                                <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{reg.razorpayPaymentId}</code>
+                                                            ) : reg.paymentId ? (
+                                                                <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{reg.paymentId}</code>
+                                                            ) : "-"}
+                                                        </TableCell>
+                                                        <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
+                                                            {reg.paidAt ? new Date(reg.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "-"}
+                                                        </TableCell>
+                                                        <TableCell className="hidden md:table-cell">
+                                                            {reg.paymentProof ? (
+                                                                <a href={reg.paymentProof} target="_blank" rel="noopener noreferrer">
+                                                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                                                        <Eye className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                </a>
+                                                            ) : "-"}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Registration Cards */}
                         <Card>
                             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
-                                    <CardTitle>Recent Registrations</CardTitle>
+                                    <CardTitle>Registrations</CardTitle>
                                     <CardDescription>{event.registrations} total registrations for this event</CardDescription>
                                 </div>
                                 <div className="flex gap-2">
@@ -1240,6 +1511,11 @@ export default function EventDetailPage() {
                                                             {reg.phone}
                                                         </span>
                                                     )}
+                                                    {reg.paymentStatus === "PAID" && reg.paidAt && (
+                                                        <span className="text-green-600">
+                                                            Paid: {new Date(reg.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -1260,92 +1536,9 @@ export default function EventDetailPage() {
                         </Card>
                     </TabsContent>
 
-                    {/* Schedule Tab */}
-                    <TabsContent value="schedule" className="space-y-6">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle>Event Schedule</CardTitle>
-                                    <CardDescription>{event.sessions.length} sessions scheduled</CardDescription>
-                                </div>
-                                {event.status !== "completed" && (
-                                    <Link href={`/dashboard/events/${event.id}/edit`}>
-                                        <Button variant="outline" size="sm" className="gap-2">
-                                            <Edit className="h-4 w-4" />
-                                            Edit Sessions
-                                        </Button>
-                                    </Link>
-                                )}
-                            </CardHeader>
-                            <CardContent>
-                                {event.sessions.length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                                        <p className="text-muted-foreground mb-4">
-                                            {event.status !== "completed"
-                                                ? "No sessions scheduled yet"
-                                                : "No sessions were scheduled for this event"}
-                                        </p>
-                                        {event.status !== "completed" && (
-                                            <Link href={`/dashboard/events/${event.id}/edit`}>
-                                                <Button size="sm" className="gap-2">
-                                                    <Edit className="h-4 w-4" />
-                                                    Add Sessions
-                                                </Button>
-                                            </Link>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {event.sessions.map((session) => (
-                                            <div
-                                                key={session.id}
-                                                className="p-4 rounded-xl border bg-card hover:shadow-md transition-shadow"
-                                            >
-                                                <div className="flex flex-col md:flex-row md:items-start gap-4">
-                                                    <div className="flex-shrink-0 text-center md:text-left md:w-28">
-                                                        {session.date && (
-                                                            <div className="text-sm font-medium text-primary">{session.date}</div>
-                                                        )}
-                                                        {session.startTime && (
-                                                            <div className="text-xs text-muted-foreground">
-                                                                {session.startTime}{session.endTime ? ` - ${session.endTime}` : ""}
-                                                            </div>
-                                                        )}
-                                                        {session.venue && (
-                                                            <div className="text-xs text-muted-foreground mt-1">{session.venue}</div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h3 className="font-semibold">{session.title}</h3>
-                                                        {session.description && (
-                                                            <p className="text-sm text-muted-foreground mt-1">{session.description}</p>
-                                                        )}
-                                                        {session.speaker && (
-                                                            <div className="flex items-center gap-3 mt-3 pt-3 border-t">
-                                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-medium overflow-hidden">
-                                                                    {session.speaker.photo ? (
-                                                                        <img src={session.speaker.photo} alt={session.speaker.name} className="w-full h-full object-cover" />
-                                                                    ) : (
-                                                                        session.speaker.name.split(" ").map(n => n[0]).join("").slice(0, 2)
-                                                                    )}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="font-medium text-sm">{session.speaker.name}</div>
-                                                                    <div className="text-xs text-muted-foreground">
-                                                                        {session.speaker.designation}{session.speaker.institution ? `, ${session.speaker.institution}` : ""}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                    {/* Scientific Program Tab */}
+                    <TabsContent value="scientific-program" className="space-y-6">
+                        <ScientificProgramTab eventId={event.id} />
                     </TabsContent>
 
                     {/* Speakers Tab */}
@@ -1487,6 +1680,115 @@ export default function EventDetailPage() {
                             </CardContent>
                         </Card>
                     </TabsContent>
+
+                    {/* Venues & Halls Tab */}
+                    <TabsContent value="venues" className="space-y-6">
+                        <VenuesTab
+                            eventId={event.id}
+                            sessions={event.sessions.map(s => ({
+                                id: s.id,
+                                title: s.title,
+                                sessionType: s.sessionType,
+                                startTime: s.startTime,
+                                endTime: s.endTime,
+                                hallName: s.hallName,
+                                hallId: s.hallId,
+                                speakers: s.speakers.map(sp => ({ name: sp.name })),
+                            }))}
+                            eventStatus={event.status}
+                        />
+                    </TabsContent>
+
+                    {/* Badges Tab */}
+                    <TabsContent value="badges" className="space-y-6">
+                        <BadgesTab eventId={event.id} eventTitle={event.title} />
+                    </TabsContent>
+
+                    {/* Access Control Tab */}
+                    <TabsContent value="access-control" className="space-y-6">
+                        <AccessControlDashboard eventId={event.id} />
+                        <AccessControlTab
+                            eventId={event.id}
+                            categories={event.pricingCategories.map((pc) => pc.name)}
+                        />
+                    </TabsContent>
+
+                    {/* Engagement Tab */}
+                    {event.engagements.length > 0 && (
+                        <TabsContent value="engagement" className="space-y-6">
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <div>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Megaphone className="h-5 w-5" />
+                                            Engagement
+                                        </CardTitle>
+                                        <CardDescription>{event.engagements.length} engagement item{event.engagements.length !== 1 ? "s" : ""} for this event</CardDescription>
+                                    </div>
+                                    {event.status !== "completed" && (
+                                        <Link href={`/dashboard/events/${event.id}/edit`}>
+                                            <Button variant="outline" size="sm" className="gap-2">
+                                                <Edit className="h-4 w-4" />
+                                                Edit Engagement
+                                            </Button>
+                                        </Link>
+                                    )}
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {event.engagements.map(engagement => {
+                                            const IconComp = ENGAGEMENT_ICON_MAP[engagement.type] || Megaphone;
+                                            const typeLabel = engagement.type === "QA" ? "Q&A" : engagement.type.charAt(0) + engagement.type.slice(1).toLowerCase();
+
+                                            return (
+                                                <div
+                                                    key={engagement.id}
+                                                    className={cn(
+                                                        "p-4 rounded-xl border bg-card hover:shadow-md transition-shadow",
+                                                        !engagement.isActive && "opacity-60"
+                                                    )}
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                                                            <IconComp className="h-5 w-5" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="font-semibold text-sm">{engagement.title}</h4>
+                                                                <Badge variant="outline" className="text-xs">{typeLabel}</Badge>
+                                                                {!engagement.isActive && (
+                                                                    <Badge variant="secondary" className="text-xs">Inactive</Badge>
+                                                                )}
+                                                            </div>
+                                                            {engagement.description && (
+                                                                <p className="text-sm text-muted-foreground mt-1">{engagement.description}</p>
+                                                            )}
+                                                            {/* Show poll/quiz options if content has options */}
+                                                            {!!engagement.content && typeof engagement.content === "object" && Array.isArray((engagement.content as { options?: string[] }).options) && (
+                                                                <div className="mt-2 space-y-1">
+                                                                    {((engagement.content as { options: string[] }).options).map((opt, i) => (
+                                                                        <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                            <div className="w-4 h-4 rounded border flex items-center justify-center text-[10px]">{i + 1}</div>
+                                                                            {opt}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    )}
+
+                    {/* Config Tab */}
+                    <TabsContent value="config" className="space-y-6">
+                        <EventConfigTab eventId={event.id} />
+                    </TabsContent>
                 </Tabs>
             </div>
 
@@ -1500,7 +1802,7 @@ export default function EventDetailPage() {
                     }
                 }
             }}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Add New Registration</DialogTitle>
                         <DialogDescription>
@@ -1672,7 +1974,7 @@ export default function EventDetailPage() {
                     }
                 }
             }}>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Add Speaker to Event</DialogTitle>
                         <DialogDescription>
@@ -1827,7 +2129,7 @@ export default function EventDetailPage() {
                     }
                 }
             }}>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Add Sponsor to Event</DialogTitle>
                         <DialogDescription>

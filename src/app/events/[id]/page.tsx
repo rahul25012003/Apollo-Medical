@@ -23,6 +23,12 @@ import {
     CheckCircle2,
     AlertCircle,
     Loader2,
+    Megaphone,
+    MessageSquare,
+    BarChart3,
+    HelpCircle,
+    Mic2,
+    DoorOpen,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,14 +39,28 @@ import { cn } from "@/lib/utils";
 import { eventsService, Event, EventSpeaker, EventSponsor, EventSession } from "@/services/events";
 
 // Display types
+interface DisplaySessionSpeaker {
+    id: string;
+    name: string;
+    designation: string | null;
+    institution: string | null;
+    photo: string | null;
+    talkTitle: string | null;
+}
+
 interface DisplaySession {
     id: string;
     title: string;
     description: string | null;
+    sessionType: string;
     date: string | null;
+    dateRaw: string | null;
     startTime: string | null;
     endTime: string | null;
     venue: string | null;
+    hallName: string | null;
+    speakers: DisplaySessionSpeaker[];
+    // Legacy single speaker fallback
     speaker?: {
         id: string;
         name: string;
@@ -48,6 +68,14 @@ interface DisplaySession {
         institution: string | null;
         photo: string | null;
     } | null;
+}
+
+interface DisplayEngagement {
+    id: string;
+    title: string;
+    type: string;
+    description: string | null;
+    content: unknown;
 }
 
 interface DisplayEvent {
@@ -75,8 +103,29 @@ interface DisplayEvent {
     sponsors: { id: string; name: string; tier: string; website: string | null; logo: string | null }[];
     speakers: { id: string; name: string; designation: string | null; institution: string | null; topic: string | null; photo: string | null }[];
     sessions: DisplaySession[];
+    engagements: DisplayEngagement[];
+    halls: { id: string; name: string }[];
     includes: string[];
+    isRegistrationOpen: boolean;
+    registrationDeadline: string | null;
 }
+
+const SESSION_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
+    PLENARY: { label: "Plenary", color: "bg-purple-100 text-purple-700 border-purple-200" },
+    KEYNOTE: { label: "Keynote", color: "bg-blue-100 text-blue-700 border-blue-200" },
+    WORKSHOP: { label: "Workshop", color: "bg-green-100 text-green-700 border-green-200" },
+    PANEL: { label: "Panel", color: "bg-orange-100 text-orange-700 border-orange-200" },
+    BREAK: { label: "Break", color: "bg-gray-100 text-gray-500 border-gray-200" },
+    OTHER: { label: "Session", color: "bg-slate-100 text-slate-600 border-slate-200" },
+};
+
+const ENGAGEMENT_ICON: Record<string, typeof Megaphone> = {
+    POLL: BarChart3,
+    QA: HelpCircle,
+    FEEDBACK: MessageSquare,
+    ANNOUNCEMENT: Megaphone,
+    QUIZ: Award,
+};
 
 const tierConfig = {
     platinum: { icon: Crown, bgClass: "bg-slate-100", textClass: "text-slate-700", borderClass: "border-slate-300" },
@@ -93,24 +142,32 @@ export default function EventDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
+    const [tenantSlug, setTenantSlug] = useState<string | null>(null);
 
-    // Check if page was opened as preview from dashboard
+    // Check if page was opened as preview from dashboard, and read tenant context
     useEffect(() => {
         if (typeof window !== "undefined") {
-            // Only show preview mode if explicitly set via query param
             const urlParams = new URLSearchParams(window.location.search);
             const isPreview = urlParams.get("preview") === "true";
             setIsPreviewMode(isPreview);
+            const tenant = urlParams.get("tenant");
+            if (tenant) setTenantSlug(tenant);
         }
     }, []);
 
-    // Fetch event from API
+    // Fetch event from API (pass preview param for draft events)
     useEffect(() => {
         async function fetchEvent() {
             try {
                 setLoading(true);
                 setError(null);
-                const response = await eventsService.getPublicById(eventId);
+                let response;
+                if (isPreviewMode) {
+                    const res = await fetch(`/api/events/public/${eventId}?preview=true`, { credentials: "include" });
+                    response = await res.json();
+                } else {
+                    response = await eventsService.getPublicById(eventId);
+                }
 
                 if (response.success && response.data) {
                     const apiEvent = response.data;
@@ -148,15 +205,27 @@ export default function EventDetailPage() {
                             website: null,
                             logo: es.sponsor.logo,
                         })) || [],
-                        // Get sessions from eventSessions
-                        sessions: apiEvent.eventSessions?.map((es: EventSession) => ({
+                        // Get sessions from eventSessions with multi-speaker + hall support
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        sessions: apiEvent.eventSessions?.map((es: any) => ({
                             id: es.id,
                             title: es.title,
                             description: es.description,
+                            sessionType: es.sessionType || "OTHER",
                             date: es.sessionDate ? new Date(es.sessionDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null,
+                            dateRaw: es.sessionDate || null,
                             startTime: es.startTime,
                             endTime: es.endTime,
                             venue: es.venue,
+                            hallName: es.hall?.name || es.venue || null,
+                            speakers: (es.sessionSpeakers || []).map((ss: { speaker: { id: string; name: string; designation: string | null; institution: string | null; photo: string | null }; talkTitle: string | null }) => ({
+                                id: ss.speaker.id,
+                                name: ss.speaker.name,
+                                designation: ss.speaker.designation,
+                                institution: ss.speaker.institution,
+                                photo: ss.speaker.photo,
+                                talkTitle: ss.talkTitle || null,
+                            })),
                             speaker: es.speaker ? {
                                 id: es.speaker.id,
                                 name: es.speaker.name,
@@ -165,11 +234,43 @@ export default function EventDetailPage() {
                                 photo: es.speaker.photo,
                             } : null,
                         })) || [],
-                        // Derive unique speakers from sessions
+                        // Engagements (active only from API)
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        engagements: (apiEvent.engagements || []).map((eng: any) => ({
+                            id: eng.id,
+                            title: eng.title,
+                            type: eng.type,
+                            description: eng.description,
+                            content: eng.content,
+                        })),
+                        // Halls
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        halls: (apiEvent.halls || []).map((h: any) => ({
+                            id: h.id,
+                            name: h.name,
+                        })),
+                        // Derive unique speakers from sessionSpeakers first, then legacy
                         speakers: (() => {
                             const speakerMap = new Map<string, { id: string; name: string; designation: string | null; institution: string | null; topic: string | null; photo: string | null }>();
-                            // First add speakers from eventSessions (new model)
-                            apiEvent.eventSessions?.forEach((es: EventSession) => {
+                            // First: sessionSpeakers (new multi-speaker model)
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            apiEvent.eventSessions?.forEach((es: any) => {
+                                if (es.sessionSpeakers) {
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    es.sessionSpeakers.forEach((ss: any) => {
+                                        if (ss.speaker && !speakerMap.has(ss.speaker.id)) {
+                                            speakerMap.set(ss.speaker.id, {
+                                                id: ss.speaker.id,
+                                                name: ss.speaker.name,
+                                                designation: ss.speaker.designation,
+                                                institution: ss.speaker.institution,
+                                                topic: ss.talkTitle || es.title,
+                                                photo: ss.speaker.photo,
+                                            });
+                                        }
+                                    });
+                                }
+                                // Fallback: legacy single speaker
                                 if (es.speaker && !speakerMap.has(es.speaker.id)) {
                                     speakerMap.set(es.speaker.id, {
                                         id: es.speaker.id,
@@ -207,9 +308,16 @@ export default function EventDetailPage() {
                                 "Access to all sessions",
                                 "Networking opportunities",
                             ].filter(Boolean) as string[],
+                        isRegistrationOpen: apiEvent.isRegistrationOpen !== false,
+                        registrationDeadline: apiEvent.registrationDeadline || null,
                     };
 
                     setEvent(displayEvent);
+
+                    // Set tenant slug from API response if not already set from query param
+                    if (!tenantSlug && apiEvent.tenant?.slug) {
+                        setTenantSlug(apiEvent.tenant.slug);
+                    }
                 } else {
                     setError("Event not found");
                 }
@@ -224,11 +332,95 @@ export default function EventDetailPage() {
         if (eventId) {
             fetchEvent();
         }
-    }, [eventId]);
+    }, [eventId, isPreviewMode]);
 
     const getInitials = (name: string) => {
         return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
     };
+
+    // Render a list of sessions (used in day-wise tabs)
+    const renderSessionList = (sessions: DisplaySession[], getInitialsFn: (name: string) => string) => (
+        <>
+            {sessions.map((session) => {
+                const typeConfig = SESSION_TYPE_CONFIG[session.sessionType] || SESSION_TYPE_CONFIG.OTHER;
+                const isBreak = session.sessionType === "BREAK";
+                const allSpeakers = session.speakers.length > 0 ? session.speakers : (session.speaker ? [{
+                    id: session.speaker.id,
+                    name: session.speaker.name,
+                    designation: session.speaker.designation,
+                    institution: session.speaker.institution,
+                    photo: session.speaker.photo,
+                    talkTitle: null,
+                }] : []);
+
+                return (
+                    <Card key={session.id} className={cn("card-hover", isBreak && "bg-muted/30 border-dashed")}>
+                        <CardContent className="pt-5 pb-4">
+                            <div className="flex flex-col md:flex-row md:items-start gap-4">
+                                {/* Time + Hall column */}
+                                <div className="flex-shrink-0 md:w-28 flex md:flex-col items-center md:items-start gap-2 md:gap-1">
+                                    {session.startTime && (
+                                        <div className="flex items-center gap-1.5">
+                                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                            <span className="text-sm font-medium">
+                                                {session.startTime}{session.endTime ? ` - ${session.endTime}` : ""}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {session.hallName && (
+                                        <div className="flex items-center gap-1.5">
+                                            <DoorOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                                            <span className="text-xs text-muted-foreground">{session.hallName}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Main content */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-start gap-2 mb-1">
+                                        <Badge variant="outline" className={cn("text-[10px] shrink-0 border", typeConfig.color)}>
+                                            {typeConfig.label}
+                                        </Badge>
+                                    </div>
+                                    <h3 className={cn("font-semibold", isBreak ? "text-muted-foreground" : "text-lg")}>
+                                        {session.title}
+                                    </h3>
+                                    {session.description && (
+                                        <p className="text-sm text-muted-foreground mt-1">{session.description}</p>
+                                    )}
+
+                                    {/* Speakers */}
+                                    {!isBreak && allSpeakers.length > 0 && (
+                                        <div className="mt-3 pt-3 border-t space-y-2">
+                                            {allSpeakers.map((sp) => (
+                                                <div key={sp.id} className="flex items-center gap-3">
+                                                    <Avatar className="h-9 w-9">
+                                                        <AvatarImage src={sp.photo || undefined} />
+                                                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                                            {getInitialsFn(sp.name)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="min-w-0">
+                                                        <div className="font-medium text-sm">{sp.name}</div>
+                                                        <div className="text-xs text-muted-foreground truncate">
+                                                            {sp.talkTitle && <span className="text-primary">{sp.talkTitle}</span>}
+                                                            {sp.talkTitle && sp.designation && " · "}
+                                                            {sp.designation}
+                                                            {sp.institution ? `, ${sp.institution}` : ""}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
+        </>
+    );
 
     const handleBack = () => {
         if (isPreviewMode) {
@@ -265,7 +457,7 @@ export default function EventDetailPage() {
             <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
-                        <Link href="/" className="flex items-center gap-2">
+                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"} className="flex items-center gap-2">
                             <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
@@ -275,7 +467,7 @@ export default function EventDetailPage() {
                             <Button variant="ghost" size="icon">
                                 <Share2 className="h-4 w-4" />
                             </Button>
-                            <Link href="/">
+                            <Link href={tenantSlug ? `/auth/login?tenant=${tenantSlug}` : "/auth/login"}>
                                 <Button variant="outline" size="sm">
                                     Login
                                 </Button>
@@ -345,9 +537,20 @@ export default function EventDetailPage() {
 
                         {/* Tabs */}
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-fadeIn stagger-1">
-                            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                            <TabsList className={cn("grid w-full h-10 sm:h-12", event.engagements.length > 0 ? "grid-cols-3 sm:grid-cols-5" : "grid-cols-2 sm:grid-cols-4")}>
                                 <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-                                <TabsTrigger value="schedule" className="text-xs sm:text-sm">Schedule</TabsTrigger>
+                                <TabsTrigger value="schedule" className="text-xs sm:text-sm gap-1">
+                                    <Mic2 className="h-3.5 w-3.5 hidden sm:block" />
+                                    <span className="hidden sm:inline">Scientific Program</span>
+                                    <span className="sm:hidden">Program</span>
+                                </TabsTrigger>
+                                {event.engagements.length > 0 && (
+                                    <TabsTrigger value="engagement" className="text-xs sm:text-sm gap-1">
+                                        <Megaphone className="h-3.5 w-3.5 hidden sm:block" />
+                                        <span className="hidden sm:inline">Engagement</span>
+                                        <span className="sm:hidden">Engage</span>
+                                    </TabsTrigger>
+                                )}
                                 <TabsTrigger value="speakers" className="text-xs sm:text-sm">Speakers</TabsTrigger>
                                 <TabsTrigger value="sponsors" className="text-xs sm:text-sm">Sponsors</TabsTrigger>
                             </TabsList>
@@ -406,58 +609,144 @@ export default function EventDetailPage() {
                                 {event.sessions.length === 0 ? (
                                     <Card>
                                         <CardContent className="py-12 text-center">
-                                            <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                                            <Mic2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                                             <p className="text-muted-foreground">No sessions scheduled yet</p>
                                         </CardContent>
                                     </Card>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {event.sessions.map((session) => (
-                                            <Card key={session.id} className="card-hover">
-                                                <CardContent className="pt-6">
-                                                    <div className="flex flex-col md:flex-row md:items-start gap-4">
-                                                        <div className="flex-shrink-0 text-center md:text-left md:w-32">
-                                                            {session.date && (
-                                                                <div className="text-sm font-medium text-primary">{session.date}</div>
-                                                            )}
-                                                            {session.startTime && (
-                                                                <div className="text-xs text-muted-foreground">
-                                                                    {session.startTime}{session.endTime ? ` - ${session.endTime}` : ""}
+                                ) : (() => {
+                                    // Group sessions by day
+                                    const dayMap = new Map<string, { label: string; date: string; sessions: DisplaySession[] }>();
+                                    let dayCounter = 0;
+                                    event.sessions.forEach((session) => {
+                                        let dateKey = "unscheduled";
+                                        if (session.dateRaw) {
+                                            try { dateKey = new Date(session.dateRaw).toISOString().split("T")[0]; } catch { dateKey = "unscheduled"; }
+                                        }
+                                        if (!dayMap.has(dateKey)) {
+                                            dayCounter++;
+                                            let dateLabel = "Unscheduled";
+                                            if (session.dateRaw && dateKey !== "unscheduled") {
+                                                try { dateLabel = new Date(session.dateRaw).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }); } catch { /* keep default */ }
+                                            }
+                                            dayMap.set(dateKey, {
+                                                label: session.dateRaw ? `Day ${dayCounter}` : "Unscheduled",
+                                                date: dateLabel,
+                                                sessions: [],
+                                            });
+                                        }
+                                        dayMap.get(dateKey)!.sessions.push(session);
+                                    });
+                                    const days = Array.from(dayMap.entries());
+
+                                    // Summary stats
+                                    const totalSessions = event.sessions.length;
+                                    const totalDays = days.filter(([k]) => k !== "unscheduled").length;
+                                    const uniqueHalls = new Set(event.sessions.map(s => s.hallName).filter(Boolean));
+
+                                    return (
+                                        <div className="space-y-6">
+                                            {/* Summary bar */}
+                                            <div className="flex flex-wrap gap-3">
+                                                <Badge variant="outline" className="gap-1.5 px-3 py-1">
+                                                    <Calendar className="h-3.5 w-3.5" />
+                                                    {totalDays} Day{totalDays !== 1 ? "s" : ""}
+                                                </Badge>
+                                                <Badge variant="outline" className="gap-1.5 px-3 py-1">
+                                                    <Mic2 className="h-3.5 w-3.5" />
+                                                    {totalSessions} Session{totalSessions !== 1 ? "s" : ""}
+                                                </Badge>
+                                                {uniqueHalls.size > 0 && (
+                                                    <Badge variant="outline" className="gap-1.5 px-3 py-1">
+                                                        <DoorOpen className="h-3.5 w-3.5" />
+                                                        {uniqueHalls.size} Hall{uniqueHalls.size !== 1 ? "s" : ""}
+                                                    </Badge>
+                                                )}
+                                            </div>
+
+                                            {/* Day-wise tabs if multiple days */}
+                                            {days.length > 1 ? (
+                                                <Tabs defaultValue={days[0][0]} className="w-full">
+                                                    <TabsList className="w-full flex overflow-x-auto">
+                                                        {days.map(([key, day]) => (
+                                                            <TabsTrigger key={key} value={key} className="flex-shrink-0 text-xs sm:text-sm">
+                                                                <div className="text-center">
+                                                                    <div className="font-medium">{day.label}</div>
+                                                                    <div className="text-[10px] text-muted-foreground">{day.date}</div>
                                                                 </div>
-                                                            )}
-                                                            {session.venue && (
-                                                                <div className="text-xs text-muted-foreground mt-1">{session.venue}</div>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h3 className="font-semibold text-lg">{session.title}</h3>
-                                                            {session.description && (
-                                                                <p className="text-sm text-muted-foreground mt-1">{session.description}</p>
-                                                            )}
-                                                            {session.speaker && (
-                                                                <div className="flex items-center gap-3 mt-3 pt-3 border-t">
-                                                                    <Avatar className="h-10 w-10">
-                                                                        <AvatarImage src={session.speaker.photo || undefined} />
-                                                                        <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                                                                            {getInitials(session.speaker.name)}
-                                                                        </AvatarFallback>
-                                                                    </Avatar>
-                                                                    <div>
-                                                                        <div className="font-medium text-sm">{session.speaker.name}</div>
-                                                                        <div className="text-xs text-muted-foreground">
-                                                                            {session.speaker.designation}{session.speaker.institution ? `, ${session.speaker.institution}` : ""}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                )}
+                                                            </TabsTrigger>
+                                                        ))}
+                                                    </TabsList>
+                                                    {days.map(([key, day]) => (
+                                                        <TabsContent key={key} value={key} className="mt-4 space-y-3">
+                                                            {renderSessionList(day.sessions, getInitials)}
+                                                        </TabsContent>
+                                                    ))}
+                                                </Tabs>
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    {renderSessionList(days[0]?.[1]?.sessions || event.sessions, getInitials)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </TabsContent>
+
+                            {/* Engagement Tab */}
+                            {event.engagements.length > 0 && (
+                                <TabsContent value="engagement" className="space-y-6 mt-6">
+                                    <div className="flex flex-wrap gap-3 mb-4">
+                                        <Badge variant="outline" className="gap-1.5 px-3 py-1">
+                                            <Megaphone className="h-3.5 w-3.5" />
+                                            {event.engagements.length} Engagement{event.engagements.length !== 1 ? "s" : ""}
+                                        </Badge>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {event.engagements.map((engagement) => {
+                                            const EngIcon = ENGAGEMENT_ICON[engagement.type] || Megaphone;
+                                            const typeLabels: Record<string, string> = {
+                                                POLL: "Poll",
+                                                QA: "Q&A Session",
+                                                FEEDBACK: "Feedback Form",
+                                                ANNOUNCEMENT: "Announcement",
+                                                QUIZ: "Quiz",
+                                            };
+                                            return (
+                                                <Card key={engagement.id} className="card-hover">
+                                                    <CardContent className="pt-6">
+                                                        <div className="flex items-start gap-4">
+                                                            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                                                <EngIcon className="h-6 w-6 text-primary" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <Badge variant="outline" className="text-[10px]">
+                                                                        {typeLabels[engagement.type] || engagement.type}
+                                                                    </Badge>
+                                                                </div>
+                                                                <h3 className="font-semibold">{engagement.title}</h3>
+                                                                {engagement.description && (
+                                                                    <p className="text-sm text-muted-foreground mt-1">{engagement.description}</p>
+                                                                )}
+                                                                {engagement.type === "POLL" && !!engagement.content && (
+                                                                    <div className="mt-3 space-y-1.5">
+                                                                        {((engagement.content as { options?: string[] })?.options || []).map((opt: string, i: number) => (
+                                                                            <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                                                <div className="h-2 w-2 rounded-full bg-primary/40" />
+                                                                                {opt}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            );
+                                        })}
+                                    </div>
+                                </TabsContent>
+                            )}
 
                             <TabsContent value="speakers" className="space-y-6 mt-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -479,11 +768,13 @@ export default function EventDetailPage() {
                                                         <p className="text-sm text-muted-foreground">
                                                             {speaker.institution}
                                                         </p>
-                                                        <div className="mt-2">
-                                                            <Badge variant="secondary" className="text-xs">
-                                                                {speaker.topic}
-                                                            </Badge>
-                                                        </div>
+                                                        {speaker.topic && (
+                                                            <div className="mt-2">
+                                                                <Badge variant="secondary" className="text-xs">
+                                                                    {speaker.topic}
+                                                                </Badge>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -588,6 +879,13 @@ export default function EventDetailPage() {
                                     </div>
                                 )}
 
+                                {/* Registration deadline info */}
+                                {event.registrationDeadline && (
+                                    <div className="text-xs text-muted-foreground">
+                                        Registration deadline: {new Date(event.registrationDeadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                    </div>
+                                )}
+
                                 {/* Progress */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm">
@@ -604,12 +902,29 @@ export default function EventDetailPage() {
                                     </div>
                                 </div>
 
-                                <Link href={`/events/${event.id}/register`} className="block">
-                                    <Button className="w-full gap-2 gradient-medical text-white hover:opacity-90" size="lg">
-                                        <Ticket className="h-5 w-5" />
-                                        Register Now
-                                    </Button>
-                                </Link>
+                                {/* Registration closed check */}
+                                {event.isRegistrationOpen === false || (event.registrationDeadline && new Date(event.registrationDeadline) < new Date()) ? (
+                                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
+                                        <p className="text-sm font-medium text-destructive">Registration Closed</p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {event.registrationDeadline && new Date(event.registrationDeadline) < new Date()
+                                                ? "The registration deadline has passed"
+                                                : "Registration is currently closed for this event"}
+                                        </p>
+                                    </div>
+                                ) : event.registrations >= event.capacity ? (
+                                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
+                                        <p className="text-sm font-medium text-destructive">Event Full</p>
+                                        <p className="text-xs text-muted-foreground mt-1">All slots have been filled</p>
+                                    </div>
+                                ) : (
+                                    <Link href={`/events/${event.id}/register${tenantSlug ? `?tenant=${tenantSlug}` : ""}`} className="block">
+                                        <Button className="w-full gap-2 gradient-medical text-white hover:opacity-90" size="lg">
+                                            <Ticket className="h-5 w-5" />
+                                            Register Now
+                                        </Button>
+                                    </Link>
+                                )}
                             </CardContent>
                         </Card>
 

@@ -51,6 +51,9 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   }
 
   const search = searchParams.get("search");
+  if (search && search.length > 200) {
+    return Errors.badRequest("Search query too long");
+  }
   if (search) {
     where.OR = [
       { title: { contains: search, mode: "insensitive" } },
@@ -68,6 +71,11 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   const tenantId = searchParams.get("tenantId");
   if (tenantId) {
     where.tenantId = tenantId;
+  }
+
+  const tenantSlug = searchParams.get("tenantSlug");
+  if (tenantSlug) {
+    where.tenant = { slug: tenantSlug };
   }
 
   // Upcoming events only (start date in future)
@@ -108,6 +116,13 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
         isFeatured: true,
         registrationDeadline: true,
         isRegistrationOpen: true,
+        tenantId: true,
+        tenant: {
+          select: {
+            slug: true,
+            name: true,
+          },
+        },
         _count: {
           select: { registrations: true },
         },

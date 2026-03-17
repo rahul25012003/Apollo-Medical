@@ -20,7 +20,6 @@ import {
     Star,
     Calendar,
     Link2,
-    Loader2,
     X,
     Phone,
 } from "lucide-react";
@@ -50,6 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
 import { useConfirmDialog, useAlertDialog } from "@/components/ui/confirm-dialog";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
@@ -131,7 +131,7 @@ export default function SponsorsPage() {
         async function fetchSponsors() {
             try {
                 setLoading(true);
-                const response = await sponsorsService.getAll({ ...tenantFilterParams });
+                const response = await sponsorsService.getAll({ ...tenantFilterParams, limit: 500 });
 
                 if (response.success && response.data) {
                     const sponsorsList = Array.isArray(response.data) ? response.data : [];
@@ -298,9 +298,7 @@ export default function SponsorsPage() {
     if (loading) {
         return (
             <DashboardLayout title="Sponsors" subtitle="Manage event sponsors and partnerships">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
@@ -315,53 +313,53 @@ export default function SponsorsPage() {
             <div className="space-y-6 animate-fadeIn">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                    <Card className="card-hover">
+                    <Card className="card-premium">
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-teal h-10 w-10 sm:h-12 sm:w-12">
-                                    <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-600/10">
+                                    <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{totalSponsors}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{totalSponsors}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium">
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-green h-10 w-10 sm:h-12 sm:w-12">
-                                    <Crown className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-600/10">
+                                    <Crown className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{activeSponsors}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{activeSponsors}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium">
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-purple h-10 w-10 sm:h-12 sm:w-12">
-                                    <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500/20 to-violet-600/10">
+                                    <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{sponsorsWithEvents}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{sponsorsWithEvents}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">With Events</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium">
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-orange h-10 w-10 sm:h-12 sm:w-12">
-                                    <Globe className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-600/10">
+                                    <Globe className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{totalEventAssignments}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{totalEventAssignments}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Assignments</p>
                                 </div>
                             </div>
@@ -370,7 +368,7 @@ export default function SponsorsPage() {
                 </div>
 
                 {/* Tier Overview */}
-                <Card className="border-primary/10">
+                <Card className="card-premium">
                     <CardHeader>
                         <CardTitle className="text-base">Sponsorship Tiers</CardTitle>
                     </CardHeader>
@@ -384,10 +382,10 @@ export default function SponsorsPage() {
                                     <div
                                         key={tier}
                                         className={cn(
-                                            "p-3 sm:p-4 rounded-xl border-2 text-center transition-all hover:scale-105 cursor-pointer",
+                                            "p-3 sm:p-4 rounded-xl border-2 text-center transition-all hover:scale-105 cursor-pointer shadow-sm hover:shadow-md",
                                             config.bgClass,
                                             config.borderClass,
-                                            selectedTab === tier.toLowerCase() && "ring-2 ring-primary"
+                                            selectedTab === tier.toLowerCase() && "ring-2 ring-primary shadow-lg"
                                         )}
                                         onClick={() => setSelectedTab(tier.toLowerCase())}
                                     >
@@ -411,7 +409,7 @@ export default function SponsorsPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 placeholder="Search sponsors..."
-                                className="pl-10 pr-10"
+                                className="pl-10 pr-10 search-premium rounded-xl"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -427,12 +425,12 @@ export default function SponsorsPage() {
                     </div>
                     <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                         <DialogTrigger asChild>
-                            <Button className="gap-2 gradient-medical text-white hover:opacity-90">
+                            <Button className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25">
                                 <Plus className="w-4 h-4" />
                                 Add Sponsor
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle>Add New Sponsor</DialogTitle>
                                 <DialogDescription>
@@ -514,7 +512,7 @@ export default function SponsorsPage() {
 
                 {/* Sponsor View Dialog */}
                 <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="w-[95vw] sm:max-w-2xl">
                         {selectedSponsor && (
                             <>
                                 <DialogHeader>
@@ -622,10 +620,10 @@ export default function SponsorsPage() {
                 </Dialog>
 
                 {/* Sponsors List */}
-                <Card>
+                <Card className="card-premium">
                     <CardHeader className="pb-3 px-3 sm:px-6">
                         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                            <TabsList className="w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 p-1">
+                            <TabsList className="w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 p-1 bg-muted/50 rounded-xl">
                                 <TabsTrigger value="all" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5">
                                     All ({totalSponsors})
                                 </TabsTrigger>
@@ -643,15 +641,23 @@ export default function SponsorsPage() {
                             {filteredSponsors.map((sponsor, index) => {
                                 const primaryTier = getPrimaryTier(sponsor);
                                 const config = tierConfig[primaryTier as keyof typeof tierConfig];
+                                const tierGradient = sponsor.eventCount > 0
+                                    ? primaryTier === "PLATINUM" ? "bg-gradient-to-r from-slate-400 via-slate-300 to-slate-400"
+                                    : primaryTier === "GOLD" ? "bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-400"
+                                    : primaryTier === "SILVER" ? "bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400"
+                                    : "bg-gradient-to-r from-orange-400 via-orange-300 to-orange-400"
+                                    : "bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500";
                                 return (
                                     <div
                                         key={sponsor.id}
                                         className={cn(
-                                            "p-4 rounded-xl border-2 bg-card card-hover animate-fadeIn",
+                                            "card-premium rounded-xl overflow-hidden border-2 bg-card animate-fadeIn",
                                             sponsor.eventCount > 0 ? config?.borderClass : "border-border"
                                         )}
                                         style={{ animationDelay: `${index * 0.05}s` }}
                                     >
+                                        <div className={cn("h-1", tierGradient)} />
+                                        <div className="p-4">
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex items-center gap-3">
                                                 <div className={cn(
@@ -754,6 +760,7 @@ export default function SponsorsPage() {
                                                 {sponsor.eventCount} event{sponsor.eventCount !== 1 ? "s" : ""}
                                             </span>
                                         </div>
+                                        </div>
                                     </div>
                                 );
                             })}
@@ -761,7 +768,9 @@ export default function SponsorsPage() {
 
                         {filteredSponsors.length === 0 && (
                             <div className="text-center py-12">
-                                <Building2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-500/10 to-cyan-500/10 mb-5">
+                                    <Building2 className="h-10 w-10 text-teal-500" />
+                                </div>
                                 <h3 className="text-lg font-medium mb-2">No sponsors found</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
                                     {sponsors.length === 0

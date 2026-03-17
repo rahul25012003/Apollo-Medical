@@ -7,13 +7,17 @@ import { api, ApiResponse } from "@/lib/api-client";
 export interface Certificate {
   id: string;
   certificateCode: string;
+  certificateType: string;
   registrationId: string;
   eventId: string;
+  sessionId?: string | null;
+  quizId?: string | null;
   recipientName: string;
   recipientEmail: string;
   title: string | null;
   description: string | null;
   cmeCredits: number | null;
+  position?: number | null;
   status: "PENDING" | "ISSUED" | "REVOKED";
   issuedAt: string | null;
   revokedAt: string | null;
@@ -42,6 +46,8 @@ export interface Certificate {
     name: string;
     email: string;
   };
+  session?: { id: string; title: string; sessionDate?: string | null } | null;
+  quiz?: { id: string; title: string } | null;
 }
 
 export interface CertificateFilters {
@@ -72,6 +78,21 @@ export interface BulkCreateCertificateData {
   title?: string;
   description?: string;
   cmeCredits?: number;
+}
+
+export interface RoleBasedCertificateData {
+  eventId: string;
+  participantRole: string;
+  limit?: number;
+  title?: string;
+  description?: string;
+  cmeCredits?: number;
+}
+
+export interface CertificateRoleStats {
+  roles: { role: string; attended: number; certsIssued: number }[];
+  certStats: { certificateType: string; _count: number }[];
+  quizzes: { id: string; title: string; status: string; _count: { participants: number; certificates: number } }[];
 }
 
 export interface CertificateVerification {
@@ -119,6 +140,18 @@ export const certificatesService = {
    */
   bulkCreate: (data: BulkCreateCertificateData) =>
     api.post<{ created: number }>("/api/certificates", data),
+
+  /**
+   * Generate certificates by role with admin-set limit
+   */
+  generateByRole: (data: RoleBasedCertificateData) =>
+    api.post<{ created: number; role: string; limit: number | string; totalAttended: number }>("/api/certificates", data),
+
+  /**
+   * Get role-based stats for an event (attended per role, certs issued)
+   */
+  getRoleStats: (eventId: string) =>
+    api.get<CertificateRoleStats>("/api/certificates", { eventId, stats: "true" } as Record<string, string>),
 
   /**
    * Update certificate

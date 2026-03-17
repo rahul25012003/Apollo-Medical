@@ -28,6 +28,7 @@ export const createRegistrationSchema = z.object({
   organization: z.string().optional(),
   designation: z.string().optional(),
   category: z.string().optional(), // Faculty, Resident, Student, etc.
+  participantRole: z.string().optional(), // Dynamic roles from event config
 
   // Registration Details
   status: registrationStatusEnum.default("PENDING"),
@@ -50,6 +51,7 @@ export const updateRegistrationSchema = z.object({
   organization: z.string().optional(),
   designation: z.string().optional(),
   category: z.string().optional(),
+  participantRole: z.string().optional(), // Dynamic roles from event config
 
   status: registrationStatusEnum.optional(),
   paymentStatus: paymentStatusEnum.optional(),

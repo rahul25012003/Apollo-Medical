@@ -69,6 +69,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { usersService, User } from "@/services/users";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
 import { getPermissions, type UserRole, type Permission } from "@/lib/permissions";
@@ -182,12 +183,12 @@ const permissionGroups = [
 ];
 
 const roleColorMap: Record<string, string> = {
-    SUPER_ADMIN: "bg-purple-50 text-purple-700 border-purple-200",
-    ADMIN: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    EVENT_MANAGER: "bg-blue-50 text-blue-700 border-blue-200",
-    REGISTRATION_MANAGER: "bg-green-50 text-green-700 border-green-200",
-    CERTIFICATE_MANAGER: "bg-amber-50 text-amber-700 border-amber-200",
-    ATTENDEE: "bg-gray-100 text-gray-700 border-gray-200",
+    SUPER_ADMIN: "bg-gradient-to-r from-purple-500/10 to-fuchsia-500/10 text-purple-700 border-purple-300/50",
+    ADMIN: "bg-gradient-to-r from-indigo-500/10 to-blue-500/10 text-indigo-700 border-indigo-300/50",
+    EVENT_MANAGER: "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-700 border-blue-300/50",
+    REGISTRATION_MANAGER: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-700 border-green-300/50",
+    CERTIFICATE_MANAGER: "bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-amber-700 border-amber-300/50",
+    ATTENDEE: "bg-gradient-to-r from-gray-500/10 to-slate-500/10 text-gray-700 border-gray-300/50",
 };
 
 interface DisplayUser {
@@ -373,9 +374,7 @@ export default function UsersPage() {
     if (loading) {
         return (
             <DashboardLayout title="User Management" subtitle="Manage system users, roles, and permissions">
-                <div className="flex items-center justify-center h-[50vh]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
@@ -388,53 +387,57 @@ export default function UsersPage() {
             <div className="space-y-6 animate-fadeIn">
                 {/* Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    <Card className="card-hover">
+                    <Card className="card-premium overflow-hidden">
+                        <div className="h-1 bg-gradient-to-r from-teal-500 to-cyan-500" />
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-teal h-10 w-10 sm:h-12 sm:w-12">
-                                    <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-600/10">
+                                    <Users className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{users.length}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{users.length}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium overflow-hidden">
+                        <div className="h-1 bg-gradient-to-r from-emerald-500 to-green-500" />
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-green h-10 w-10 sm:h-12 sm:w-12">
-                                    <UserCheck className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10">
+                                    <UserCheck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{activeUsers}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{activeUsers}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium overflow-hidden">
+                        <div className="h-1 bg-gradient-to-r from-amber-500 to-orange-500" />
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-orange h-10 w-10 sm:h-12 sm:w-12">
-                                    <UserX className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10">
+                                    <UserX className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{inactiveUsers}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{inactiveUsers}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Inactive</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium overflow-hidden">
+                        <div className="h-1 bg-gradient-to-r from-violet-500 to-purple-500" />
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-purple h-10 w-10 sm:h-12 sm:w-12">
-                                    <Shield className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-600/10">
+                                    <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-violet-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{SYSTEM_ROLES.length}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{SYSTEM_ROLES.length}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Roles</p>
                                 </div>
                             </div>
@@ -447,20 +450,20 @@ export default function UsersPage() {
                     <div className="flex flex-1 gap-3">
                         <div className="relative flex-1 max-w-md">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input placeholder="Search users..." className="pl-10" />
+                            <Input placeholder="Search users..." className="pl-10 search-premium rounded-xl" />
                         </div>
-                        <Button variant="outline" size="icon">
+                        <Button variant="outline" size="icon" className="rounded-xl border-dashed">
                             <Filter className="w-4 h-4" />
                         </Button>
                     </div>
                     <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                         <DialogTrigger asChild>
-                            <Button className="gap-2 gradient-medical text-white hover:opacity-90">
+                            <Button className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25">
                                 <Plus className="w-4 h-4" />
                                 Add User
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
+                        <DialogContent className="w-[95vw] sm:max-w-2xl">
                             <DialogHeader>
                                 <DialogTitle>Create New User</DialogTitle>
                                 <DialogDescription>
@@ -540,7 +543,7 @@ export default function UsersPage() {
                                 <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
                                     Cancel
                                 </Button>
-                                <Button onClick={() => setIsCreateOpen(false)}>Create User</Button>
+                                <Button className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25" onClick={() => setIsCreateOpen(false)}>Create User</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -548,7 +551,7 @@ export default function UsersPage() {
 
                 {/* Manage Permissions Dialog */}
                 <Dialog open={isPermissionsOpen} onOpenChange={setIsPermissionsOpen}>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>
                                 {selectedUser ? `Manage Role & Permissions — ${selectedUser.name}` : "Manage Permissions"}
@@ -559,9 +562,9 @@ export default function UsersPage() {
                         </DialogHeader>
                         <div className="py-4 space-y-6">
                             {selectedUser && (
-                                <div className="p-4 rounded-lg bg-muted/50">
+                                <div className="p-4 rounded-xl bg-gradient-to-r from-muted/60 to-muted/30 border border-border/50">
                                     <div className="flex items-center gap-3">
-                                        <Avatar className="h-10 w-10">
+                                        <Avatar className="h-10 w-10 ring-2 ring-primary/10">
                                             <AvatarFallback className="bg-primary/10 text-primary">
                                                 {getInitials(selectedUser.name)}
                                             </AvatarFallback>
@@ -643,6 +646,7 @@ export default function UsersPage() {
                                 Cancel
                             </Button>
                             <Button
+                                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25"
                                 onClick={handleSaveRole}
                                 disabled={savingRole || (selectedUser?.role === permRole)}
                             >
@@ -655,7 +659,7 @@ export default function UsersPage() {
 
                 {/* Role Permissions View Dialog */}
                 <Dialog open={isRoleViewOpen} onOpenChange={setIsRoleViewOpen}>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>
                                 {viewingRole ? `${formatRole(viewingRole)} — Permissions` : "Role Permissions"}
@@ -710,12 +714,12 @@ export default function UsersPage() {
 
                 {/* Main Content */}
                 <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                    <TabsList className="w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 p-1">
-                        <TabsTrigger value="users" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                    <TabsList className="w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 p-1 bg-muted/50 rounded-xl">
+                        <TabsTrigger value="users" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1.5 rounded-lg">
                             <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                             Users
                         </TabsTrigger>
-                        <TabsTrigger value="roles" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                        <TabsTrigger value="roles" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1.5 rounded-lg">
                             <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
                             Roles
                         </TabsTrigger>
@@ -723,30 +727,43 @@ export default function UsersPage() {
 
                     {/* Users Tab */}
                     <TabsContent value="users" className="mt-6">
-                        <Card>
+                        <Card className="card-premium overflow-hidden">
                             <CardContent className="p-0">
-                                <div className="rounded-lg border">
-                                    <Table>
+                                <div className="rounded-lg border-0">
+                                    <Table className="table-premium">
                                         <TableHeader>
-                                            <TableRow className="bg-muted/50">
-                                                <TableHead>User</TableHead>
-                                                <TableHead className="hidden md:table-cell">Role</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead className="hidden sm:table-cell">Last Active</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
+                                            <TableRow className="bg-gradient-to-r from-muted/80 via-muted/50 to-muted/80 border-b">
+                                                <TableHead className="font-semibold">User</TableHead>
+                                                <TableHead className="hidden md:table-cell font-semibold">Role</TableHead>
+                                                <TableHead className="font-semibold">Status</TableHead>
+                                                <TableHead className="hidden sm:table-cell font-semibold">Last Active</TableHead>
+                                                <TableHead className="text-right font-semibold">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {users.map((user, index) => (
+                                            {users.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={5} className="h-40 text-center">
+                                                        <div className="flex flex-col items-center justify-center">
+                                                            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-500/10 to-cyan-500/10 mb-5">
+                                                                <Users className="h-10 w-10 text-teal-500/60" />
+                                                            </div>
+                                                            <p className="text-muted-foreground font-medium">No users found</p>
+                                                            <p className="text-sm text-muted-foreground/70 mt-1">Get started by adding your first user</p>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                users.map((user, index) => (
                                                 <TableRow
                                                     key={user.id}
-                                                    className="animate-fadeIn"
+                                                    className="animate-fadeIn hover:bg-muted/30 transition-colors"
                                                     style={{ animationDelay: `${index * 0.05}s` }}
                                                 >
                                                     <TableCell>
                                                         <div className="flex items-center gap-3">
-                                                            <Avatar className="h-10 w-10">
-                                                                <AvatarFallback className="bg-primary/10 text-primary">
+                                                            <Avatar className="h-10 w-10 ring-2 ring-primary/10">
+                                                                <AvatarFallback className="bg-gradient-to-br from-primary/15 to-primary/5 text-primary font-semibold">
                                                                     {getInitials(user.name)}
                                                                 </AvatarFallback>
                                                             </Avatar>
@@ -791,7 +808,7 @@ export default function UsersPage() {
                                                     <TableCell className="text-right">
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-muted/80">
                                                                     <MoreHorizontal className="w-4 h-4" />
                                                                 </Button>
                                                             </DropdownMenuTrigger>
@@ -823,7 +840,8 @@ export default function UsersPage() {
                                                         </DropdownMenu>
                                                     </TableCell>
                                                 </TableRow>
-                                            ))}
+                                                ))
+                                            )}
                                         </TableBody>
                                     </Table>
                                 </div>
@@ -837,13 +855,30 @@ export default function UsersPage() {
                             {SYSTEM_ROLES.map((role, index) => (
                                 <Card
                                     key={role.id}
-                                    className="card-hover animate-fadeIn"
+                                    className="card-premium overflow-hidden animate-fadeIn"
                                     style={{ animationDelay: `${index * 0.05}s` }}
                                 >
+                                    <div className={cn(
+                                        "h-1 bg-gradient-to-r",
+                                        role.id === "SUPER_ADMIN" && "from-purple-500 to-fuchsia-500",
+                                        role.id === "ADMIN" && "from-indigo-500 to-blue-500",
+                                        role.id === "EVENT_MANAGER" && "from-blue-500 to-cyan-500",
+                                        role.id === "REGISTRATION_MANAGER" && "from-green-500 to-emerald-500",
+                                        role.id === "CERTIFICATE_MANAGER" && "from-amber-500 to-orange-500",
+                                        role.id === "ATTENDEE" && "from-gray-400 to-slate-400",
+                                    )} />
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className={cn("p-2 rounded-lg", role.color.split(" ")[0])}>
+                                                <div className={cn(
+                                                    "p-2.5 rounded-xl",
+                                                    role.id === "SUPER_ADMIN" && "bg-gradient-to-br from-purple-500/20 to-fuchsia-500/10",
+                                                    role.id === "ADMIN" && "bg-gradient-to-br from-indigo-500/20 to-blue-500/10",
+                                                    role.id === "EVENT_MANAGER" && "bg-gradient-to-br from-blue-500/20 to-cyan-500/10",
+                                                    role.id === "REGISTRATION_MANAGER" && "bg-gradient-to-br from-green-500/20 to-emerald-500/10",
+                                                    role.id === "CERTIFICATE_MANAGER" && "bg-gradient-to-br from-amber-500/20 to-orange-500/10",
+                                                    role.id === "ATTENDEE" && "bg-gradient-to-br from-gray-500/20 to-slate-500/10",
+                                                )}>
                                                     <Shield className={cn("h-5 w-5", role.color.split(" ")[1])} />
                                                 </div>
                                                 <div>
@@ -866,14 +901,14 @@ export default function UsersPage() {
                                                 </Badge>
                                             ))}
                                             {getPermissions(role.id).length > 5 && (
-                                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-gradient-to-r from-muted to-muted/80">
                                                     +{getPermissions(role.id).length - 5} more
                                                 </Badge>
                                             )}
                                         </div>
                                         <Button
                                             variant="outline"
-                                            className="w-full gap-2"
+                                            className="w-full gap-2 rounded-xl hover:bg-muted/50"
                                             size="sm"
                                             onClick={() => openRoleView(role.id)}
                                         >

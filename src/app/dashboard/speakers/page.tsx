@@ -19,7 +19,6 @@ import {
     Linkedin,
     Twitter,
     Globe,
-    Loader2,
     X,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -49,6 +48,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { speakersService, Speaker } from "@/services/speakers";
 import { useConfirmDialog, useAlertDialog } from "@/components/ui/confirm-dialog";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
@@ -97,7 +97,7 @@ export default function SpeakersPage() {
         async function fetchSpeakers() {
             try {
                 setLoading(true);
-                const response = await speakersService.getAll({ ...tenantFilterParams });
+                const response = await speakersService.getAll({ ...tenantFilterParams, limit: 500 });
 
                 if (response.success && response.data) {
                     const speakersList = Array.isArray(response.data) ? response.data : [];
@@ -254,9 +254,7 @@ export default function SpeakersPage() {
     if (loading) {
         return (
             <DashboardLayout title="Speakers" subtitle="Manage speaker profiles and session assignments">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
@@ -268,56 +266,56 @@ export default function SpeakersPage() {
         >
             <ConfirmDialog />
             <AlertDialog />
-            <div className="space-y-6 animate-fadeIn">
+            <div className="space-y-6 animate-fadeIn bg-gradient-to-br from-slate-50/80 via-white to-teal-50/20 -m-6 p-6 rounded-2xl">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                    <Card className="card-hover">
+                    <Card className="card-premium">
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-teal h-10 w-10 sm:h-12 sm:w-12">
-                                    <User className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-600/10">
+                                    <User className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{totalSpeakers}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{totalSpeakers}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium">
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-green h-10 w-10 sm:h-12 sm:w-12">
-                                    <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10">
+                                    <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{activeSpeakers}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{activeSpeakers}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium">
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-orange h-10 w-10 sm:h-12 sm:w-12">
-                                    <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10">
+                                    <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{speakersWithEvents}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{speakersWithEvents}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">With Events</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium">
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-blue h-10 w-10 sm:h-12 sm:w-12">
-                                    <Globe className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10">
+                                    <Globe className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{totalEventAssignments}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{totalEventAssignments}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Assignments</p>
                                 </div>
                             </div>
@@ -332,7 +330,7 @@ export default function SpeakersPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 placeholder="Search speakers..."
-                                className="pl-10 pr-10"
+                                className="pl-10 pr-10 search-premium rounded-xl"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -348,12 +346,12 @@ export default function SpeakersPage() {
                     </div>
                     <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                         <DialogTrigger asChild>
-                            <Button className="gap-2 gradient-medical text-white hover:opacity-90">
+                            <Button className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25">
                                 <Plus className="w-4 h-4" />
                                 Add Speaker
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle>Add New Speaker</DialogTitle>
                                 <DialogDescription>
@@ -460,7 +458,7 @@ export default function SpeakersPage() {
 
                 {/* Speaker View Dialog */}
                 <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="w-[95vw] sm:max-w-2xl">
                         {selectedSpeaker && (
                             <>
                                 <DialogHeader>
@@ -602,10 +600,10 @@ export default function SpeakersPage() {
                 </Dialog>
 
                 {/* Speakers Grid */}
-                <Card>
+                <Card className="card-premium">
                     <CardHeader className="pb-3 px-3 sm:px-6">
                         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                            <TabsList className="w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 p-1">
+                            <TabsList className="w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 p-1 bg-muted/50 rounded-xl">
                                 <TabsTrigger value="all" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5">
                                     All ({totalSpeakers})
                                 </TabsTrigger>
@@ -623,11 +621,13 @@ export default function SpeakersPage() {
                             {filteredSpeakers.map((speaker, index) => (
                                 <div
                                     key={speaker.id}
-                                    className="p-4 rounded-xl border border-border bg-card card-hover animate-fadeIn"
+                                    className="card-premium rounded-xl overflow-hidden animate-fadeIn hover:shadow-xl hover:-translate-y-1 hover:border-teal-200/30 transition-all duration-400"
                                     style={{ animationDelay: `${index * 0.05}s` }}
                                 >
+                                    <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500" />
+                                    <div className="p-4">
                                     <div className="flex items-start gap-3">
-                                        <Avatar className="h-14 w-14">
+                                        <Avatar className="h-14 w-14 ring-2 ring-white shadow-md">
                                             <AvatarImage src={speaker.photo || undefined} />
                                             <AvatarFallback className="bg-primary/10 text-primary font-medium">
                                                 {getInitials(speaker.name)}
@@ -696,7 +696,7 @@ export default function SpeakersPage() {
                                     )}
 
                                     {speaker.events.length > 0 && (
-                                        <div className="mt-3 p-3 rounded-lg bg-muted/50">
+                                        <div className="mt-3 p-3 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200/50">
                                             <p className="text-sm font-medium text-foreground line-clamp-1">
                                                 {speaker.events[0].title}
                                             </p>
@@ -725,14 +725,17 @@ export default function SpeakersPage() {
                                             {speaker.eventCount} event{speaker.eventCount !== 1 ? "s" : ""}
                                         </span>
                                     </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
 
                         {filteredSpeakers.length === 0 && (
-                            <div className="text-center py-12">
-                                <User className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                                <h3 className="text-lg font-medium mb-2">No speakers found</h3>
+                            <div className="text-center py-16 px-8">
+                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-500/10 to-cyan-500/10 mb-5">
+                                    <User className="h-10 w-10 text-teal-500/50" />
+                                </div>
+                                <h3 className="text-lg font-semibold mb-2">No speakers found</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
                                     {speakers.length === 0
                                         ? "Add your first speaker to get started"

@@ -14,6 +14,7 @@ import {
     Loader2,
     Shield,
 } from "lucide-react";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { usersService, User } from "@/services/users";
 import { uploadFile } from "@/services";
 import { toast } from "sonner";
@@ -157,9 +158,7 @@ export default function ProfilePage() {
     if (loading) {
         return (
             <DashboardLayout title="Profile" subtitle="View and edit your profile">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }

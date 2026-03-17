@@ -11,7 +11,6 @@ import {
     ArrowDownRight,
     Clock,
     Mic2,
-    Loader2,
     Inbox,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { dashboardService } from "@/services/dashboard";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
 
 interface StatItem {
@@ -166,9 +166,7 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <div className="space-y-6 animate-fadeIn">
-                <div className="flex items-center justify-center h-[50vh]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </div>
         );
     }

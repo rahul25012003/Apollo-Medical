@@ -93,6 +93,10 @@ export interface Event {
     earlyBirdDeadline: string | null;
     displayOrder: number;
   }[];
+  tenant?: {
+    slug: string;
+    name: string;
+  };
 }
 
 export interface EventFilters {
@@ -108,6 +112,7 @@ export interface EventFilters {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   tenantId?: string;
+  tenantSlug?: string;
 }
 
 export interface CreateEventData {
@@ -203,15 +208,40 @@ export interface EventSponsor {
   };
 }
 
+export interface SessionSpeakerData {
+  id?: string;
+  speakerId: string;
+  talkTitle?: string | null;
+  talkDescription?: string | null;
+  talkDuration?: number | null;
+  displayOrder?: number;
+  speaker?: {
+    id: string;
+    name: string;
+    designation: string | null;
+    institution: string | null;
+    photo: string | null;
+  };
+}
+
+export interface EventHall {
+  id: string;
+  eventId: string;
+  name: string;
+  displayOrder: number;
+}
+
 export interface EventSession {
   id: string;
   eventId: string;
   title: string;
   description: string | null;
+  sessionType: string;
   sessionDate: string | null;
   startTime: string | null;
   endTime: string | null;
   venue: string | null;
+  hallId: string | null;
   sessionOrder: number;
   speakerId: string | null;
   status: string;
@@ -223,19 +253,55 @@ export interface EventSession {
     institution: string | null;
     photo: string | null;
   } | null;
+  hall?: {
+    id: string;
+    name: string;
+  } | null;
+  sessionSpeakers?: SessionSpeakerData[];
 }
 
 export interface CreateSessionData {
   title: string;
   description?: string | null;
+  sessionType?: string;
   sessionDate?: string | null;
   startTime?: string | null;
   endTime?: string | null;
   venue?: string | null;
+  hallId?: string | null;
   sessionOrder?: number;
   speakerId?: string | null;
+  sessionSpeakers?: {
+    speakerId: string;
+    talkTitle?: string | null;
+    talkDescription?: string | null;
+    talkDuration?: number | null;
+    displayOrder?: number;
+  }[];
   status?: string;
   isPublished?: boolean;
+}
+
+export interface EventEngagement {
+  id: string;
+  eventId: string;
+  title: string;
+  type: string;
+  description: string | null;
+  content: unknown;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEngagementData {
+  title: string;
+  type: string;
+  description?: string | null;
+  content?: unknown;
+  isActive?: boolean;
+  displayOrder?: number;
 }
 
 export const eventsService = {
@@ -369,4 +435,49 @@ export const eventsService = {
    */
   deleteSession: (eventId: string, sessionId: string) =>
     api.delete(`/api/events/${eventId}/sessions?sessionId=${sessionId}`),
+
+  // ============================================================================
+  // ENGAGEMENT METHODS
+  // ============================================================================
+
+  getEngagements: (eventId: string) =>
+    api.get<EventEngagement[]>(`/api/events/${eventId}/engagements`),
+
+  createEngagement: (eventId: string, data: CreateEngagementData) =>
+    api.post<EventEngagement>(`/api/events/${eventId}/engagements`, data),
+
+  updateEngagement: (eventId: string, engagementId: string, data: Partial<CreateEngagementData>) =>
+    api.put<EventEngagement>(`/api/events/${eventId}/engagements`, { engagementId, ...data }),
+
+  deleteEngagement: (eventId: string, engagementId: string) =>
+    api.delete(`/api/events/${eventId}/engagements?engagementId=${engagementId}`),
+
+  // ============================================================================
+  // ENGAGEMENT RESPONSE METHODS
+  // ============================================================================
+
+  getEngagementResponses: (eventId: string, engagementId: string, params?: { page?: number; limit?: number; sort?: string }) =>
+    api.get<unknown>(`/api/events/${eventId}/engagements/${engagementId}/responses`, params as Record<string, string | number | boolean>),
+
+  submitEngagementResponse: (eventId: string, engagementId: string, data: { response: Record<string, unknown> }) =>
+    api.post<unknown>(`/api/events/${eventId}/engagements/${engagementId}/responses`, data),
+
+  deleteEngagementResponse: (eventId: string, engagementId: string, responseId: string) =>
+    api.delete(`/api/events/${eventId}/engagements/${engagementId}/responses?responseId=${responseId}`),
+
+  // ============================================================================
+  // HALL METHODS
+  // ============================================================================
+
+  getHalls: (eventId: string) =>
+    api.get<EventHall[]>(`/api/events/${eventId}/halls`),
+
+  createHall: (eventId: string, data: { name: string; displayOrder?: number }) =>
+    api.post<EventHall>(`/api/events/${eventId}/halls`, data),
+
+  updateHalls: (eventId: string, halls: { id?: string; name: string; displayOrder: number }[]) =>
+    api.put<EventHall[]>(`/api/events/${eventId}/halls`, { halls }),
+
+  deleteHall: (eventId: string, hallId: string) =>
+    api.delete(`/api/events/${eventId}/halls?hallId=${hallId}`),
 };

@@ -20,6 +20,7 @@ interface ConfirmDialogProps {
     onOpenChange: (open: boolean) => void;
     title: string;
     description: string;
+    body?: React.ReactNode;
     confirmText?: string;
     cancelText?: string;
     onConfirm: () => void | Promise<void>;
@@ -65,6 +66,7 @@ export function ConfirmDialog({
     onOpenChange,
     title,
     description,
+    body,
     confirmText = "Confirm",
     cancelText = "Cancel",
     onConfirm,
@@ -94,7 +96,7 @@ export function ConfirmDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className={cn("sm:max-w-[425px]", body && "sm:max-w-[500px]")}>
                 <DialogHeader>
                     <div className="flex items-start gap-4">
                         <div className={cn("p-2 rounded-full shrink-0", config.iconBgClass)}>
@@ -106,6 +108,7 @@ export function ConfirmDialog({
                         </div>
                     </div>
                 </DialogHeader>
+                {body && <div className="py-2">{body}</div>}
                 <DialogFooter className="gap-2 sm:gap-0">
                     <Button
                         variant="outline"
@@ -182,6 +185,7 @@ export function useConfirmDialog() {
         open: boolean;
         title: string;
         description: string;
+        body?: React.ReactNode;
         confirmText: string;
         cancelText: string;
         variant: ConfirmDialogVariant;
@@ -190,6 +194,7 @@ export function useConfirmDialog() {
         open: false,
         title: "",
         description: "",
+        body: undefined,
         confirmText: "Confirm",
         cancelText: "Cancel",
         variant: "danger",
@@ -200,6 +205,7 @@ export function useConfirmDialog() {
         (options: {
             title: string;
             description: string;
+            body?: React.ReactNode;
             confirmText?: string;
             cancelText?: string;
             variant?: ConfirmDialogVariant;
@@ -209,6 +215,7 @@ export function useConfirmDialog() {
                     open: true,
                     title: options.title,
                     description: options.description,
+                    body: options.body,
                     confirmText: options.confirmText || "Confirm",
                     cancelText: options.cancelText || "Cancel",
                     variant: options.variant || "danger",
@@ -229,6 +236,7 @@ export function useConfirmDialog() {
                 onOpenChange={(open) => setState((prev) => ({ ...prev, open }))}
                 title={state.title}
                 description={state.description}
+                body={state.body}
                 confirmText={state.confirmText}
                 cancelText={state.cancelText}
                 variant={state.variant}

@@ -158,6 +158,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         // Verify OTP directly against the database
+        // First check for a valid (non-expired, unused) OTP
         const otp = await prisma.oTP.findFirst({
           where: {
             email: email.toLowerCase(),
@@ -169,7 +170,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
 
         if (!otp) {
-          throw new Error("Invalid or expired OTP");
+          // Distinguish between expired OTP and completely invalid OTP
+          const expiredOtp = await prisma.oTP.findFirst({
+            where: {
+              email: email.toLowerCase(),
+              code,
+              purpose: "LOGIN",
+              used: false,
+              expiresAt: { lte: new Date() },
+            },
+          });
+
+          if (expiredOtp) {
+            // Mark the expired OTP as used to prevent reuse
+            await prisma.oTP.update({
+              where: { id: expiredOtp.id },
+              data: { used: true },
+            });
+            throw new Error("OTP_EXPIRED");
+          }
+
+          throw new Error("INVALID_OTP");
         }
 
         // Mark OTP as used
@@ -193,7 +214,43 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
 
         if (!user) {
-          return null;
+          // Auto-create user account for OTP-only login (speakers, delegates, etc.)
+          // Try to find tenantId from existing registration
+          const existingReg = await prisma.registration.findFirst({
+            where: { email: { equals: email.toLowerCase(), mode: "insensitive" } },
+            include: { event: { select: { tenantId: true } } },
+            orderBy: { createdAt: "desc" },
+          });
+          const tenantId = existingReg?.event?.tenantId || null;
+
+          // Also get name from registration if available
+          const regName = existingReg?.name || null;
+
+          const newUser = await prisma.user.create({
+            data: {
+              email: email.toLowerCase(),
+              name: regName,
+              password: null,
+              role: "ATTENDEE",
+              isActive: true,
+              tenantId,
+            },
+          });
+
+          // Link any existing registrations to this newly created user
+          await prisma.registration.updateMany({
+            where: { email: { equals: email.toLowerCase(), mode: "insensitive" }, userId: null },
+            data: { userId: newUser.id },
+          });
+
+          return {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            image: null,
+            tenantId: newUser.tenantId,
+          };
         }
 
         if (!user.isActive) {

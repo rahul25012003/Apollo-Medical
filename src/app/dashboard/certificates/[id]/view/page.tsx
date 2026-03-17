@@ -6,8 +6,8 @@ import {
     Printer,
     Download,
     X,
-    Loader2,
 } from "lucide-react";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { Button } from "@/components/ui/button";
 import { certificatesService } from "@/services/certificates";
 import { CertificateTemplate, CertificateData, EventType } from "@/components/certificates/certificate-template";
@@ -16,11 +16,13 @@ import { CertificateShare } from "@/components/certificates/certificate-share";
 interface CertificateDetails {
     id: string;
     certificateCode: string;
+    certificateType: string | null;
     recipientName: string;
     recipientEmail: string;
     title: string | null;
     description: string | null;
     cmeCredits: number | null;
+    position: number | null;
     status: string;
     issuedAt: string | null;
     event: {
@@ -38,6 +40,8 @@ interface CertificateDetails {
         signatory2Name: string | null;
         signatory2Title: string | null;
     };
+    session?: { id: string; title: string; sessionDate: string | null } | null;
+    quiz?: { id: string; title: string } | null;
 }
 
 export default function CertificateViewPage() {
@@ -89,9 +93,7 @@ export default function CertificateViewPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <AiimsLoader fullPage />
         );
     }
 
@@ -140,6 +142,12 @@ export default function CertificateViewPage() {
         issuedAt: certificate.issuedAt || undefined,
         signatories: signatories.length > 0 ? signatories : undefined,
         verifyUrl: verifyUrl,
+        // Role-specific fields
+        certificateType: certificate.certificateType || undefined,
+        certificateTitle: certificate.title || undefined,
+        sessionTitle: certificate.session?.title || undefined,
+        quizTitle: certificate.quiz?.title || undefined,
+        position: certificate.position || undefined,
     };
 
     return (

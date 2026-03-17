@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/adapter-pg"],
   // Image optimization with external images
   images: {
+    unoptimized: true, // Serve images at full quality (no compression on VPS)
     remotePatterns: [
       { protocol: 'https', hostname: '**.cloudinary.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },

@@ -14,6 +14,22 @@ datasource db {
 // ENUMS
 // ============================================================================
 
+enum ScanType {
+  CHECK_IN
+  ZONE_ACCESS
+  FOOD_DISTRIBUTION
+}
+
+enum ScanResult {
+  SUCCESS
+  DENIED
+  ALREADY_CHECKED_IN
+  ALREADY_SERVED
+  ZONE_FULL
+  NOT_FOUND
+  INVALID
+}
+
 enum UserRole {
   SUPER_ADMIN          // Full access to all features and settings (platform-level)
   ADMIN                // Full access within own tenant (tenant administrator)
@@ -74,6 +90,12 @@ enum CertificateStatus {
   PENDING
   ISSUED
   REVOKED
+}
+
+enum PaymentMode {
+  NONE              // No payment required / free events only
+  RAZORPAY          // Razorpay payment gateway
+  QR_CODE           // Manual QR code payment with proof upload
 }
 
 // ============================================================================
@@ -157,6 +179,14 @@ model Tenant {
   footerText        String?
   copyrightText     String?
 
+  // Payment Settings (configured by Super Admin)
+  paymentMode       PaymentMode @default(NONE)
+  razorpayKeyId     String?            // Razorpay Key ID
+  razorpayKeySecret String?            // Razorpay Key Secret (encrypted)
+  paymentQrCode     String?            // QR code image URL for manual payments
+  paymentUpiId      String?            // UPI ID displayed with QR code
+  paymentInstructions String? @db.Text // Instructions shown during QR payment
+
   // Settings
   isActive          Boolean  @default(true)
   defaultCurrency   String   @default("INR")
@@ -172,6 +202,8 @@ model Tenant {
   sponsors          Sponsor[]
   notificationChannels NotificationChannel[]
   notifications        Notification[]
+  messageTemplates  MessageTemplate[]
+  messageLogs       MessageLog[]
 
   @@index([slug])
   @@index([domain])
@@ -281,6 +313,7 @@ model User {
   registeredBy  Registration[] @relation("RegisteredByUser")
   otps          OTP[]
   notifications Notification[]
+  engagementResponses EngagementResponse[]
 
   @@index([tenantId])
   @@map("users")
@@ -427,6 +460,16 @@ model Event {
   isPublished          Boolean     @default(false)
   isFeatured           Boolean     @default(false)
 
+  // ID Card Settings
+  idCardRequirePhoto   Boolean     @default(false)
+  idCardSingleSided    Boolean     @default(true)
+  badgeCategories      Json?       // [{id, label, color, bgColor, borderColor}]
+
+  // Admin-customizable config (JSON arrays — null = use system defaults)
+  participantRoles     Json?       // [{id, label, showOnPublicReg, certificate: {title, bodyText, colors}}]
+  sessionTypes         Json?       // [{id, label, icon, colors: {bg, border, badge}}]
+  certificateConfig    Json?       // {signatoryOverrides, globalColors, etc.}
+
   // Multi-tenancy
   tenantId             String?
   tenant               Tenant?     @relation(fields: [tenantId], references: [id], onDelete: SetNull)
@@ -440,7 +483,16 @@ model Event {
   eventSessions        EventSession[]
   eventSponsors        EventSponsor[]
   certificates         Certificate[]
+  quizzes              Quiz[]
   pricingCategories    EventPricing[]
+  engagements          EventEngagement[]
+  halls                EventHall[]
+  zones                EventZone[]
+  scanLogs             ScanLog[]
+  accessPoints         AccessPoint[]
+  foodZones            FoodZone[]
+  foodLogs             FoodLog[]
+  messageLogs          MessageLog[]
 
   @@index([status])
   @@index([startDate])
@@ -497,6 +549,7 @@ model Registration {
   organization     String?
   designation      String?
   category         String?            // Faculty, Resident, Student, etc.
+  participantRole  String?            // DELEGATE, SPEAKER, ORGANIZER, VOLUNTEER, CHAIRPERSON
 
   // Registration Details
   eventId          String
@@ -507,12 +560,19 @@ model Registration {
 
   // Payment Info
   paymentId        String?            // External payment reference
-  paymentMethod    String?
+  paymentMethod    String?            // razorpay, qr_code, free, admin_manual
+  razorpayOrderId  String?            // Razorpay order ID
+  razorpayPaymentId String?           // Razorpay payment ID
+  razorpaySignature String?           // Razorpay signature for verification
+  paymentProof     String?            // QR code payment proof image URL
   paidAt           DateTime?
 
   // Attendance
   attendanceStatus String?            // checked_in, no_show, etc.
   checkedInAt      DateTime?
+  qrCode           String?
+  badgeGenerated   Boolean            @default(false)
+  photo            String?            // Attendee photo URL for ID card
 
   // Notes
   notes            String?            @db.Text
@@ -529,7 +589,10 @@ model Registration {
   user             User?              @relation("UserRegistrations", fields: [userId], references: [id], onDelete: SetNull)
   event            Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   registeredBy     User?              @relation("RegisteredByUser", fields: [registeredById], references: [id], onDelete: SetNull)
-  certificate      Certificate?
+  certificates     Certificate[]
+  quizParticipants QuizParticipant[]
+  scanLogs         ScanLog[]
+  foodLogs         FoodLog[]
 
   @@unique([email, eventId])
   @@index([eventId])
@@ -574,8 +637,9 @@ model Speaker {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  eventSpeakers EventSpeaker[]
-  eventSessions EventSession[]
+  eventSpeakers    EventSpeaker[]
+  eventSessions    EventSession[]
+  sessionSpeakers  SessionSpeaker[]
 
   @@index([tenantId])
   @@map("speakers")
@@ -611,6 +675,27 @@ model EventSpeaker {
 }
 
 // ============================================================================
+// EVENT HALL MODEL (Venues/halls per event)
+// ============================================================================
+
+model EventHall {
+  id           String   @id @default(cuid())
+  eventId      String
+  name         String   // e.g., "Hall A", "Auditorium 1"
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sessions     EventSession[]
+  accessPoints AccessPoint[]
+
+  @@unique([eventId, name])
+  @@index([eventId])
+  @@map("event_halls")
+}
+
+// ============================================================================
 // EVENT SESSION MODEL (Independent sessions, optionally linked to speakers)
 // ============================================================================
 
@@ -621,13 +706,15 @@ model EventSession {
   // Session Details
   title              String
   description        String?   @db.Text
+  sessionType        String    @default("OTHER") // PLENARY, WORKSHOP, PANEL, KEYNOTE, BREAK, OTHER
   sessionDate        DateTime?
   startTime          String?
   endTime            String?
-  venue              String?
+  venue              String?   // Legacy free-text venue
+  hallId             String?   // Reference to EventHall
   sessionOrder       Int       @default(0)
 
-  // Optional Speaker Link
+  // Legacy Speaker Link (deprecated — use sessionSpeakers instead)
   speakerId          String?
 
   // Status
@@ -638,12 +725,91 @@ model EventSession {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  speaker      Speaker? @relation(fields: [speakerId], references: [id], onDelete: SetNull)
+  event            Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  speaker          Speaker?         @relation(fields: [speakerId], references: [id], onDelete: SetNull)
+  hall             EventHall?       @relation(fields: [hallId], references: [id], onDelete: SetNull)
+  sessionSpeakers  SessionSpeaker[]
+  certificates     Certificate[]
 
   @@index([eventId])
   @@index([speakerId])
+  @@index([hallId])
   @@map("event_sessions")
+}
+
+// ============================================================================
+// SESSION SPEAKER MODEL (Multiple speakers per session with talk topics)
+// ============================================================================
+
+model SessionSpeaker {
+  id              String   @id @default(cuid())
+  sessionId       String
+  speakerId       String
+
+  // Talk Details
+  talkTitle       String?
+  talkDescription String?  @db.Text
+  talkDuration    Int?     // duration in minutes
+  displayOrder    Int      @default(0)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  session      EventSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  speaker      Speaker      @relation(fields: [speakerId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, speakerId])
+  @@index([sessionId])
+  @@index([speakerId])
+  @@map("session_speakers")
+}
+
+// ============================================================================
+// EVENT ENGAGEMENT MODEL (Polls, Q&A, Feedback, etc.)
+// ============================================================================
+
+model EventEngagement {
+  id           String   @id @default(cuid())
+  eventId      String
+
+  title        String
+  type         String   // POLL, QA, FEEDBACK, ANNOUNCEMENT, QUIZ
+  description  String?  @db.Text
+  content      Json?    // Type-specific payload (poll options, quiz questions, etc.)
+  isActive     Boolean  @default(false)
+  displayOrder Int      @default(0)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  responses    EngagementResponse[]
+
+  @@index([eventId])
+  @@map("event_engagements")
+}
+
+// ============================================================================
+// ENGAGEMENT RESPONSE MODEL (Attendee responses to engagements)
+// ============================================================================
+
+model EngagementResponse {
+  id            String   @id @default(cuid())
+  engagementId  String
+  userId        String?
+  userName      String?
+  response      Json     // { answer: "Option A" } for polls, { text: "..." } for Q&A/feedback, { word: "..." } for wordcloud
+
+  createdAt     DateTime @default(now())
+
+  engagement    EventEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  user          User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([engagementId, createdAt])
+  @@index([userId])
+  @@map("engagement_responses")
 }
 
 // ============================================================================
@@ -710,8 +876,18 @@ model Certificate {
   certificateCode  String            @unique // Unique verification code
 
   // Certificate Details
-  registrationId   String            @unique
+  registrationId   String            // Multiple certs per registration allowed
   eventId          String
+
+  // Optional links for specific certificate types
+  sessionId        String?           // For speaker session-specific certificates
+  quizId           String?           // For quiz certificates
+
+  // Certificate type classification
+  certificateType  String            @default("ATTENDANCE")
+  // Types: ATTENDANCE, SPEAKER_SESSION, ORGANIZATION, JUDGE,
+  //        QUIZ_WINNER, QUIZ_FINALIST, QUIZ_PARTICIPATION,
+  //        VOLUNTEER, CHAIRPERSON
 
   // Recipient Info (denormalized)
   recipientName    String
@@ -721,6 +897,7 @@ model Certificate {
   title            String?           // Certificate title/type
   description      String?           @db.Text
   cmeCredits       Int?
+  position         Int?              // For quiz winners (1st=1, 2nd=2, 3rd=3)
 
   // Status
   status           CertificateStatus @default(PENDING)
@@ -738,8 +915,224 @@ model Certificate {
   // Relations
   registration     Registration      @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   event            Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  session          EventSession?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  quiz             Quiz?             @relation(fields: [quizId], references: [id], onDelete: SetNull)
 
+  @@unique([registrationId, sessionId, certificateType]) // Prevent duplicate certs for same session+type
   @@index([certificateCode])
   @@index([eventId])
+  @@index([sessionId])
+  @@index([quizId])
   @@map("certificates")
+}
+
+// ============================================================================
+// QUIZ MODELS
+// ============================================================================
+
+model Quiz {
+  id          String   @id @default(cuid())
+  eventId     String
+  title       String
+  description String?  @db.Text
+  status      String   @default("UPCOMING") // UPCOMING, ONGOING, COMPLETED
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  event        Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participants QuizParticipant[]
+  certificates Certificate[]
+
+  @@index([eventId])
+  @@map("quizzes")
+}
+
+model QuizParticipant {
+  id             String   @id @default(cuid())
+  quizId         String
+  registrationId String
+  score          Int?
+  position       Int?     // 1, 2, 3 for podium
+  isFinalist     Boolean  @default(false)
+  isWinner       Boolean  @default(false)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  quiz           Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, registrationId])
+  @@index([quizId])
+  @@index([registrationId])
+  @@map("quiz_participants")
+}
+
+// ============================================================================
+// EVENT ZONE & ACCESS CONTROL MODELS
+// ============================================================================
+
+model EventZone {
+  id           String   @id @default(cuid())
+  eventId      String
+  name         String
+  description  String?
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  event        Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  accessRules  ZoneAccessRule[]
+  scanLogs     ScanLog[]
+
+  @@unique([eventId, name])
+  @@index([eventId])
+  @@map("event_zones")
+}
+
+model ZoneAccessRule {
+  id       String  @id @default(cuid())
+  zoneId   String
+  category String
+  allowed  Boolean @default(true)
+
+  zone     EventZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@unique([zoneId, category])
+  @@index([zoneId])
+  @@map("zone_access_rules")
+}
+
+// ============================================================================
+// SCAN LOG MODEL
+// ============================================================================
+
+model ScanLog {
+  id             String     @id @default(cuid())
+  eventId        String
+  registrationId String
+  scanType       ScanType
+  zoneId         String?
+  accessPointId  String?
+  direction      String?    // IN, OUT
+  result         ScanResult
+  scannedAt      DateTime   @default(now())
+  scannedBy      String?
+
+  event          Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  zone           EventZone?   @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  accessPoint    AccessPoint? @relation(fields: [accessPointId], references: [id], onDelete: SetNull)
+
+  @@index([eventId, scannedAt])
+  @@index([registrationId])
+  @@map("scan_logs")
+}
+
+// ============================================================================
+// ACCESS POINT MODEL
+// ============================================================================
+
+model AccessPoint {
+  id          String   @id @default(cuid())
+  eventId     String
+  name        String   // "Main Hall Entrance", "VIP Gate"
+  type        String   @default("ACCESS") // ACCESS, FOOD
+  hallId      String?  // Optional link to EventHall
+  direction   String   @default("BOTH") // IN, OUT, BOTH
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event       Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  hall        EventHall? @relation(fields: [hallId], references: [id], onDelete: SetNull)
+  scanLogs    ScanLog[]
+
+  @@index([eventId])
+  @@map("access_points")
+}
+
+// ============================================================================
+// FOOD ZONE & FOOD LOG MODELS
+// ============================================================================
+
+model FoodZone {
+  id          String   @id @default(cuid())
+  eventId     String
+  name        String   // "Lunch", "Tea Break", "Dinner"
+  maxServings Int?     // Optional max count
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  foodLogs    FoodLog[]
+
+  @@index([eventId])
+  @@map("food_zones")
+}
+
+model FoodLog {
+  id              String   @id @default(cuid())
+  eventId         String
+  foodZoneId      String
+  registrationId  String
+  servedAt        DateTime @default(now())
+  scannedBy       String?
+
+  event          Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  foodZone       FoodZone     @relation(fields: [foodZoneId], references: [id], onDelete: Cascade)
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([foodZoneId, registrationId])
+  @@index([eventId, servedAt])
+  @@map("food_logs")
+}
+
+// ============================================================================
+// COMMUNICATION MODELS
+// ============================================================================
+
+model MessageTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  name        String   // "Registration Confirmation", "Event Reminder", etc.
+  subject     String
+  body        String   @db.Text
+  type        String   @default("EMAIL") // EMAIL, SMS
+  isDefault   Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@map("message_templates")
+}
+
+model MessageLog {
+  id             String   @id @default(cuid())
+  tenantId       String?
+  eventId        String?
+  recipientEmail String
+  recipientName  String?
+  subject        String
+  channel        String   // EMAIL, SMS
+  status         String   @default("SENT") // SENT, FAILED, PENDING
+  errorMessage   String?
+
+  createdAt      DateTime @default(now())
+
+  tenant         Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  event          Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([eventId])
+  @@map("message_logs")
 }

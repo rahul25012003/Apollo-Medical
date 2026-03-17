@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { SplashScreen } from "@/components/splash-screen";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
   title: "ICMS - Conference Management System",
   description: "Integrated Conference Management System",
   icons: {
-    icon: "/favicon-32.png",
+    icon: "/favicon-16.png",
     apple: "/apple-touch-icon.png",
   },
 };
@@ -28,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
+        <SplashScreen />
         <Providers>{children}</Providers>
       </body>
     </html>

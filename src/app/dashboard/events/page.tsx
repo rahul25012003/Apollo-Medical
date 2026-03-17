@@ -53,10 +53,10 @@ import {
     TrendingUp,
     CheckCircle2,
     AlertCircle,
-    Loader2,
     QrCode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { validateEventForPublish, calculateEventStatus } from "@/lib/event-validations";
 import { EVENT_TYPES, EVENT_CATEGORIES, EVENT_STATUSES } from "@/lib/event-constants";
 import { eventsService, Event } from "@/services/events";
@@ -124,7 +124,7 @@ export default function EventsPage() {
         async function fetchEvents() {
             try {
                 setLoading(true);
-                const response = await eventsService.getAll({ ...tenantFilterParams });
+                const response = await eventsService.getAll({ ...tenantFilterParams, limit: 200 });
 
                 if (response.success && response.data) {
                     const eventsList = Array.isArray(response.data) ? response.data : [];
@@ -228,9 +228,13 @@ export default function EventsPage() {
 
     // Delete event handler
     const handleDeleteEvent = async (eventId: string, eventTitle: string) => {
+        const event = events.find(e => e.id === eventId);
+        const regCount = event?.registrations || 0;
         const confirmed = await confirm({
             title: "Delete Event",
-            description: `Are you sure you want to delete "${eventTitle}"? This action cannot be undone.`,
+            description: regCount > 0
+                ? `Are you sure you want to delete "${eventTitle}"? This will also delete ${regCount} registration(s). This action cannot be undone.`
+                : `Are you sure you want to delete "${eventTitle}"? This action cannot be undone.`,
             confirmText: "Delete",
             cancelText: "Cancel",
             variant: "danger",
@@ -347,17 +351,17 @@ export default function EventsPage() {
     const getStatusConfig = (status: string) => {
         switch (status) {
             case "UPCOMING":
-                return { label: "Upcoming", className: "bg-blue-100 text-blue-700 border-blue-200", icon: Calendar };
+                return { label: "Upcoming", className: "bg-blue-100 text-blue-700 border-blue-200 font-semibold shadow-sm", icon: Calendar };
             case "ACTIVE":
-                return { label: "Active", className: "bg-green-100 text-green-700 border-green-200", icon: CheckCircle2 };
+                return { label: "Active", className: "bg-green-100 text-green-700 border-green-200 font-semibold shadow-sm", icon: CheckCircle2 };
             case "COMPLETED":
-                return { label: "Completed", className: "bg-gray-100 text-gray-700 border-gray-200", icon: CheckCircle2 };
+                return { label: "Completed", className: "bg-gray-100 text-gray-700 border-gray-200 font-semibold shadow-sm", icon: CheckCircle2 };
             case "DRAFT":
-                return { label: "Draft", className: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: FileText };
+                return { label: "Draft", className: "bg-yellow-100 text-yellow-700 border-yellow-200 font-semibold shadow-sm", icon: FileText };
             case "CANCELLED":
-                return { label: "Cancelled", className: "bg-red-100 text-red-700 border-red-200", icon: AlertCircle };
+                return { label: "Cancelled", className: "bg-red-100 text-red-700 border-red-200 font-semibold shadow-sm", icon: AlertCircle };
             default:
-                return { label: status, className: "bg-gray-100 text-gray-700 border-gray-200", icon: Calendar };
+                return { label: status, className: "bg-gray-100 text-gray-700 border-gray-200 font-semibold shadow-sm", icon: Calendar };
         }
     };
 
@@ -373,9 +377,7 @@ export default function EventsPage() {
     if (loading) {
         return (
             <DashboardLayout title="Events" subtitle="Manage your events and sessions">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
@@ -391,13 +393,13 @@ export default function EventsPage() {
                     <div className="flex flex-col sm:flex-row gap-3 justify-between">
                         <div className="flex flex-1 gap-3">
                             {/* Search */}
-                            <div className="relative flex-1 max-w-md">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <div className="relative flex-1 max-w-md search-premium rounded-xl">
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search events..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-10 pr-10"
+                                    className="pl-10 pr-10 h-11 rounded-xl border-border/60 bg-background"
                                 />
                                 {searchQuery && (
                                     <button
@@ -448,7 +450,7 @@ export default function EventsPage() {
 
                         {canCreateEvent && (
                             <Link href="/dashboard/events/create">
-                                <Button className="gradient-medical text-white hover:opacity-90 w-full sm:w-auto">
+                                <Button className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20 hover:shadow-teal-500/30 transition-all w-full sm:w-auto h-11 rounded-xl px-6">
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create Event
                                 </Button>
@@ -562,8 +564,10 @@ export default function EventsPage() {
 
                 {/* Events Grid */}
                 {filteredEvents.length === 0 ? (
-                    <div className="text-center py-12 bg-muted/30 rounded-xl">
-                        <Calendar className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                    <div className="text-center py-16 bg-gradient-to-b from-muted/10 to-muted/30 rounded-2xl border border-dashed border-border/40 backdrop-blur-sm">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center mx-auto mb-4">
+                            <Calendar className="h-8 w-8 text-teal-600" />
+                        </div>
                         <h3 className="font-semibold text-lg mb-2">No events found</h3>
                         <p className="text-muted-foreground mb-4">
                             {events.length === 0
@@ -593,8 +597,17 @@ export default function EventsPage() {
                             return (
                                 <div
                                     key={event.id}
-                                    className="bg-background rounded-xl border border-border p-5 hover:shadow-lg transition-all hover:border-primary/20"
+                                    className="card-premium group relative bg-background rounded-2xl border border-border/60 p-5 hover:border-primary/20 overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-400"
                                 >
+                                    {/* Top gradient accent line */}
+                                    <div className={cn(
+                                        "absolute top-0 left-0 right-0 h-1 rounded-t-2xl",
+                                        event.status === "ACTIVE" && "bg-gradient-to-r from-green-400 to-emerald-500",
+                                        event.status === "UPCOMING" && "bg-gradient-to-r from-blue-400 to-cyan-500",
+                                        event.status === "DRAFT" && "bg-gradient-to-r from-amber-400 to-yellow-500",
+                                        event.status === "COMPLETED" && "bg-gradient-to-r from-gray-300 to-gray-400",
+                                        event.status === "CANCELLED" && "bg-gradient-to-r from-red-400 to-rose-500",
+                                    )} />
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex items-center gap-2">
                                             <Badge variant="outline" className={cn("text-xs", statusConfig.className)}>
@@ -681,7 +694,7 @@ export default function EventsPage() {
                                                         Export Report
                                                     </DropdownMenuItem>
                                                 )}
-                                                {canDeleteEvent && event.registrations === 0 && (
+                                                {canDeleteEvent && (
                                                     <>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem
@@ -726,9 +739,9 @@ export default function EventsPage() {
                                                 {capacityStatus.text}
                                             </span>
                                         </div>
-                                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                        <div className="progress-premium">
                                             <div
-                                                className={cn("h-full rounded-full transition-all", capacityStatus.bgColor)}
+                                                className="progress-premium-fill"
                                                 style={{ width: `${Math.min((event.registrations / event.capacity) * 100, 100)}%` }}
                                             />
                                         </div>
@@ -764,10 +777,10 @@ export default function EventsPage() {
                     </div>
                 ) : (
                     /* List View */
-                    <div className="bg-background rounded-xl border border-border overflow-hidden">
+                    <div className="bg-background rounded-2xl border border-border/60 overflow-hidden shadow-sm">
                         <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-muted/50 border-b">
+                            <table className="w-full table-premium">
+                                <thead className="bg-gradient-to-b from-muted/60 to-muted/30 border-b">
                                     <tr>
                                         <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Event</th>
                                         <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 hidden md:table-cell">Date</th>

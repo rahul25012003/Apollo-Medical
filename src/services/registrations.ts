@@ -13,6 +13,7 @@ export interface Registration {
   organization: string | null;
   designation: string | null;
   category: string | null;
+  participantRole: string | null;
   eventId: string;
   status: "PENDING" | "CONFIRMED" | "WAITLIST" | "ATTENDED" | "CANCELLED";
   paymentStatus: "PENDING" | "PAID" | "REFUNDED" | "FAILED" | "FREE";
@@ -26,6 +27,9 @@ export interface Registration {
   notes: string | null;
   specialRequests: string | null;
   registeredById: string | null;
+  paymentProof: string | null;
+  razorpayOrderId: string | null;
+  razorpayPaymentId: string | null;
   createdAt: string;
   updatedAt: string;
   event?: {
@@ -46,11 +50,19 @@ export interface Registration {
     name: string | null;
     email: string;
   } | null;
+  certificates?: {
+    id: string;
+    certificateCode: string;
+    status: string;
+    certificateType?: string;
+    title?: string | null;
+  }[];
+  /** @deprecated Use certificates[0] instead */
   certificate?: {
     id: string;
     certificateCode: string;
     status: string;
-  };
+  } | null;
 }
 
 export interface RegistrationFilters {
@@ -75,6 +87,7 @@ export interface CreateRegistrationData {
   organization?: string;
   designation?: string;
   category?: string;
+  participantRole?: string;
   amount: number;
   notes?: string;
   specialRequests?: string;
@@ -170,6 +183,16 @@ export const registrationsService = {
       paidAt: new Date().toISOString(),
       paymentId,
       paymentMethod,
+    }),
+
+  /**
+   * Approve registration (confirm + mark paid in one action)
+   */
+  approve: (id: string) =>
+    api.put<Registration>(`/api/registrations/${id}`, {
+      status: "CONFIRMED",
+      paymentStatus: "PAID",
+      paidAt: new Date().toISOString(),
     }),
 
   /**

@@ -34,6 +34,8 @@ import {
     Phone,
     Globe,
     Download,
+    Upload,
+    Mic2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,6 +99,8 @@ interface EventDisplayData {
     speakers: { name: string; designation: string | null; institution: string | null }[];
     sponsors: { name: string; logo: string | null; tier: string }[];
     pricingCategories: PricingCategory[];
+    isRegistrationOpen: boolean;
+    registrationDeadline: string | null;
 }
 
 type Step = "category" | "details" | "preferences" | "payment" | "confirmation";
@@ -128,6 +132,17 @@ export default function RegisterPage() {
     const [registrationId, setRegistrationId] = useState<string | null>(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
+    const [paymentConfig, setPaymentConfig] = useState<{
+        paymentMode: "NONE" | "RAZORPAY" | "QR_CODE";
+        razorpayKeyId?: string | null;
+        paymentQrCode?: string | null;
+        paymentUpiId?: string | null;
+        paymentInstructions?: string | null;
+    } | null>(null);
+    const [paymentProofUrl, setPaymentProofUrl] = useState("");
+    const [paymentTransactionId, setPaymentTransactionId] = useState("");
+    const [uploadingProof, setUploadingProof] = useState(false);
+    const [proofUploadError, setProofUploadError] = useState<string | null>(null);
 
     // Event data from API
     const [eventData, setEventData] = useState<EventDisplayData | null>(null);
@@ -222,6 +237,8 @@ export default function RegisterPage() {
                             tier: es.tier,
                         })) || [],
                         pricingCategories,
+                        isRegistrationOpen: event.isRegistrationOpen !== false,
+                        registrationDeadline: event.registrationDeadline || null,
                     });
 
                     // Auto-select first pricing category if available
@@ -240,8 +257,26 @@ export default function RegisterPage() {
         if (eventId) fetchEvent();
     }, [eventId]);
 
+    // Fetch tenant payment config
+    useEffect(() => {
+        if (!eventId) return;
+        async function fetchPaymentConfig() {
+            try {
+                const res = await fetch(`/api/payments/tenant-config?eventId=${eventId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        setPaymentConfig(data.data);
+                    }
+                }
+            } catch { /* silently fail - defaults to NONE */ }
+        }
+        fetchPaymentConfig();
+    }, [eventId]);
+
     // Form state
     const [selectedCategory, setSelectedCategory] = useState("general");
+    const [participantRole, setParticipantRole] = useState("DELEGATE");
     const [paymentMethod, setPaymentMethod] = useState("razorpay");
     const [formData, setFormData] = useState({
         title: "",
@@ -293,17 +328,18 @@ export default function RegisterPage() {
         if (eventData.pricingCategories && eventData.pricingCategories.length > 0) {
             const category = eventData.pricingCategories.find(c => c.id === selectedCategory);
             if (category) {
-                // Check if early bird is applicable for this category
                 const isEarlyBird = category.earlyBirdPrice && category.earlyBirdDeadline &&
                     new Date() <= new Date(category.earlyBirdDeadline);
-                return isEarlyBird ? Number(category.earlyBirdPrice) : Number(category.price);
+                const price = isEarlyBird ? Number(category.earlyBirdPrice) : Number(category.price);
+                return isNaN(price) ? 0 : price;
             }
         }
 
         // Fallback to event-level pricing
-        return eventData.isEarlyBird && eventData.earlyBirdPrice
+        const price = eventData.isEarlyBird && eventData.earlyBirdPrice
             ? Number(eventData.earlyBirdPrice)
             : Number(eventData.price);
+        return isNaN(price) ? 0 : price;
     };
 
     const getSelectedCategoryName = () => {
@@ -390,6 +426,7 @@ export default function RegisterPage() {
         setError(null);
 
         try {
+            // Step 1: Create registration
             const registrationData: CreateRegistrationData = {
                 eventId: eventData.id,
                 name: `${formData.title} ${formData.firstName} ${formData.lastName}`.trim(),
@@ -398,6 +435,7 @@ export default function RegisterPage() {
                 organization: formData.institution || undefined,
                 designation: formData.designation || undefined,
                 category: getSelectedCategoryName() || undefined,
+                participantRole: participantRole || undefined,
                 amount: totalPrice,
                 specialRequests: preferences.foodAllergies || undefined,
             };
@@ -405,17 +443,173 @@ export default function RegisterPage() {
             const response = await registrationsService.create(registrationData);
 
             if (response.success && response.data) {
-                setRegistrationId(response.data.id);
-                setCurrentStep("confirmation");
+                const regId = response.data.id;
+                setRegistrationId(regId);
+
+                // Step 2: Handle payment based on tenant config
+                const mode = paymentConfig?.paymentMode || "NONE";
+
+                if (totalPrice <= 0 && !paymentProofUrl) {
+                    // Free event - just confirm
+                    setCurrentStep("confirmation");
+                } else if (mode === "NONE") {
+                    // No online payment configured - submit payment proof if uploaded
+                    if (paymentProofUrl) {
+                        try {
+                            await fetch("/api/payments/qr-confirm", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    registrationId: regId,
+                                    paymentProof: paymentProofUrl,
+                                    transactionId: paymentTransactionId || undefined,
+                                }),
+                            });
+                        } catch (err) {
+                            console.error("Payment proof submit error:", err);
+                        }
+                    }
+                    setCurrentStep("confirmation");
+                } else if (mode === "RAZORPAY") {
+                    // Razorpay payment flow
+                    await handleRazorpayPayment(regId);
+                } else if (mode === "QR_CODE") {
+                    // QR Code - submit payment proof then go to confirmation
+                    if (paymentProofUrl) {
+                        try {
+                            const qrRes = await fetch("/api/payments/qr-confirm", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    registrationId: regId,
+                                    paymentProof: paymentProofUrl,
+                                    transactionId: paymentTransactionId || undefined,
+                                }),
+                            });
+                            const qrData = await qrRes.json();
+                            if (!qrData.success) {
+                                console.error("QR confirm failed:", qrData);
+                            }
+                        } catch (err) {
+                            console.error("QR confirm error:", err);
+                        }
+                    }
+                    setCurrentStep("confirmation");
+                }
             } else {
-                // Show the actual error from the API so the user knows what went wrong
-                const errorMessage =
-                    response.error?.message ||
-                    "Failed to complete registration. Please try again.";
-                setError(errorMessage);
+                const errMsg = typeof response.error === "string"
+                    ? response.error
+                    : response.error?.message || "Registration failed";
+                setError(errMsg);
+            }
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "An unexpected error occurred");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleRazorpayPayment = async (regId: string) => {
+        try {
+            // Create Razorpay order
+            const orderRes = await fetch("/api/payments/create-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ registrationId: regId }),
+            });
+            const orderData = await orderRes.json();
+
+            if (!orderData.success) {
+                setError(orderData.error?.message || "Failed to create payment order");
+                setCurrentStep("confirmation"); // Still show confirmation, payment can be retried
+                return;
+            }
+
+            // Load Razorpay script
+            const script = document.createElement("script");
+            script.src = "https://checkout.razorpay.com/v1/checkout.js";
+            script.onload = () => {
+                const options = {
+                    key: orderData.data.keyId,
+                    amount: orderData.data.amount,
+                    currency: orderData.data.currency,
+                    name: tenantBranding?.name || "ICMS",
+                    description: `Registration for ${eventData!.title}`,
+                    image: tenantBranding?.logo || undefined,
+                    order_id: orderData.data.orderId,
+                    handler: async function (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) {
+                        // Verify payment on server
+                        try {
+                            const verifyRes = await fetch("/api/payments/verify", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    registrationId: regId,
+                                    razorpayPaymentId: response.razorpay_payment_id,
+                                    razorpayOrderId: response.razorpay_order_id,
+                                    razorpaySignature: response.razorpay_signature,
+                                }),
+                            });
+                            const verifyData = await verifyRes.json();
+                            if (verifyData.success) {
+                                setCurrentStep("confirmation");
+                            } else {
+                                setError("Payment verification failed. Please contact support.");
+                                setCurrentStep("confirmation");
+                            }
+                        } catch {
+                            setError("Payment verification failed. Please contact support.");
+                            setCurrentStep("confirmation");
+                        }
+                    },
+                    prefill: {
+                        name: `${formData.firstName} ${formData.lastName}`,
+                        email: formData.email,
+                        contact: formData.phone,
+                    },
+                    theme: {
+                        color: tenantBranding?.primaryColor || "#0d9488",
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            // User closed Razorpay modal without paying
+                            setCurrentStep("confirmation");
+                            setIsSubmitting(false);
+                        },
+                    },
+                };
+
+                const rzp = new (window as any).Razorpay(options);
+                rzp.open();
+            };
+            document.body.appendChild(script);
+        } catch {
+            setError("Failed to initiate payment. Your registration is saved - you can pay later.");
+            setCurrentStep("confirmation");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleQrPaymentSubmit = async () => {
+        if (!registrationId || !paymentProofUrl) return;
+        setIsSubmitting(true);
+        try {
+            const res = await fetch("/api/payments/qr-confirm", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    registrationId,
+                    paymentProof: paymentProofUrl,
+                    transactionId: paymentTransactionId || undefined,
+                }),
+            });
+            const data = await res.json();
+            if (!data.success) {
+                setError(data.error?.message || "Failed to submit payment proof");
             }
         } catch {
-            setError("An error occurred during registration. Please try again.");
+            setError("Failed to submit payment proof");
         } finally {
             setIsSubmitting(false);
         }
@@ -508,6 +702,7 @@ export default function RegisterPage() {
             <div class="row"><span class="label">Registration ID</span><span class="value">${registrationId}</span></div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
                 <div class="row"><span class="label">Category</span><span class="value">${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</span></div>
+                <div class="row"><span class="label">Role</span><span class="value">${participantRole.charAt(0) + participantRole.slice(1).toLowerCase()}</span></div>
                 <div class="row"><span class="label">Date</span><span class="value">${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
                 <div class="row"><span class="label">Status</span><span class="status">${totalPrice > 0 ? 'Payment Pending' : 'Confirmed'}</span></div>
             </div>
@@ -562,7 +757,7 @@ export default function RegisterPage() {
             <div className="min-h-screen flex flex-col items-center justify-center gap-4">
                 <AlertCircle className="h-12 w-12 text-destructive" />
                 <h1 className="text-xl font-semibold">{error}</h1>
-                <Link href={tenantSlug ? `/t/${tenantSlug}` : "/events"}>
+                <Link href={tenantSlug ? "/" : "/events"}>
                     <Button variant="outline">Back to Events</Button>
                 </Link>
             </div>
@@ -626,7 +821,7 @@ export default function RegisterPage() {
                                 View Event Details
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[85vh]">
+                        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh]">
                             <DialogHeader>
                                 <DialogTitle className="text-xl">{eventData?.title}</DialogTitle>
                                 <DialogDescription>
@@ -882,6 +1077,18 @@ export default function RegisterPage() {
 
                     {/* Step Content */}
                     <div className="animate-fadeIn stagger-2">
+                        {/* Registration closed warning */}
+                        {eventData && (!eventData.isRegistrationOpen || (eventData.registrationDeadline && new Date(eventData.registrationDeadline) < new Date())) && (
+                            <div className="mb-4 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                                <p className="font-medium text-destructive">Registration Closed</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {eventData.registrationDeadline && new Date(eventData.registrationDeadline) < new Date()
+                                        ? "The registration deadline for this event has passed."
+                                        : "Registration is currently closed for this event."}
+                                </p>
+                            </div>
+                        )}
+
                         {/* Error Message */}
                         {error && (
                             <div className="mb-4 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
@@ -959,6 +1166,52 @@ export default function RegisterPage() {
                                             <div className="h-px bg-border" />
                                         </>
                                     )}
+
+                                    {/* Participant Role */}
+                                    <div className="space-y-3">
+                                        <Label className="text-base font-semibold">Participant Role *</Label>
+                                        <p className="text-sm text-muted-foreground">Select your role for this event (this determines your certificate type)</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {[
+                                                { value: "DELEGATE", label: "Delegate", description: "General attendee", icon: Users },
+                                                { value: "ORGANIZER", label: "Organizer", description: "Event organizing committee", icon: Building2 },
+                                                { value: "VOLUNTEER", label: "Volunteer", description: "Volunteering at the event", icon: Heart },
+                                                { value: "CHAIRPERSON", label: "Chairperson", description: "Session chair / moderator", icon: Award },
+                                            ].map((role) => {
+                                                const RoleIcon = role.icon;
+                                                return (
+                                                    <div
+                                                        key={role.value}
+                                                        className={cn(
+                                                            "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                                                            participantRole === role.value
+                                                                ? "border-primary bg-primary/5"
+                                                                : "border-border hover:border-primary/50"
+                                                        )}
+                                                        onClick={() => setParticipantRole(role.value)}
+                                                    >
+                                                        <div className={cn(
+                                                            "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
+                                                            participantRole === role.value ? "border-primary" : "border-muted-foreground"
+                                                        )}>
+                                                            {participantRole === role.value && (
+                                                                <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="font-medium text-sm flex items-center gap-1.5">
+                                                                <RoleIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                                {role.label}
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">{role.description}</p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="h-px bg-border" />
 
                                     {/* Name */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1144,15 +1397,174 @@ export default function RegisterPage() {
                                         <CardContent className="space-y-6">
                                             {totalPrice > 0 ? (
                                                 <div className="space-y-4">
-                                                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
-                                                        <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                                                        <div>
-                                                            <p className="text-sm font-medium text-amber-800">Payment Required</p>
-                                                            <p className="text-xs text-amber-700">
-                                                                Click below to confirm your registration. Payment details will be shared via email after registration. Your spot is reserved once payment is completed.
-                                                            </p>
+                                                    {/* Razorpay mode info */}
+                                                    {paymentConfig?.paymentMode === "RAZORPAY" && (
+                                                        <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 flex items-start gap-3">
+                                                            <CreditCard className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="text-sm font-medium text-blue-800">Online Payment</p>
+                                                                <p className="text-xs text-blue-700">
+                                                                    You'll be redirected to a secure payment gateway to complete your payment via UPI, cards, or net banking.
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    )}
+
+                                                    {/* QR Code mode */}
+                                                    {paymentConfig?.paymentMode === "QR_CODE" && (
+                                                        <div className="space-y-4">
+                                                            <div className="p-4 rounded-xl bg-purple-50 border border-purple-200 flex items-start gap-3">
+                                                                <Shield className="h-5 w-5 text-purple-600 shrink-0 mt-0.5" />
+                                                                <div>
+                                                                    <p className="text-sm font-medium text-purple-800">QR Code Payment</p>
+                                                                    <p className="text-xs text-purple-700">
+                                                                        {paymentConfig.paymentInstructions || "Scan the QR code to pay, then upload your payment screenshot below."}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            {paymentConfig.paymentQrCode && (
+                                                                <div className="flex flex-col items-center gap-3 py-4">
+                                                                    <img
+                                                                        src={paymentConfig.paymentQrCode}
+                                                                        alt="Payment QR Code"
+                                                                        className="w-56 h-56 object-contain border-2 border-gray-200 rounded-lg p-2 bg-white"
+                                                                    />
+                                                                    {paymentConfig.paymentUpiId && (
+                                                                        <p className="text-sm text-muted-foreground">
+                                                                            UPI ID: <span className="font-mono font-semibold">{paymentConfig.paymentUpiId}</span>
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {/* Payment proof upload */}
+                                                            <div className="space-y-3 p-4 rounded-xl bg-gray-50 border">
+                                                                <p className="text-sm font-medium">Upload Payment Proof</p>
+                                                                <Input
+                                                                    placeholder="Transaction / UTR ID (optional)"
+                                                                    value={paymentTransactionId}
+                                                                    onChange={(e) => setPaymentTransactionId(e.target.value)}
+                                                                />
+                                                                <Input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    onChange={async (e) => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (!file) return;
+                                                                        setUploadingProof(true);
+                                                                        setProofUploadError(null);
+                                                                        const fd = new FormData();
+                                                                        fd.append("file", file);
+                                                                        try {
+                                                                            const res = await fetch("/api/payments/upload-proof", { method: "POST", body: fd });
+                                                                            const data = await res.json();
+                                                                            if (data.success && data.data?.url) {
+                                                                                setPaymentProofUrl(data.data.url);
+                                                                            } else {
+                                                                                setProofUploadError(data.error?.message || "Upload failed");
+                                                                            }
+                                                                        } catch {
+                                                                            setProofUploadError("Failed to upload. Please try again.");
+                                                                        } finally {
+                                                                            setUploadingProof(false);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                {uploadingProof && (
+                                                                    <p className="text-xs text-primary flex items-center gap-1">
+                                                                        <Loader2 className="h-3 w-3 animate-spin" /> Uploading...
+                                                                    </p>
+                                                                )}
+                                                                {proofUploadError && (
+                                                                    <p className="text-xs text-destructive flex items-center gap-1">
+                                                                        <AlertCircle className="h-3 w-3" /> {proofUploadError}
+                                                                    </p>
+                                                                )}
+                                                                {paymentProofUrl && (
+                                                                    <div className="space-y-2">
+                                                                        <p className="text-xs text-green-600 flex items-center gap-1">
+                                                                            <CheckCircle2 className="h-3 w-3" /> Payment screenshot uploaded
+                                                                        </p>
+                                                                        <img
+                                                                            src={paymentProofUrl}
+                                                                            alt="Payment proof preview"
+                                                                            className="max-h-32 rounded-lg border object-contain bg-white"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* NONE mode - no online payment configured */}
+                                                    {(!paymentConfig || paymentConfig.paymentMode === "NONE") && (
+                                                        <div className="space-y-4">
+                                                            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+                                                                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                                                <div>
+                                                                    <p className="text-sm font-medium text-amber-800">Payment Required</p>
+                                                                    <p className="text-xs text-amber-700">
+                                                                        Please make the payment and upload the screenshot below for verification.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            {/* Payment proof upload for NONE mode */}
+                                                            <div className="space-y-3 p-4 rounded-xl bg-gray-50 border">
+                                                                <p className="text-sm font-medium">Upload Payment Screenshot</p>
+                                                                <Input
+                                                                    placeholder="Transaction / UTR ID (optional)"
+                                                                    value={paymentTransactionId}
+                                                                    onChange={(e) => setPaymentTransactionId(e.target.value)}
+                                                                />
+                                                                <Input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    onChange={async (e) => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (!file) return;
+                                                                        setUploadingProof(true);
+                                                                        setProofUploadError(null);
+                                                                        const fd = new FormData();
+                                                                        fd.append("file", file);
+                                                                        try {
+                                                                            const res = await fetch("/api/payments/upload-proof", { method: "POST", body: fd });
+                                                                            const data = await res.json();
+                                                                            if (data.success && data.data?.url) {
+                                                                                setPaymentProofUrl(data.data.url);
+                                                                            } else {
+                                                                                setProofUploadError(data.error?.message || "Upload failed");
+                                                                            }
+                                                                        } catch {
+                                                                            setProofUploadError("Failed to upload. Please try again.");
+                                                                        } finally {
+                                                                            setUploadingProof(false);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                {uploadingProof && (
+                                                                    <p className="text-xs text-primary flex items-center gap-1">
+                                                                        <Loader2 className="h-3 w-3 animate-spin" /> Uploading...
+                                                                    </p>
+                                                                )}
+                                                                {proofUploadError && (
+                                                                    <p className="text-xs text-destructive flex items-center gap-1">
+                                                                        <AlertCircle className="h-3 w-3" /> {proofUploadError}
+                                                                    </p>
+                                                                )}
+                                                                {paymentProofUrl && (
+                                                                    <div className="space-y-2">
+                                                                        <p className="text-xs text-green-600 flex items-center gap-1">
+                                                                            <CheckCircle2 className="h-3 w-3" /> Payment screenshot uploaded
+                                                                        </p>
+                                                                        <img
+                                                                            src={paymentProofUrl}
+                                                                            alt="Payment proof preview"
+                                                                            className="max-h-32 rounded-lg border object-contain bg-white"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-start gap-3">
@@ -1166,6 +1578,14 @@ export default function RegisterPage() {
                                                 </div>
                                             )}
 
+                                            {/* Warning if payment proof not uploaded (QR_CODE or NONE mode) */}
+                                            {totalPrice > 0 && (paymentConfig?.paymentMode === "QR_CODE" || !paymentConfig || paymentConfig.paymentMode === "NONE") && !paymentProofUrl && (
+                                                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-2">
+                                                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                                                    <p className="text-sm text-amber-700">Please upload your payment screenshot to proceed</p>
+                                                </div>
+                                            )}
+
                                             <div className="flex justify-between pt-4">
                                                 <Button variant="outline" onClick={handlePrevStep} className="gap-2">
                                                     <ArrowLeft className="h-4 w-4" />
@@ -1173,7 +1593,7 @@ export default function RegisterPage() {
                                                 </Button>
                                                 <Button
                                                     onClick={handlePayment}
-                                                    disabled={isSubmitting}
+                                                    disabled={isSubmitting || (totalPrice > 0 && (paymentConfig?.paymentMode === "QR_CODE" || !paymentConfig || paymentConfig.paymentMode === "NONE") && !paymentProofUrl)}
                                                     className="gap-2 gradient-medical text-white"
                                                     size="lg"
                                                 >
@@ -1182,10 +1602,15 @@ export default function RegisterPage() {
                                                             <Loader2 className="h-4 w-4 animate-spin" />
                                                             Processing...
                                                         </>
-                                                    ) : totalPrice > 0 ? (
+                                                    ) : totalPrice > 0 && paymentConfig?.paymentMode === "RAZORPAY" ? (
                                                         <>
-                                                            Register — ₹{totalPrice.toLocaleString()}
+                                                            Pay ₹{totalPrice.toLocaleString()}
                                                             <ArrowRight className="h-4 w-4" />
+                                                        </>
+                                                    ) : totalPrice > 0 && (paymentConfig?.paymentMode === "QR_CODE" || !paymentConfig || paymentConfig.paymentMode === "NONE") ? (
+                                                        <>
+                                                            <Upload className="h-4 w-4" />
+                                                            Submit & Register — ₹{totalPrice.toLocaleString()}
                                                         </>
                                                     ) : (
                                                         <>
@@ -1273,11 +1698,42 @@ export default function RegisterPage() {
                                             </div>
                                         </div>
 
-                                        {totalPrice > 0 && (
-                                            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-                                                <p className="text-sm text-amber-700">
-                                                    <AlertCircle className="h-4 w-4 inline mr-2" />
-                                                    Your registration is confirmed. Payment details will be shared to {formData.email}. Your spot is reserved once payment is completed.
+                                        {totalPrice > 0 && paymentConfig?.paymentMode === "RAZORPAY" && (
+                                            <div className="p-4 rounded-xl bg-green-50 border border-green-200">
+                                                <p className="text-sm text-green-700">
+                                                    <CheckCircle2 className="h-4 w-4 inline mr-2" />
+                                                    Payment completed successfully! A confirmation email has been sent to {formData.email}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {totalPrice > 0 && paymentConfig?.paymentMode === "QR_CODE" && (
+                                            <div className="p-4 rounded-xl bg-green-50 border border-green-200">
+                                                <p className="text-sm text-green-700">
+                                                    <CheckCircle2 className="h-4 w-4 inline mr-2" />
+                                                    Payment proof submitted successfully! Your registration is pending admin verification.
+                                                    {paymentTransactionId && (
+                                                        <span className="block mt-1 text-xs text-green-600">
+                                                            Transaction ID: <span className="font-mono font-bold">{paymentTransactionId}</span>
+                                                        </span>
+                                                    )}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {totalPrice > 0 && (!paymentConfig || paymentConfig.paymentMode === "NONE") && (
+                                            <div className="p-4 rounded-xl bg-green-50 border border-green-200">
+                                                <p className="text-sm text-green-700">
+                                                    <CheckCircle2 className="h-4 w-4 inline mr-2" />
+                                                    {paymentProofUrl
+                                                        ? "Payment screenshot submitted successfully! Your registration is pending admin verification."
+                                                        : `Your registration is confirmed. Payment details will be shared to ${formData.email}. Your spot is reserved once payment is completed.`
+                                                    }
+                                                    {paymentTransactionId && (
+                                                        <span className="block mt-1 text-xs text-green-600">
+                                                            Transaction ID: <span className="font-mono font-bold">{paymentTransactionId}</span>
+                                                        </span>
+                                                    )}
                                                 </p>
                                             </div>
                                         )}
@@ -1297,7 +1753,7 @@ export default function RegisterPage() {
                                             <Download className="h-4 w-4" />
                                             Save as PDF
                                         </Button>
-                                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/events"}>
+                                        <Link href={tenantSlug ? "/" : "/events"}>
                                             <Button className="gap-2 gradient-medical text-white">
                                                 Browse More Events
                                                 <ArrowRight className="h-4 w-4" />

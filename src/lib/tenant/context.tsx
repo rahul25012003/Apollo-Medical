@@ -252,19 +252,23 @@ export function TenantProvider({
     }
   }, [tenant?.theme]);
 
-  // Update page title and favicon (only for public tenant pages, not dashboard)
+  // Update favicon from tenant branding (works for both public pages and dashboard)
   useEffect(() => {
-    if (tenantSlug && tenant?.branding) {
-      document.title = tenant.branding.name;
-
-      if (tenant.branding.favicon) {
-        const favicon = document.querySelector<HTMLLinkElement>(
-          'link[rel="icon"]'
-        );
-        if (favicon) {
-          favicon.href = tenant.branding.favicon;
-        }
+    if (tenant?.branding?.favicon) {
+      let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+      if (favicon) {
+        favicon.href = tenant.branding.favicon;
+      } else {
+        // Create link element if it doesn't exist
+        favicon = document.createElement("link");
+        favicon.rel = "icon";
+        favicon.href = tenant.branding.favicon;
+        document.head.appendChild(favicon);
       }
+    }
+    // Update title only for public tenant pages (not dashboard)
+    if (tenantSlug && tenant?.branding?.name) {
+      document.title = tenant.branding.name;
     }
   }, [tenantSlug, tenant?.branding]);
 

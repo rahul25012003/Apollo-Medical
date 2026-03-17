@@ -8,7 +8,6 @@ import {
     Award,
     Calendar,
     Download,
-    Loader2,
     Share2,
     ExternalLink,
     CheckCircle2,
@@ -16,12 +15,14 @@ import {
     Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
 interface MyCertificate {
     id: string;
     certificateCode: string;
+    title: string | null;
     issuedAt: string;
     cmeCredits: number | null;
     event: {
@@ -29,6 +30,10 @@ interface MyCertificate {
         title: string;
         startDate: string;
         endDate: string;
+    };
+    registration?: {
+        id: string;
+        participantRole: string | null;
     };
 }
 
@@ -95,9 +100,7 @@ export default function MyCertificatesPage() {
     if (loading) {
         return (
             <DashboardLayout title="My Certificates" subtitle="View and download your certificates">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
@@ -118,7 +121,7 @@ export default function MyCertificatesPage() {
                         {certificates.map((certificate) => (
                             <div
                                 key={certificate.id}
-                                className="bg-background rounded-xl border border-border overflow-hidden hover:shadow-md transition-all"
+                                className="bg-white/80 backdrop-blur-sm rounded-xl border border-border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-400"
                             >
                                 {/* Certificate Header */}
                                 <div className="bg-gradient-to-r from-primary to-primary/80 p-4 text-white">
@@ -126,7 +129,7 @@ export default function MyCertificatesPage() {
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
                                                 <Award className="w-5 h-5" />
-                                                <span className="text-sm font-medium opacity-90">Certificate of Completion</span>
+                                                <span className="text-sm font-medium opacity-90">{certificate.title || "Certificate of Attendance"}</span>
                                             </div>
                                             <p className="text-xs opacity-75 font-mono">
                                                 #{certificate.certificateCode}
@@ -171,7 +174,7 @@ export default function MyCertificatesPage() {
                                     <div className="flex items-center gap-2 pt-2">
                                         <Button
                                             size="sm"
-                                            className="flex-1 gap-2"
+                                            className="flex-1 gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25"
                                             onClick={() => handleDownload(certificate.id)}
                                         >
                                             <Download className="w-4 h-4" />
@@ -180,7 +183,7 @@ export default function MyCertificatesPage() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="gap-2"
+                                            className="gap-2 hover:shadow-md hover:border-teal-200 transition-all"
                                             onClick={() => handleShare(certificate)}
                                         >
                                             <Share2 className="w-4 h-4" />

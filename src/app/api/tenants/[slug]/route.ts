@@ -88,6 +88,12 @@ const updateTenantSchema = z.object({
   isActive: z.boolean().optional(),
   defaultCurrency: z.string().optional(),
   defaultTimezone: z.string().optional(),
+  paymentMode: z.enum(["NONE", "RAZORPAY", "QR_CODE"]).optional(),
+  razorpayKeyId: z.string().optional().nullable(),
+  razorpayKeySecret: z.string().optional().nullable(),
+  paymentQrCode: z.string().optional().nullable(),
+  paymentUpiId: z.string().optional().nullable(),
+  paymentInstructions: z.string().optional().nullable(),
 });
 
 // GET /api/tenants/[slug] - Get tenant config by slug (public)

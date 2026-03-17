@@ -14,8 +14,8 @@ import {
     Printer,
     Download,
     X,
-    Loader2,
 } from "lucide-react";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { Button } from "@/components/ui/button";
 import { registrationsService } from "@/services/registrations";
 
@@ -96,9 +96,7 @@ export default function ReceiptPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <AiimsLoader fullPage />
         );
     }
 

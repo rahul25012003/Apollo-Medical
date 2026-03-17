@@ -59,6 +59,9 @@ export const GET = withErrorHandler(
     }
 
     const search = searchParams.get("search");
+    if (search && search.length > 200) {
+      return Errors.badRequest("Search query too long");
+    }
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
@@ -82,7 +85,7 @@ export const GET = withErrorHandler(
               avatar: true,
             },
           },
-          certificate: {
+          certificates: {
             select: {
               id: true,
               certificateCode: true,

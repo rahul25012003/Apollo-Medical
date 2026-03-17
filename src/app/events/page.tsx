@@ -23,6 +23,7 @@ import {
     Star,
     Loader2,
     Eye,
+    Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getEventImage } from "@/lib/event-utils";
 import { EVENT_TYPES, PUBLIC_STATUS_OPTIONS } from "@/lib/event-constants";
-import { eventsService, Event } from "@/services/events";
+import { eventsService, Event, EventFilters } from "@/services/events";
 
 // Display event type for the UI
 interface DisplayEvent {
@@ -60,6 +61,8 @@ interface DisplayEvent {
     sponsors: { name: string; tier: string; logo: string | null }[];
     speakers: number;
     sessions: number;
+    tenantSlug: string | null;
+    tenantName: string | null;
 }
 
 const tierIcons = {
@@ -89,6 +92,7 @@ export default function PublicEventsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState("all");
     const [filterStatus, setFilterStatus] = useState("UPCOMING");
+    const [tenantSlug, setTenantSlug] = useState<string | null>(null);
 
     // Data from API
     const [events, setEvents] = useState<DisplayEvent[]>([]);
@@ -100,12 +104,25 @@ export default function PublicEventsPage() {
         registrations: 0,
     });
 
-    // Fetch events from API
+    // Read tenant context from query params
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tenant = urlParams.get("tenant");
+            if (tenant) setTenantSlug(tenant);
+        }
+    }, []);
+
+    // Fetch events from API (filtered by tenant if on tenant domain)
     useEffect(() => {
         async function fetchEvents() {
             try {
                 setLoading(true);
-                const response = await eventsService.getPublic({ limit: 50 });
+                const filters: Record<string, string | number | boolean> = { limit: 50 };
+                if (tenantSlug) {
+                    filters.tenantSlug = tenantSlug;
+                }
+                const response = await eventsService.getPublic(filters as EventFilters);
 
                 if (response.success && response.data) {
                     const eventList = Array.isArray(response.data) ? response.data : [];
@@ -141,6 +158,8 @@ export default function PublicEventsPage() {
                         })) || [],
                         speakers: event.eventSpeakers?.length || 0,
                         sessions: event.eventSpeakers?.length || 0, // Using speaker count as session estimate
+                        tenantSlug: event.tenant?.slug || null,
+                        tenantName: event.tenant?.name || null,
                     }));
 
                     setEvents(displayEvents);
@@ -170,7 +189,7 @@ export default function PublicEventsPage() {
         }
 
         fetchEvents();
-    }, []);
+    }, [tenantSlug]);
 
     const filteredEvents = events.filter((event) => {
         const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -196,7 +215,7 @@ export default function PublicEventsPage() {
             <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
-                        <Link href="/" className="flex items-center gap-2">
+                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"} className="flex items-center gap-2">
                             <div className="h-8 w-8 rounded-xl gradient-medical flex items-center justify-center">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
@@ -368,7 +387,7 @@ export default function PublicEventsPage() {
                                         </div>
 
                                         <h2 className="text-2xl lg:text-3xl font-bold mb-4">
-                                            <Link href={`/events/${featuredEvent.id}`} className="hover:text-primary transition-colors">
+                                            <Link href={`/events/${featuredEvent.id}${featuredEvent.tenantSlug ? `?tenant=${featuredEvent.tenantSlug}` : ""}`} className="hover:text-primary transition-colors">
                                                 {featuredEvent.title}
                                             </Link>
                                         </h2>
@@ -413,13 +432,13 @@ export default function PublicEventsPage() {
                                                 )}
                                             </div>
                                             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                                                <Link href={`/events/${featuredEvent.id}`}>
+                                                <Link href={`/events/${featuredEvent.id}${featuredEvent.tenantSlug ? `?tenant=${featuredEvent.tenantSlug}` : ""}`}>
                                                     <Button size="lg" variant="outline" className="rounded-xl gap-2 w-full sm:w-auto">
                                                         <Eye className="h-5 w-5" />
                                                         View Details
                                                     </Button>
                                                 </Link>
-                                                <Link href={`/events/${featuredEvent.id}/register`}>
+                                                <Link href={`/events/${featuredEvent.id}/register${featuredEvent.tenantSlug ? `?tenant=${featuredEvent.tenantSlug}` : ""}`}>
                                                     <Button size="lg" className="rounded-xl gap-2 gradient-medical text-white hover:opacity-90 shadow-lg shadow-primary/25 w-full sm:w-auto">
                                                         <Ticket className="h-5 w-5" />
                                                         Register Now
@@ -468,7 +487,7 @@ export default function PublicEventsPage() {
                                     return (
                                         <Link
                                             key={event.id}
-                                            href={`/events/${event.id}`}
+                                            href={`/events/${event.id}${event.tenantSlug ? `?tenant=${event.tenantSlug}` : ""}`}
                                             className={cn(
                                                 "group relative bg-card rounded-2xl border border-border/50 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30",
                                                 event.status === "COMPLETED" && "opacity-75"
@@ -504,6 +523,12 @@ export default function PublicEventsPage() {
                                                     <h3 className="font-bold text-base line-clamp-2 group-hover:text-primary transition-colors">
                                                         {event.title}
                                                     </h3>
+                                                    {event.tenantName && !tenantSlug && (
+                                                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                                                            <Building2 className="h-3 w-3" />
+                                                            {event.tenantName}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -568,7 +593,7 @@ export default function PublicEventsPage() {
                                                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium group-hover:bg-primary/90 transition-colors"
                                                             onClick={(e) => {
                                                                 e.preventDefault();
-                                                                router.push(`/events/${event.id}/register`);
+                                                                router.push(`/events/${event.id}/register${event.tenantSlug ? `?tenant=${event.tenantSlug}` : ""}`);
                                                             }}
                                                         >
                                                             Register

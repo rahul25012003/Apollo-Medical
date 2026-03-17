@@ -10,10 +10,13 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     return Errors.unauthorized();
   }
 
-  // Find registrations by user email
+  // Find registrations by user email OR userId
   const registrations = await prisma.registration.findMany({
     where: {
-      email: session.user.email,
+      OR: [
+        { email: session.user.email },
+        { userId: session.user.id },
+      ],
     },
     include: {
       event: {
@@ -27,7 +30,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
           city: true,
         },
       },
-      certificate: {
+      certificates: {
         select: {
           id: true,
           certificateCode: true,
@@ -46,7 +49,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     paymentStatus: reg.paymentStatus,
     registeredAt: reg.createdAt,
     event: reg.event,
-    certificate: reg.certificate,
+    certificates: reg.certificates,
   }));
 
   return successResponse(mappedRegistrations);

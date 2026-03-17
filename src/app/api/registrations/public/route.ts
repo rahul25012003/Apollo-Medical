@@ -164,6 +164,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       organization: data.organization,
       designation: data.designation,
       category: data.category,
+      participantRole: data.participantRole,
       eventId: data.eventId,
       status,
       paymentStatus,

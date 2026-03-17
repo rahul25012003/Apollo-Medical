@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
 import { createSpeakerSchema } from "@/lib/validations/speaker";
+import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
 import {
   successResponse,
   paginatedResponse,
@@ -38,6 +39,9 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   Object.assign(where, tenantWhereClause(effectiveTenantId));
 
   const search = searchParams.get("search");
+  if (search && search.length > 200) {
+    return Errors.badRequest("Search query too long");
+  }
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -135,6 +139,29 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       tenantId,
     },
   });
+
+  // Auto-create user account for speaker (OTP-only login)
+  try {
+    const { isNew } = await findOrCreateUserAccount({
+      email: data.email,
+      name: data.name,
+      phone: data.phone,
+      tenantId,
+    });
+    if (isNew) {
+      const baseUrl = request.headers.get("origin") || request.headers.get("host") || "";
+      const loginUrl = `${baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`}/auth/login`;
+      sendAccountCreatedEmail({
+        email: data.email,
+        name: data.name,
+        role: "speaker",
+        loginUrl,
+        tenantId,
+      });
+    }
+  } catch (err) {
+    console.error("Auto-account creation failed for speaker:", err);
+  }
 
   return successResponse(speaker, "Speaker created successfully", 201);
 });

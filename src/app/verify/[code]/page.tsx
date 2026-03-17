@@ -227,8 +227,8 @@ export default function VerifyCertificatePage() {
 
                 {/* Footer */}
                 <div className="text-center mt-8">
-                    <Link href="/">
-                        <Button variant="outline">Back to Home</Button>
+                    <Link href="/dashboard">
+                        <Button variant="outline">Back to Dashboard</Button>
                     </Link>
                 </div>
             </div>

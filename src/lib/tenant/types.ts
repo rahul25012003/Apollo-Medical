@@ -133,6 +133,15 @@ export interface TenantFooterConfig {
   copyrightText?: string;
 }
 
+export interface TenantPaymentConfig {
+  paymentMode: "NONE" | "RAZORPAY" | "QR_CODE";
+  razorpayKeyId?: string;
+  razorpayKeySecret?: string;
+  paymentQrCode?: string;
+  paymentUpiId?: string;
+  paymentInstructions?: string;
+}
+
 export interface TenantSettings {
   defaultCurrency: string;
   defaultTimezone: string;
@@ -170,6 +179,9 @@ export interface TenantConfig {
 
   // Settings
   settings: TenantSettings;
+
+  // Payment
+  payment: TenantPaymentConfig;
 }
 
 // Database tenant model (from Prisma)
@@ -218,6 +230,12 @@ export interface TenantModel {
   isActive: boolean;
   defaultCurrency: string;
   defaultTimezone: string;
+  paymentMode: string;
+  razorpayKeyId: string | null;
+  razorpayKeySecret: string | null;
+  paymentQrCode: string | null;
+  paymentUpiId: string | null;
+  paymentInstructions: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -311,6 +329,15 @@ export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
     settings: {
       defaultCurrency: tenant.defaultCurrency,
       defaultTimezone: tenant.defaultTimezone,
+    },
+
+    payment: {
+      paymentMode: (tenant.paymentMode as "NONE" | "RAZORPAY" | "QR_CODE") || "NONE",
+      razorpayKeyId: tenant.razorpayKeyId || undefined,
+      razorpayKeySecret: tenant.razorpayKeySecret || undefined,
+      paymentQrCode: normalizeUrl(tenant.paymentQrCode),
+      paymentUpiId: tenant.paymentUpiId || undefined,
+      paymentInstructions: tenant.paymentInstructions || undefined,
     },
   };
 }

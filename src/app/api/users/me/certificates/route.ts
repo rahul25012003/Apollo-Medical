@@ -10,11 +10,14 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     return Errors.unauthorized();
   }
 
-  // Find certificates by user email through registration
+  // Find certificates by user email OR userId through registration
   const certificates = await prisma.certificate.findMany({
     where: {
       registration: {
-        email: session.user.email,
+        OR: [
+          { email: session.user.email },
+          { userId: session.user.id },
+        ],
       },
     },
     include: {
@@ -29,6 +32,20 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
       registration: {
         select: {
           id: true,
+          participantRole: true,
+        },
+      },
+      session: {
+        select: {
+          id: true,
+          title: true,
+          sessionDate: true,
+        },
+      },
+      quiz: {
+        select: {
+          id: true,
+          title: true,
         },
       },
     },
@@ -41,11 +58,16 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   const mappedCertificates = certificates.map((cert) => ({
     id: cert.id,
     certificateCode: cert.certificateCode,
+    title: cert.title,
+    certificateType: cert.certificateType,
+    position: cert.position,
     issuedAt: cert.issuedAt,
     cmeCredits: cert.cmeCredits,
     status: cert.status,
     event: cert.event,
     registration: cert.registration,
+    session: cert.session,
+    quiz: cert.quiz,
   }));
 
   return successResponse(mappedCertificates);

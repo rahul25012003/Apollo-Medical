@@ -62,6 +62,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { certificatesService } from "@/services/certificates";
 import { eventsService, Event } from "@/services/events";
 import { registrationsService } from "@/services/registrations";
@@ -149,8 +150,8 @@ export default function CertificatesPage() {
             try {
                 setLoading(true);
                 const [certsRes, eventsRes] = await Promise.all([
-                    certificatesService.getAll({ ...tenantFilterParams }),
-                    eventsService.getAll({ ...tenantFilterParams }),
+                    certificatesService.getAll({ ...tenantFilterParams, limit: 500 }),
+                    eventsService.getAll({ ...tenantFilterParams, limit: 200 }),
                 ]);
 
                 if (certsRes.success && certsRes.data) {
@@ -190,14 +191,14 @@ export default function CertificatesPage() {
 
     const getStatusBadge = (status: string) => {
         const statusConfig: Record<string, { class: string; icon: React.ElementType; label: string }> = {
-            ISSUED: { class: "bg-green-50 text-green-700", icon: CheckCircle2, label: "Issued" },
-            PENDING: { class: "bg-amber-50 text-amber-700", icon: Clock, label: "Pending" },
-            REVOKED: { class: "bg-red-50 text-red-700", icon: X, label: "Revoked" },
+            ISSUED: { class: "bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-200/50 font-semibold shadow-sm", icon: CheckCircle2, label: "Issued" },
+            PENDING: { class: "bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-700 border-amber-200/50 font-semibold shadow-sm", icon: Clock, label: "Pending" },
+            REVOKED: { class: "bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-200/50 font-semibold shadow-sm", icon: X, label: "Revoked" },
         };
         const config = statusConfig[status] || statusConfig.PENDING;
         const Icon = config.icon;
         return (
-            <Badge variant="outline" className={cn("gap-1 border-0", config.class)}>
+            <Badge variant="outline" className={cn("gap-1", config.class)}>
                 <Icon className="h-3 w-3" />
                 {config.label}
             </Badge>
@@ -291,6 +292,7 @@ export default function CertificatesPage() {
             const regsRes = await registrationsService.getAll({
                 eventId: generateForm.eventId,
                 status: "ATTENDED",
+                limit: 500,
             });
 
             if (!regsRes.success || !regsRes.data) {
@@ -415,9 +417,7 @@ export default function CertificatesPage() {
     if (loading) {
         return (
             <DashboardLayout title="Certificates" subtitle="Generate, manage, and distribute certificates">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
@@ -430,53 +430,57 @@ export default function CertificatesPage() {
             <div className="space-y-6 animate-fadeIn">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                    <Card className="card-hover">
+                    <Card className="card-premium overflow-hidden">
+                        <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500" />
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-teal h-10 w-10 sm:h-12 sm:w-12">
-                                    <Award className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-600/10 h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center">
+                                    <Award className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{certificates.length}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{certificates.length}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium overflow-hidden">
+                        <div className="h-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500" />
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-green h-10 w-10 sm:h-12 sm:w-12">
-                                    <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-600/10 h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center">
+                                    <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{issuedCount}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{issuedCount}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Issued</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium overflow-hidden">
+                        <div className="h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-orange h-10 w-10 sm:h-12 sm:w-12">
-                                    <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-600/10 h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center">
+                                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">{pendingCount}</p>
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">{pendingCount}</p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Pending</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="card-hover">
+                    <Card className="card-premium overflow-hidden">
+                        <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="icon-container icon-container-blue h-10 w-10 sm:h-12 sm:w-12">
-                                    <Send className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-600/10 h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center">
+                                    <Send className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xl sm:text-2xl font-bold">
+                                    <p className="text-xl sm:text-2xl font-bold animate-count">
                                         {certificates.reduce((acc, c) => acc + c.downloadCount, 0)}
                                     </p>
                                     <p className="text-xs sm:text-sm text-muted-foreground">Downloads</p>
@@ -487,7 +491,8 @@ export default function CertificatesPage() {
                 </div>
 
                 {/* Certificate Templates */}
-                <Card className="border-primary/10">
+                <Card className="card-premium border-primary/10 overflow-hidden">
+                    <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500" />
                     <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
                             <FileText className="h-5 w-5" />
@@ -500,7 +505,7 @@ export default function CertificatesPage() {
                                 <div
                                     key={template.type}
                                     onClick={() => handleTemplateClick(template.type)}
-                                    className="p-3 sm:p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group"
+                                    className="p-3 sm:p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-teal-500/5 transition-all cursor-pointer group overflow-hidden"
                                 >
                                     <div className={`h-12 sm:h-16 w-full rounded-lg bg-gradient-to-br ${template.color} flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform`}>
                                         <Award className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
@@ -525,7 +530,7 @@ export default function CertificatesPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 placeholder="Search by recipient, email, or code..."
-                                className="pl-10"
+                                className="pl-10 search-premium rounded-xl"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -539,7 +544,7 @@ export default function CertificatesPage() {
                             </Button>
                         )}
                         <Button
-                            className="gap-2 gradient-medical text-white hover:opacity-90"
+                            className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25"
                             onClick={() => setIsCreateOpen(true)}
                         >
                             <Plus className="w-4 h-4" />
@@ -550,7 +555,7 @@ export default function CertificatesPage() {
 
                 {/* Generate Certificates Dialog */}
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="w-[95vw] sm:max-w-2xl">
                         <DialogHeader>
                             <DialogTitle>Generate Certificates</DialogTitle>
                             <DialogDescription>
@@ -648,6 +653,7 @@ export default function CertificatesPage() {
                             <Button
                                 onClick={handleGenerateCertificates}
                                 disabled={generating || !generateForm.eventId}
+                                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25"
                             >
                                 {generating ? (
                                     <>
@@ -664,7 +670,7 @@ export default function CertificatesPage() {
 
                 {/* Certificate Preview Dialog */}
                 <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                    <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
+                    <DialogContent className="w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-auto">
                         {selectedCert && (
                             <>
                                 <DialogHeader>
@@ -691,7 +697,7 @@ export default function CertificatesPage() {
                                         Open Full View
                                     </Button>
                                     <Button
-                                        className="gap-2"
+                                        className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25"
                                         onClick={() => handleViewCertificate(selectedCert)}
                                     >
                                         <Download className="h-4 w-4" />
@@ -705,7 +711,7 @@ export default function CertificatesPage() {
 
                 {/* Template Preview Dialog */}
                 <Dialog open={isTemplatePreviewOpen} onOpenChange={setIsTemplatePreviewOpen}>
-                    <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
+                    <DialogContent className="w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-auto">
                         {selectedTemplateType && (
                             <>
                                 <DialogHeader>
@@ -780,10 +786,11 @@ export default function CertificatesPage() {
                 </Dialog>
 
                 {/* Certificates Table */}
-                <Card>
+                <Card className="card-premium overflow-hidden">
+                    <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500" />
                     <CardHeader className="pb-3 px-3 sm:px-6">
                         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                            <TabsList className="w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 p-1">
+                            <TabsList className="bg-muted/50 rounded-xl w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 p-1">
                                 <TabsTrigger value="all" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5">
                                     All ({certificates.length})
                                 </TabsTrigger>
@@ -801,9 +808,9 @@ export default function CertificatesPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="rounded-lg border">
-                            <Table>
+                            <Table className="table-premium">
                                 <TableHeader>
-                                    <TableRow className="bg-muted/50">
+                                    <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50">
                                         <TableHead className="w-12">
                                             <Checkbox
                                                 checked={selectedCertificates.length === filteredCertificates.length && filteredCertificates.length > 0}
@@ -823,7 +830,7 @@ export default function CertificatesPage() {
                                     {filteredCertificates.map((cert, index) => (
                                         <TableRow
                                             key={cert.id}
-                                            className="animate-fadeIn table-row-hover"
+                                            className="animate-fadeIn table-row-hover hover:bg-teal-50/30 transition-colors"
                                             style={{ animationDelay: `${index * 0.03}s` }}
                                         >
                                             <TableCell>
@@ -845,7 +852,7 @@ export default function CertificatesPage() {
                                                 <p className="text-sm truncate max-w-[200px]">{cert.event.title}</p>
                                             </TableCell>
                                             <TableCell className="hidden lg:table-cell">
-                                                <Badge variant="outline">{cert.event.type}</Badge>
+                                                <Badge variant="outline" className="bg-gradient-to-r from-slate-50 to-slate-100/80">{cert.event.type}</Badge>
                                             </TableCell>
                                             <TableCell className="hidden sm:table-cell">
                                                 <p className="text-sm font-medium">
@@ -946,7 +953,9 @@ export default function CertificatesPage() {
 
                         {filteredCertificates.length === 0 && (
                             <div className="text-center py-12">
-                                <Award className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-500/10 to-cyan-500/10 mb-5">
+                                    <Award className="h-12 w-12 text-muted-foreground/50" />
+                                </div>
                                 <h3 className="text-lg font-medium mb-2">No certificates found</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
                                     {selectedTab === "all"
@@ -954,7 +963,7 @@ export default function CertificatesPage() {
                                         : "No certificates match this filter"}
                                 </p>
                                 {selectedTab === "all" && (
-                                    <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+                                    <Button onClick={() => setIsCreateOpen(true)} className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25">
                                         <Plus className="h-4 w-4" />
                                         Generate Certificate
                                     </Button>

@@ -9,6 +9,7 @@ import {
   withErrorHandler,
   parseBody,
 } from "@/lib/api-utils";
+import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -43,7 +44,7 @@ export const GET = withErrorHandler(
             email: true,
           },
         },
-        certificate: true,
+        certificates: true,
       },
     });
 
@@ -92,7 +93,7 @@ export const PUT = withErrorHandler(
     // Check if registration exists
     const existingRegistration = await prisma.registration.findUnique({
       where: { id },
-      include: { event: { select: { tenantId: true } } },
+      include: { event: { select: { id: true, title: true, tenantId: true } } },
     });
 
     if (!existingRegistration) {
@@ -137,15 +138,58 @@ export const PUT = withErrorHandler(
             startDate: true,
           },
         },
-        certificate: {
+        certificates: {
           select: {
             id: true,
             certificateCode: true,
             status: true,
+            certificateType: true,
+            title: true,
           },
         },
       },
     });
+
+    // Auto-create delegate account when status changes to CONFIRMED
+    const isNewlyConfirmed =
+      data.status === "CONFIRMED" &&
+      existingRegistration.status !== "CONFIRMED";
+
+    if (isNewlyConfirmed) {
+      try {
+        const { userId, isNew } = await findOrCreateUserAccount({
+          email: existingRegistration.email,
+          name: existingRegistration.name,
+          phone: existingRegistration.phone,
+          tenantId: existingRegistration.event.tenantId,
+        });
+
+        // Link registration to user if not already linked
+        if (!registration.userId) {
+          await prisma.registration.update({
+            where: { id },
+            data: { userId },
+          });
+        }
+
+        // Send welcome email for new accounts
+        if (isNew) {
+          const baseUrl = request.headers.get("origin") || request.headers.get("host") || "";
+          const loginUrl = `${baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`}/auth/login`;
+          sendAccountCreatedEmail({
+            email: existingRegistration.email,
+            name: existingRegistration.name,
+            eventTitle: existingRegistration.event.title,
+            role: existingRegistration.participantRole || "delegate",
+            loginUrl,
+            tenantId: existingRegistration.event.tenantId,
+          });
+        }
+      } catch (err) {
+        // Don't fail the registration update if account creation fails
+        console.error("Auto-account creation failed:", err);
+      }
+    }
 
     return successResponse(registration, "Registration updated successfully");
   }
@@ -170,7 +214,7 @@ export const DELETE = withErrorHandler(
     const existingRegistration = await prisma.registration.findUnique({
       where: { id },
       include: {
-        certificate: true,
+        certificates: true,
         event: { select: { tenantId: true } },
       },
     });
@@ -183,8 +227,8 @@ export const DELETE = withErrorHandler(
       return Errors.forbidden("You don't have access to this registration");
     }
 
-    // If certificate exists, don't allow deletion
-    if (existingRegistration.certificate) {
+    // If certificates exist, don't allow deletion
+    if (existingRegistration.certificates.length > 0) {
       return Errors.badRequest(
         "Cannot delete registration with issued certificate. Revoke certificate first."
       );

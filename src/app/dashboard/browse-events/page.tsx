@@ -22,12 +22,12 @@ import {
     Eye,
     Ticket,
     Award,
-    Loader2,
     X,
     ChevronDown,
     SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { format } from "date-fns";
 import { EVENT_TYPES, EVENT_CATEGORIES } from "@/lib/event-constants";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
@@ -73,6 +73,7 @@ export default function BrowseEventsPage() {
             try {
                 setLoading(true);
                 const params = new URLSearchParams();
+                params.set("limit", "200");
                 if (effectiveTenantId) {
                     params.set("tenantId", effectiveTenantId);
                 }
@@ -128,9 +129,7 @@ export default function BrowseEventsPage() {
     if (loading) {
         return (
             <DashboardLayout title="Browse Events" subtitle="Find and register for upcoming events">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }
@@ -148,7 +147,7 @@ export default function BrowseEventsPage() {
                                 placeholder="Search events..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 pr-10"
+                                className="pl-10 pr-10 search-premium rounded-xl"
                             />
                             {searchQuery && (
                                 <button
@@ -277,7 +276,7 @@ export default function BrowseEventsPage() {
                             return (
                                 <div
                                     key={event.id}
-                                    className="bg-background rounded-xl border border-border p-5 hover:shadow-md transition-all"
+                                    className="bg-background rounded-xl border border-border p-5 hover:shadow-2xl hover:-translate-y-2 hover:border-primary/20 transition-all duration-400"
                                 >
                                     <div className="flex flex-col lg:flex-row gap-4">
                                         {/* Event Info */}
@@ -364,7 +363,7 @@ export default function BrowseEventsPage() {
                                                 </Link>
                                                 {!isPastEvent && !isSoldOut && (
                                                     <Link href={`/dashboard/browse-events/${event.id}/register`}>
-                                                        <Button size="sm" className="gap-2">
+                                                        <Button size="sm" className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25 font-semibold">
                                                             <Ticket className="w-4 h-4" />
                                                             Register
                                                         </Button>

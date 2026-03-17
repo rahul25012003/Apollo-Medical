@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { TenantForm } from "../../_components/tenant-form";
 import { tenantsService } from "@/services/tenants";
 import { TenantFormData } from "@/lib/tenant/validation";
@@ -75,6 +75,12 @@ export default function EditTenantPage() {
                         domain: t.domain || "",
                         defaultCurrency: t.settings?.defaultCurrency || t.defaultCurrency || "INR",
                         defaultTimezone: t.settings?.defaultTimezone || t.defaultTimezone || "Asia/Kolkata",
+                        paymentMode: t.payment?.paymentMode || t.paymentMode || "NONE",
+                        razorpayKeyId: t.payment?.razorpayKeyId || t.razorpayKeyId || "",
+                        razorpayKeySecret: t.payment?.razorpayKeySecret || t.razorpayKeySecret || "",
+                        paymentQrCode: t.payment?.paymentQrCode || t.paymentQrCode || "",
+                        paymentUpiId: t.payment?.paymentUpiId || t.paymentUpiId || "",
+                        paymentInstructions: t.payment?.paymentInstructions || t.paymentInstructions || "",
                     });
                 } else {
                     setError("Tenant not found");
@@ -103,9 +109,7 @@ export default function EditTenantPage() {
     if (loading) {
         return (
             <DashboardLayout title="Edit Tenant" subtitle="Loading tenant details...">
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <AiimsLoader />
             </DashboardLayout>
         );
     }

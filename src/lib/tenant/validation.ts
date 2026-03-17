@@ -135,6 +135,14 @@ export const tenantFormSchema = z.object({
   instagram: z.string().url("Invalid URL").optional().nullable().or(z.literal("")),
   youtube: z.string().url("Invalid URL").optional().nullable().or(z.literal("")),
 
+  // Payment Settings
+  paymentMode: z.enum(["NONE", "RAZORPAY", "QR_CODE"]).optional(),
+  razorpayKeyId: z.string().optional().nullable(),
+  razorpayKeySecret: z.string().optional().nullable(),
+  paymentQrCode: z.string().optional().nullable(),
+  paymentUpiId: z.string().optional().nullable(),
+  paymentInstructions: z.string().optional().nullable(),
+
   // Settings
   domain: z.string().optional().nullable(),
   defaultCurrency: z.string().optional(),

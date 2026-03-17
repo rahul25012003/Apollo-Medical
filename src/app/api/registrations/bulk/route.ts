@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-utils";
 import { sendEmail } from "@/lib/notifications";
 import { isTenantOwner } from "@/lib/tenant-scope";
+import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
 
 // POST /api/registrations/bulk - Perform bulk actions on registrations
 export const POST = withErrorHandler(async (request: NextRequest) => {
@@ -40,7 +41,11 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   // Verify all registrations exist and belong to user's tenant
   const existingRegistrations = await prisma.registration.findMany({
     where: { id: { in: registrationIds } },
-    select: { id: true, status: true, paymentStatus: true, email: true, event: { select: { tenantId: true } } },
+    select: {
+      id: true, status: true, paymentStatus: true, email: true,
+      name: true, phone: true, userId: true, participantRole: true,
+      event: { select: { tenantId: true, title: true } },
+    },
   });
 
   if (existingRegistrations.length !== registrationIds.length) {
@@ -56,12 +61,54 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   let result;
 
   switch (action) {
-    case "confirm":
+    case "confirm": {
       result = await prisma.registration.updateMany({
         where: { id: { in: registrationIds } },
         data: { status: "CONFIRMED" },
       });
-      break;
+
+      // Auto-create accounts for newly confirmed registrations
+      const baseUrl = request.headers.get("origin") || request.headers.get("host") || "";
+      const loginUrl = `${baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`}/auth/login`;
+      const toConfirm = existingRegistrations.filter(r => r.status !== "CONFIRMED");
+      // Process in parallel and await so admin knows the result
+      const accountResults = await Promise.allSettled(
+        toConfirm.map(async (reg) => {
+          try {
+            const { userId, isNew } = await findOrCreateUserAccount({
+              email: reg.email,
+              name: reg.name,
+              phone: reg.phone,
+              tenantId: reg.event.tenantId,
+            });
+            if (!reg.userId) {
+              await prisma.registration.update({
+                where: { id: reg.id },
+                data: { userId },
+              });
+            }
+            if (isNew) {
+              sendAccountCreatedEmail({
+                email: reg.email,
+                name: reg.name,
+                eventTitle: reg.event.title,
+                role: reg.participantRole || "delegate",
+                loginUrl,
+                tenantId: reg.event.tenantId,
+              });
+            }
+          } catch (err) {
+            console.error(`Auto-account failed for ${reg.email}:`, err);
+            throw err;
+          }
+        })
+      );
+      const accountsCreated = accountResults.filter(r => r.status === "fulfilled").length;
+      return successResponse(
+        { updated: result.count, accountsCreated },
+        `${result.count} registrations confirmed, ${accountsCreated} accounts created`
+      );
+    }
 
     case "cancel":
       result = await prisma.registration.updateMany({
