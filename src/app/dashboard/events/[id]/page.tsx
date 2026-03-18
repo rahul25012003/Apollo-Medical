@@ -175,6 +175,7 @@ interface DisplayEvent {
     revenue: number;
     cmeCredits: number | null;
     price: number;
+    currency: string;
     earlyBirdPrice: number | null;
     earlyBirdDeadline: string | null;
     createdAt: string;
@@ -338,6 +339,7 @@ export default function EventDetailPage() {
                         revenue: (e._count?.registrations || 0) * Number(e.price),
                         cmeCredits: e.cmeCredits,
                         price: Number(e.price),
+                        currency: e.currency || "INR",
                         earlyBirdPrice: e.earlyBirdPrice ? Number(e.earlyBirdPrice) : null,
                         earlyBirdDeadline: e.earlyBirdDeadline ? new Date(e.earlyBirdDeadline).toLocaleDateString("en-IN", {
                             day: "numeric",
@@ -1069,7 +1071,7 @@ export default function EventDetailPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground">Registration Fee</p>
-                                            <p className="font-medium">₹{event.price.toLocaleString()}</p>
+                                            <p className="font-medium">{event.currency === "INR" ? "₹" : (event.currency || "₹") + " "}{Number(event.price).toLocaleString()}</p>
                                         </div>
                                         {/* Early bird hidden */}
                                         <div>
@@ -1338,7 +1340,7 @@ export default function EventDetailPage() {
                                                             ) : "-"}
                                                         </TableCell>
                                                         <TableCell className="font-medium">
-                                                            {Number(reg.amount) > 0 ? `₹${Number(reg.amount).toLocaleString("en-IN")}` : "Free"}
+                                                            {Number(reg.amount) > 0 ? `${event.currency === "INR" ? "₹" : (event.currency || "₹") + " "}${Number(reg.amount).toLocaleString("en-IN")}` : "Free"}
                                                         </TableCell>
                                                         <TableCell>
                                                             <Badge
@@ -1738,7 +1740,7 @@ export default function EventDetailPage() {
                         <div className="p-3 rounded-lg bg-muted/50">
                             <p className="text-sm font-medium">{event.title}</p>
                             <p className="text-xs text-muted-foreground">
-                                Registration fee: ₹{event.price.toLocaleString()}
+                                Registration fee: ₹{Number(event.price).toLocaleString()}
                             </p>
                         </div>
 

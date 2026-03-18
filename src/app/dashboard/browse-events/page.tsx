@@ -47,6 +47,7 @@ interface PublicEvent {
     category: string | null;
     capacity: number;
     price: number;
+    currency: string;
     earlyBirdPrice: number | null;
     cmeCredits: number | null;
     _count?: {
@@ -347,7 +348,7 @@ export default function BrowseEventsPage() {
                                         <div className="flex flex-col items-end justify-between gap-3 lg:min-w-[180px]">
                                             <div className="text-right">
                                                 <p className="text-2xl font-bold text-primary">
-                                                    {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
+                                                    {Number(event.price) > 0 ? `${event.currency === "INR" ? "₹" : event.currency + " "}${Number(event.price).toLocaleString()}` : "Free"}
                                                 </p>
                                             </div>
 

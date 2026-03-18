@@ -136,7 +136,20 @@ export async function GET(
       }
     }
 
-    return successResponse(event);
+    // Convert Prisma Decimal fields to plain numbers for JSON serialization
+    // Prisma Decimal serializes as string in production which breaks price display
+    const safeEvent = {
+      ...event,
+      price: Number(event.price) || 0,
+      earlyBirdPrice: event.earlyBirdPrice ? Number(event.earlyBirdPrice) : null,
+      pricingCategories: event.pricingCategories?.map((pc: any) => ({
+        ...pc,
+        price: Number(pc.price) || 0,
+        earlyBirdPrice: pc.earlyBirdPrice ? Number(pc.earlyBirdPrice) : null,
+      })),
+    };
+
+    return successResponse(safeEvent);
   } catch (error) {
     console.error("Error fetching public event:", error);
     return NextResponse.json(

@@ -129,7 +129,13 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     prisma.registration.count({ where }),
   ]);
 
-  return paginatedResponse(registrations, { page, limit, total });
+  // Convert Prisma Decimal to plain numbers
+  const safeRegistrations = registrations.map((r) => ({
+    ...r,
+    amount: Number(r.amount) || 0,
+  }));
+
+  return paginatedResponse(safeRegistrations, { page, limit, total });
 });
 
 // POST /api/registrations - Create new registration

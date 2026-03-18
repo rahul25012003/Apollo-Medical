@@ -174,12 +174,19 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     prisma.event.count({ where }),
   ]);
 
-  // Add available slots calculation
+  // Add available slots + convert Decimal fields to numbers
   const eventsWithAvailability = events.map((event) => ({
     ...event,
+    price: Number(event.price) || 0,
+    earlyBirdPrice: event.earlyBirdPrice ? Number(event.earlyBirdPrice) : null,
     registeredCount: event._count.registrations,
     availableSlots: event.capacity - event._count.registrations,
     isSoldOut: event._count.registrations >= event.capacity,
+    pricingCategories: (event as any).pricingCategories?.map((pc: any) => ({
+      ...pc,
+      price: Number(pc.price) || 0,
+      earlyBirdPrice: pc.earlyBirdPrice ? Number(pc.earlyBirdPrice) : null,
+    })),
   }));
 
   return paginatedResponse(eventsWithAvailability, { page, limit, total });

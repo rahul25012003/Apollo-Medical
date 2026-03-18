@@ -104,7 +104,14 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     prisma.event.count({ where }),
   ]);
 
-  return paginatedResponse(events, { page, limit, total });
+  // Convert Prisma Decimal to plain numbers for consistent JSON serialization
+  const safeEvents = events.map((e) => ({
+    ...e,
+    price: Number(e.price) || 0,
+    earlyBirdPrice: e.earlyBirdPrice ? Number(e.earlyBirdPrice) : null,
+  }));
+
+  return paginatedResponse(safeEvents, { page, limit, total });
 });
 
 // POST /api/events - Create a new event

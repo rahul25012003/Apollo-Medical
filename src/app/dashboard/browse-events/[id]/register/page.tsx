@@ -52,6 +52,7 @@ interface EventDetails {
     type: string;
     capacity: number;
     price: number;
+    currency: string;
     earlyBirdPrice: number | null;
     earlyBirdDeadline: string | null;
     cmeCredits: number | null;
@@ -534,7 +535,7 @@ export default function RegisterPage() {
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="font-bold text-primary">
-                                                            {displayPrice > 0 ? `₹${displayPrice.toLocaleString()}` : "Free"}
+                                                            {displayPrice > 0 ? `${event?.currency === "INR" ? "₹" : (event?.currency || "₹") + " "}${displayPrice.toLocaleString()}` : "Free"}
                                                         </p>
                                                         {/* Early bird hidden */}
                                                     </div>
@@ -573,7 +574,7 @@ export default function RegisterPage() {
                                     <>
                                         <CreditCard className="w-4 h-4 mr-2" />
                                         Complete Registration
-                                        {eventPrice > 0 && ` - ₹${eventPrice.toLocaleString()}`}
+                                        {eventPrice > 0 && ` - ${event?.currency === "INR" ? "₹" : (event?.currency || "₹") + " "}${eventPrice.toLocaleString()}`}
                                     </>
                                 )}
                             </Button>
@@ -627,7 +628,7 @@ export default function RegisterPage() {
                                     <div className="flex justify-between items-center">
                                         <span className="text-muted-foreground">Registration Fee</span>
                                         <span className="text-xl font-bold text-primary">
-                                            {eventPrice > 0 ? `₹${eventPrice.toLocaleString()}` : "Free"}
+                                            {eventPrice > 0 ? `${event?.currency === "INR" ? "₹" : (event?.currency || "₹") + " "}${eventPrice.toLocaleString()}` : "Free"}
                                         </span>
                                     </div>
                                     {/* Early bird hidden */}

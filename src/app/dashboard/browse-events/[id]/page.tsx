@@ -41,6 +41,7 @@ interface EventDetails {
     category: string | null;
     capacity: number;
     price: number;
+    currency: string;
     earlyBirdPrice: number | null;
     earlyBirdDeadline: string | null;
     cmeCredits: number | null;
@@ -322,7 +323,7 @@ export default function EventDetailsPage() {
                         <div className="bg-background rounded-xl border p-6 sticky top-6">
                             <div className="text-center mb-6">
                                 <p className="text-3xl font-bold text-primary">
-                                    {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
+                                    {Number(event.price) > 0 ? `${event.currency === "INR" ? "₹" : (event.currency || "₹") + " "}${Number(event.price).toLocaleString()}` : "Free"}
                                 </p>
                             </div>
 

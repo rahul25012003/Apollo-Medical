@@ -101,7 +101,14 @@ export const GET = withErrorHandler(
       return Errors.notFound("Event");
     }
 
-    return successResponse(event);
+    // Convert Prisma Decimal to plain numbers
+    const safeEvent = {
+      ...event,
+      price: Number(event.price) || 0,
+      earlyBirdPrice: event.earlyBirdPrice ? Number(event.earlyBirdPrice) : null,
+    };
+
+    return successResponse(safeEvent);
   }
 );
 

@@ -194,7 +194,7 @@ export default function EventPreviewPage() {
                             <CardContent className="p-6 space-y-4">
                                 <div className="text-center mb-4">
                                     <p className="text-3xl font-bold text-teal-600">
-                                        {Number(event.price) > 0 ? `₹${Number(event.price).toLocaleString()}` : "Free"}
+                                        {Number(event.price) > 0 ? `${event.currency === "INR" ? "₹" : (event.currency || "₹") + " "}${Number(event.price).toLocaleString()}` : "Free"}
                                     </p>
                                     <p className="text-sm text-muted-foreground">Registration Fee</p>
                                 </div>

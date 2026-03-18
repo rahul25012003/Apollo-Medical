@@ -418,7 +418,7 @@ export default function PublicEventsPage() {
                                         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-4 pt-6 border-t">
                                             <div>
                                                 <span className="text-2xl sm:text-3xl font-bold text-primary">
-                                                    {featuredEvent.price > 0 ? `₹${featuredEvent.price.toLocaleString()}` : "Free"}
+                                                    {Number(featuredEvent.price) > 0 ? `₹${Number(featuredEvent.price).toLocaleString()}` : "Free"}
                                                 </span>
                                             </div>
                                             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -571,11 +571,11 @@ export default function PublicEventsPage() {
                                                     <div>
                                                         {event.earlyBirdPrice && (
                                                             <span className="text-xs text-muted-foreground line-through mr-1">
-                                                                ₹{event.price.toLocaleString()}
+                                                                ₹{Number(event.price).toLocaleString()}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-primary">
-                                                            {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
+                                                            {Number(event.price) > 0 ? `₹${Number(event.price).toLocaleString()}` : "Free"}
                                                         </span>
                                                     </div>
                                                     {event.status === "UPCOMING" || event.status === "ACTIVE" ? (

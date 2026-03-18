@@ -377,7 +377,7 @@ export default function EventsPage() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <span className="font-medium">₹{event.price.toLocaleString()}</span>
+                                                <span className="font-medium">₹{Number(event.price).toLocaleString()}</span>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge

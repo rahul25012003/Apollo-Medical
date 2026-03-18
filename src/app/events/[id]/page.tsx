@@ -94,6 +94,7 @@ interface DisplayEvent {
     capacity: number;
     status: string;
     price: number;
+    currency: string;
     earlyBirdPrice: number | null;
     earlyBirdDeadline: string | null;
     cmeCredits: number | null;
@@ -187,7 +188,8 @@ export default function EventDetailPage() {
                         registrations: apiEvent._count?.registrations || 0,
                         capacity: apiEvent.capacity,
                         status: apiEvent.status.toLowerCase(),
-                        price: Number(apiEvent.price),
+                        price: Number(apiEvent.price) || 0,
+                        currency: apiEvent.currency || "INR",
                         earlyBirdPrice: apiEvent.earlyBirdPrice ? Number(apiEvent.earlyBirdPrice) : null,
                         earlyBirdDeadline: apiEvent.earlyBirdDeadline ? new Date(apiEvent.earlyBirdDeadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null,
                         cmeCredits: apiEvent.cmeCredits,
@@ -857,7 +859,7 @@ export default function EventDetailPage() {
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold text-2xl text-primary">
-                                            {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
+                                            {Number(event.price) > 0 ? `${event.currency === "INR" ? "₹" : (event.currency || "₹") + " "}${Number(event.price).toLocaleString()}` : "Free"}
                                         </p>
                                     </div>
                                 </div>

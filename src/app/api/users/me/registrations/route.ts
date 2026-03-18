@@ -49,7 +49,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     participantRole: reg.participantRole,
     status: reg.status,
     paymentStatus: reg.paymentStatus,
-    amount: reg.amount,
+    amount: Number(reg.amount) || 0,
     currency: reg.currency,
     registeredAt: reg.createdAt,
     event: reg.event,

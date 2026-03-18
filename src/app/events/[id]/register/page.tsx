@@ -917,7 +917,7 @@ export default function RegisterPage() {
                                             <div className="p-3 rounded-lg bg-primary/5">
                                                 <p className="text-xs text-muted-foreground">Registration Fee</p>
                                                 <p className="text-lg font-bold text-primary">
-                                                    {eventData.price > 0 ? `₹${eventData.price.toLocaleString()}` : "Free"}
+                                                    {Number(eventData.price) > 0 ? `₹${Number(eventData.price).toLocaleString()}` : "Free"}
                                                 </p>
                                                 {/* Early bird hidden */}
                                             </div>
@@ -1146,7 +1146,7 @@ export default function RegisterPage() {
                                                                 </div>
                                                                 <div className="text-right">
                                                                     <p className="font-bold text-primary text-lg">
-                                                                        {displayPrice > 0 ? `₹${displayPrice.toLocaleString()}` : "Free"}
+                                                                        {Number(displayPrice) > 0 ? `₹${Number(displayPrice).toLocaleString()}` : "Free"}
                                                                     </p>
                                                                     {/* Early bird hidden */}
                                                                 </div>
@@ -1593,7 +1593,7 @@ export default function RegisterPage() {
                                             <div className="space-y-3">
                                                 <div className="flex justify-between text-sm">
                                                     <span className="text-muted-foreground">Registration Fee</span>
-                                                    <span>₹{eventData.price.toLocaleString()}</span>
+                                                    <span>₹{Number(eventData.price).toLocaleString()}</span>
                                                 </div>
                                                 {/* Early bird hidden */}
 

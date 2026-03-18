@@ -777,11 +777,11 @@ export default function PublicHomePage() {
                                                     <div>
                                                         {event.earlyBirdPrice && (
                                                             <span className="text-sm text-white/50 line-through mr-2">
-                                                                ₹{event.price.toLocaleString()}
+                                                                ₹{Number(event.price).toLocaleString()}
                                                             </span>
                                                         )}
                                                         <span className="text-2xl lg:text-3xl font-bold text-cyan-300">
-                                                            {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
+                                                            {Number(event.price) > 0 ? `₹${Number(event.price).toLocaleString()}` : "Free"}
                                                         </span>
                                                         {/* Early bird hidden */}
                                                     </div>
@@ -976,11 +976,11 @@ export default function PublicHomePage() {
                                                     <div>
                                                         {event.earlyBirdPrice && (
                                                             <span className="text-xs text-muted-foreground line-through mr-1.5">
-                                                                ₹{event.price.toLocaleString()}
+                                                                ₹{Number(event.price).toLocaleString()}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-primary">
-                                                            {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
+                                                            {Number(event.price) > 0 ? `₹${Number(event.price).toLocaleString()}` : "Free"}
                                                         </span>
                                                         {/* Early bird hidden */}
                                                     </div>
