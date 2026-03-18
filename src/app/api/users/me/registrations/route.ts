@@ -45,11 +45,17 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   // Map to response format
   const mappedRegistrations = registrations.map((reg) => ({
     id: reg.id,
+    name: reg.name,
+    participantRole: reg.participantRole,
     status: reg.status,
     paymentStatus: reg.paymentStatus,
+    amount: reg.amount,
+    currency: reg.currency,
     registeredAt: reg.createdAt,
     event: reg.event,
     certificates: reg.certificates,
+    qrCode: reg.qrCode,
+    badgeGenerated: reg.badgeGenerated,
   }));
 
   return successResponse(mappedRegistrations);

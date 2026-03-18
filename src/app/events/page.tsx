@@ -219,7 +219,7 @@ export default function PublicEventsPage() {
                             <div className="h-8 w-8 rounded-xl gradient-medical flex items-center justify-center">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
-                            <span className="font-bold text-xl">ICMS</span>
+                            <span className="font-bold text-xl">CareNS</span>
                         </Link>
                         <nav className="hidden md:flex items-center gap-6">
                             <Link href="/events" className="text-sm font-medium text-primary">
@@ -417,19 +417,9 @@ export default function PublicEventsPage() {
 
                                         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-4 pt-6 border-t">
                                             <div>
-                                                {featuredEvent.earlyBirdPrice && (
-                                                    <span className="text-sm text-muted-foreground line-through mr-2">
-                                                        ₹{featuredEvent.price.toLocaleString()}
-                                                    </span>
-                                                )}
                                                 <span className="text-2xl sm:text-3xl font-bold text-primary">
-                                                    ₹{(featuredEvent.earlyBirdPrice || featuredEvent.price).toLocaleString()}
+                                                    {featuredEvent.price > 0 ? `₹${featuredEvent.price.toLocaleString()}` : "Free"}
                                                 </span>
-                                                {featuredEvent.earlyBirdDeadline && (
-                                                    <p className="text-xs text-medical-orange mt-1">
-                                                        Early bird until {featuredEvent.earlyBirdDeadline}
-                                                    </p>
-                                                )}
                                             </div>
                                             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                                 <Link href={`/events/${featuredEvent.id}`}>
@@ -585,7 +575,7 @@ export default function PublicEventsPage() {
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-primary">
-                                                            ₹{(event.earlyBirdPrice || event.price).toLocaleString()}
+                                                            {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
                                                         </span>
                                                     </div>
                                                     {event.status === "UPCOMING" || event.status === "ACTIVE" ? (
@@ -643,7 +633,7 @@ export default function PublicEventsPage() {
                                 <GraduationCap className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                                <span className="font-bold text-lg">ICMS</span>
+                                <span className="font-bold text-lg">CareNS</span>
                                 <p className="text-sm text-muted-foreground">
                                     Integrated Conference Management System
                                 </p>

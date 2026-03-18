@@ -110,11 +110,22 @@ export default function RegisterPage() {
         async function fetchEvent() {
             try {
                 setLoading(true);
+                // Check if already registered
+                const regsRes = await fetch("/api/users/me/registrations");
+                const regsData = await regsRes.json();
+                if (regsData.success && Array.isArray(regsData.data)) {
+                    const alreadyRegistered = regsData.data.some((r: { event?: { id: string } }) => r.event?.id === params.id);
+                    if (alreadyRegistered) {
+                        setSuccess(true);
+                        setLoading(false);
+                        return;
+                    }
+                }
+
                 const response = await fetch(`/api/events/public/${params.id}`);
                 const data = await response.json();
                 if (data.success && data.data) {
                     setEvent(data.data);
-                    // Auto-select first pricing category if available
                     if (data.data.pricingCategories?.length > 0) {
                         setSelectedCategory(data.data.pricingCategories[0].id);
                     }
@@ -241,7 +252,7 @@ export default function RegisterPage() {
 </head>
 <body>
     <div class="header">
-        <h1>ICMS - Registration Receipt</h1>
+        <h1>CareNS - Registration Receipt</h1>
         <span class="success-badge">${receiptPrice > 0 ? '⏳ Registration Submitted — Payment Pending' : '✓ Registration Confirmed'}</span>
     </div>
     <div class="section">
@@ -271,7 +282,7 @@ export default function RegisterPage() {
     </div>
     <div class="footer">
         <p>Thank you for registering! This receipt serves as confirmation of your registration.</p>
-        <p style="margin-top: 5px;">© ${new Date().getFullYear()} ICMS - Integrated Conference Management System</p>
+        <p style="margin-top: 5px;">© ${new Date().getFullYear()} CareNS - Conference Management System</p>
     </div>
 </body>
 </html>`;
@@ -525,9 +536,7 @@ export default function RegisterPage() {
                                                         <p className="font-bold text-primary">
                                                             {displayPrice > 0 ? `₹${displayPrice.toLocaleString()}` : "Free"}
                                                         </p>
-                                                        {isEarlyBird && (
-                                                            <p className="text-xs text-green-600">Early bird</p>
-                                                        )}
+                                                        {/* Early bird hidden */}
                                                     </div>
                                                 </div>
                                             );
@@ -544,9 +553,14 @@ export default function RegisterPage() {
                                         setForm((prev) => ({ ...prev, agreeTerms: checked === true }))
                                     }
                                 />
-                                <label htmlFor="agreeTerms" className="text-sm text-muted-foreground cursor-pointer">
-                                    I agree to the terms and conditions and understand that this registration is subject to availability.
-                                </label>
+                                <div className="grid gap-1 leading-none">
+                                    <label htmlFor="agreeTerms" className="text-sm font-medium cursor-pointer">
+                                        I agree to the terms and conditions *
+                                    </label>
+                                    <div className="text-xs text-muted-foreground space-y-0.5">
+                                        <p>Registration is subject to organizer approval and availability. Contact details may be used for event communications. Fees are non-refundable unless stated otherwise.</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <Button type="submit" className="w-full" size="lg" disabled={submitting}>
@@ -616,20 +630,7 @@ export default function RegisterPage() {
                                             {eventPrice > 0 ? `₹${eventPrice.toLocaleString()}` : "Free"}
                                         </span>
                                     </div>
-                                    {(() => {
-                                        // Check if early bird is applicable
-                                        if (hasPricingCategories && selectedCategory) {
-                                            const category = event.pricingCategories!.find(c => c.id === selectedCategory);
-                                            if (category?.earlyBirdPrice && category.earlyBirdDeadline &&
-                                                new Date() <= new Date(category.earlyBirdDeadline)) {
-                                                return <p className="text-xs text-green-600 text-right mt-1">Early bird discount applied!</p>;
-                                            }
-                                        } else if (event.earlyBirdPrice && event.earlyBirdDeadline &&
-                                            new Date() <= new Date(event.earlyBirdDeadline)) {
-                                            return <p className="text-xs text-green-600 text-right mt-1">Early bird discount applied!</p>;
-                                        }
-                                        return null;
-                                    })()}
+                                    {/* Early bird hidden */}
                                 </div>
                             </div>
                         </div>

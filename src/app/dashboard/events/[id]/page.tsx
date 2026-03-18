@@ -838,7 +838,7 @@ export default function EventDetailPage() {
                     </Link>
 
                     <div className="flex flex-wrap gap-2">
-                        <Link href={`/events/${event.id}?preview=true`} target="_blank">
+                        <Link href={`/dashboard/events/${event.id}/preview`} target="_blank">
                             <Button variant="outline" size="sm" className="gap-2">
                                 <Eye className="h-4 w-4" />
                                 Preview
@@ -1071,14 +1071,7 @@ export default function EventDetailPage() {
                                             <p className="text-sm text-muted-foreground">Registration Fee</p>
                                             <p className="font-medium">₹{event.price.toLocaleString()}</p>
                                         </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Early Bird Price</p>
-                                            <p className="font-medium">{event.earlyBirdPrice ? `₹${event.earlyBirdPrice.toLocaleString()}` : "N/A"}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Early Bird Deadline</p>
-                                            <p className="font-medium">{event.earlyBirdDeadline ? new Date(event.earlyBirdDeadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "N/A"}</p>
-                                        </div>
+                                        {/* Early bird hidden */}
                                         <div>
                                             <p className="text-sm text-muted-foreground">Registration Deadline</p>
                                             <p className="font-medium">{event.registrationDeadline ? new Date(event.registrationDeadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "N/A"}</p>

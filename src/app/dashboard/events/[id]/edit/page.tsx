@@ -1667,27 +1667,7 @@ export default function EditEventPage() {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label>Early Bird Price (₹)</Label>
-                                            <div className="relative">
-                                                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    type="number"
-                                                    value={formData.earlyBirdPrice}
-                                                    onChange={e => handleChange("earlyBirdPrice", parseFloat(e.target.value) || 0)}
-                                                    className="pl-10"
-                                                    min={0}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Early Bird Deadline</Label>
-                                            <Input
-                                                type="date"
-                                                value={formData.earlyBirdDeadline}
-                                                onChange={e => handleChange("earlyBirdDeadline", e.target.value)}
-                                            />
-                                        </div>
+                                        {/* Early bird hidden — enable when needed */}
                                     </div>
                                 )}
 
@@ -1777,27 +1757,7 @@ export default function EditEventPage() {
                                                                 />
                                                             </div>
                                                         </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Early Bird Price (₹)</Label>
-                                                            <div className="relative">
-                                                                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                                <Input
-                                                                    type="number"
-                                                                    value={category.earlyBirdPrice}
-                                                                    onChange={e => updateSlotCategory(category.id, "earlyBirdPrice", parseFloat(e.target.value) || 0)}
-                                                                    className="pl-10"
-                                                                    min={0}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Early Bird Deadline</Label>
-                                                            <Input
-                                                                type="date"
-                                                                value={category.earlyBirdDeadline}
-                                                                onChange={e => updateSlotCategory(category.id, "earlyBirdDeadline", e.target.value)}
-                                                            />
-                                                        </div>
+                                                        {/* Early bird hidden */}
                                                     </div>
                                                 </div>
                                             ))}

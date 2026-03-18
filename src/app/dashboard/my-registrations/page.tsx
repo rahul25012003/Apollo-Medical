@@ -15,6 +15,7 @@ import {
     CheckCircle2,
     XCircle,
     AlertCircle,
+    CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
@@ -22,9 +23,15 @@ import { format } from "date-fns";
 
 interface MyRegistration {
     id: string;
+    name?: string;
+    participantRole?: string | null;
     status: string;
     paymentStatus: string;
+    amount?: number | string;
+    currency?: string;
     registeredAt: string;
+    qrCode?: string | null;
+    badgeGenerated?: boolean;
     event: {
         id: string;
         title: string;
@@ -171,15 +178,43 @@ export default function MyRegistrationsPage() {
                                                 )}
                                             </div>
 
-                                            <p className="text-xs text-muted-foreground mt-2">
-                                                Registration ID: <span className="font-mono">{registration.id.slice(-8).toUpperCase()}</span>
-                                                {" · "}
-                                                Registered on {format(new Date(registration.registeredAt), "MMM d, yyyy")}
-                                            </p>
+                                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-2">
+                                                <span>
+                                                    ID: <span className="font-mono">{registration.id.slice(-8).toUpperCase()}</span>
+                                                </span>
+                                                <span>Registered: {format(new Date(registration.registeredAt), "MMM d, yyyy")}</span>
+                                                {registration.amount && Number(registration.amount) > 0 && (
+                                                    <span className="font-semibold text-foreground">
+                                                        {registration.currency || "₹"} {Number(registration.amount).toLocaleString()}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* ID Card / Badge */}
+                                            {registration.badgeGenerated && registration.qrCode && (
+                                                <div className="mt-3 p-4 rounded-xl bg-gradient-to-br from-slate-50 to-teal-50/30 border border-slate-200">
+                                                    <p className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                                                        <CreditCard className="h-3.5 w-3.5 text-teal-600" />
+                                                        Your ID Card
+                                                    </p>
+                                                    <div className="bg-white rounded-lg border shadow-sm p-4 flex items-center gap-4">
+                                                        <div className="w-20 h-20 bg-white rounded-lg border-2 border-teal-100 p-1.5 flex-shrink-0">
+                                                            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(registration.qrCode)}`} alt="Badge QR" className="w-full h-full" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-bold text-sm truncate">{registration.name || "Delegate"}</p>
+                                                            <p className="text-xs text-teal-700 font-medium capitalize">{registration.participantRole?.toLowerCase() || "Delegate"}</p>
+                                                            <p className="text-[10px] text-muted-foreground mt-1 truncate">{registration.event.title}</p>
+                                                            <p className="text-[9px] text-muted-foreground font-mono mt-0.5">{registration.id.slice(-8).toUpperCase()}</p>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-[10px] text-muted-foreground mt-2 text-center">Show this QR code at the venue for check-in and access</p>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <Link href={`/events/${registration.event.id}`}>
+                                            <Link href={`/dashboard/browse-events/${registration.event.id}`}>
                                                 <Button variant="outline" size="sm" className="hover:shadow-md transition-all">
                                                     <Eye className="w-4 h-4 mr-2" />
                                                     View Event

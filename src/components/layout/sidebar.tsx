@@ -350,11 +350,10 @@ export function Sidebar() {
                 <div className="absolute top-0 right-0 w-[1px] h-full bg-gradient-to-b from-teal-500/40 via-cyan-500/20 to-transparent" />
                 <div className="flex items-center h-16 border-b border-white/[0.06] px-4 justify-between">
                     <Link href="/dashboard" className="flex items-center gap-3">
-                        <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-teal-500/25">
-                            <Award className="w-5 h-5 text-white" />
-                            <span className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-400/20 to-transparent animate-pulse" />
+                        <div className="relative w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shadow-lg overflow-hidden p-1">
+                            <img src="/aiims-logo.jpg" alt="CareNS" className="w-full h-full object-contain" style={{ mixBlendMode: "screen" }} />
                         </div>
-                        <span className="text-lg font-bold text-white tracking-tight">ICMS</span>
+                        <span className="text-sm font-bold text-white tracking-tight">CareNS</span>
                     </Link>
                 </div>
             </aside>
@@ -398,17 +397,14 @@ export function Sidebar() {
                         "flex items-center gap-3",
                         isCollapsed && "lg:justify-center"
                     )}>
-                        <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-teal-500/25">
-                            <Brain className="w-6 h-6 text-white relative z-10" />
-                            {/* Pulse ring animation */}
-                            <span className="absolute inset-0 rounded-xl bg-gradient-to-br from-teal-400/30 to-transparent animate-pulse" />
-                            <span className="absolute -inset-0.5 rounded-xl bg-teal-500/20 animate-ping opacity-20" />
+                        <div className="relative w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden p-1.5">
+                            <img src="/aiims-logo.jpg" alt="CareNS" className="w-full h-full object-contain" style={{ mixBlendMode: "screen" }} />
                         </div>
                         <div className={cn(
                             "transition-all duration-200",
                             isCollapsed ? "lg:hidden" : "block"
                         )}>
-                            <h1 className="text-white font-bold text-lg leading-tight tracking-tight">ICMS</h1>
+                            <h1 className="text-white font-bold text-lg leading-tight tracking-tight">CareNS</h1>
                             <p className="text-teal-400/60 text-[10px] leading-tight font-medium tracking-wider uppercase">
                                 Conference Management
                             </p>

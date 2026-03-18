@@ -370,7 +370,6 @@ function RegistrationsContent() {
             });
 
             if (response.success) {
-                // Refresh registrations
                 const regsRes = await registrationsService.getAll(
                     { ...(eventIdParam ? { eventId: eventIdParam } : {}), ...tenantFilterParams, limit: 500, sortBy: "createdAt", sortOrder: "desc" }
                 );
@@ -378,7 +377,6 @@ function RegistrationsContent() {
                     setRegistrations(Array.isArray(regsRes.data) ? regsRes.data : []);
                 }
                 setIsAddOpen(false);
-                // Reset form
                 setFormData({
                     eventId: eventIdParam || "",
                     name: "",
@@ -392,6 +390,10 @@ function RegistrationsContent() {
                     notes: "",
                     specialRequests: "",
                 });
+                alert({ title: "Success", description: "Registration created successfully", variant: "success" });
+            } else {
+                const errorMsg = typeof response.error === "string" ? response.error : response.error?.message || "Failed to create registration";
+                alert({ title: "Error", description: errorMsg, variant: "error" });
             }
         } catch (error) {
             console.error("Failed to create registration:", error);
@@ -967,11 +969,21 @@ function RegistrationsContent() {
                         </div>
                         <div className="flex gap-2">
                             {selectedRegistrations.length > 0 && (
-                                <Button variant="outline" size="sm" className="gap-2">
+                                <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                                    const emails = filteredRegistrations.filter(r => selectedRegistrations.includes(r.id)).map(r => r.email).join(",");
+                                    window.open(`mailto:${emails}?subject=Update regarding your registration`, "_blank");
+                                }}>
                                     <Mail className="w-4 h-4" />
                                     <span className="hidden sm:inline">Email</span> ({selectedRegistrations.length})
                                 </Button>
                             )}
+                            <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                                const emails = filteredRegistrations.map(r => r.email).join(",");
+                                window.open(`mailto:${emails}?subject=Update regarding your registration`, "_blank");
+                            }}>
+                                <Mail className="w-4 h-4" />
+                                <span className="hidden sm:inline">Email All</span>
+                            </Button>
                             <Button variant="outline" size="sm" className="gap-2" onClick={() => {
                                 const params = new URLSearchParams();
                                 if (selectedEventFilter !== "all") params.set("eventId", selectedEventFilter);
@@ -1328,7 +1340,101 @@ function RegistrationsContent() {
                                         </div>
                                     )}
                                 </div>
-                                <DialogFooter className="flex-wrap gap-2">
+                                {/* Quick Status Actions */}
+                                <div className="border-t pt-4 space-y-3">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Actions</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedReg.status !== "CONFIRMED" && (
+                                            <Button
+                                                size="sm"
+                                                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                                                disabled={actionInProgress === selectedReg.id}
+                                                onClick={async () => {
+                                                    setIsViewOpen(false);
+                                                    await handleApproveRegistration(selectedReg.id);
+                                                }}
+                                            >
+                                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                                Confirm
+                                            </Button>
+                                        )}
+                                        {selectedReg.status !== "ATTENDED" && selectedReg.status === "CONFIRMED" && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="gap-1.5"
+                                                disabled={actionInProgress === selectedReg.id}
+                                                onClick={async () => {
+                                                    setIsViewOpen(false);
+                                                    try {
+                                                        await registrationsService.update(selectedReg.id, { status: "ATTENDED" });
+                                                        await refreshRegistrations();
+                                                    } catch {}
+                                                }}
+                                            >
+                                                Mark Attended
+                                            </Button>
+                                        )}
+                                        {selectedReg.paymentStatus === "PENDING" && Number(selectedReg.amount) > 0 && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="gap-1.5"
+                                                disabled={actionInProgress === selectedReg.id}
+                                                onClick={async () => {
+                                                    setIsViewOpen(false);
+                                                    await handleMarkAsPaid(selectedReg.id);
+                                                }}
+                                            >
+                                                <IndianRupee className="h-3.5 w-3.5" />
+                                                Mark Paid
+                                            </Button>
+                                        )}
+                                        {selectedReg.status !== "CANCELLED" && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                disabled={actionInProgress === selectedReg.id}
+                                                onClick={async () => {
+                                                    setIsViewOpen(false);
+                                                    try {
+                                                        await registrationsService.update(selectedReg.id, { status: "CANCELLED" });
+                                                        await refreshRegistrations();
+                                                    } catch {}
+                                                }}
+                                            >
+                                                Cancel Registration
+                                            </Button>
+                                        )}
+                                        {selectedReg.status === "CANCELLED" && (
+                                            <Button
+                                                size="sm"
+                                                className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                                                disabled={actionInProgress === selectedReg.id}
+                                                onClick={async () => {
+                                                    setIsViewOpen(false);
+                                                    try {
+                                                        await registrationsService.update(selectedReg.id, { status: "PENDING" });
+                                                        await refreshRegistrations();
+                                                    } catch {}
+                                                }}
+                                            >
+                                                Re-activate
+                                            </Button>
+                                        )}
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="gap-1.5"
+                                            onClick={() => window.open(`mailto:${selectedReg.email}?subject=Regarding your registration — ${selectedReg.event?.title || "Event"}`, "_blank")}
+                                        >
+                                            <Mail className="h-3.5 w-3.5" />
+                                            Email
+                                        </Button>
+                                    </div>
+                                </div>
+                                <DialogFooter>
                                     <Button variant="outline" onClick={() => setIsViewOpen(false)}>
                                         Close
                                     </Button>
@@ -1339,44 +1445,7 @@ function RegistrationsContent() {
                                             onClick={() => window.open(`/dashboard/registrations/${selectedReg.id}/receipt`, "_blank")}
                                         >
                                             <Receipt className="h-4 w-4" />
-                                            {selectedReg.paymentStatus === "FREE" ? "Download Confirmation" : "Download Receipt"}
-                                        </Button>
-                                    )}
-                                    {/* Single Approve button: confirms registration + marks payment as paid */}
-                                    {(selectedReg.status === "PENDING" || selectedReg.status === "WAITLIST") && (
-                                        <Button
-                                            className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                                            disabled={actionInProgress === selectedReg.id}
-                                            onClick={async () => {
-                                                setIsViewOpen(false);
-                                                await handleApproveRegistration(selectedReg.id);
-                                            }}
-                                        >
-                                            {actionInProgress === selectedReg.id ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <CheckCircle2 className="h-4 w-4" />
-                                            )}
-                                            Approve Registration
-                                        </Button>
-                                    )}
-                                    {/* If already confirmed but payment still pending, allow marking paid */}
-                                    {selectedReg.status === "CONFIRMED" && selectedReg.paymentStatus === "PENDING" && selectedReg.amount > 0 && (
-                                        <Button
-                                            className="gap-2"
-                                            variant="outline"
-                                            disabled={actionInProgress === selectedReg.id}
-                                            onClick={async () => {
-                                                setIsViewOpen(false);
-                                                await handleMarkAsPaid(selectedReg.id);
-                                            }}
-                                        >
-                                            {actionInProgress === selectedReg.id ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <IndianRupee className="h-4 w-4" />
-                                            )}
-                                            Mark as Paid
+                                            {selectedReg.paymentStatus === "FREE" ? "Confirmation" : "Receipt"}
                                         </Button>
                                     )}
                                 </DialogFooter>
@@ -1518,14 +1587,12 @@ function RegistrationsContent() {
                                                                 <Eye className="mr-2 h-4 w-4" />
                                                                 View Details
                                                             </DropdownMenuItem>
-                                                            {reg.status !== "CONFIRMED" && reg.status !== "ATTENDED" && (
-                                                                <DropdownMenuItem>
-                                                                    <Edit className="mr-2 h-4 w-4" />
-                                                                    Edit Registration
-                                                                </DropdownMenuItem>
-                                                            )}
+                                                            <DropdownMenuItem onClick={() => { setSelectedReg(reg); setIsViewOpen(true); }}>
+                                                                <Edit className="mr-2 h-4 w-4" />
+                                                                Edit Registration
+                                                            </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => window.open(`mailto:${reg.email}?subject=Regarding your registration — ${reg.event?.title || "Event"}`, "_blank")}>
                                                                 <Mail className="mr-2 h-4 w-4" />
                                                                 Send Email
                                                             </DropdownMenuItem>
@@ -1687,9 +1754,11 @@ function RegistrationsContent() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuItem onClick={() => { setSelectedReg(reg); setIsViewOpen(true); }}>
-                                                    <Eye className="mr-2 h-4 w-4" /> View
+                                                    <Eye className="mr-2 h-4 w-4" /> View / Edit
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem><Mail className="mr-2 h-4 w-4" /> Email</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => window.open(`mailto:${reg.email}?subject=Regarding your registration — ${reg.event?.title || "Event"}`, "_blank")}>
+                                                    <Mail className="mr-2 h-4 w-4" /> Email
+                                                </DropdownMenuItem>
                                                 {(reg.paymentStatus === "PAID" || reg.paymentStatus === "FREE" || reg.status === "CONFIRMED" || reg.status === "ATTENDED") && (
                                                     <DropdownMenuItem
                                                         onClick={() => window.open(`/dashboard/registrations/${reg.id}/receipt`, "_blank")}

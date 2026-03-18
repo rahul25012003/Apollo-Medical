@@ -91,8 +91,8 @@ function LoginPageInner() {
                             });
                             document.title = `Login — ${name}`;
                             if (favicon) {
-                                let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-                                if (link) { link.href = favicon; } else { link = document.createElement("link"); link.rel = "icon"; link.href = favicon; document.head.appendChild(link); }
+                                const icons = document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="shortcut icon"]');
+                                if (icons.length > 0) { icons.forEach(i => { i.href = favicon; }); } else { const l = document.createElement("link"); l.rel = "icon"; l.href = favicon; document.head.appendChild(l); }
                             }
                             return;
                         }

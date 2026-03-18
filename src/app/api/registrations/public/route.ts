@@ -226,6 +226,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         html: adminNewRegistrationHtml({
           registrantName: registration.name,
           registrantEmail: registration.email,
+          registrantPhone: data.phone || undefined,
+          registrantOrg: data.organization || undefined,
+          registrantDesignation: data.designation || undefined,
           eventTitle: registration.event.title,
           role: data.participantRole || "DELEGATE",
           amount: Number(registration.amount),

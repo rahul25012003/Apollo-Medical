@@ -144,25 +144,21 @@ export default function EventDetailPage() {
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [tenantSlug, setTenantSlug] = useState<string | null>(null);
 
-    // Check if page was opened as preview from dashboard, and read tenant context
+    // Fetch event — check URL params directly to avoid timing issues
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const urlParams = new URLSearchParams(window.location.search);
-            const isPreview = urlParams.get("preview") === "true";
-            setIsPreviewMode(isPreview);
-            const tenant = urlParams.get("tenant");
-            if (tenant) setTenantSlug(tenant);
-        }
-    }, []);
+        // Read preview/tenant params from URL on every render
+        const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+        const isPreview = urlParams?.get("preview") === "true";
+        const tenant = urlParams?.get("tenant");
+        setIsPreviewMode(isPreview);
+        if (tenant) setTenantSlug(tenant);
 
-    // Fetch event from API (pass preview param for draft events)
-    useEffect(() => {
         async function fetchEvent() {
             try {
                 setLoading(true);
                 setError(null);
                 let response;
-                if (isPreviewMode) {
+                if (isPreview) {
                     const res = await fetch(`/api/events/public/${eventId}?preview=true`, { credentials: "include" });
                     response = await res.json();
                 } else {
@@ -332,7 +328,7 @@ export default function EventDetailPage() {
         if (eventId) {
             fetchEvent();
         }
-    }, [eventId, isPreviewMode]);
+    }, [eventId]);
 
     const getInitials = (name: string) => {
         return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -461,7 +457,7 @@ export default function EventDetailPage() {
                             <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
-                            <span className="font-bold text-xl">ICMS</span>
+                            <span className="font-bold text-xl">CareNS</span>
                         </Link>
                         <div className="flex items-center gap-3">
                             <Button variant="ghost" size="icon">
@@ -860,24 +856,13 @@ export default function EventDetailPage() {
                                         </p>
                                     </div>
                                     <div className="text-right">
-                                        {event.earlyBirdPrice && (
-                                            <p className="text-xs text-muted-foreground line-through">
-                                                ₹{event.price.toLocaleString()}
-                                            </p>
-                                        )}
                                         <p className="font-bold text-2xl text-primary">
-                                            ₹{(event.earlyBirdPrice || event.price).toLocaleString()}
+                                            {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
                                         </p>
                                     </div>
                                 </div>
 
-                                {event.earlyBirdDeadline && (
-                                    <div className="p-3 rounded-lg bg-medical-orange-light border border-medical-orange/20">
-                                        <p className="text-sm text-medical-orange font-medium">
-                                            Early bird pricing ends {event.earlyBirdDeadline}
-                                        </p>
-                                    </div>
-                                )}
+                                {/* Early bird hidden */}
 
                                 {/* Registration deadline info */}
                                 {event.registrationDeadline && (
@@ -978,7 +963,7 @@ export default function EventDetailPage() {
                             <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
-                            <span className="font-bold">ICMS</span>
+                            <span className="font-bold">CareNS</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
                             © 2025 Medical College. All rights reserved.

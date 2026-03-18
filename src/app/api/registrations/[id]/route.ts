@@ -10,7 +10,7 @@ import {
   parseBody,
 } from "@/lib/api-utils";
 import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
-import { sendEmail, registrationApprovedHtml } from "@/lib/notifications";
+import { sendEmail, registrationApprovedHtml, registrationCancelledHtml } from "@/lib/notifications";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -207,6 +207,27 @@ export const PUT = withErrorHandler(
         }).catch((err) => console.error("Approval email error:", err));
       } catch (err) {
         console.error("Approval email error:", err);
+      }
+    }
+
+    // Send cancellation email when status changes to CANCELLED
+    const isNewlyCancelled =
+      data.status === "CANCELLED" &&
+      existingRegistration.status !== "CANCELLED";
+
+    if (isNewlyCancelled) {
+      try {
+        sendEmail({
+          to: existingRegistration.email,
+          subject: `Registration Cancelled — ${existingRegistration.event.title}`,
+          html: registrationCancelledHtml({
+            name: existingRegistration.name,
+            eventTitle: existingRegistration.event.title,
+          }),
+          tenantId: existingRegistration.event.tenantId,
+        }).catch((err) => console.error("Cancellation email error:", err));
+      } catch (err) {
+        console.error("Cancellation email error:", err);
       }
     }
 

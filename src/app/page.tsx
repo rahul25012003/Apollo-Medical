@@ -781,11 +781,9 @@ export default function PublicHomePage() {
                                                             </span>
                                                         )}
                                                         <span className="text-2xl lg:text-3xl font-bold text-cyan-300">
-                                                            ₹{(event.earlyBirdPrice || event.price).toLocaleString()}
+                                                            {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
                                                         </span>
-                                                        {event.earlyBirdPrice && (
-                                                            <p className="text-xs text-emerald-400 font-medium mt-1">Early bird pricing</p>
-                                                        )}
+                                                        {/* Early bird hidden */}
                                                     </div>
                                                     <Link href={`/events/${event.id}/register${event.tenantSlug ? `?tenant=${event.tenantSlug}` : ""}`}>
                                                         <Button className="bg-white text-primary hover:bg-white/90 gap-2 shadow-lg hover:shadow-xl transition-all duration-300 rounded-full px-6">
@@ -982,13 +980,9 @@ export default function PublicHomePage() {
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-primary">
-                                                            ₹{(event.earlyBirdPrice || event.price).toLocaleString()}
+                                                            {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
                                                         </span>
-                                                        {event.earlyBirdDeadline && (
-                                                            <p className="text-xs text-green-600 font-medium mt-0.5">
-                                                                Early bird available
-                                                            </p>
-                                                        )}
+                                                        {/* Early bird hidden */}
                                                     </div>
                                                     <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">
                                                         <Users className="h-3.5 w-3.5" />

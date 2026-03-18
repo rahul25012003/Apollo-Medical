@@ -25,6 +25,7 @@ import {
     X,
     ChevronDown,
     SlidersHorizontal,
+    CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
@@ -63,6 +64,7 @@ export default function BrowseEventsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedType, setSelectedType] = useState("All Types");
     const [selectedCategory, setSelectedCategory] = useState("All Categories");
+    const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
     const [showFilters, setShowFilters] = useState(false);
     const { effectiveTenantId, sessionLoading } = useTenantFilter();
 
@@ -77,10 +79,17 @@ export default function BrowseEventsPage() {
                 if (effectiveTenantId) {
                     params.set("tenantId", effectiveTenantId);
                 }
-                const response = await fetch(`/api/events/public?${params.toString()}`);
-                const data = await response.json();
+                const [eventsRes, regsRes] = await Promise.all([
+                    fetch(`/api/events/public?${params.toString()}`),
+                    fetch("/api/users/me/registrations"),
+                ]);
+                const data = await eventsRes.json();
                 if (data.success && data.data) {
                     setEvents(data.data);
+                }
+                const regsData = await regsRes.json();
+                if (regsData.success && Array.isArray(regsData.data)) {
+                    setRegisteredEventIds(new Set(regsData.data.map((r: { event?: { id: string } }) => r.event?.id).filter(Boolean)));
                 }
             } catch (error) {
                 console.error("Failed to fetch events:", error);
@@ -337,21 +346,9 @@ export default function BrowseEventsPage() {
                                         {/* Price and Actions */}
                                         <div className="flex flex-col items-end justify-between gap-3 lg:min-w-[180px]">
                                             <div className="text-right">
-                                                {event.earlyBirdPrice && event.earlyBirdPrice < event.price ? (
-                                                    <>
-                                                        <span className="text-sm text-muted-foreground line-through">
-                                                            ₹{event.price.toLocaleString()}
-                                                        </span>
-                                                        <p className="text-2xl font-bold text-primary">
-                                                            ₹{event.earlyBirdPrice.toLocaleString()}
-                                                        </p>
-                                                        <p className="text-xs text-green-600">Early bird price</p>
-                                                    </>
-                                                ) : (
-                                                    <p className="text-2xl font-bold text-primary">
-                                                        {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
-                                                    </p>
-                                                )}
+                                                <p className="text-2xl font-bold text-primary">
+                                                    {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
+                                                </p>
                                             </div>
 
                                             <div className="flex items-center gap-2">
@@ -361,19 +358,23 @@ export default function BrowseEventsPage() {
                                                         View Details
                                                     </Button>
                                                 </Link>
-                                                {!isPastEvent && !isSoldOut && (
+                                                {registeredEventIds.has(event.id) ? (
+                                                    <Button size="sm" variant="outline" disabled className="gap-2 text-green-700 border-green-200 bg-green-50">
+                                                        <CheckCircle2 className="w-4 h-4" />
+                                                        Already Registered
+                                                    </Button>
+                                                ) : !isPastEvent && !isSoldOut ? (
                                                     <Link href={`/dashboard/browse-events/${event.id}/register`}>
                                                         <Button size="sm" className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25 font-semibold">
                                                             <Ticket className="w-4 h-4" />
                                                             Register
                                                         </Button>
                                                     </Link>
-                                                )}
-                                                {isSoldOut && (
+                                                ) : isSoldOut ? (
                                                     <Button size="sm" disabled>
                                                         Sold Out
                                                     </Button>
-                                                )}
+                                                ) : null}
                                             </div>
                                         </div>
                                     </div>

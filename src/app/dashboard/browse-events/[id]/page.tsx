@@ -76,18 +76,30 @@ export default function EventDetailsPage() {
     const [event, setEvent] = useState<EventDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isRegistered, setIsRegistered] = useState(false);
 
     useEffect(() => {
         async function fetchEvent() {
             try {
                 setLoading(true);
-                const response = await fetch(`/api/events/public/${params.id}`);
-                const data = await response.json();
+                const [eventRes, regsRes] = await Promise.all([
+                    fetch(`/api/events/public/${params.id}`),
+                    fetch("/api/users/me/registrations"),
+                ]);
+                const data = await eventRes.json();
                 if (data.success && data.data) {
                     setEvent(data.data);
                 } else {
                     setError(data.error?.message || "Event not found");
                 }
+                try {
+                    const regsData = await regsRes.json();
+                    if (regsData.success && Array.isArray(regsData.data)) {
+                        const eventId = String(params.id);
+                        const registered = regsData.data.some((r: { event?: { id: string } }) => r.event?.id === eventId);
+                        setIsRegistered(registered);
+                    }
+                } catch { /* ignore — user might not be logged in */ }
             } catch (err) {
                 console.error("Failed to fetch event:", err);
                 setError("Failed to load event details");
@@ -309,26 +321,9 @@ export default function EventDetailsPage() {
                     <div className="lg:col-span-1">
                         <div className="bg-background rounded-xl border p-6 sticky top-6">
                             <div className="text-center mb-6">
-                                {event.earlyBirdPrice && event.earlyBirdPrice < event.price ? (
-                                    <>
-                                        <span className="text-lg text-muted-foreground line-through">
-                                            ₹{event.price.toLocaleString()}
-                                        </span>
-                                        <p className="text-3xl font-bold text-primary">
-                                            ₹{event.earlyBirdPrice.toLocaleString()}
-                                        </p>
-                                        <p className="text-sm text-green-600 font-medium">Early Bird Price</p>
-                                        {event.earlyBirdDeadline && (
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                Until {format(new Date(event.earlyBirdDeadline), "MMM d, yyyy")}
-                                            </p>
-                                        )}
-                                    </>
-                                ) : (
-                                    <p className="text-3xl font-bold text-primary">
-                                        {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
-                                    </p>
-                                )}
+                                <p className="text-3xl font-bold text-primary">
+                                    {event.price > 0 ? `₹${event.price.toLocaleString()}` : "Free"}
+                                </p>
                             </div>
 
                             {/* Availability */}
@@ -368,7 +363,12 @@ export default function EventDetailsPage() {
                             )}
 
                             {/* Register Button */}
-                            {!isPastEvent && !isSoldOut ? (
+                            {isRegistered ? (
+                                <Button className="w-full gap-2 bg-green-50 text-green-700 border-green-200 hover:bg-green-50" size="lg" variant="outline" disabled>
+                                    <CheckCircle2 className="w-5 h-5" />
+                                    Already Registered
+                                </Button>
+                            ) : !isPastEvent && !isSoldOut ? (
                                 <Link href={`/dashboard/browse-events/${event.id}/register`} className="block">
                                     <Button className="w-full gap-2" size="lg">
                                         <Ticket className="w-5 h-5" />

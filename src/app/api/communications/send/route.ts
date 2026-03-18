@@ -107,7 +107,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
           <h2 style="color: #0d9488; margin-bottom: 16px;">${personalizedSubject}</h2>
           <div style="line-height: 1.6; color: #333;">${personalizedBody.replace(/\n/g, "<br/>")}</div>
           <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-          <p style="color: #999; font-size: 12px;">This email was sent via ICMS Conference Management System.</p>
+          <p style="color: #999; font-size: 12px;">This email was sent via CareNS Conference Management System.</p>
         </div>
       `;
 

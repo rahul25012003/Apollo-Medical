@@ -328,17 +328,13 @@ export default function RegisterPage() {
         if (eventData.pricingCategories && eventData.pricingCategories.length > 0) {
             const category = eventData.pricingCategories.find(c => c.id === selectedCategory);
             if (category) {
-                const isEarlyBird = category.earlyBirdPrice && category.earlyBirdDeadline &&
-                    new Date() <= new Date(category.earlyBirdDeadline);
-                const price = isEarlyBird ? Number(category.earlyBirdPrice) : Number(category.price);
+                const price = Number(category.price);
                 return isNaN(price) ? 0 : price;
             }
         }
 
-        // Fallback to event-level pricing
-        const price = eventData.isEarlyBird && eventData.earlyBirdPrice
-            ? Number(eventData.earlyBirdPrice)
-            : Number(eventData.price);
+        // Fallback to event-level pricing (no early bird)
+        const price = Number(eventData.price);
         return isNaN(price) ? 0 : price;
     };
 
@@ -921,11 +917,9 @@ export default function RegisterPage() {
                                             <div className="p-3 rounded-lg bg-primary/5">
                                                 <p className="text-xs text-muted-foreground">Registration Fee</p>
                                                 <p className="text-lg font-bold text-primary">
-                                                    ₹{(eventData.isEarlyBird && eventData.earlyBirdPrice ? eventData.earlyBirdPrice : eventData.price).toLocaleString()}
+                                                    {eventData.price > 0 ? `₹${eventData.price.toLocaleString()}` : "Free"}
                                                 </p>
-                                                {eventData.isEarlyBird && eventData.earlyBirdPrice && (
-                                                    <p className="text-xs text-green-600">Early bird price!</p>
-                                                )}
+                                                {/* Early bird hidden */}
                                             </div>
                                             {(eventData.cmeCredits ?? 0) > 0 && (
                                                 <div className="p-3 rounded-lg bg-green-50">
@@ -1154,9 +1148,7 @@ export default function RegisterPage() {
                                                                     <p className="font-bold text-primary text-lg">
                                                                         {displayPrice > 0 ? `₹${displayPrice.toLocaleString()}` : "Free"}
                                                                     </p>
-                                                                    {isEarlyBird && (
-                                                                        <p className="text-xs text-green-600">Early bird</p>
-                                                                    )}
+                                                                    {/* Early bird hidden */}
                                                                 </div>
                                                             </div>
                                                         );
@@ -1167,49 +1159,9 @@ export default function RegisterPage() {
                                         </>
                                     )}
 
-                                    {/* Participant Role */}
-                                    <div className="space-y-3">
-                                        <Label className="text-base font-semibold">Participant Role *</Label>
-                                        <p className="text-sm text-muted-foreground">Select your role for this event (this determines your certificate type)</p>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                            {[
-                                                { value: "DELEGATE", label: "Delegate", description: "General attendee", icon: Users },
-                                                { value: "ORGANIZER", label: "Organizer", description: "Event organizing committee", icon: Building2 },
-                                                { value: "VOLUNTEER", label: "Volunteer", description: "Volunteering at the event", icon: Heart },
-                                                { value: "CHAIRPERSON", label: "Chairperson", description: "Session chair / moderator", icon: Award },
-                                            ].map((role) => {
-                                                const RoleIcon = role.icon;
-                                                return (
-                                                    <div
-                                                        key={role.value}
-                                                        className={cn(
-                                                            "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
-                                                            participantRole === role.value
-                                                                ? "border-primary bg-primary/5"
-                                                                : "border-border hover:border-primary/50"
-                                                        )}
-                                                        onClick={() => setParticipantRole(role.value)}
-                                                    >
-                                                        <div className={cn(
-                                                            "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
-                                                            participantRole === role.value ? "border-primary" : "border-muted-foreground"
-                                                        )}>
-                                                            {participantRole === role.value && (
-                                                                <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-                                                            )}
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <p className="font-medium text-sm flex items-center gap-1.5">
-                                                                <RoleIcon className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                                {role.label}
-                                                            </p>
-                                                            <p className="text-xs text-muted-foreground">{role.description}</p>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
+                                    {/* Participant Role — public registration is always Delegate */}
+                                    {/* Speakers, Organizers, Judges etc. are added by admin only */}
+                                    <input type="hidden" value="DELEGATE" />
 
                                     <div className="h-px bg-border" />
 
@@ -1343,9 +1295,16 @@ export default function RegisterPage() {
                                                 <label htmlFor="terms" className="text-sm font-medium cursor-pointer">
                                                     I agree to the terms and conditions *
                                                 </label>
-                                                <p className="text-xs text-muted-foreground">
-                                                    By registering, you agree to our cancellation and refund policy
-                                                </p>
+                                                <div className="text-xs text-muted-foreground space-y-1">
+                                                    <p>By registering, I confirm that:</p>
+                                                    <ul className="list-disc pl-4 space-y-0.5">
+                                                        <li>The information provided is accurate and complete</li>
+                                                        <li>I agree to the event&apos;s cancellation and refund policy</li>
+                                                        <li>Registration is subject to organizer approval and availability</li>
+                                                        <li>My contact details may be used for event-related communications</li>
+                                                        <li>I understand that registration fees, once paid, are non-refundable unless stated otherwise by the organizer</li>
+                                                    </ul>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -1636,14 +1595,7 @@ export default function RegisterPage() {
                                                     <span className="text-muted-foreground">Registration Fee</span>
                                                     <span>₹{eventData.price.toLocaleString()}</span>
                                                 </div>
-                                                {eventData.isEarlyBird && eventData.earlyBirdPrice && (
-                                                    <div className="flex justify-between text-sm text-green-600">
-                                                        <span>Early Bird Discount</span>
-                                                        <span>
-                                                            -₹{(eventData.price - eventData.earlyBirdPrice).toLocaleString()}
-                                                        </span>
-                                                    </div>
-                                                )}
+                                                {/* Early bird hidden */}
 
                                             </div>
 

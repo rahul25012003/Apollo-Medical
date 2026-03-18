@@ -904,6 +904,22 @@ export default function TenantHomePage() {
           <DecorativeBackground />
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
+            {/* Section Heading */}
+            <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
+              <Badge
+                variant="outline"
+                className="mb-4 px-5 py-1.5 rounded-full bg-white"
+                style={{ borderColor: `${theme.primaryColor}30` }}
+              >
+                <Calendar className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
+                Events
+              </Badge>
+              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Upcoming Events</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Explore our upcoming conferences, workshops, and training programs
+              </p>
+            </div>
+
             {/* Carousel */}
             <div className="relative max-w-5xl mx-auto">
               <div className="overflow-hidden rounded-3xl">
@@ -1326,11 +1342,7 @@ export default function TenantHomePage() {
                           ₹{Number(displayPrice).toLocaleString('en-IN')}
                         </span>
                       </div>
-                      {hasEarlyBird && (
-                        <p className="text-xs mt-1" style={{ color: theme.primaryColor }}>
-                          Early bird until {new Date(category.earlyBirdDeadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </p>
-                      )}
+                      {/* Early bird hidden */}
                     </div>
 
                     {category.totalSlots && (

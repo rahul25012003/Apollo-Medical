@@ -45,13 +45,13 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       // SMS test — use the user's phone if available, else skip
       success = await sendSms({
         to: testTo, // Will use the configured channel
-        message: `ICMS Test SMS from channel "${channel.name}". If you receive this, your SMS configuration is working.`,
+        message: `CareNS Test SMS from channel "${channel.name}". If you receive this, your SMS configuration is working.`,
         tenantId: channel.tenantId,
       });
     } else if (channel.channel === "WHATSAPP") {
       success = await sendWhatsApp({
         to: testTo,
-        message: `ICMS Test WhatsApp from channel "${channel.name}". If you receive this, your WhatsApp configuration is working.`,
+        message: `CareNS Test WhatsApp from channel "${channel.name}". If you receive this, your WhatsApp configuration is working.`,
         tenantId: channel.tenantId,
       });
     }

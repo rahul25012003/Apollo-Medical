@@ -1290,7 +1290,7 @@ export default function CreateEventPage() {
                                                 </p>
                                                 <ul className="text-xs text-muted-foreground space-y-1">
                                                     <li>• Write detailed descriptions</li>
-                                                    <li>• Set early bird pricing</li>
+                                                    {/* Early bird hidden */}
                                                     <li>• Add speaker profiles</li>
                                                 </ul>
                                             </div>
@@ -1421,39 +1421,7 @@ export default function CreateEventPage() {
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-2">
-                                                        <Label>Early Bird Price (₹)</Label>
-                                                        <div className="relative">
-                                                            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                            <Input
-                                                                type="number"
-                                                                value={category.earlyBirdPrice}
-                                                                onChange={(e) =>
-                                                                    updateSlotCategory(
-                                                                        category.id,
-                                                                        "earlyBirdPrice",
-                                                                        parseInt(e.target.value) || 0
-                                                                    )
-                                                                }
-                                                                className="pl-10"
-                                                                min={0}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label>Early Bird Deadline</Label>
-                                                        <Input
-                                                            type="date"
-                                                            value={category.earlyBirdDeadline}
-                                                            onChange={(e) =>
-                                                                updateSlotCategory(
-                                                                    category.id,
-                                                                    "earlyBirdDeadline",
-                                                                    e.target.value
-                                                                )
-                                                            }
-                                                        />
-                                                    </div>
+                                                    {/* Early bird fields hidden — enable when needed */}
                                                 </div>
                                             </div>
                                             {slotCategories.length > 1 && (
@@ -1507,31 +1475,7 @@ export default function CreateEventPage() {
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs">Early Bird (₹)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={category.earlyBirdPrice}
-                                                        onChange={(e) =>
-                                                            updateSlotCategory(category.id, "earlyBirdPrice", parseInt(e.target.value) || 0)
-                                                        }
-                                                        min={0}
-                                                        className="h-9"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs">EB Deadline</Label>
-                                                    <Input
-                                                        type="date"
-                                                        value={category.earlyBirdDeadline}
-                                                        onChange={(e) =>
-                                                            updateSlotCategory(category.id, "earlyBirdDeadline", e.target.value)
-                                                        }
-                                                        className="h-9"
-                                                    />
-                                                </div>
-                                            </div>
+                                            {/* Early bird hidden */}
                                         </div>
                                     </div>
                                 ))}

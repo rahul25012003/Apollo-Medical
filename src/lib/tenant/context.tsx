@@ -279,17 +279,23 @@ export function TenantProvider({
   useEffect(() => {
     if (!tenant?.branding) return;
 
-    // Update favicon
+    // Update ALL favicon links — Next.js may generate multiple
     if (tenant.branding.favicon) {
-      let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-      if (favicon) {
-        favicon.href = tenant.branding.favicon;
+      const faviconUrl = tenant.branding.favicon;
+      // Update all existing icon links
+      const existingIcons = document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="shortcut icon"]');
+      if (existingIcons.length > 0) {
+        existingIcons.forEach(icon => { icon.href = faviconUrl; });
       } else {
-        favicon = document.createElement("link");
-        favicon.rel = "icon";
-        favicon.href = tenant.branding.favicon;
-        document.head.appendChild(favicon);
+        // Create new link if none exists
+        const link = document.createElement("link");
+        link.rel = "icon";
+        link.href = faviconUrl;
+        document.head.appendChild(link);
       }
+      // Also update apple-touch-icon if it exists
+      const appleIcon = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
+      if (appleIcon) appleIcon.href = faviconUrl;
     }
 
     // Update title on ALL pages when tenant is loaded

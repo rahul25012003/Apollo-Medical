@@ -521,6 +521,9 @@ export function registrationApprovedHtml(params: {
 export function adminNewRegistrationHtml(params: {
   registrantName: string;
   registrantEmail: string;
+  registrantPhone?: string;
+  registrantOrg?: string;
+  registrantDesignation?: string;
   eventTitle: string;
   role: string;
   amount: number;
@@ -528,7 +531,7 @@ export function adminNewRegistrationHtml(params: {
   paymentStatus: string;
   totalRegistrations: number;
 }): string {
-  const { registrantName, registrantEmail, eventTitle, role, amount, currency, paymentStatus, totalRegistrations } = params;
+  const { registrantName, registrantEmail, registrantPhone, registrantOrg, registrantDesignation, eventTitle, role, amount, currency, paymentStatus, totalRegistrations } = params;
   const isFree = amount === 0;
   return `
     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
@@ -537,14 +540,43 @@ export function adminNewRegistrationHtml(params: {
         <p style="margin: 0 0 16px;">A new registration has been received for <strong>${eventTitle}</strong>.</p>
         <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
           <tr><td style="padding: 6px 0; color: #666;">Name</td><td style="padding: 6px 0; text-align: right; font-weight: bold;">${registrantName}</td></tr>
-          <tr><td style="padding: 6px 0; color: #666;">Email</td><td style="padding: 6px 0; text-align: right;">${registrantEmail}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Email</td><td style="padding: 6px 0; text-align: right;"><a href="mailto:${registrantEmail}" style="color: #0d9488;">${registrantEmail}</a></td></tr>
+          ${registrantPhone ? `<tr><td style="padding: 6px 0; color: #666;">Phone</td><td style="padding: 6px 0; text-align: right;"><a href="tel:${registrantPhone}" style="color: #0d9488;">${registrantPhone}</a></td></tr>` : ""}
+          ${registrantDesignation ? `<tr><td style="padding: 6px 0; color: #666;">Designation</td><td style="padding: 6px 0; text-align: right;">${registrantDesignation}</td></tr>` : ""}
+          ${registrantOrg ? `<tr><td style="padding: 6px 0; color: #666;">Organization</td><td style="padding: 6px 0; text-align: right;">${registrantOrg}</td></tr>` : ""}
           <tr><td style="padding: 6px 0; color: #666;">Role</td><td style="padding: 6px 0; text-align: right; text-transform: capitalize;">${role.toLowerCase()}</td></tr>
-          <tr><td style="padding: 6px 0; color: #666;">Amount</td><td style="padding: 6px 0; text-align: right;">${isFree ? "Free" : `${currency} ${amount.toLocaleString()}`}</td></tr>
-          <tr><td style="padding: 6px 0; color: #666;">Payment</td><td style="padding: 6px 0; text-align: right;"><span style="color: ${paymentStatus === "PAID" || paymentStatus === "FREE" ? "#10b981" : "#d97706"}; font-weight: bold;">${paymentStatus}</span></td></tr>
-          <tr><td style="padding: 6px 0; color: #666;">Total Registrations</td><td style="padding: 6px 0; text-align: right; font-weight: bold;">${totalRegistrations}</td></tr>
         </table>
+        <div style="margin: 16px 0; padding: 12px; background: ${isFree ? "#f0fdf4" : "#fefce8"}; border-radius: 6px; border: 1px solid ${isFree ? "#bbf7d0" : "#fde68a"};">
+          <p style="margin: 0; font-size: 13px; font-weight: bold; color: ${isFree ? "#166534" : "#854d0e"};">Payment Details</p>
+          <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px;">
+            <tr><td style="padding: 4px 0; color: #666;">Amount</td><td style="padding: 4px 0; text-align: right; font-weight: bold;">${isFree ? "Free" : `${currency} ${amount.toLocaleString()}`}</td></tr>
+            <tr><td style="padding: 4px 0; color: #666;">Status</td><td style="padding: 4px 0; text-align: right;"><span style="color: ${paymentStatus === "PAID" || paymentStatus === "FREE" ? "#10b981" : "#d97706"}; font-weight: bold;">${paymentStatus}</span></td></tr>
+          </table>
+        </div>
+        <p style="margin: 12px 0 0; font-size: 12px; color: #666;">Total registrations for this event: <strong>${totalRegistrations}</strong></p>
       </div>
       <p style="color: #999; font-size: 12px;">Login to your admin dashboard to review and approve this registration.</p>
+    </div>
+  `;
+}
+
+// Cancellation notification — sent to registrant when admin cancels
+export function registrationCancelledHtml(params: {
+  name: string;
+  eventTitle: string;
+  reason?: string;
+}): string {
+  const { name, eventTitle, reason } = params;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #dc2626; margin-bottom: 4px;">Registration Cancelled</h2>
+      <div style="background: #fef2f2; border-radius: 8px; padding: 20px; margin: 16px 0; border: 1px solid #fecaca;">
+        <p style="margin: 0 0 8px;"><strong>Hello ${name},</strong></p>
+        <p style="margin: 0 0 16px;">We regret to inform you that your registration for <strong>${eventTitle}</strong> has been cancelled.</p>
+        ${reason ? `<p style="margin: 0 0 16px; padding: 10px; background: white; border-radius: 4px; font-size: 14px; color: #666;">Reason: ${reason}</p>` : ""}
+        <p style="margin: 0; font-size: 14px; color: #666;">If you believe this is an error, please contact the event organizer.</p>
+      </div>
+      <p style="color: #999; font-size: 12px;">This is an automated email.</p>
     </div>
   `;
 }
