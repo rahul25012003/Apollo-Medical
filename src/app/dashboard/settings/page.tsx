@@ -1247,7 +1247,7 @@ const NOTIF_FIELD_META: Record<string, { label: string; type: string; placeholde
     smtpPort: { label: "Port", type: "number", placeholder: "587" },
     email: { label: "Email", type: "email", placeholder: "admin@example.com" },
     password: { label: "App Password", type: "password", placeholder: "" },
-    fromName: { label: "From Name", type: "text", placeholder: "ICMS Notifications" },
+    fromName: { label: "From Name", type: "text", placeholder: "CareNS Notifications" },
     apiKey: { label: "API Key", type: "password", placeholder: "" },
     fromEmail: { label: "From Email", type: "email", placeholder: "noreply@example.com" },
     domain: { label: "Domain", type: "text", placeholder: "mg.example.com" },

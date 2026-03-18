@@ -52,30 +52,71 @@ function LoginPageInner() {
     const [tenantBranding, setTenantBranding] = React.useState<TenantBranding | null>(null);
 
     // Compute the "home" URL based on tenant context
-    // On custom domain, middleware rewrites / to /t/{slug} internally, so just use /
-    const isCustomDomain = typeof window !== 'undefined' &&
-        !window.location.hostname.includes('localhost') &&
-        !window.location.hostname.includes('127.0.0.1');
-    const homeHref = isCustomDomain ? "/" : (tenantSlug ? `/t/${tenantSlug}` : "/");
+    // On production (any non-localhost), use / — middleware rewrites internally
+    // On localhost only, use /t/{slug} since there's no domain mapping
+    const isLocalhost = typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const homeHref = isLocalhost ? (tenantSlug ? `/t/${tenantSlug}` : "/") : "/";
 
-    // Fetch tenant branding from query param or hostname (domain-based lookup)
+    // Fetch tenant branding — try query param, then hostname, then first available tenant
     React.useEffect(() => {
-        const identifier = tenantSlug || window.location.hostname;
-        if (!identifier || identifier === "localhost") return;
-
         async function fetchTenant() {
             try {
-                const response = await fetch(`/api/tenants/${identifier}`);
+                let response: Response | null = null;
+
+                // Try 1: query param tenant slug
+                if (tenantSlug) {
+                    response = await fetch(`/api/tenants/${tenantSlug}`);
+                }
+
+                // Try 2: hostname as domain
+                if (!response?.ok && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                    response = await fetch(`/api/tenants/${window.location.hostname}`);
+                }
+
+                // Try 3: fallback — get first tenant
+                if (!response?.ok) {
+                    response = await fetch('/api/tenants?limit=1');
+                    if (response.ok) {
+                        const listData = await response.json();
+                        if (listData.success && listData.data?.length > 0) {
+                            const t = listData.data[0];
+                            const name = t.branding?.name || t.name || "CareNS";
+                            const favicon = t.branding?.favicon || t.favicon || null;
+                            setTenantBranding({
+                                name,
+                                logo: t.branding?.logo || t.logo || null,
+                                primaryColor: t.theme?.primaryColor || t.primaryColor || "#0d9488",
+                                secondaryColor: t.theme?.secondaryColor || t.secondaryColor || "#0891b2",
+                            });
+                            document.title = `Login — ${name}`;
+                            if (favicon) {
+                                let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+                                if (link) { link.href = favicon; } else { link = document.createElement("link"); link.rel = "icon"; link.href = favicon; document.head.appendChild(link); }
+                            }
+                            return;
+                        }
+                    }
+                    return;
+                }
+
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.data) {
                         const t = data.data;
+                        const name = t.branding?.name || t.name || "CareNS";
+                        const favicon = t.branding?.favicon || t.favicon || null;
                         setTenantBranding({
-                            name: t.branding?.name || t.name || "ICMS",
+                            name,
                             logo: t.branding?.logo || t.logo || null,
                             primaryColor: t.theme?.primaryColor || t.primaryColor || "#0d9488",
                             secondaryColor: t.theme?.secondaryColor || t.secondaryColor || "#0891b2",
                         });
+                        document.title = `Login — ${name}`;
+                        if (favicon) {
+                            let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+                            if (link) { link.href = favicon; } else { link = document.createElement("link"); link.rel = "icon"; link.href = favicon; document.head.appendChild(link); }
+                        }
                     }
                 }
             } catch (err) {
@@ -624,7 +665,7 @@ function LoginPageInner() {
 
                 {/* Footer */}
                 <footer className="p-4 sm:p-6 flex flex-col items-center gap-1.5 text-xs text-muted-foreground relative z-10">
-                    <span>&copy; {new Date().getFullYear()} {tenantBranding?.name || "ICMS"}. All rights reserved.</span>
+                    <span>&copy; {new Date().getFullYear()} {tenantBranding?.name || "CareNS"}. All rights reserved.</span>
                     <a href="https://summitsolutions.in" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity">
                         Powered by
                         <img src="/summit-logo.png" alt="Summit Solutions" className="h-10 inline-block" />

@@ -137,8 +137,31 @@ export function TenantProvider({
   }
 
   // Fetch tenant config if slug or id is provided and no initial config
+  // On dashboard without tenant context, try to load first available tenant for branding
   useEffect(() => {
-    if (initialConfig || (!tenantSlug && !tenantId)) {
+    if (initialConfig) return;
+
+    if (!tenantSlug && !tenantId) {
+      // No tenant context — try loading default tenant for favicon/title on dashboard
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) {
+        fetch("/api/tenants?limit=1").then(r => r.json()).then(data => {
+          if (data.success && data.data?.length > 0) {
+            const t = data.data[0];
+            const config = {
+              ...defaultTenantConfig,
+              id: t.id,
+              slug: t.slug,
+              branding: {
+                ...defaultTenantConfig.branding,
+                name: t.branding?.name || t.name || defaultTenantConfig.branding.name,
+                favicon: t.branding?.favicon || t.favicon || defaultTenantConfig.branding.favicon,
+                logo: t.branding?.logo || t.logo || defaultTenantConfig.branding.logo,
+              },
+            };
+            setTenant(config as TenantConfig);
+          }
+        }).catch(() => {});
+      }
       return;
     }
 
@@ -252,25 +275,35 @@ export function TenantProvider({
     }
   }, [tenant?.theme]);
 
-  // Update favicon from tenant branding (works for both public pages and dashboard)
+  // Update favicon and title from tenant branding — works on ALL pages
   useEffect(() => {
-    if (tenant?.branding?.favicon) {
+    if (!tenant?.branding) return;
+
+    // Update favicon
+    if (tenant.branding.favicon) {
       let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
       if (favicon) {
         favicon.href = tenant.branding.favicon;
       } else {
-        // Create link element if it doesn't exist
         favicon = document.createElement("link");
         favicon.rel = "icon";
         favicon.href = tenant.branding.favicon;
         document.head.appendChild(favicon);
       }
     }
-    // Update title only for public tenant pages (not dashboard)
-    if (tenantSlug && tenant?.branding?.name) {
-      document.title = tenant.branding.name;
+
+    // Update title on ALL pages when tenant is loaded
+    if (tenant.branding.name) {
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      if (currentPath.startsWith('/dashboard')) {
+        document.title = `${tenant.branding.name} — Dashboard`;
+      } else if (currentPath.startsWith('/auth')) {
+        document.title = `${tenant.branding.name} — Login`;
+      } else {
+        document.title = tenant.branding.name;
+      }
     }
-  }, [tenantSlug, tenant?.branding]);
+  }, [tenant?.branding, tenantSlug]);
 
   return (
     <TenantContext.Provider

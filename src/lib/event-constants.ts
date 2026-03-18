@@ -13,6 +13,7 @@ export const EVENT_TYPES = [
 // Event Categories - stored in DB as these values
 export const EVENT_CATEGORIES = [
     { value: "Neurology", label: "Neurology" },
+    { value: "Psychiatry", label: "Psychiatry" },
     { value: "Surgery", label: "Surgery" },
     { value: "General Medicine", label: "General Medicine" },
     { value: "Research", label: "Research" },

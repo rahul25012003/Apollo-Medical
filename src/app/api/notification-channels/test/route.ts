@@ -37,8 +37,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     if (channel.channel === "EMAIL") {
       success = await sendEmail({
         to: testTo,
-        subject: "ICMS Test Email",
-        html: `<div style="font-family: Arial; padding: 20px;"><h2 style="color: #0d9488;">Test Email</h2><p>This is a test email from ICMS notification system.</p><p style="color: #666;">Channel: ${channel.name}<br/>Provider: ${channel.provider}</p></div>`,
+        subject: "CareNS Test Email",
+        html: `<div style="font-family: Arial; padding: 20px;"><h2 style="color: #0d9488;">Test Email</h2><p>This is a test email from CareNS notification system.</p><p style="color: #666;">Channel: ${channel.name}<br/>Provider: ${channel.provider}</p></div>`,
         tenantId: channel.tenantId,
       });
     } else if (channel.channel === "SMS") {

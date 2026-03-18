@@ -11,18 +11,18 @@ interface AiimsLoaderProps {
 
 export function AiimsLoader({ size = "md", text = "Loading", fullPage = false }: AiimsLoaderProps) {
   const uid = useId().replace(/:/g, "");
-  let tenantSlug: string | null = null;
   let tenantLogo: string | null = null;
   try {
     const { tenant } = useTenant();
-    tenantSlug = tenant?.slug ?? null;
-    tenantLogo = tenant?.branding?.logo ?? null;
+    // Use tenant's uploaded logo if available, otherwise AIIMS logo
+    tenantLogo = tenant?.branding?.logo || null;
   } catch {
-    // Outside TenantProvider — default to carens
+    // Outside TenantProvider
   }
 
-  const isOtherTenant = tenantSlug !== null && tenantSlug !== "carens";
-  const logoSrc = isOtherTenant ? tenantLogo : "/aiims-logo.jpg";
+  // Always show AIIMS logo as default — it's the primary tenant
+  // Only use tenant logo if it's a different uploaded image
+  const logoSrc = tenantLogo || "/aiims-logo.jpg";
 
   const dims = size === "sm" ? 56 : size === "md" ? 90 : 120;
   const pad = size === "sm" ? 8 : size === "md" ? 14 : 18;
@@ -65,10 +65,16 @@ export function AiimsLoader({ size = "md", text = "Loading", fullPage = false }:
           }}
         >
           {logoSrc ? (
-            <img src={logoSrc} alt="Loading" className="w-full h-full object-contain" style={{ mixBlendMode: "multiply" }} />
+            <img
+              src={logoSrc}
+              alt="Loading"
+              className="w-full h-full object-contain"
+              style={{ mixBlendMode: "multiply" }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
           ) : (
             <span className="font-extrabold bg-gradient-to-br from-teal-600 to-cyan-600 bg-clip-text text-transparent" style={{ fontSize: dims * 0.22 }}>
-              ICMS
+              CareNS
             </span>
           )}
         </div>

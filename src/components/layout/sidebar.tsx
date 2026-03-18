@@ -313,10 +313,11 @@ export function Sidebar() {
     // On custom domain, middleware rewrites / to /t/{slug} internally
     // So we just redirect to / — the URL bar stays clean
     const handleLogout = () => {
-        const isCustomDomain = typeof window !== 'undefined' &&
-            !window.location.hostname.includes('localhost') &&
-            !window.location.hostname.includes('127.0.0.1');
-        signOut({ callbackUrl: isCustomDomain ? "/" : (tenantSlug ? `/t/${tenantSlug}` : "/") });
+        // On production (any non-localhost), redirect to / — middleware handles tenant rewrite
+        // On localhost, use /t/{slug} since there's no domain mapping
+        const isLocalhost = typeof window !== 'undefined' &&
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        signOut({ callbackUrl: isLocalhost ? (tenantSlug ? `/t/${tenantSlug}` : "/") : "/" });
     };
 
     // Prevent hydration mismatch by only applying client state after mount
@@ -555,7 +556,7 @@ export function Sidebar() {
                                                 >
                                                     {/* Active indicator bar */}
                                                     {isActive && (
-                                                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-gradient-to-b from-teal-400 to-cyan-500 rounded-r-full shadow-[0_0_8px_rgba(20,184,166,0.6)]" />
+                                                        <span className="absolute left-0 top-[6px] bottom-[6px] w-[3px] bg-gradient-to-b from-teal-400 to-cyan-500 rounded-r-full shadow-[0_0_8px_rgba(20,184,166,0.6)]" />
                                                     )}
                                                     <item.icon
                                                         className={cn(

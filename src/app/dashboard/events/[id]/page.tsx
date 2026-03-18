@@ -844,28 +844,13 @@ export default function EventDetailPage() {
                                 Preview
                             </Button>
                         </Link>
-                        {/* Edit button - only show if no registrations and not published */}
-                        {event.registrations === 0 && !event.isPublished ? (
-                            <Link href={`/dashboard/events/${event.id}/edit`}>
-                                <Button variant="outline" size="sm" className="gap-2">
-                                    <Edit className="h-4 w-4" />
-                                    Edit
-                                </Button>
-                            </Link>
-                        ) : (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-2 opacity-50 cursor-not-allowed"
-                                disabled
-                                title={event.registrations > 0
-                                    ? "Cannot edit: Event has registrations"
-                                    : "Cannot edit: Event is published"}
-                            >
+                        {/* Edit button - always available */}
+                        <Link href={`/dashboard/events/${event.id}/edit`}>
+                            <Button variant="outline" size="sm" className="gap-2">
                                 <Edit className="h-4 w-4" />
-                                Edit
+                                Edit Event
                             </Button>
-                        )}
+                        </Link>
                         {/* Publish button - only for drafts */}
                         {!event.isPublished && (
                             <Button
@@ -1034,32 +1019,30 @@ export default function EventDetailPage() {
 
                 {/* Tabs */}
                 <Tabs defaultValue="overview" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:w-auto lg:inline-grid lg:grid-cols-9">
+                    <TabsList className="flex flex-wrap gap-1 w-full lg:w-auto">
                         <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="registrations">Registrations</TabsTrigger>
+                        <TabsTrigger value="registrations">Registration</TabsTrigger>
                         <TabsTrigger value="venues" className="gap-1.5">
                             <Building2 className="h-3.5 w-3.5" />
-                            Venues
+                            Venues & Halls
                         </TabsTrigger>
                         <TabsTrigger value="speakers">Speakers</TabsTrigger>
                         <TabsTrigger value="scientific-program" className="gap-1.5">
                             <Mic2 className="h-3.5 w-3.5" />
-                            Program
+                            Scientific Program
+                        </TabsTrigger>
+                        <TabsTrigger value="engagement" className="gap-1.5">
+                            <Megaphone className="h-3.5 w-3.5" />
+                            Engagement
                         </TabsTrigger>
                         <TabsTrigger value="badges" className="gap-1.5">
                             <QrCode className="h-3.5 w-3.5" />
-                            Badges (ID Cards)
+                            ID Cards
                         </TabsTrigger>
                         <TabsTrigger value="access-control" className="gap-1.5">
                             <Shield className="h-3.5 w-3.5" />
-                            Access
+                            Access Control
                         </TabsTrigger>
-                        {event.engagements.length > 0 && (
-                            <TabsTrigger value="engagement" className="gap-1.5">
-                                <Megaphone className="h-3.5 w-3.5" />
-                                Engagement
-                            </TabsTrigger>
-                        )}
                         <TabsTrigger value="config" className="gap-1.5">
                             <Settings className="h-3.5 w-3.5" />
                             Config
@@ -1094,11 +1077,11 @@ export default function EventDetailPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground">Early Bird Deadline</p>
-                                            <p className="font-medium">{event.earlyBirdDeadline || "N/A"}</p>
+                                            <p className="font-medium">{event.earlyBirdDeadline ? new Date(event.earlyBirdDeadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "N/A"}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground">Registration Deadline</p>
-                                            <p className="font-medium">{event.registrationDeadline || "N/A"}</p>
+                                            <p className="font-medium">{event.registrationDeadline ? new Date(event.registrationDeadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "N/A"}</p>
                                         </div>
                                     </div>
 
@@ -1638,8 +1621,8 @@ export default function EventDetailPage() {
                     </TabsContent>
 
                     {/* Engagement Tab */}
-                    {event.engagements.length > 0 && (
-                        <TabsContent value="engagement" className="space-y-6">
+                    <TabsContent value="engagement" className="space-y-6">
+                        {event.engagements.length > 0 ? (
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <div>
@@ -1706,8 +1689,16 @@ export default function EventDetailPage() {
                                     </div>
                                 </CardContent>
                             </Card>
-                        </TabsContent>
-                    )}
+                        ) : (
+                            <Card>
+                                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                                    <Megaphone className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                                    <p className="text-muted-foreground font-medium">No engagements created yet</p>
+                                    <p className="text-xs text-muted-foreground/70 mt-1">Create polls, Q&A, word clouds, or feedback forms for this event</p>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </TabsContent>
 
                     {/* Config Tab */}
                     <TabsContent value="config" className="space-y-6">

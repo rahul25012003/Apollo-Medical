@@ -17,19 +17,31 @@ async function getTenantSlugByDomain(domain: string): Promise<string | null> {
   if (now - domainCacheTime > DOMAIN_CACHE_TTL) {
     try {
       const tenants = await prisma.tenant.findMany({
-        where: { domain: { not: null }, isActive: true },
+        where: { isActive: true },
         select: { domain: true, slug: true },
       });
       domainCache = {};
+      let tenantsWithDomain = 0;
       for (const t of tenants) {
-        if (t.domain) domainCache[t.domain.toLowerCase()] = t.slug;
+        if (t.domain) {
+          domainCache[t.domain.toLowerCase()] = t.slug;
+          tenantsWithDomain++;
+        }
+      }
+      // Fallback: if no tenant has a domain configured but we're NOT on localhost,
+      // and there's exactly 1 active tenant, use it as default for the production domain
+      if (tenantsWithDomain === 0 && tenants.length >= 1) {
+        // Use the first tenant as fallback for any non-localhost domain
+        domainCache["__fallback__"] = tenants[0].slug;
       }
       domainCacheTime = now;
     } catch {
       // On error, use stale cache
     }
   }
-  return domainCache[domain.toLowerCase()] || null;
+  const isLocalhost = domain === "localhost" || domain === "127.0.0.1";
+  if (isLocalhost) return null;
+  return domainCache[domain.toLowerCase()] || domainCache["__fallback__"] || null;
 }
 
 // Routes that require authentication
@@ -143,18 +155,33 @@ export async function middleware(request: NextRequest) {
   const tenantSlug = await getTenantSlugByDomain(hostname);
 
   if (tenantSlug) {
-    if (pathname === "/") {
-      const url = request.nextUrl.clone();
-      url.pathname = `/t/${tenantSlug}`;
-      return withCorsHeaders(NextResponse.rewrite(url), request);
-    }
+    // NEVER rewrite /dashboard, /auth, /api, /t paths — these are app-level routes
+    const isAppRoute = pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/api") ||
+      pathname.startsWith("/t/") ||
+      pathname.startsWith("/_next");
 
-    // For event pages on tenant domains, inject tenant context via query param
-    if (pathname.startsWith("/events")) {
-      const url = request.nextUrl.clone();
-      if (!url.searchParams.has("tenant")) {
+    if (!isAppRoute) {
+      if (pathname === "/") {
+        const url = request.nextUrl.clone();
+        url.pathname = `/t/${tenantSlug}`;
+        return withCorsHeaders(NextResponse.rewrite(url), request);
+      }
+
+      // For event pages on tenant domains, rewrite internally with tenant param
+      // Use rewrite (not redirect) so the URL stays clean without ?tenant=xxx
+      if (pathname.startsWith("/events") && !request.nextUrl.searchParams.has("tenant")) {
+        const url = request.nextUrl.clone();
         url.searchParams.set("tenant", tenantSlug);
-        return withCorsHeaders(NextResponse.redirect(url), request);
+        return withCorsHeaders(NextResponse.rewrite(url), request);
+      }
+
+      // For gallery pages on tenant domains
+      if (pathname === "/gallery") {
+        const url = request.nextUrl.clone();
+        url.pathname = `/t/${tenantSlug}/gallery`;
+        return withCorsHeaders(NextResponse.rewrite(url), request);
       }
     }
   }

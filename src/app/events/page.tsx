@@ -215,7 +215,7 @@ export default function PublicEventsPage() {
             <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
-                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"} className="flex items-center gap-2">
+                        <Link href="/" className="flex items-center gap-2">
                             <div className="h-8 w-8 rounded-xl gradient-medical flex items-center justify-center">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
@@ -387,7 +387,7 @@ export default function PublicEventsPage() {
                                         </div>
 
                                         <h2 className="text-2xl lg:text-3xl font-bold mb-4">
-                                            <Link href={`/events/${featuredEvent.id}${featuredEvent.tenantSlug ? `?tenant=${featuredEvent.tenantSlug}` : ""}`} className="hover:text-primary transition-colors">
+                                            <Link href={`/events/${featuredEvent.id}`} className="hover:text-primary transition-colors">
                                                 {featuredEvent.title}
                                             </Link>
                                         </h2>
@@ -432,13 +432,13 @@ export default function PublicEventsPage() {
                                                 )}
                                             </div>
                                             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                                                <Link href={`/events/${featuredEvent.id}${featuredEvent.tenantSlug ? `?tenant=${featuredEvent.tenantSlug}` : ""}`}>
+                                                <Link href={`/events/${featuredEvent.id}`}>
                                                     <Button size="lg" variant="outline" className="rounded-xl gap-2 w-full sm:w-auto">
                                                         <Eye className="h-5 w-5" />
                                                         View Details
                                                     </Button>
                                                 </Link>
-                                                <Link href={`/events/${featuredEvent.id}/register${featuredEvent.tenantSlug ? `?tenant=${featuredEvent.tenantSlug}` : ""}`}>
+                                                <Link href={`/events/${featuredEvent.id}/register`}>
                                                     <Button size="lg" className="rounded-xl gap-2 gradient-medical text-white hover:opacity-90 shadow-lg shadow-primary/25 w-full sm:w-auto">
                                                         <Ticket className="h-5 w-5" />
                                                         Register Now
@@ -487,7 +487,7 @@ export default function PublicEventsPage() {
                                     return (
                                         <Link
                                             key={event.id}
-                                            href={`/events/${event.id}${event.tenantSlug ? `?tenant=${event.tenantSlug}` : ""}`}
+                                            href={`/events/${event.id}`}
                                             className={cn(
                                                 "group relative bg-card rounded-2xl border border-border/50 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30",
                                                 event.status === "COMPLETED" && "opacity-75"
@@ -593,7 +593,7 @@ export default function PublicEventsPage() {
                                                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium group-hover:bg-primary/90 transition-colors"
                                                             onClick={(e) => {
                                                                 e.preventDefault();
-                                                                router.push(`/events/${event.id}/register${event.tenantSlug ? `?tenant=${event.tenantSlug}` : ""}`);
+                                                                router.push(`/events/${event.id}/register`);
                                                             }}
                                                         >
                                                             Register

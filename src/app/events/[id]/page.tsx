@@ -457,7 +457,7 @@ export default function EventDetailPage() {
             <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
-                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"} className="flex items-center gap-2">
+                        <Link href="/" className="flex items-center gap-2">
                             <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
@@ -467,7 +467,7 @@ export default function EventDetailPage() {
                             <Button variant="ghost" size="icon">
                                 <Share2 className="h-4 w-4" />
                             </Button>
-                            <Link href={tenantSlug ? `/auth/login?tenant=${tenantSlug}` : "/auth/login"}>
+                            <Link href="/auth/login">
                                 <Button variant="outline" size="sm">
                                     Login
                                 </Button>
@@ -918,7 +918,7 @@ export default function EventDetailPage() {
                                         <p className="text-xs text-muted-foreground mt-1">All slots have been filled</p>
                                     </div>
                                 ) : (
-                                    <Link href={`/events/${event.id}/register${tenantSlug ? `?tenant=${tenantSlug}` : ""}`} className="block">
+                                    <Link href={`/events/${event.id}/register`} className="block">
                                         <Button className="w-full gap-2 gradient-medical text-white hover:opacity-90" size="lg">
                                             <Ticket className="h-5 w-5" />
                                             Register Now

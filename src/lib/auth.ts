@@ -77,8 +77,9 @@ async function createSessionRecord(userId: string, userAgent: string | null, ipA
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  // Note: Adapter is not needed when using JWT strategy with Credentials only
-  // Add PrismaAdapter(prisma) here if you add OAuth providers later
+  // Trust the host header — required for multi-domain/multi-tenant production deployment
+  // Without this, NextAuth rejects requests from domains that don't match NEXTAUTH_URL
+  trustHost: true,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days

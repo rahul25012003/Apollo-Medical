@@ -78,7 +78,7 @@ export const FIELD_META: Record<string, { label: string; type: string; placehold
   smtpPort: { label: "Port", type: "number", placeholder: "587" },
   email: { label: "Email", type: "email", placeholder: "admin@example.com" },
   password: { label: "App Password", type: "password", placeholder: "" },
-  fromName: { label: "From Name", type: "text", placeholder: "ICMS Notifications" },
+  fromName: { label: "From Name", type: "text", placeholder: "CareNS Notifications" },
   apiKey: { label: "API Key", type: "password", placeholder: "" },
   fromEmail: { label: "From Email", type: "email", placeholder: "noreply@example.com" },
   domain: { label: "Domain", type: "text", placeholder: "mg.example.com" },
@@ -405,7 +405,7 @@ async function sendTwilioWhatsApp(config: WhatsAppTwilioConfig, to: string, mess
 // Email Templates
 // ============================================================================
 
-export function otpEmailHtml(code: string, purpose: string, appName: string = "ICMS"): string {
+export function otpEmailHtml(code: string, purpose: string, appName: string = "CareNS"): string {
   const purposeText = {
     REGISTRATION: "complete your registration",
     LOGIN: "log in to your account",
@@ -437,7 +437,7 @@ export function registrationConfirmationHtml(params: {
   status: string;
   appName?: string;
 }): string {
-  const { name, eventTitle, eventDate, registrationId, amount, currency, status, appName = "ICMS" } = params;
+  const { name, eventTitle, eventDate, registrationId, amount, currency, status, appName = "CareNS" } = params;
   const isFree = amount === 0;
   const statusColor = status === "CONFIRMED" ? "#10b981" : "#f59e0b";
   const statusText = status === "CONFIRMED" ? "Confirmed" : "Pending Payment";
@@ -463,6 +463,88 @@ export function registrationConfirmationHtml(params: {
   `;
 }
 
-export function otpSmsText(code: string, purpose: string, appName: string = "ICMS"): string {
+export function otpSmsText(code: string, purpose: string, appName: string = "CareNS"): string {
   return `${code} is your ${appName} OTP for ${purpose.toLowerCase().replace("_", " ")}. Valid for 10 minutes.`;
+}
+
+// Registration received — sent to registrant immediately
+export function registrationReceivedHtml(params: {
+  name: string;
+  eventTitle: string;
+  role: string;
+  registrationId: string;
+}): string {
+  const { name, eventTitle, role, registrationId } = params;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #0d9488; margin-bottom: 4px;">Registration Received</h2>
+      <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 16px 0;">
+        <p style="margin: 0 0 8px;"><strong>Hello ${name},</strong></p>
+        <p style="margin: 0 0 16px;">Your registration for <strong>${eventTitle}</strong> as <strong style="text-transform: capitalize;">${role.toLowerCase()}</strong> has been received.</p>
+        <p style="margin: 0 0 16px; color: #d97706; font-weight: 600;">Your registration is pending approval. Once approved by the organizer, you will be notified via email.</p>
+        <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+          <tr><td style="padding: 6px 0; color: #666;">Registration ID</td><td style="padding: 6px 0; text-align: right; font-family: monospace;">${registrationId.slice(-8).toUpperCase()}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Role</td><td style="padding: 6px 0; text-align: right; text-transform: capitalize;">${role.toLowerCase()}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Status</td><td style="padding: 6px 0; text-align: right;"><span style="color: #d97706; font-weight: bold;">Pending Approval</span></td></tr>
+        </table>
+      </div>
+      <p style="color: #999; font-size: 12px;">This is an automated email. You will receive another email once your registration is approved.</p>
+    </div>
+  `;
+}
+
+// Registration approved — sent to registrant when admin confirms
+export function registrationApprovedHtml(params: {
+  name: string;
+  eventTitle: string;
+  role: string;
+  loginUrl: string;
+}): string {
+  const { name, eventTitle, role, loginUrl } = params;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #10b981; margin-bottom: 4px;">Registration Approved!</h2>
+      <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 16px 0; border: 1px solid #bbf7d0;">
+        <p style="margin: 0 0 8px;"><strong>Hello ${name},</strong></p>
+        <p style="margin: 0 0 16px;">Great news! Your registration for <strong>${eventTitle}</strong> as <strong style="text-transform: capitalize;">${role.toLowerCase()}</strong> has been <span style="color: #10b981; font-weight: bold;">approved</span>.</p>
+        <p style="margin: 0 0 16px;">You can now access your dashboard by logging in with your email. A one-time verification code (OTP) will be sent each time you log in.</p>
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${loginUrl}" style="display: inline-block; background: #0d9488; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold;">Login to Dashboard</a>
+        </div>
+      </div>
+      <p style="color: #999; font-size: 12px;">This is an automated email.</p>
+    </div>
+  `;
+}
+
+// Admin notification — new registration received
+export function adminNewRegistrationHtml(params: {
+  registrantName: string;
+  registrantEmail: string;
+  eventTitle: string;
+  role: string;
+  amount: number;
+  currency: string;
+  paymentStatus: string;
+  totalRegistrations: number;
+}): string {
+  const { registrantName, registrantEmail, eventTitle, role, amount, currency, paymentStatus, totalRegistrations } = params;
+  const isFree = amount === 0;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #0d9488; margin-bottom: 4px;">New Registration</h2>
+      <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 16px 0;">
+        <p style="margin: 0 0 16px;">A new registration has been received for <strong>${eventTitle}</strong>.</p>
+        <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+          <tr><td style="padding: 6px 0; color: #666;">Name</td><td style="padding: 6px 0; text-align: right; font-weight: bold;">${registrantName}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Email</td><td style="padding: 6px 0; text-align: right;">${registrantEmail}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Role</td><td style="padding: 6px 0; text-align: right; text-transform: capitalize;">${role.toLowerCase()}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Amount</td><td style="padding: 6px 0; text-align: right;">${isFree ? "Free" : `${currency} ${amount.toLocaleString()}`}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Payment</td><td style="padding: 6px 0; text-align: right;"><span style="color: ${paymentStatus === "PAID" || paymentStatus === "FREE" ? "#10b981" : "#d97706"}; font-weight: bold;">${paymentStatus}</span></td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Total Registrations</td><td style="padding: 6px 0; text-align: right; font-weight: bold;">${totalRegistrations}</td></tr>
+        </table>
+      </div>
+      <p style="color: #999; font-size: 12px;">Login to your admin dashboard to review and approve this registration.</p>
+    </div>
+  `;
 }

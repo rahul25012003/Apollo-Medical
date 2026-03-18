@@ -8,7 +8,7 @@ import {
   parseBody,
 } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
-import { sendEmail, registrationConfirmationHtml } from "@/lib/notifications";
+import { sendEmail, getActiveChannel, registrationConfirmationHtml, registrationReceivedHtml, adminNewRegistrationHtml } from "@/lib/notifications";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications-db";
 
@@ -186,22 +186,57 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     },
   });
 
-  // Send registration confirmation email (non-blocking)
+  // Send "registration received" email to registrant
   sendEmail({
     to: registration.email,
-    subject: `Registration ${status === "CONFIRMED" ? "Confirmed" : "Received"} — ${registration.event.title}`,
-    html: registrationConfirmationHtml({
-      name: registration.name,
-      eventTitle: registration.event.title,
-      eventDate: registration.event.startDate
-        ? new Date(registration.event.startDate).toLocaleDateString("en-IN", { dateStyle: "long" })
-        : undefined,
-      registrationId: registration.id,
-      amount: Number(registration.amount),
-      currency: registration.currency,
-      status,
-    }),
+    subject: status === "CONFIRMED"
+      ? `Registration Confirmed — ${registration.event.title}`
+      : `Registration Received — ${registration.event.title}`,
+    html: status === "CONFIRMED"
+      ? registrationConfirmationHtml({
+          name: registration.name,
+          eventTitle: registration.event.title,
+          eventDate: registration.event.startDate
+            ? new Date(registration.event.startDate).toLocaleDateString("en-IN", { dateStyle: "long" })
+            : undefined,
+          registrationId: registration.id,
+          amount: Number(registration.amount),
+          currency: registration.currency,
+          status,
+        })
+      : registrationReceivedHtml({
+          name: registration.name,
+          eventTitle: registration.event.title,
+          role: data.participantRole || "DELEGATE",
+          registrationId: registration.id,
+        }),
+    tenantId: event.tenantId,
   }).catch((err) => console.error("Registration email error:", err));
+
+  // Send email to admin — use the email configured in notification channel
+  const adminChannel = await getActiveChannel("EMAIL", event.tenantId);
+  if (adminChannel) {
+    const channelConfig = adminChannel.config as Record<string, string>;
+    const adminEmail = channelConfig.email || channelConfig.fromEmail;
+    if (adminEmail) {
+      const totalRegs = await prisma.registration.count({ where: { eventId: data.eventId } });
+      sendEmail({
+        to: adminEmail,
+        subject: `New Registration: ${registration.name} — ${registration.event.title}`,
+        html: adminNewRegistrationHtml({
+          registrantName: registration.name,
+          registrantEmail: registration.email,
+          eventTitle: registration.event.title,
+          role: data.participantRole || "DELEGATE",
+          amount: Number(registration.amount),
+          currency: registration.currency,
+          paymentStatus,
+          totalRegistrations: totalRegs,
+        }),
+        tenantId: event.tenantId,
+      }).catch((err) => console.error("Admin notification email error:", err));
+    }
+  }
 
   // Create in-app notification for admins (non-blocking)
   createNotification({

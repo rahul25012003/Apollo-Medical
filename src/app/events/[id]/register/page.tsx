@@ -160,7 +160,7 @@ export default function RegisterPage() {
                     if (data.success && data.data) {
                         const t = data.data;
                         setTenantBranding({
-                            name: t.branding?.name || t.name || "ICMS",
+                            name: t.branding?.name || t.name || "CareNS",
                             logo: t.branding?.logo || t.logo || null,
                             primaryColor: t.theme?.primaryColor || t.primaryColor || "#0d9488",
                             secondaryColor: t.theme?.secondaryColor || t.secondaryColor || "#0891b2",
@@ -533,7 +533,7 @@ export default function RegisterPage() {
                     key: orderData.data.keyId,
                     amount: orderData.data.amount,
                     currency: orderData.data.currency,
-                    name: tenantBranding?.name || "ICMS",
+                    name: tenantBranding?.name || "CareNS",
                     description: `Registration for ${eventData!.title}`,
                     image: tenantBranding?.logo || undefined,
                     order_id: orderData.data.orderId,
@@ -626,7 +626,7 @@ export default function RegisterPage() {
 
     const buildReceiptHtml = () => {
         if (!eventData || !registrationId) return "";
-        const brandName = tenantBranding?.name || "ICMS";
+        const brandName = tenantBranding?.name || "CareNS";
         const brandColor = tenantBranding?.primaryColor || "#0d9488";
         const brandColorDark = tenantBranding?.secondaryColor || "#0f766e";
 
@@ -772,7 +772,7 @@ export default function RegisterPage() {
             <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-sm">
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
-                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"} className="flex items-center gap-2">
+                        <Link href="/" className="flex items-center gap-2">
                             {tenantBranding?.logo ? (
                                 <img src={tenantBranding.logo} alt={tenantBranding.name} className="h-8 w-8 rounded-lg object-contain" />
                             ) : (
@@ -783,10 +783,10 @@ export default function RegisterPage() {
                                     <GraduationCap className="h-5 w-5 text-white" />
                                 </div>
                             )}
-                            <span className="font-bold text-xl">{tenantBranding?.name || "ICMS"}</span>
+                            <span className="font-bold text-xl">{tenantBranding?.name || "CareNS"}</span>
                         </Link>
                         <div className="flex items-center gap-3">
-                            <Link href={tenantSlug ? `/auth/login?tenant=${tenantSlug}` : "/auth/login"}>
+                            <Link href="/auth/login">
                                 <Button variant="outline" size="sm">
                                     Login
                                 </Button>

@@ -1178,30 +1178,30 @@ export default function EditEventPage() {
 
                 {/* Main Form */}
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-5 h-10 sm:h-12">
-                        <TabsTrigger value="basic" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
+                    <TabsList className="flex flex-wrap gap-1 w-full h-auto p-1">
+                        <TabsTrigger value="basic" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
                             <FileText className="h-4 w-4 hidden md:block" />
-                            <span className="hidden sm:inline">Basic Info</span>
-                            <span className="sm:hidden">Basic</span>
+                            <span className="hidden sm:inline">Overview</span>
+                            <span className="sm:hidden">Info</span>
                         </TabsTrigger>
-                        <TabsTrigger value="slots" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
+                        <TabsTrigger value="slots" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
                             <Users className="h-4 w-4 hidden md:block" />
                             <span className="hidden sm:inline">Pricing</span>
                             <span className="sm:hidden">Price</span>
                         </TabsTrigger>
-                        <TabsTrigger value="sessions" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
+                        <TabsTrigger value="settings" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+                            <Award className="h-4 w-4 hidden md:block" />
+                            Settings
+                        </TabsTrigger>
+                        <TabsTrigger value="sessions" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
                             <Mic2 className="h-4 w-4 hidden md:block" />
                             <span className="hidden sm:inline">Scientific Program</span>
                             <span className="sm:hidden">Program</span>
                         </TabsTrigger>
-                        <TabsTrigger value="engagement" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
+                        <TabsTrigger value="engagement" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
                             <Megaphone className="h-4 w-4 hidden md:block" />
                             <span className="hidden sm:inline">Engagement</span>
                             <span className="sm:hidden">Engage</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="settings" className="gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
-                            <Award className="h-4 w-4 hidden md:block" />
-                            Settings
                         </TabsTrigger>
                     </TabsList>
 
@@ -2245,13 +2245,30 @@ export default function EditEventPage() {
                                                                 </SelectContent>
                                                             </Select>
                                                         </div>
-                                                        <div className="md:col-span-3 space-y-2">
+                                                        <div className="md:col-span-2 space-y-2">
                                                             <Label className="text-xs">Title *</Label>
                                                             <Input
                                                                 value={engagement.title}
                                                                 onChange={(e) => updateEngagement(engagement.id, "title", e.target.value)}
                                                                 placeholder="e.g., Post-session feedback, Live Q&A"
                                                             />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs">Link to Session</Label>
+                                                            <Select
+                                                                value={(engagement as any).sessionId || "none"}
+                                                                onValueChange={(v) => updateEngagement(engagement.id, "sessionId" as any, v === "none" ? null : v)}
+                                                            >
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Event-level" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="none">Event-level (all)</SelectItem>
+                                                                    {sessions.map((s) => (
+                                                                        <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
                                                         </div>
                                                     </div>
                                                     <div className="space-y-2">

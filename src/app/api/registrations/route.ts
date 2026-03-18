@@ -15,6 +15,7 @@ import { Prisma } from "@prisma/client";
 import { getEffectiveTenantId, tenantWhereClause } from "@/lib/tenant-scope";
 import { createNotification } from "@/lib/notifications-db";
 import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
+import { sendEmail, registrationReceivedHtml, registrationApprovedHtml } from "@/lib/notifications";
 
 // GET /api/registrations - List all registrations (with filters)
 export const GET = withErrorHandler(async (request: NextRequest) => {
@@ -319,6 +320,35 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     tenantId: event.tenantId,
     excludeUserId: session?.user?.id,
   });
+
+  // Send email to registrant
+  const baseUrl = request.headers.get("origin") || request.headers.get("host") || "";
+  if (status === "CONFIRMED") {
+    const loginUrl = `${baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`}/auth/login`;
+    sendEmail({
+      to: data.email,
+      subject: `Registration Approved — ${registration.event.title}`,
+      html: registrationApprovedHtml({
+        name: data.name,
+        eventTitle: registration.event.title,
+        role: data.participantRole || "DELEGATE",
+        loginUrl,
+      }),
+      tenantId: event.tenantId,
+    }).catch((err) => console.error("Approval email error:", err));
+  } else {
+    sendEmail({
+      to: data.email,
+      subject: `Registration Received — ${registration.event.title}`,
+      html: registrationReceivedHtml({
+        name: data.name,
+        eventTitle: registration.event.title,
+        role: data.participantRole || "DELEGATE",
+        registrationId: registration.id,
+      }),
+      tenantId: event.tenantId,
+    }).catch((err) => console.error("Registration email error:", err));
+  }
 
   // Auto-create delegate account for free/auto-confirmed registrations
   if (status === "CONFIRMED") {

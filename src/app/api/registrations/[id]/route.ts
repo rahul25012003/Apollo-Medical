@@ -10,6 +10,7 @@ import {
   parseBody,
 } from "@/lib/api-utils";
 import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
+import { sendEmail, registrationApprovedHtml } from "@/lib/notifications";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -186,8 +187,26 @@ export const PUT = withErrorHandler(
           });
         }
       } catch (err) {
-        // Don't fail the registration update if account creation fails
         console.error("Auto-account creation failed:", err);
+      }
+
+      // Send "registration approved" email to registrant
+      try {
+        const baseUrl = request.headers.get("origin") || request.headers.get("host") || "";
+        const loginUrl = `${baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`}/auth/login`;
+        sendEmail({
+          to: existingRegistration.email,
+          subject: `Registration Approved — ${existingRegistration.event.title}`,
+          html: registrationApprovedHtml({
+            name: existingRegistration.name,
+            eventTitle: existingRegistration.event.title,
+            role: existingRegistration.participantRole || "delegate",
+            loginUrl,
+          }),
+          tenantId: existingRegistration.event.tenantId,
+        }).catch((err) => console.error("Approval email error:", err));
+      } catch (err) {
+        console.error("Approval email error:", err);
       }
     }
 

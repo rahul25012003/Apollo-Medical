@@ -145,10 +145,11 @@ function DecorativeBackground() {
 
 // Adaptive grid: centers 1 item, 2 cols for 2, expands for 3+
 function adaptiveGrid(count: number, maxCols: 2 | 3 | 4 = 3): string {
-  if (count === 1) return "grid-cols-1 max-w-md mx-auto";
-  if (count === 2) return "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto";
-  if (maxCols === 4) return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
-  if (maxCols === 2) return "grid-cols-1 sm:grid-cols-2";
+  if (count === 1) return "grid-cols-1 max-w-sm mx-auto";
+  if (count === 2) return "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto";
+  if (count === 3) return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto";
+  if (maxCols === 4) return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+  if (maxCols === 2) return "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto";
   return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
 }
 
@@ -659,7 +660,7 @@ export default function TenantHomePage() {
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
-              <Link href={`/auth/login?tenant=${tenantSlug}`}>
+              <Link href={"/auth/login"}>
                 <Button
                   className="text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 text-xs sm:text-sm"
                   style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
@@ -949,7 +950,7 @@ export default function TenantHomePage() {
                               </span>
                             )}
                           </div>
-                          <Link href={`/events/${event.id}/register?tenant=${tenantSlug}`}>
+                          <Link href={`/events/${event.id}/register`}>
                             <Button className="rounded-full bg-white text-black hover:bg-white/90 shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 relative overflow-hidden">
                               Register Now
                               <ArrowRight className="ml-2 h-4 w-4" />
@@ -1054,7 +1055,7 @@ export default function TenantHomePage() {
                           </div>
                         )}
                       </div>
-                      <Link href={`/events/${event.id}/register?tenant=${tenantSlug}`}>
+                      <Link href={`/events/${event.id}/register`}>
                         <Button
                           className="w-full text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 relative overflow-hidden"
                           style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
@@ -1350,7 +1351,7 @@ export default function TenantHomePage() {
                       </div>
                     )}
 
-                    <Link href={events[0] ? `/events/${events[0].id}/register?tenant=${tenantSlug}` : "#events"}>
+                    <Link href={events[0] ? `/events/${events[0].id}/register` : "#events"}>
                       <Button
                         className="w-full rounded-full text-white shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 relative overflow-hidden"
                         style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
@@ -2118,46 +2119,138 @@ export default function TenantHomePage() {
           </div>
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="grid md:grid-cols-4 gap-12">
-              <div className="md:col-span-2">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
+            {/* Top section — Brand + Quick Links + Contact */}
+            <div className="grid md:grid-cols-3 gap-10 lg:gap-16">
+              <div>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/10">
                     <GraduationCap className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="font-bold text-xl">{branding.name}</p>
-                    {branding.tagline && <p className="text-sm text-white/70">{branding.tagline}</p>}
+                    <p className="font-bold text-xl tracking-tight">{branding.name}</p>
+                    {branding.tagline && <p className="text-sm text-white/60">{branding.tagline}</p>}
                   </div>
                 </div>
-                {footer.text && <p className="text-white/70 max-w-md">{footer.text}</p>}
+                {footer.text && <p className="text-white/60 text-sm leading-relaxed">{footer.text}</p>}
+
+                {/* Social links */}
+                {(social.facebook || social.twitter || social.linkedin || social.instagram || social.youtube) && (
+                  <div className="flex items-center gap-3 mt-5">
+                    {[
+                      social.facebook && { href: social.facebook, label: "Facebook" },
+                      social.twitter && { href: social.twitter, label: "Twitter" },
+                      social.linkedin && { href: social.linkedin, label: "LinkedIn" },
+                      social.instagram && { href: social.instagram, label: "Instagram" },
+                      social.youtube && { href: social.youtube, label: "YouTube" },
+                    ].filter(Boolean).map((link) => link && (
+                      <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer"
+                        className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-300 hover:scale-110 text-white/70 hover:text-white"
+                        title={link.label}>
+                        <Globe className="h-4 w-4" />
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
-                <h4 className="font-semibold mb-4">Quick Links</h4>
-                <ul className="space-y-2 text-white/70">
-                  <li><a href="#events" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">Events</a></li>
-                  <li><a href="#research" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">Research</a></li>
-                  <li><a href="#gallery" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">Gallery</a></li>
-                  <li><a href="#about" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">About</a></li>
-                  <li><a href="#contact" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">Contact</a></li>
-                  <li><a href="#faq" className="hover:text-white hover:scale-110 transition-all duration-300 inline-block">FAQ</a></li>
+                <h4 className="font-semibold mb-5 text-sm uppercase tracking-wider text-white/90">Quick Links</h4>
+                <ul className="space-y-3 text-white/60">
+                  {[
+                    sections.events && { href: "#events", label: "Events" },
+                    sections.gallery && { href: "#gallery", label: "Gallery" },
+                    sections.about && { href: "#about", label: "About" },
+                    sections.contact && { href: "#contact", label: "Contact" },
+                    { href: "#faq", label: "FAQ" },
+                  ].filter(Boolean).map((link) => link && (
+                    <li key={link.label}>
+                      <a href={link.href} className="hover:text-white transition-colors duration-200 flex items-center gap-2 text-sm">
+                        <span className="w-1 h-1 rounded-full bg-white/40" />
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-semibold mb-4">Contact</h4>
-                <ul className="space-y-2 text-white/70">
-                  {contact.email && <li>{contact.email}</li>}
-                  {contact.phone && <li>{contact.phone}</li>}
-                  {contact.city && contact.country && <li>{contact.city}, {contact.country}</li>}
+                <h4 className="font-semibold mb-5 text-sm uppercase tracking-wider text-white/90">Contact</h4>
+                <ul className="space-y-3 text-white/60 text-sm">
+                  {contact.email && (
+                    <li className="flex items-start gap-2.5">
+                      <Mail className="h-4 w-4 mt-0.5 text-white/50 flex-shrink-0" />
+                      <a href={`mailto:${contact.email}`} className="hover:text-white transition-colors break-all">{contact.email}</a>
+                    </li>
+                  )}
+                  {contact.phone && (
+                    <li className="flex items-start gap-2.5">
+                      <Phone className="h-4 w-4 mt-0.5 text-white/50 flex-shrink-0" />
+                      <a href={`tel:${contact.phone}`} className="hover:text-white transition-colors">{contact.phone}</a>
+                    </li>
+                  )}
+                  {(contact.city || contact.country) && (
+                    <li className="flex items-start gap-2.5">
+                      <MapPin className="h-4 w-4 mt-0.5 text-white/50 flex-shrink-0" />
+                      <span>{[contact.address, contact.city, contact.country].filter(Boolean).join(", ")}</span>
+                    </li>
+                  )}
                 </ul>
+              </div>
+            </div>
+
+            {/* Organizing Committee Section */}
+            <div className="border-t border-white/15 mt-10 pt-10">
+              <div className="grid md:grid-cols-2 gap-10 lg:gap-16">
+                {/* Chief Organizing Secretary */}
+                <div className="text-center md:text-left">
+                  <h4 className="font-semibold text-sm uppercase tracking-wider text-white/90 mb-5">Organizing Secretary</h4>
+                  <div className="bg-white/[0.07] backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                    <p className="font-bold text-lg">Prof. Nand Kumar</p>
+                    <p className="text-white/60 text-sm mt-1">Chief Organizing Secretary</p>
+                    <p className="text-white/50 text-xs mt-2 leading-relaxed">
+                      Professor, Dept. of Psychiatry<br />
+                      All India Institute of Medical Sciences, New Delhi<br />
+                      & In-charge (Centre For Advanced Research & Excellence in Neuromodulation)
+                    </p>
+                    <div className="mt-4 space-y-1.5 text-sm">
+                      <p className="flex items-center justify-center md:justify-start gap-2 text-white/70">
+                        <Mail className="h-3.5 w-3.5 text-white/50" />
+                        <a href="mailto:nandkm2001@gmail.com" className="hover:text-white transition-colors">nandkm2001@gmail.com</a>
+                      </p>
+                      <p className="flex items-center justify-center md:justify-start gap-2 text-white/70">
+                        <Phone className="h-3.5 w-3.5 text-white/50" />
+                        <a href="tel:011-26546433" className="hover:text-white transition-colors">011-26546433</a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coordinators */}
+                <div className="text-center md:text-left">
+                  <h4 className="font-semibold text-sm uppercase tracking-wider text-white/90 mb-5">Coordinators</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { name: "Dr Hemant Choudhary", email: "hemantchoudhary108@gmail.com" },
+                      { name: "Dr Priyanka Bhat", email: "bhatpriyanka84@gmail.com" },
+                      { name: "Dr Shubha Bagri", email: "subhabagre9@gmail.com" },
+                      { name: "Dr Adit Verma", email: "adit.2803.verma@gmail.com" },
+                    ].map((coord) => (
+                      <div key={coord.name} className="bg-white/[0.07] backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/[0.12] transition-colors">
+                        <p className="font-semibold text-sm">{coord.name}</p>
+                        <a href={`mailto:${coord.email}`} className="text-white/50 text-xs hover:text-white/80 transition-colors break-all">
+                          {coord.email}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Footer sponsor logos */}
             {hasSponsors && (
-              <div className="border-t border-white/20 py-8 mb-8">
-                <p className="text-sm text-white/50 text-center mb-4">Our Partners</p>
+              <div className="border-t border-white/15 mt-10 py-8">
+                <p className="text-xs text-white/40 text-center mb-4 uppercase tracking-wider">Our Partners</p>
                 <div className="flex flex-wrap items-center justify-center gap-8">
                   {sponsors.slice(0, 6).map((s) => (
                     <div key={s.id} className="h-10 opacity-70 hover:opacity-100 transition-opacity">
@@ -2168,15 +2261,15 @@ export default function TenantHomePage() {
               </div>
             )}
 
-            {/* Bottom bar — seamless, no separator */}
-            <div className="border-t border-white/15 mt-8 py-6 flex flex-col md:flex-row items-center justify-between gap-5">
-              <p className="text-sm font-medium text-white/80">
+            {/* Bottom bar */}
+            <div className="border-t border-white/10 mt-8 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-white/50">
                 &copy; {new Date().getFullYear()} {footer.copyrightText || `${branding.name}. All rights reserved.`}
               </p>
               <a href="https://summitsolutions.in" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:scale-105 transition-all duration-300">
-                <span className="text-xs font-semibold uppercase tracking-widest text-white/60">Powered by</span>
-                <div className="bg-white/95 rounded-xl px-5 py-2.5 shadow-lg group-hover:shadow-xl group-hover:bg-white transition-all">
-                  <img src="/summit-logo.png" alt="Summit Solutions" className="h-9 inline-block" />
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Powered by</span>
+                <div className="bg-white/95 rounded-lg px-4 py-2 shadow-lg group-hover:shadow-xl group-hover:bg-white transition-all">
+                  <img src="/summit-logo.png" alt="Summit Solutions" className="h-7 inline-block" />
                 </div>
               </a>
             </div>
@@ -2255,7 +2348,7 @@ export default function TenantHomePage() {
 
       {/* Mobile sticky register button */}
       <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-xl border-t shadow-lg md:hidden">
-        <Link href={events[0] ? `/events/${events[0].id}/register?tenant=${tenantSlug}` : `/auth/login?tenant=${tenantSlug}`} className="block">
+        <Link href={events[0] ? `/events/${events[0].id}/register` : "/auth/login"} className="block">
           <Button
             className="w-full text-white rounded-full font-semibold py-3"
             style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}

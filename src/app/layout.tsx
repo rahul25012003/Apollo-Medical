@@ -13,8 +13,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ICMS - Conference Management System",
-  description: "Integrated Conference Management System",
+  title: "CareNS — Conference Management",
+  description: "Conference Management System",
   icons: {
     icon: "/favicon-16.png",
     apple: "/apple-touch-icon.png",

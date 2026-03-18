@@ -631,7 +631,7 @@ export default function EventsPage() {
                                                         View Details
                                                     </Link>
                                                 </DropdownMenuItem>
-                                                {canEditEvent && (event.registrations === 0 && !event.isPublished) && (
+                                                {canEditEvent && (
                                                     <DropdownMenuItem asChild>
                                                         <Link href={`/dashboard/events/${event.id}/edit`}>
                                                             <Edit className="mr-2 h-4 w-4" />
@@ -862,7 +862,7 @@ export default function EventsPage() {
                                                                     View Details
                                                                 </Link>
                                                             </DropdownMenuItem>
-                                                            {canEditEvent && (event.registrations === 0 && !event.isPublished) && (
+                                                            {canEditEvent && (
                                                                 <DropdownMenuItem asChild>
                                                                     <Link href={`/dashboard/events/${event.id}/edit`}>
                                                                         <Edit className="mr-2 h-4 w-4" />

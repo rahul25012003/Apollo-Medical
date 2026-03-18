@@ -32,12 +32,12 @@ export function validateEventForPublish(event: EventForValidation): ValidationRe
     if (!event.title?.trim()) errors.push("Event title is required");
     if (!event.description?.trim()) errors.push("Event description is required");
 
-    // Date & Time - all fields mandatory
+    // Date & Time
     if (!event.startDate) errors.push("Start date is required");
     if (!event.endDate) errors.push("End date is required");
     if (!event.startTime?.trim()) errors.push("Start time is required");
     if (!event.endTime?.trim()) errors.push("End time is required");
-    if (!event.registrationDeadline) errors.push("Registration deadline is required");
+    // Registration deadline is optional — admin may not want to set one
 
     // Location & Capacity
     if (!event.location?.trim() || event.location === "TBA") errors.push("Event location is required");
@@ -48,11 +48,7 @@ export function validateEventForPublish(event: EventForValidation): ValidationRe
     if (!event.contactEmail?.trim()) errors.push("Contact email is required");
     if (!event.contactPhone?.trim()) errors.push("Contact phone number is required");
 
-    // Sessions - at least one session (with or without speaker)
-    const sessionsCount = event.sessions?.length || event.eventSessions?.length || event.speakers?.length || event.eventSpeakers?.length || 0;
-    if (sessionsCount === 0) {
-        errors.push("At least one session is required");
-    }
+    // Sessions — optional for publishing (admin can add later)
 
     // Pricing - price must be set (can be 0 for free events)
     if (event.price === null || event.price === undefined) {
