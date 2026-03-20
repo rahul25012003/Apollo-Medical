@@ -126,8 +126,8 @@ export default function TenantGalleryPage() {
                                     onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
                                 >
                                     <img
-                                        src={typeof img === "string" ? img : (img as any).url || img}
-                                        alt={`Gallery ${idx + 1}`}
+                                        src={typeof img === "string" ? img : (img as any).src || (img as any).url || img}
+                                        alt={(img as any)?.alt || `Gallery ${idx + 1}`}
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                     />
                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
@@ -150,7 +150,7 @@ export default function TenantGalleryPage() {
                         )}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                             {filteredVideos.map((video, idx) => {
-                                const videoUrl = typeof video === "string" ? video : (video as any).url || video;
+                                const videoUrl = typeof video === "string" ? video : (video as any).src || (video as any).url || video;
                                 const isYoutube = String(videoUrl).includes("youtube") || String(videoUrl).includes("youtu.be");
                                 const youtubeId = isYoutube ? String(videoUrl).match(/(?:v=|youtu\.be\/)([^&?/]+)/)?.[1] : null;
 
@@ -220,8 +220,8 @@ export default function TenantGalleryPage() {
                     )}
 
                     <img
-                        src={typeof images[lightboxIndex] === "string" ? images[lightboxIndex] : (images[lightboxIndex] as any).url || images[lightboxIndex]}
-                        alt={`Gallery ${lightboxIndex + 1}`}
+                        src={typeof images[lightboxIndex] === "string" ? images[lightboxIndex] : (images[lightboxIndex] as any).src || (images[lightboxIndex] as any).url || images[lightboxIndex]}
+                        alt={(images[lightboxIndex] as any)?.alt || `Gallery ${lightboxIndex + 1}`}
                         className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
                         onClick={(e) => e.stopPropagation()}
                     />
