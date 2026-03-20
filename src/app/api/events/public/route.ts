@@ -175,19 +175,26 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   ]);
 
   // Add available slots + convert Decimal fields to numbers
-  const eventsWithAvailability = events.map((event) => ({
-    ...event,
-    price: Number(event.price) || 0,
-    earlyBirdPrice: event.earlyBirdPrice ? Number(event.earlyBirdPrice) : null,
-    registeredCount: event._count.registrations,
-    availableSlots: event.capacity - event._count.registrations,
-    isSoldOut: event._count.registrations >= event.capacity,
-    pricingCategories: (event as any).pricingCategories?.map((pc: any) => ({
+  const eventsWithAvailability = events.map((event) => {
+    const eventPrice = Number(event.price) || 0;
+    const categories = (event as any).pricingCategories?.map((pc: any) => ({
       ...pc,
       price: Number(pc.price) || 0,
       earlyBirdPrice: pc.earlyBirdPrice ? Number(pc.earlyBirdPrice) : null,
-    })),
-  }));
+    })) || [];
+    // Effective price: use lowest category price if categories exist and event price is 0
+    const categoryPrices = categories.map((c: any) => Number(c.price)).filter((p: number) => p > 0);
+    const effectivePrice = eventPrice > 0 ? eventPrice : (categoryPrices.length > 0 ? Math.min(...categoryPrices) : 0);
+    return {
+      ...event,
+      price: effectivePrice,
+      earlyBirdPrice: event.earlyBirdPrice ? Number(event.earlyBirdPrice) : null,
+      registeredCount: event._count.registrations,
+      availableSlots: event.capacity - event._count.registrations,
+      isSoldOut: event._count.registrations >= event.capacity,
+      pricingCategories: categories,
+    };
+  });
 
   return paginatedResponse(eventsWithAvailability, { page, limit, total });
 });

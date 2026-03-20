@@ -137,16 +137,21 @@ export async function GET(
     }
 
     // Convert Prisma Decimal fields to plain numbers for JSON serialization
-    // Prisma Decimal serializes as string in production which breaks price display
+    const eventPrice = Number(event.price) || 0;
+    const categories = event.pricingCategories?.map((pc: any) => ({
+      ...pc,
+      price: Number(pc.price) || 0,
+      earlyBirdPrice: pc.earlyBirdPrice ? Number(pc.earlyBirdPrice) : null,
+    })) || [];
+    // Effective price: use lowest category price if categories exist and event price is 0
+    const categoryPrices = categories.map((c: any) => Number(c.price)).filter((p: number) => p > 0);
+    const effectivePrice = eventPrice > 0 ? eventPrice : (categoryPrices.length > 0 ? Math.min(...categoryPrices) : 0);
+
     const safeEvent = {
       ...event,
-      price: Number(event.price) || 0,
+      price: effectivePrice,
       earlyBirdPrice: event.earlyBirdPrice ? Number(event.earlyBirdPrice) : null,
-      pricingCategories: event.pricingCategories?.map((pc: any) => ({
-        ...pc,
-        price: Number(pc.price) || 0,
-        earlyBirdPrice: pc.earlyBirdPrice ? Number(pc.earlyBirdPrice) : null,
-      })),
+      pricingCategories: categories,
     };
 
     return successResponse(safeEvent);

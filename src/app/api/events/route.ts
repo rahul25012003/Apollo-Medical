@@ -104,12 +104,17 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     prisma.event.count({ where }),
   ]);
 
-  // Convert Prisma Decimal to plain numbers for consistent JSON serialization
-  const safeEvents = events.map((e) => ({
-    ...e,
-    price: Number(e.price) || 0,
-    earlyBirdPrice: e.earlyBirdPrice ? Number(e.earlyBirdPrice) : null,
-  }));
+  // Convert Prisma Decimal + compute effective price from categories
+  const safeEvents = events.map((e) => {
+    const eventPrice = Number(e.price) || 0;
+    const cats = ((e as any).pricingCategories || []).map((pc: any) => Number(pc?.price) || 0).filter((p: number) => p > 0);
+    const effectivePrice = eventPrice > 0 ? eventPrice : (cats.length > 0 ? Math.min(...cats) : 0);
+    return {
+      ...e,
+      price: effectivePrice,
+      earlyBirdPrice: e.earlyBirdPrice ? Number(e.earlyBirdPrice) : null,
+    };
+  });
 
   return paginatedResponse(safeEvents, { page, limit, total });
 });

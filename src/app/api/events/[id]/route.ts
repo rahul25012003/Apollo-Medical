@@ -101,10 +101,13 @@ export const GET = withErrorHandler(
       return Errors.notFound("Event");
     }
 
-    // Convert Prisma Decimal to plain numbers
+    // Convert Prisma Decimal + compute effective price from categories
+    const eventPrice = Number(event.price) || 0;
+    const cats = ((event as any).pricingCategories || []).map((pc: any) => Number(pc?.price) || 0).filter((p: number) => p > 0);
+    const effectivePrice = eventPrice > 0 ? eventPrice : (cats.length > 0 ? Math.min(...cats) : 0);
     const safeEvent = {
       ...event,
-      price: Number(event.price) || 0,
+      price: effectivePrice,
       earlyBirdPrice: event.earlyBirdPrice ? Number(event.earlyBirdPrice) : null,
     };
 
