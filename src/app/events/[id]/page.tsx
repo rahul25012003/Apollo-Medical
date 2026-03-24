@@ -109,6 +109,7 @@ interface DisplayEvent {
     includes: string[];
     isRegistrationOpen: boolean;
     registrationDeadline: string | null;
+    registrationOpensDate: string | null;
 }
 
 const SESSION_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -134,6 +135,27 @@ const tierConfig = {
     silver: { icon: Medal, bgClass: "bg-gray-100", textClass: "text-gray-600", borderClass: "border-gray-300" },
     bronze: { icon: Medal, bgClass: "bg-orange-50", textClass: "text-orange-700", borderClass: "border-orange-300" },
 };
+
+function ordSuffix(d: number) {
+  if (d >= 11 && d <= 13) return `${d}th`;
+  return `${d}${{ 1: "st", 2: "nd", 3: "rd" }[d % 10] ?? "th"}`;
+}
+function fmtEventRange(start: string, end?: string | null) {
+  const s = new Date(start), e = end ? new Date(end) : null;
+  const sd = ordSuffix(s.getDate());
+  if (!e || s.toDateString() === e.toDateString()) {
+    return `${sd} ${s.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}`;
+  }
+  const ed = ordSuffix(e.getDate());
+  const em = e.toLocaleDateString("en-IN", { month: "long" });
+  const ey = e.getFullYear();
+  if (s.getMonth() === e.getMonth() && s.getFullYear() === ey)
+    return `${sd} to ${ed} ${em} ${ey}`;
+  const sm = s.toLocaleDateString("en-IN", { month: "long" });
+  return s.getFullYear() === ey
+    ? `${sd} ${sm} to ${ed} ${em} ${ey}`
+    : `${sd} ${sm} ${s.getFullYear()} to ${ed} ${em} ${ey}`;
+}
 
 export default function EventDetailPage() {
     const params = useParams();
@@ -308,6 +330,7 @@ export default function EventDetailPage() {
                             ].filter(Boolean) as string[],
                         isRegistrationOpen: apiEvent.isRegistrationOpen !== false,
                         registrationDeadline: apiEvent.registrationDeadline || null,
+                        registrationOpensDate: apiEvent.registrationOpensDate || null,
                     };
 
                     setEvent(displayEvent);
@@ -451,6 +474,10 @@ export default function EventDetailPage() {
 
     return (
         <div className="min-h-screen bg-background">
+            <style>{`
+                @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+                .animate-flash { animation: flash 1s ease-in-out infinite; }
+            `}</style>
             {/* Header */}
             <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container mx-auto px-4">
@@ -514,6 +541,14 @@ export default function EventDetailPage() {
                                         <Award className="h-3 w-3" />
                                         {event.cmeCredits} CME Credits
                                     </Badge>
+                                )}
+                                {event.startDate && (
+                                    <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border font-bold text-sm bg-primary/8 border-primary/30 text-primary">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-primary animate-flash flex-shrink-0" />
+                                        <span className="animate-flash">
+                                            Registrations open for {fmtEventRange(event.startDate, event.endDate)}
+                                        </span>
+                                    </span>
                                 )}
                             </div>
                             <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.title}</h1>
@@ -866,10 +901,13 @@ export default function EventDetailPage() {
 
                                 {/* Early bird hidden */}
 
-                                {/* Registration deadline info */}
-                                {event.registrationDeadline && (
-                                    <div className="text-xs text-muted-foreground">
-                                        Registration deadline: {new Date(event.registrationDeadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                {/* Registration opens date */}
+                                {event.startDate && (
+                                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border font-bold text-sm bg-primary/8 border-primary/30 text-primary">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-primary animate-flash flex-shrink-0" />
+                                        <span className="animate-flash">
+                                            Registrations open for {fmtEventRange(event.startDate, event.endDate)}
+                                        </span>
                                     </div>
                                 )}
 

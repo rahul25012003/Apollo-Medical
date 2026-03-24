@@ -24,6 +24,7 @@ export interface Event {
   isVirtual: boolean;
   virtualLink: string | null;
   capacity: number;
+  registrationOpensDate: string | null;
   registrationDeadline: string | null;
   isRegistrationOpen: boolean;
   price: number;

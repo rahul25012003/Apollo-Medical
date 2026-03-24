@@ -40,7 +40,11 @@ async function getTenantSlugByDomain(domain: string): Promise<string | null> {
     }
   }
   const isLocalhost = domain === "localhost" || domain === "127.0.0.1";
-  if (isLocalhost) return null;
+  if (isLocalhost) {
+    // Allow overriding the tenant slug locally via NEXT_PUBLIC_DEV_TENANT_SLUG env var
+    const devSlug = process.env.NEXT_PUBLIC_DEV_TENANT_SLUG;
+    return devSlug || null;
+  }
   return domainCache[domain.toLowerCase()] || domainCache["__fallback__"] || null;
 }
 

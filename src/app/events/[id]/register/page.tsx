@@ -75,11 +75,34 @@ interface PricingCategory {
     earlyBirdDeadline: string | null;
 }
 
+function ordSuffix(d: number) {
+  if (d >= 11 && d <= 13) return `${d}th`;
+  return `${d}${{ 1: "st", 2: "nd", 3: "rd" }[d % 10] ?? "th"}`;
+}
+function fmtEventRange(start: string, end?: string | null) {
+  const s = new Date(start), e = end ? new Date(end) : null;
+  const sd = ordSuffix(s.getDate());
+  if (!e || s.toDateString() === e.toDateString()) {
+    return `${sd} ${s.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}`;
+  }
+  const ed = ordSuffix(e.getDate());
+  const em = e.toLocaleDateString("en-IN", { month: "long" });
+  const ey = e.getFullYear();
+  if (s.getMonth() === e.getMonth() && s.getFullYear() === ey)
+    return `${sd} to ${ed} ${em} ${ey}`;
+  const sm = s.toLocaleDateString("en-IN", { month: "long" });
+  return s.getFullYear() === ey
+    ? `${sd} ${sm} to ${ed} ${em} ${ey}`
+    : `${sd} ${sm} ${s.getFullYear()} to ${ed} ${em} ${ey}`;
+}
+
 interface EventDisplayData {
     id: string;
     title: string;
     date: string;
     time: string;
+    startDate: string;
+    endDate: string | null;
     location: string;
     address: string | null;
     cmeCredits: number | null;
@@ -101,6 +124,7 @@ interface EventDisplayData {
     pricingCategories: PricingCategory[];
     isRegistrationOpen: boolean;
     registrationDeadline: string | null;
+    registrationOpensDate: string | null;
 }
 
 type Step = "category" | "details" | "preferences" | "payment" | "confirmation";
@@ -209,9 +233,11 @@ export default function RegisterPage() {
                         id: event.id,
                         title: event.title,
                         date: startDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
+                        startDate: event.startDate,
+                        endDate: event.endDate || null,
                         time: event.startTime ? `${event.startTime} - ${event.endTime || ""}` : "TBA",
-                        location: [event.location, event.city].filter(Boolean).join(", ") || "TBA",
-                        address: [event.address, event.city, event.state, event.country].filter(Boolean).join(", ") || null,
+                        location: event.address || [event.location, event.city].filter(Boolean).join(", ") || "TBA",
+                        address: null,
                         cmeCredits: event.cmeCredits,
                         price: Number(event.price),
                         earlyBirdPrice: event.earlyBirdPrice ? Number(event.earlyBirdPrice) : null,
@@ -239,6 +265,7 @@ export default function RegisterPage() {
                         pricingCategories,
                         isRegistrationOpen: event.isRegistrationOpen !== false,
                         registrationDeadline: event.registrationDeadline || null,
+                        registrationOpensDate: event.registrationOpensDate || null,
                     });
 
                     // Auto-select first pricing category if available
@@ -417,6 +444,13 @@ export default function RegisterPage() {
 
     const handlePayment = async () => {
         if (!eventData) return;
+
+        // Require payment proof for QR_CODE and NONE modes
+        const mode = paymentConfig?.paymentMode || "NONE";
+        if (totalPrice > 0 && (mode === "QR_CODE" || mode === "NONE") && !paymentProofUrl) {
+            setError("Please upload your payment receipt screenshot before proceeding.");
+            return;
+        }
 
         setIsSubmitting(true);
         setError(null);
@@ -764,6 +798,10 @@ export default function RegisterPage() {
 
     return (
         <div className="min-h-screen bg-background">
+            <style>{`
+                @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+                .animate-flash { animation: flash 1s ease-in-out infinite; }
+            `}</style>
             {/* Header */}
             <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-sm">
                 <div className="container mx-auto px-4">
@@ -1002,6 +1040,14 @@ export default function RegisterPage() {
                                             </span>
                                         )}
                                     </div>
+                                    {eventData.startDate && (
+                                        <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full border font-bold text-sm bg-primary/8 border-primary/30 text-primary">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-flash flex-shrink-0" />
+                                            <span className="animate-flash">
+                                                Registrations open for {fmtEventRange(eventData.startDate, eventData.endDate)}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                                 {totalPrice > 0 && currentStep !== "confirmation" && (
                                     <div className="text-right bg-primary/5 px-4 py-3 rounded-xl">
@@ -1397,7 +1443,7 @@ export default function RegisterPage() {
                                                             )}
                                                             {/* Payment proof upload */}
                                                             <div className="space-y-3 p-4 rounded-xl bg-gray-50 border">
-                                                                <p className="text-sm font-medium">Upload Payment Proof</p>
+                                                                <p className="text-sm font-medium">Upload Payment Proof <span className="text-red-500">*</span></p>
                                                                 <Input
                                                                     placeholder="Transaction / UTR ID (optional)"
                                                                     value={paymentTransactionId}
@@ -1468,7 +1514,7 @@ export default function RegisterPage() {
                                                             </div>
                                                             {/* Payment proof upload for NONE mode */}
                                                             <div className="space-y-3 p-4 rounded-xl bg-gray-50 border">
-                                                                <p className="text-sm font-medium">Upload Payment Screenshot</p>
+                                                                <p className="text-sm font-medium">Upload Payment Screenshot <span className="text-red-500">*</span></p>
                                                                 <Input
                                                                     placeholder="Transaction / UTR ID (optional)"
                                                                     value={paymentTransactionId}
@@ -1537,11 +1583,11 @@ export default function RegisterPage() {
                                                 </div>
                                             )}
 
-                                            {/* Info if payment proof not uploaded (QR_CODE or NONE mode) — screenshot is optional */}
+                                            {/* Mandatory proof warning */}
                                             {totalPrice > 0 && (paymentConfig?.paymentMode === "QR_CODE" || !paymentConfig || paymentConfig.paymentMode === "NONE") && !paymentProofUrl && (
-                                                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-center gap-2">
-                                                    <AlertCircle className="h-4 w-4 text-blue-500 shrink-0" />
-                                                    <p className="text-sm text-blue-700">Payment screenshot is optional. You can upload it now or share it later with the organizer.</p>
+                                                <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2">
+                                                    <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+                                                    <p className="text-sm text-red-700">Payment screenshot is required. Please upload your payment receipt to proceed.</p>
                                                 </div>
                                             )}
 
@@ -1552,7 +1598,7 @@ export default function RegisterPage() {
                                                 </Button>
                                                 <Button
                                                     onClick={handlePayment}
-                                                    disabled={isSubmitting}
+                                                    disabled={isSubmitting || (totalPrice > 0 && (paymentConfig?.paymentMode === "QR_CODE" || !paymentConfig || paymentConfig?.paymentMode === "NONE") && !paymentProofUrl)}
                                                     className="gap-2 gradient-medical text-white"
                                                     size="lg"
                                                 >

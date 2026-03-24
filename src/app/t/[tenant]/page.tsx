@@ -221,7 +221,7 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
   );
 }
 
-function CountdownTimer({ targetDate, theme }: { targetDate: string; theme: { primaryColor: string; secondaryColor: string } }) {
+function CountdownTimer({ targetDate, theme, bgDark }: { targetDate: string; theme: { primaryColor: string; secondaryColor: string }; bgDark?: boolean }) {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
@@ -257,11 +257,32 @@ function CountdownTimer({ targetDate, theme }: { targetDate: string; theme: { pr
           >
             {String(unit.value).padStart(2, "0")}
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-2 font-medium">{unit.label}</p>
+          <p className={cn("text-xs sm:text-sm mt-2 font-semibold", bgDark ? "text-white/80" : "text-gray-600")}>{unit.label}</p>
         </div>
       ))}
     </div>
   );
+}
+
+function ordSuffix(d: number) {
+  if (d >= 11 && d <= 13) return `${d}th`;
+  return `${d}${{ 1: "st", 2: "nd", 3: "rd" }[d % 10] ?? "th"}`;
+}
+function fmtEventRange(start: string, end?: string | null) {
+  const s = new Date(start), e = end ? new Date(end) : null;
+  const sd = ordSuffix(s.getDate());
+  if (!e || s.toDateString() === e.toDateString()) {
+    return `${sd} ${s.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}`;
+  }
+  const ed = ordSuffix(e.getDate());
+  const em = e.toLocaleDateString("en-IN", { month: "long" });
+  const ey = e.getFullYear();
+  if (s.getMonth() === e.getMonth() && s.getFullYear() === ey)
+    return `${sd} to ${ed} ${em} ${ey}`;
+  const sm = s.toLocaleDateString("en-IN", { month: "long" });
+  return s.getFullYear() === ey
+    ? `${sd} ${sm} to ${ed} ${em} ${ey}`
+    : `${sd} ${sm} ${s.getFullYear()} to ${ed} ${em} ${ey}`;
 }
 
 export default function TenantHomePage() {
@@ -504,6 +525,11 @@ export default function TenantHomePage() {
           0%, 100% { border-color: rgba(var(--primary-rgb, 13 148 136) / 0.2); }
           50% { border-color: rgba(var(--primary-rgb, 13 148 136) / 0.4); }
         }
+        @keyframes flash {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.25; }
+        }
+        .animate-flash { animation: flash 1s ease-in-out infinite; }
         .animate-float { animation: float 6s ease-in-out infinite; }
         .animate-fadeInUp { animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .animate-fadeInLeft { animation: fadeInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -767,6 +793,25 @@ export default function TenantHomePage() {
                 <h1 className={cn("text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight drop-shadow-md", hero.bgImage ? "text-white" : "text-gray-900")}>
                   {hero.title || branding.name}
                 </h1>
+                <div className="mt-4 flex flex-col items-center gap-1.5">
+                  <span className="text-[12px] font-bold uppercase tracking-[0.2em] px-3 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.35)", color: "rgba(255,255,255,0.9)", backdropFilter: "blur(4px)" }}>
+                    proudly supported by
+                  </span>
+                  <div
+                    className="inline-flex items-center gap-3 px-7 py-3 rounded-2xl font-extrabold text-2xl tracking-wide"
+                    style={{
+                      background: "linear-gradient(135deg, #1e3a8a, #2563eb)",
+                      color: "#ffffff",
+                      boxShadow: "0 8px 32px rgba(37,99,235,0.5), 0 0 0 2px rgba(96,165,250,0.4)",
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="https://flagcdn.com/24x18/fr.png" srcSet="https://flagcdn.com/48x36/fr.png 2x" width="24" height="18" alt="France" className="rounded-sm shadow-sm" />
+                    <span>Indo-French Centre</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="https://flagcdn.com/24x18/in.png" srcSet="https://flagcdn.com/48x36/in.png 2x" width="24" height="18" alt="India" className="rounded-sm shadow-sm" />
+                  </div>
+                </div>
               </div>
 
               <p className={cn("text-lg lg:text-xl font-medium max-w-2xl mx-auto mb-6 animation-delay-200 animate-fadeInUp", hero.bgImage ? "text-white/85" : "text-gray-700")}>
@@ -808,18 +853,34 @@ export default function TenantHomePage() {
                 </a>
               </div>
 
-              {nextEvent && nextEvent.startDate && new Date(nextEvent.startDate) > new Date() && (
-                <div className="mt-6 animation-delay-400 animate-fadeInUp" data-scroll-reveal>
-                  <p className={cn("text-sm mb-4 font-medium", hero.bgImage ? "text-white/70" : "text-gray-600")}>
-                    Next Event: <span className={cn("font-bold", hero.bgImage ? "text-white" : "text-gray-900")}>{nextEvent.title}</span>
-                  </p>
-                  <CountdownTimer targetDate={nextEvent.startDate} theme={theme} />
+              {nextEvent && (
+                <div className="mt-6 animation-delay-400 animate-fadeInUp flex flex-col items-center gap-3" data-scroll-reveal>
+                  {/* Flashing registration date */}
+                  {(nextEvent.registrationOpensDate || nextEvent.startDate) && (
+                    <div
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-base text-white shadow-lg"
+                      style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.45)" }}
+                    >
+                      <span className="w-3 h-3 rounded-full flex-shrink-0 animate-flash bg-white" />
+                      <span className="animate-flash text-base font-extrabold">
+                        Registrations open for {fmtEventRange(nextEvent.startDate, nextEvent.endDate)}
+                      </span>
+                    </div>
+                  )}
+                  {nextEvent.startDate && new Date(nextEvent.startDate) > new Date() && (
+                    <>
+                      <p className={cn("text-sm font-medium", hero.bgImage ? "text-white/70" : "text-gray-600")}>
+                        Next Event: <span className={cn("font-bold", hero.bgImage ? "text-white" : "text-gray-900")}>{nextEvent.title}</span>
+                      </p>
+                      <CountdownTimer targetDate={nextEvent.startDate} theme={theme} bgDark={!!hero.bgImage} />
+                    </>
+                  )}
                 </div>
               )}
-              {/* Yearly Stats */}
-              {yearlyStats && (yearlyStats.events || yearlyStats.attendees || yearlyStats.speakers) && (
+              {/* Yearly Stats — commented out for now */}
+              {/* {yearlyStats && (yearlyStats.events || yearlyStats.attendees || yearlyStats.speakers) && (
                 <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6 mt-6 sm:mt-8 max-w-xl mx-auto animation-delay-600 animate-fadeInUp">
-                  {yearlyStats.events && (
+                  {yearlyStats.events && String(yearlyStats.events) !== "0" && (
                     <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50" data-scroll-reveal data-scroll-delay="1">
                       <p className="text-xl sm:text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
                         <AnimatedCounter value={yearlyStats.events} />
@@ -827,7 +888,7 @@ export default function TenantHomePage() {
                       <p className="text-xs lg:text-sm text-muted-foreground mt-1">Events in {yearlyStats.year || new Date().getFullYear()}</p>
                     </div>
                   )}
-                  {yearlyStats.attendees && (
+                  {yearlyStats.attendees && String(yearlyStats.attendees) !== "0" && (
                     <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50" data-scroll-reveal data-scroll-delay="2">
                       <p className="text-xl sm:text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
                         <AnimatedCounter value={yearlyStats.attendees} />
@@ -835,7 +896,7 @@ export default function TenantHomePage() {
                       <p className="text-xs lg:text-sm text-muted-foreground mt-1">Attendees in {yearlyStats.year || new Date().getFullYear()}</p>
                     </div>
                   )}
-                  {yearlyStats.speakers && (
+                  {yearlyStats.speakers && String(yearlyStats.speakers) !== "0" && (
                     <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50" data-scroll-reveal data-scroll-delay="3">
                       <p className="text-xl sm:text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
                         <AnimatedCounter value={yearlyStats.speakers} />
@@ -844,7 +905,7 @@ export default function TenantHomePage() {
                     </div>
                   )}
                 </div>
-              )}
+              )} */}
             </div>
           </div>
 
@@ -952,20 +1013,28 @@ export default function TenantHomePage() {
                             {event.type || "Conference"}
                           </Badge>
                           <h3 className="text-lg sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3">{event.title}</h3>
-                          <div className="flex flex-wrap gap-4 text-sm mb-6">
+                          <div className="flex flex-wrap gap-4 text-sm mb-3">
                             {event.startDate && (
                               <span className="flex items-center gap-2">
                                 <Calendar className="h-4 w-4" />
-                                {new Date(event.startDate).toLocaleDateString()}
+                                {new Date(event.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                               </span>
                             )}
-                            {event.location && (
+                            {(event.address || event.location || event.city) && (
                               <span className="flex items-center gap-2">
                                 <MapPin className="h-4 w-4" />
-                                {event.location}
+                                {event.address || [event.location, event.city].filter(Boolean).join(", ")}
                               </span>
                             )}
                           </div>
+                          {(event.registrationOpensDate || event.startDate) && (
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-base font-extrabold mb-4 shadow-md" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)" }}>
+                              <span className="w-2.5 h-2.5 rounded-full bg-white animate-flash flex-shrink-0" />
+                              <span className="animate-flash">
+                                Registrations open for {fmtEventRange(event.startDate, event.endDate)}
+                              </span>
+                            </div>
+                          )}
                           <Link href={`/events/${event.id}/register`}>
                             <Button className="rounded-full bg-white text-black hover:bg-white/90 shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 relative overflow-hidden">
                               Register Now
@@ -1057,20 +1126,31 @@ export default function TenantHomePage() {
                       <h3 className="font-semibold text-lg mb-3 line-clamp-2 group-hover:text-primary transition-colors">
                         {event.title}
                       </h3>
-                      <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                      <div className="space-y-2 text-sm text-muted-foreground mb-3">
                         {event.startDate && (
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
-                            {new Date(event.startDate).toLocaleDateString()}
+                            {new Date(event.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                           </div>
                         )}
-                        {event.location && (
+                        {(event.address || event.location || event.city) && (
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4" />
-                            {event.location}
+                            {event.address || [event.location, event.city].filter(Boolean).join(", ")}
                           </div>
                         )}
                       </div>
+                      {(event.registrationOpensDate || event.startDate) && (
+                        <div
+                          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-white text-base font-extrabold mb-3 shadow-md"
+                          style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)" }}
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full bg-white animate-flash flex-shrink-0" />
+                          <span className="animate-flash">
+                            Registrations open for {fmtEventRange(event.startDate, event.endDate)}
+                          </span>
+                        </div>
+                      )}
                       <Link href={`/events/${event.id}/register`}>
                         <Button
                           className="w-full text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 relative overflow-hidden"
@@ -1090,6 +1170,191 @@ export default function TenantHomePage() {
       )}
 
       </div>{/* End background wrapper */}
+
+      {/* Organizing Committee Section */}
+      <section id="committee" className="py-12 lg:py-20 bg-white relative overflow-hidden">
+        {/* Subtle dot-grid tinted with primary */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(circle, ${theme.primaryColor}22 1.5px, transparent 1.5px)`,
+            backgroundSize: "28px 28px",
+          }}
+        />
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1" style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }} />
+
+        <div className="container mx-auto px-4 lg:px-8 relative z-10">
+
+          {/* Header */}
+          <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
+            <div
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-white text-sm font-semibold mb-4 shadow-md"
+              style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+            >
+              <Users className="h-4 w-4" />
+              Organizing Committee
+            </div>
+            <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Meet Our Team</h2>
+            <p className="text-gray-500 max-w-xl mx-auto text-sm lg:text-base">The dedicated faculty guiding this program</p>
+          </div>
+
+          {/* ── Tier 1: Chief & Co Secretary ── */}
+          <div className="grid md:grid-cols-2 gap-5 mb-10 max-w-3xl mx-auto">
+            {/* Chief — solid primary */}
+            <div
+              className="rounded-2xl p-6 text-white relative overflow-hidden shadow-lg"
+              style={{ background: `linear-gradient(135deg, ${theme.primaryColor} 0%, ${theme.primaryColor}cc 100%)` }}
+            >
+              <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10" />
+              <div className="absolute right-4 bottom-4 w-16 h-16 rounded-full bg-white/5" />
+              <div className="relative">
+                <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-white/20 mb-4">
+                  Organizing Chairperson
+                </span>
+                <p className="font-bold text-xl lg:text-2xl leading-tight mb-2">Prof Nand Kumar</p>
+                <a href="mailto:nandkm2001@gmail.com" className="inline-flex items-center gap-1.5 text-white/80 text-xs hover:text-white transition-colors">
+                  <Mail className="h-3 w-3 flex-shrink-0" />nandkm2001@gmail.com
+                </a>
+              </div>
+            </div>
+
+            {/* Co-Secretary — secondary tint */}
+            <div
+              className="rounded-2xl p-6 relative overflow-hidden shadow-md border"
+              style={{ background: `${theme.secondaryColor}12`, borderColor: `${theme.secondaryColor}35` }}
+            >
+              <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full" style={{ background: `${theme.secondaryColor}15` }} />
+              <div className="relative">
+                <span
+                  className="inline-block text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-4"
+                  style={{ background: `${theme.secondaryColor}20`, color: theme.secondaryColor }}
+                >
+                  Organizing Secretary
+                </span>
+                <p className="font-bold text-xl lg:text-2xl leading-tight mb-2 text-gray-800">Dr Gagan Hans</p>
+                <a href="mailto:gaganhans23@gmail.com" className="inline-flex items-center gap-1.5 text-xs hover:opacity-70 transition-opacity" style={{ color: theme.secondaryColor }}>
+                  <Mail className="h-3 w-3 flex-shrink-0" />gaganhans23@gmail.com
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Tier 2: Program Secretary ── */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="h-0.5 flex-1 rounded" style={{ background: `linear-gradient(to right, transparent, ${theme.primaryColor}50)` }} />
+              <span
+                className="text-[11px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full"
+                style={{ background: `${theme.primaryColor}12`, color: theme.primaryColor }}
+              >
+                Program Secretary
+              </span>
+              <div className="h-0.5 flex-1 rounded" style={{ background: `linear-gradient(to left, transparent, ${theme.primaryColor}50)` }} />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              {[
+                { name: "Dr Shubham Narnoli", email: "narnoli.shubham@gmail.com" },
+                { name: "Dr Priyanka Bhat", email: "bhatpriyanka84@gmail.com" },
+              ].map((person) => (
+                <div
+                  key={person.name}
+                  className="bg-white rounded-xl p-4 shadow-sm border-l-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4"
+                  style={{ borderColor: theme.primaryColor, borderTop: "1px solid #f0f0f0", borderRight: "1px solid #f0f0f0", borderBottom: "1px solid #f0f0f0" }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-bold"
+                    style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.primaryColor}bb)` }}
+                  >
+                    {person.name.split(" ").filter(w => w.match(/^[A-Z]/)).slice(-2).map(w => w[0]).join("")}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-gray-800">{person.name}</p>
+                    <a href={`mailto:${person.email}`} className="text-xs hover:underline transition-colors truncate block" style={{ color: theme.primaryColor }}>{person.email}</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Tier 3: Program Faculty ── */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="h-0.5 flex-1 rounded" style={{ background: `linear-gradient(to right, transparent, ${theme.secondaryColor}50)` }} />
+              <span
+                className="text-[11px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full"
+                style={{ background: `${theme.secondaryColor}12`, color: theme.secondaryColor }}
+              >
+                Program Faculty
+              </span>
+              <div className="h-0.5 flex-1 rounded" style={{ background: `linear-gradient(to left, transparent, ${theme.secondaryColor}50)` }} />
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+              {[
+                { name: "Prof S Senthil Kumaran", email: "senthilssk@yahoo.com" },
+                { name: "Prof Suman Jain", email: "sumanjain10@gmail.com" },
+                { name: "Prof Tony George Jacob", email: "tonygeorgejacob@gmail.com" },
+              ].map((person) => (
+                <div
+                  key={person.name}
+                  className="bg-white rounded-xl p-4 shadow-sm border-l-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-3"
+                  style={{ borderColor: theme.secondaryColor, borderTop: "1px solid #f0f0f0", borderRight: "1px solid #f0f0f0", borderBottom: "1px solid #f0f0f0" }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-bold"
+                    style={{ background: `linear-gradient(135deg, ${theme.secondaryColor}, ${theme.secondaryColor}bb)` }}
+                  >
+                    {person.name.split(" ").filter(w => w.match(/^[A-Z]/)).slice(-2).map(w => w[0]).join("")}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-gray-800">{person.name}</p>
+                    <a href={`mailto:${person.email}`} className="text-xs hover:underline transition-colors truncate block" style={{ color: theme.secondaryColor }}>{person.email}</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Tier 4: Program Coordinators ── */}
+          <div>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="h-0.5 flex-1 rounded" style={{ background: `linear-gradient(to right, transparent, ${theme.primaryColor}35)` }} />
+              <span
+                className="text-[11px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full"
+                style={{ background: `${theme.primaryColor}0e`, color: theme.primaryColor }}
+              >
+                Program Coordinators
+              </span>
+              <div className="h-0.5 flex-1 rounded" style={{ background: `linear-gradient(to left, transparent, ${theme.primaryColor}35)` }} />
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+              {[
+                { name: "Dr Hemant Choudhary", email: "hemantchoudhary108@gmail.com" },
+                { name: "Dr Shubha Bagri", email: "subhabagre9@gmail.com" },
+                { name: "Dr Adit Verma", email: "adit.2803.verma@gmail.com" },
+              ].map((person) => (
+                <div
+                  key={person.name}
+                  className="bg-white rounded-xl p-4 shadow-sm border-l-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-3"
+                  style={{ borderColor: `${theme.primaryColor}80`, borderTop: "1px solid #f0f0f0", borderRight: "1px solid #f0f0f0", borderBottom: "1px solid #f0f0f0" }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-bold"
+                    style={{ background: `linear-gradient(135deg, ${theme.primaryColor}99, ${theme.primaryColor}66)` }}
+                  >
+                    {person.name.split(" ").filter(w => w.match(/^[A-Z]/)).slice(-2).map(w => w[0]).join("")}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-gray-800">{person.name}</p>
+                    <a href={`mailto:${person.email}`} className="text-xs hover:underline transition-colors truncate block text-gray-400">{person.email}</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </section>
 
       {/* Speakers Section */}
       {sections.events && speakers.length > 0 && (
@@ -1301,6 +1566,20 @@ export default function TenantHomePage() {
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Choose your registration category
               </p>
+              {(() => {
+                if (!events[0]?.startDate) return null;
+                return (
+                  <div
+                    className="mt-4 inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-extrabold text-base text-white shadow-lg"
+                    style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.45)" }}
+                  >
+                    <span className="inline-block w-3 h-3 rounded-full bg-white animate-flash flex-shrink-0" />
+                    <span className="animate-flash text-base">
+                      Registrations open for {fmtEventRange(events[0].startDate, events[0].endDate)}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className={cn("grid gap-6", adaptiveGrid(pricingCategories.length))}>
@@ -2207,55 +2486,6 @@ export default function TenantHomePage() {
                     </li>
                   )}
                 </ul>
-              </div>
-            </div>
-
-            {/* Organizing Committee Section */}
-            <div className="border-t border-white/15 mt-10 pt-10">
-              <div className="grid md:grid-cols-2 gap-10 lg:gap-16">
-                {/* Chief Organizing Secretary */}
-                <div className="text-center md:text-left">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider text-white/90 mb-5">Organizing Secretary</h4>
-                  <div className="bg-white/[0.07] backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <p className="font-bold text-lg">Prof. Nand Kumar</p>
-                    <p className="text-white/60 text-sm mt-1">Chief Organizing Secretary</p>
-                    <p className="text-white/50 text-xs mt-2 leading-relaxed">
-                      Professor, Dept. of Psychiatry<br />
-                      All India Institute of Medical Sciences, New Delhi<br />
-                      & In-charge (Centre For Advanced Research & Excellence in Neuromodulation)
-                    </p>
-                    <div className="mt-4 space-y-1.5 text-sm">
-                      <p className="flex items-center justify-center md:justify-start gap-2 text-white/70">
-                        <Mail className="h-3.5 w-3.5 text-white/50" />
-                        <a href="mailto:nandkm2001@gmail.com" className="hover:text-white transition-colors">nandkm2001@gmail.com</a>
-                      </p>
-                      <p className="flex items-center justify-center md:justify-start gap-2 text-white/70">
-                        <Phone className="h-3.5 w-3.5 text-white/50" />
-                        <a href="tel:011-26546433" className="hover:text-white transition-colors">011-26546433</a>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Coordinators */}
-                <div className="text-center md:text-left">
-                  <h4 className="font-semibold text-sm uppercase tracking-wider text-white/90 mb-5">Coordinators</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      { name: "Dr Hemant Choudhary", email: "hemantchoudhary108@gmail.com" },
-                      { name: "Dr Priyanka Bhat", email: "bhatpriyanka84@gmail.com" },
-                      { name: "Dr Shubha Bagri", email: "subhabagre9@gmail.com" },
-                      { name: "Dr Adit Verma", email: "adit.2803.verma@gmail.com" },
-                    ].map((coord) => (
-                      <div key={coord.name} className="bg-white/[0.07] backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/[0.12] transition-colors">
-                        <p className="font-semibold text-sm">{coord.name}</p>
-                        <a href={`mailto:${coord.email}`} className="text-white/50 text-xs hover:text-white/80 transition-colors break-all">
-                          {coord.email}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
 
