@@ -461,7 +461,7 @@ export default function EventsPage() {
                     {/* Desktop Filters */}
                     <div className="hidden lg:flex flex-wrap gap-3 items-center">
                         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                            <SelectTrigger className="w-[160px]">
+                            <SelectTrigger className="w-full sm:w-[160px]">
                                 <SelectValue placeholder="Category" />
                             </SelectTrigger>
                             <SelectContent>
@@ -472,7 +472,7 @@ export default function EventsPage() {
                         </Select>
 
                         <Select value={selectedType} onValueChange={setSelectedType}>
-                            <SelectTrigger className="w-[140px]">
+                            <SelectTrigger className="w-full sm:w-[140px]">
                                 <SelectValue placeholder="Type" />
                             </SelectTrigger>
                             <SelectContent>
@@ -485,7 +485,7 @@ export default function EventsPage() {
                         </Select>
 
                         <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                            <SelectTrigger className="w-[140px]">
+                            <SelectTrigger className="w-full sm:w-[140px]">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent>

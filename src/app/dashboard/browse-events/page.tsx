@@ -189,7 +189,7 @@ export default function BrowseEventsPage() {
                     {/* Desktop Filters */}
                     <div className="hidden lg:flex flex-wrap gap-3 items-center">
                         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                            <SelectTrigger className="w-[160px]">
+                            <SelectTrigger className="w-full sm:w-[160px]">
                                 <SelectValue placeholder="Category" />
                             </SelectTrigger>
                             <SelectContent>
@@ -200,7 +200,7 @@ export default function BrowseEventsPage() {
                         </Select>
 
                         <Select value={selectedType} onValueChange={setSelectedType}>
-                            <SelectTrigger className="w-[140px]">
+                            <SelectTrigger className="w-full sm:w-[140px]">
                                 <SelectValue placeholder="Type" />
                             </SelectTrigger>
                             <SelectContent>
@@ -366,7 +366,7 @@ export default function BrowseEventsPage() {
                                                     </Button>
                                                 ) : !isPastEvent && !isSoldOut ? (
                                                     <Link href={`/dashboard/browse-events/${event.id}/register`}>
-                                                        <Button size="sm" className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25 font-semibold">
+                                                        <Button size="sm" className="gap-2 text-white font-semibold shadow-lg" style={{ background: "linear-gradient(135deg, #0f766e, #0d9488)", boxShadow: "0 4px 16px rgba(15,118,110,0.25)" }}>
                                                             <Ticket className="w-4 h-4" />
                                                             Register
                                                         </Button>

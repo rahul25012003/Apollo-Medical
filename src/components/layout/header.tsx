@@ -173,11 +173,11 @@ export function Header({ title, subtitle }: HeaderProps) {
                     {/* Search - Desktop */}
                     <div className="hidden md:flex items-center">
                         <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-teal-500" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-foreground" />
                             <input
                                 type="text"
                                 placeholder="Search..."
-                                className="h-9 w-44 lg:w-56 pl-9 pr-4 bg-muted/50 backdrop-blur-sm rounded-xl border border-white/[0.08] outline-none text-sm placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/30 focus:bg-muted/80 transition-all duration-300"
+                                className="h-9 w-44 lg:w-56 pl-9 pr-4 bg-muted/50 backdrop-blur-sm rounded-xl border border-white/[0.08] outline-none text-sm placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/30 focus:border-primary/30 focus:bg-muted/80 transition-all duration-300"
                             />
                         </div>
                     </div>
@@ -197,7 +197,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                     {/* Notifications */}
                     <DropdownMenu onOpenChange={(open) => { if (open) fetchNotifications(); }}>
                         <DropdownMenuTrigger asChild>
-                            <button className="relative p-2 rounded-xl hover:bg-muted/80 transition-all duration-200 group">
+                            <button aria-label="Notifications" className="relative p-2 rounded-xl hover:bg-muted/80 transition-all duration-200 group">
                                 <Bell className={cn(
                                     "w-5 h-5 text-muted-foreground transition-all duration-200 group-hover:text-foreground",
                                     unreadCount > 0 && "text-foreground"
@@ -218,7 +218,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                                 {unreadCount > 0 && (
                                     <button
                                         onClick={markAllAsRead}
-                                        className="text-xs font-medium text-teal-600 cursor-pointer hover:text-teal-700 hover:underline bg-transparent border-0 p-0 transition-colors"
+                                        className="text-xs font-medium text-primary cursor-pointer hover:text-primary/80 hover:underline bg-transparent border-0 p-0 transition-colors"
                                     >
                                         Mark all as read
                                     </button>
@@ -240,7 +240,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                                             key={n.id}
                                             className={cn(
                                                 "flex flex-col items-start gap-1 p-3 cursor-pointer rounded-lg mx-1 my-0.5 transition-all duration-200",
-                                                !n.isRead && "bg-teal-500/[0.04] border-l-2 border-teal-500/50"
+                                                !n.isRead && "bg-primary/[0.04] border-l-2 border-primary/50"
                                             )}
                                             asChild={!!n.link}
                                         >
@@ -394,7 +394,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                             type="text"
                             placeholder="Search events, registrations..."
                             autoFocus
-                            className="w-full h-10 pl-10 pr-4 bg-muted/50 rounded-xl border border-white/[0.08] outline-none text-sm placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/30"
+                            className="w-full h-10 pl-10 pr-4 bg-muted/50 rounded-xl border border-white/[0.08] outline-none text-sm placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/30 focus:border-primary/30"
                             onBlur={() => setSearchOpen(false)}
                         />
                     </div>

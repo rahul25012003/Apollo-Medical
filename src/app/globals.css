@@ -2911,6 +2911,13 @@ a[class*="text-primary"]:not([class*="flex"]):not([class*="inline-flex"]):not(bu
   background: oklch(0.13 0.015 260);
 }
 
+/* System dark mode for public pages (login, tenant home) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.dark):not([data-theme="light"]) {
+    /* Don't force dark on public pages — only manual toggle activates full dark mode */
+  }
+}
+
 .dark .dashboard-card {
   background: oklch(0.18 0.015 260);
   border-color: oklch(0.25 0.02 260);
@@ -2935,6 +2942,86 @@ a[class*="text-primary"]:not([class*="flex"]):not([class*="inline-flex"]):not(bu
 
 .dark .section-heading { color: oklch(0.95 0.01 260); }
 .dark .stat-number { color: oklch(0.95 0.01 260); }
+
+/* Global dark mode overrides for all dashboard content */
+.dark .bg-white { background-color: oklch(0.18 0.015 260) !important; }
+.dark .bg-white\/80 { background-color: oklch(0.18 0.015 260 / 0.8) !important; }
+.dark .bg-white\/70 { background-color: oklch(0.18 0.015 260 / 0.7) !important; }
+.dark .bg-slate-50 { background-color: oklch(0.16 0.015 260) !important; }
+.dark .bg-slate-50\/50 { background-color: oklch(0.14 0.015 260 / 0.5) !important; }
+.dark .bg-slate-100 { background-color: oklch(0.22 0.015 260) !important; }
+.dark .border-slate-100 { border-color: oklch(0.25 0.02 260) !important; }
+.dark .border-slate-200 { border-color: oklch(0.3 0.02 260) !important; }
+.dark .border-slate-200\/60 { border-color: oklch(0.3 0.02 260 / 0.6) !important; }
+.dark .border-slate-200\/80 { border-color: oklch(0.3 0.02 260 / 0.8) !important; }
+.dark .text-slate-800 { color: oklch(0.9 0.01 260) !important; }
+.dark .text-slate-700 { color: oklch(0.85 0.01 260) !important; }
+.dark .text-slate-900 { color: oklch(0.95 0.01 260) !important; }
+.dark .text-slate-600 { color: oklch(0.7 0.02 260) !important; }
+.dark .text-slate-500 { color: oklch(0.6 0.02 260) !important; }
+.dark .hover\:bg-slate-50:hover { background-color: oklch(0.2 0.015 260) !important; }
+.dark .hover\:bg-slate-50\/80:hover { background-color: oklch(0.2 0.015 260 / 0.8) !important; }
+.dark .hover\:border-slate-200:hover { border-color: oklch(0.35 0.02 260) !important; }
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: oklch(0.22 0.015 260) !important; }
+.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]) { border-color: oklch(0.2 0.015 260) !important; }
+
+/* Dark mode gradient background fixes */
+.dark [style*="from-slate-50"],
+.dark .from-slate-50 { --tw-gradient-from: oklch(0.16 0.015 260) !important; }
+.dark .to-teal-50\/30 { --tw-gradient-to: oklch(0.18 0.08 180 / 0.15) !important; }
+.dark .to-teal-50\/20 { --tw-gradient-to: oklch(0.18 0.08 180 / 0.1) !important; }
+.dark .via-white { --tw-gradient-via: oklch(0.18 0.015 260) !important; }
+
+/* Dark mode badge overrides */
+.dark .bg-green-50 { background-color: oklch(0.2 0.06 155 / 0.3) !important; }
+.dark .bg-green-100 { background-color: oklch(0.2 0.06 155 / 0.3) !important; }
+.dark .bg-yellow-100 { background-color: oklch(0.22 0.08 85 / 0.3) !important; }
+.dark .bg-red-50 { background-color: oklch(0.2 0.08 25 / 0.3) !important; }
+.dark .bg-red-100 { background-color: oklch(0.2 0.08 25 / 0.3) !important; }
+.dark .bg-purple-50 { background-color: oklch(0.2 0.08 300 / 0.3) !important; }
+.dark .bg-purple-100 { background-color: oklch(0.2 0.08 300 / 0.3) !important; }
+.dark .bg-blue-50 { background-color: oklch(0.2 0.08 260 / 0.3) !important; }
+.dark .bg-blue-100 { background-color: oklch(0.2 0.08 260 / 0.3) !important; }
+.dark .bg-amber-50 { background-color: oklch(0.22 0.08 85 / 0.3) !important; }
+.dark .bg-emerald-50 { background-color: oklch(0.2 0.06 160 / 0.3) !important; }
+.dark .bg-violet-50 { background-color: oklch(0.2 0.08 290 / 0.3) !important; }
+.dark .bg-teal-50 { background-color: oklch(0.2 0.06 180 / 0.3) !important; }
+.dark .bg-orange-50 { background-color: oklch(0.22 0.08 60 / 0.3) !important; }
+
+/* Dark mode text color fixes for badges */
+.dark .text-green-700 { color: oklch(0.7 0.15 155) !important; }
+.dark .text-yellow-700 { color: oklch(0.75 0.15 85) !important; }
+.dark .text-red-700 { color: oklch(0.7 0.15 25) !important; }
+.dark .text-purple-700 { color: oklch(0.7 0.15 300) !important; }
+.dark .text-blue-700 { color: oklch(0.7 0.15 260) !important; }
+.dark .text-amber-700 { color: oklch(0.75 0.15 85) !important; }
+.dark .text-teal-700 { color: oklch(0.7 0.12 180) !important; }
+.dark .text-teal-600 { color: oklch(0.65 0.12 180) !important; }
+
+/* Dark mode border color fixes for badges */
+.dark .border-green-200 { border-color: oklch(0.35 0.08 155) !important; }
+.dark .border-yellow-200 { border-color: oklch(0.4 0.1 85) !important; }
+.dark .border-red-200 { border-color: oklch(0.35 0.1 25) !important; }
+.dark .border-purple-200 { border-color: oklch(0.35 0.1 300) !important; }
+.dark .border-blue-200 { border-color: oklch(0.35 0.1 260) !important; }
+.dark .border-teal-200 { border-color: oklch(0.35 0.08 180) !important; }
+
+/* Dark mode card-premium */
+.dark .card-premium {
+  background: oklch(0.18 0.015 260) !important;
+  border-color: oklch(0.25 0.02 260) !important;
+}
+
+/* Mobile table scroll — all dashboard tables get horizontal scroll on mobile */
+@media (max-width: 768px) {
+  .table-premium,
+  [class*="dashboard-table"],
+  main table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 
 /* ========== PREMIUM DASHBOARD COMPONENTS ========== */
 

@@ -774,7 +774,7 @@ export default function TenantHomePage() {
       {sections.hero && (
         <section
           id="hero"
-          className="relative min-h-screen flex items-center overflow-hidden pb-16 md:pb-20"
+          className="relative min-h-screen flex items-center overflow-hidden pb-8 md:pb-12"
           style={{ backgroundColor: hero.bgImage ? "#0a0f1e" : "#0f172a" }}
         >
           {/* Background image — use img tag for full quality (no compression) */}

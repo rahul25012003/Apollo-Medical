@@ -174,7 +174,7 @@ export default function MyCertificatesPage() {
                                     <div className="flex items-center gap-2 pt-2">
                                         <Button
                                             size="sm"
-                                            className="flex-1 gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25"
+                                            className="flex-1 gap-2 text-white shadow-lg" style={{ background: "linear-gradient(135deg, #0f766e, #0d9488)", boxShadow: "0 4px 16px rgba(15,118,110,0.25)" }}
                                             onClick={() => handleDownload(certificate.id)}
                                         >
                                             <Download className="w-4 h-4" />
@@ -193,6 +193,7 @@ export default function MyCertificatesPage() {
                                             variant="outline"
                                             size="icon"
                                             className="h-9 w-9"
+                                            aria-label="Copy certificate link"
                                             onClick={() => handleCopyLink(certificate)}
                                         >
                                             {copiedId === certificate.id ? (

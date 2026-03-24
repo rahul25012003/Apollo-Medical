@@ -523,7 +523,7 @@ export default function CertificatesPage() {
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                     <Card className="card-premium overflow-hidden">
-                        <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500" />
+                        <div className="h-1 bg-gradient-to-r from-slate-600 via-slate-500 to-slate-400" />
                         <CardContent className="p-3 sm:pt-6 sm:p-6">
                             <div className="flex items-center gap-2 sm:gap-4">
                                 <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-600/10 h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center">
@@ -584,7 +584,7 @@ export default function CertificatesPage() {
 
                 {/* Certificate Templates */}
                 <Card className="card-premium border-primary/10 overflow-hidden">
-                    <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500" />
+                    <div className="h-1 bg-gradient-to-r from-slate-600 via-slate-500 to-slate-400" />
                     <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
                             <FileText className="h-5 w-5" />
@@ -1076,7 +1076,7 @@ export default function CertificatesPage() {
 
                 {/* Certificates Table */}
                 <Card className="card-premium overflow-hidden">
-                    <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500" />
+                    <div className="h-1 bg-gradient-to-r from-slate-600 via-slate-500 to-slate-400" />
                     <CardHeader className="pb-3 px-3 sm:px-6">
                         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
                             <TabsList className="bg-muted/50 rounded-xl w-full sm:w-auto h-auto flex-wrap sm:flex-nowrap gap-1 p-1">
