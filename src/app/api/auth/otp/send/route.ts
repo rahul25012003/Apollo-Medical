@@ -32,6 +32,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   const { email, purpose } = parsed.data;
+  const tenantSlug = (body as Record<string, unknown>).tenantSlug as string | undefined;
 
   // Rate limit: max 5 OTP sends per email per 15 minutes
   const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
@@ -64,6 +65,39 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     return Errors.badRequest(
       "This email uses password-based login. Please use the admin sign-in."
     );
+  }
+
+  // Tenant isolation: if a tenantSlug is provided, verify the user belongs to this tenant
+  if (purpose === "LOGIN" && tenantSlug) {
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug: tenantSlug },
+      select: { id: true },
+    });
+
+    if (tenant) {
+      // Check 1: Does the user belong to this tenant?
+      if (existingUser && existingUser.tenantId && existingUser.tenantId !== tenant.id) {
+        return Errors.badRequest(
+          "No account found for this email on this platform. Please check that you are logging into the correct conference portal."
+        );
+      }
+
+      // Check 2: If no user yet, does a registration exist for this tenant's events?
+      if (!existingUser) {
+        const tenantReg = await prisma.registration.findFirst({
+          where: {
+            email: { equals: email.toLowerCase(), mode: "insensitive" },
+            event: { tenantId: tenant.id },
+          },
+          select: { id: true },
+        });
+        if (!tenantReg) {
+          return Errors.badRequest(
+            "No registration found for this email. Please register for an event first before logging in."
+          );
+        }
+      }
+    }
   }
 
   // For registration: if user already exists, return generic success (no leak)

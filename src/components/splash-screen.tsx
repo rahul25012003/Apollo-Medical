@@ -17,16 +17,19 @@ export function SplashScreen() {
     if (checkedRef.current) return;
     checkedRef.current = true;
     const p = window.location.pathname;
-    // Carens pages: /t/carens/*, /dashboard/*, /auth/*, / (home)
-    const isCarensPage =
-      p === "/" ||
-      p.startsWith("/t/carens") ||
-      p.startsWith("/dashboard") ||
-      p.startsWith("/auth");
+    const params = new URLSearchParams(window.location.search);
+    // Show AIIMS splash on carens tenant pages:
+    // - /t/carens (localhost)
+    // - ?tenant=carens (login/events pages)
+    // - Production domain root / (middleware rewrites to /t/carens)
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const isCarensPage = p.startsWith("/t/carens")
+      || params.get("tenant") === "carens"
+      || (!isLocalhost && !p.startsWith("/t/") && !p.startsWith("/dashboard"));
     if (isCarensPage) {
       setShowSplash(true);
     } else {
-      // Not a carens page — skip splash entirely
+      // Not a carens page — skip splash
       setVisible(false);
     }
   }, []);

@@ -107,12 +107,12 @@ export const defaultAboutFeatures: AboutFeature[] = [
   {
     icon: "BrainCircuit",
     title: "Multidisciplinary Approach",
-    description: "Unique conferences bringing together Neuromodulation, Anatomy, Physiology, and allied departments for a holistic learning experience.",
+    description: "Conferences bringing together multiple departments and specialties for a holistic learning experience.",
   },
   {
     icon: "Users",
     title: "Expert-Led Training",
-    description: "Courses delivered by experienced neuromodulation specialists and faculty with years of clinical and academic expertise.",
+    description: "Courses delivered by experienced specialists and faculty with years of clinical and academic expertise.",
   },
   {
     icon: "GraduationCap",
@@ -133,7 +133,7 @@ export const defaultTestimonials: Testimonial[] = [
     name: "Dr. Priya Sharma",
     role: "Neurophysiologist",
     avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop",
-    content: "The multidisciplinary approach involving Anatomy, Physiology, and Neuromodulation teams sets these conferences apart. Truly one of a kind.",
+    content: "The multidisciplinary approach involving multiple departments sets these conferences apart. Truly one of a kind.",
     rating: 5,
   },
   {
@@ -141,7 +141,7 @@ export const defaultTestimonials: Testimonial[] = [
     name: "Dr. Rajesh Kumar",
     role: "Neurosurgeon",
     avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&h=100&fit=crop",
-    content: "Outstanding course content and expert trainers. The hands-on workshops on neuromodulation techniques are invaluable for clinical practice.",
+    content: "Outstanding course content and expert trainers. The hands-on workshops are invaluable for clinical practice.",
     rating: 5,
   },
   {
@@ -206,14 +206,14 @@ export const defaultTenantConfig: TenantConfig = {
   },
 
   hero: {
-    title: "Pioneering Neuromodulation Education",
-    subtitle: "Experience unique multidisciplinary conferences where Neuromodulation, Anatomy, Physiology, and allied departments converge. Learn from expert trainers through evidence-based, hands-on programs.",
+    title: "Welcome to Our Conference",
+    subtitle: "Experience multidisciplinary conferences with expert-led, evidence-based, hands-on programs designed for real-world impact.",
     bgImage: undefined,
   },
 
   about: {
     title: undefined,
-    description: "Our conferences stand apart through a truly multidisciplinary approach — uniting the Neuromodulation team with Anatomy, Physiology, and other clinical departments. Led by expert trainers with deep clinical experience, every program delivers rigorously curated, evidence-based course content designed for real-world impact.",
+    description: "Our conferences stand apart through a truly multidisciplinary approach — uniting specialists from multiple departments. Led by expert trainers with deep clinical experience, every program delivers rigorously curated, evidence-based course content designed for real-world impact.",
     features: defaultAboutFeatures,
   },
 
@@ -225,7 +225,7 @@ export const defaultTenantConfig: TenantConfig = {
   testimonials: defaultTestimonials,
 
   footer: {
-    text: "Advancing neuromodulation education through expert-led, multidisciplinary conferences and hands-on training programs.",
+    text: "Advancing medical education through expert-led, multidisciplinary conferences and hands-on training programs.",
     copyrightText: "MedConf. All rights reserved.",
   },
 

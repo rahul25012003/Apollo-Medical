@@ -8,11 +8,11 @@ export default function NotFound() {
                 <h1 className="text-2xl font-bold text-slate-800">Page Not Found</h1>
                 <p className="text-slate-500">The page you&apos;re looking for doesn&apos;t exist or has been moved.</p>
                 <div className="flex items-center justify-center gap-3">
-                    <Link href="/dashboard" className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 text-white text-sm font-medium hover:shadow-lg transition-all">
-                        Go to Dashboard
+                    <Link href="/" className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 text-white text-sm font-medium hover:shadow-lg transition-all">
+                        Go Home
                     </Link>
-                    <Link href="/dashboard" className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-all">
-                        Home
+                    <Link href="/auth/login" className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-all">
+                        Login
                     </Link>
                 </div>
             </div>

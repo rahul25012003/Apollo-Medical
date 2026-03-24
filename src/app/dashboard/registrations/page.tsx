@@ -549,7 +549,7 @@ function RegistrationsContent() {
                             Transaction ID: <span className="font-mono font-semibold">{reg!.paymentId}</span>
                         </p>
                     )}
-                    <p className="text-sm font-semibold mt-2">Amount: ₹{reg!.amount.toLocaleString()}</p>
+                    <p className="text-sm font-semibold mt-2">Amount: ₹{Number(reg!.amount).toLocaleString()}</p>
                 </div>
             ) : undefined,
         });
@@ -1028,7 +1028,7 @@ function RegistrationsContent() {
                                 </Select>
                                 {formData.eventId && (
                                     <p className="text-xs text-muted-foreground">
-                                        Registration fee: ₹{formData.amount.toLocaleString()}
+                                        Registration fee: ₹{Number(formData.amount).toLocaleString()}
                                     </p>
                                 )}
                             </div>
@@ -1257,7 +1257,7 @@ function RegistrationsContent() {
                                         <div className="p-4 rounded-lg bg-muted/50">
                                             <p className="text-xs text-muted-foreground mb-1">Amount</p>
                                             <p className="text-xl font-bold text-primary">
-                                                ₹{selectedReg.amount.toLocaleString()}
+                                                ₹{Number(selectedReg.amount).toLocaleString()}
                                             </p>
                                         </div>
                                         <div className="p-4 rounded-lg bg-muted/50">
@@ -1556,7 +1556,7 @@ function RegistrationsContent() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <p className="font-medium">₹{reg.amount.toLocaleString()}</p>
+                                                <p className="font-medium">₹{Number(reg.amount).toLocaleString()}</p>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-1">
@@ -1877,7 +1877,7 @@ function RegistrationsContent() {
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <p className="text-sm font-semibold">₹{reg.amount.toLocaleString()}</p>
+                                            <p className="text-sm font-semibold">₹{Number(reg.amount).toLocaleString()}</p>
                                         </div>
                                     </div>
                                 </div>

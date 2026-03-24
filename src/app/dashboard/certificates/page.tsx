@@ -101,12 +101,12 @@ interface Certificate {
 
 // Template previews for different event types
 const templatePreviews = [
-    { type: "CONFERENCE" as EventType, name: "Conference", color: "from-blue-500 to-blue-700", description: "Certificate of Attendance" },
-    { type: "WORKSHOP" as EventType, name: "Workshop", color: "from-green-500 to-green-700", description: "Certificate of Completion" },
-    { type: "SEMINAR" as EventType, name: "Seminar", color: "from-orange-500 to-orange-700", description: "Certificate of Participation" },
-    { type: "CME" as EventType, name: "CME", color: "from-red-500 to-red-700", description: "CME Credit Certificate" },
-    { type: "WEBINAR" as EventType, name: "Webinar", color: "from-purple-500 to-purple-700", description: "Certificate of Attendance" },
-    { type: "SYMPOSIUM" as EventType, name: "Symposium", color: "from-teal-500 to-teal-700", description: "Certificate of Participation" },
+    { type: "CONFERENCE" as EventType, name: "Conference", color: "linear-gradient(135deg, #1e40af, #3b82f6)", description: "Certificate of Attendance" },
+    { type: "WORKSHOP" as EventType, name: "Workshop", color: "linear-gradient(135deg, #047857, #10b981)", description: "Certificate of Completion" },
+    { type: "SEMINAR" as EventType, name: "Seminar", color: "linear-gradient(135deg, #c2410c, #f97316)", description: "Certificate of Participation" },
+    { type: "CME" as EventType, name: "CME", color: "linear-gradient(135deg, #b91c1c, #ef4444)", description: "CME Credit Certificate" },
+    { type: "WEBINAR" as EventType, name: "Webinar", color: "linear-gradient(135deg, #6d28d9, #a855f7)", description: "Certificate of Attendance" },
+    { type: "SYMPOSIUM" as EventType, name: "Symposium", color: "linear-gradient(135deg, #0f766e, #14b8a6)", description: "Certificate of Participation" },
 ];
 
 export default function CertificatesPage() {
@@ -507,7 +507,7 @@ export default function CertificatesPage() {
                                     onClick={() => handleTemplateClick(template.type)}
                                     className="p-3 sm:p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-teal-500/5 transition-all cursor-pointer group overflow-hidden"
                                 >
-                                    <div className={`h-12 sm:h-16 w-full rounded-lg bg-gradient-to-br ${template.color} flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform`}>
+                                    <div className="h-12 sm:h-16 w-full rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform" style={{ background: template.color }}>
                                         <Award className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                                     </div>
                                     <h4 className="font-medium text-xs sm:text-sm">{template.name}</h4>

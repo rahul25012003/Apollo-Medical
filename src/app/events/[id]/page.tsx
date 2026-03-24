@@ -486,7 +486,7 @@ export default function EventDetailPage() {
                             <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
-                            <span className="font-bold text-xl">CareNS</span>
+                            <span className="font-bold text-xl">ICMS</span>
                         </Link>
                         <div className="flex items-center gap-3">
                             <Button variant="ghost" size="icon">
@@ -1003,7 +1003,7 @@ export default function EventDetailPage() {
                             <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
-                            <span className="font-bold">CareNS</span>
+                            <span className="font-bold">ICMS</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
                             © 2025 Medical College. All rights reserved.

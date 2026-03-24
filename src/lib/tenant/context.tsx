@@ -142,25 +142,9 @@ export function TenantProvider({
     if (initialConfig) return;
 
     if (!tenantSlug && !tenantId) {
-      // No tenant context — try loading default tenant for favicon/title on dashboard
+      // No tenant context — use ICMS defaults, never load another tenant's branding
       if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) {
-        fetch("/api/tenants?limit=1").then(r => r.json()).then(data => {
-          if (data.success && data.data?.length > 0) {
-            const t = data.data[0];
-            const config = {
-              ...defaultTenantConfig,
-              id: t.id,
-              slug: t.slug,
-              branding: {
-                ...defaultTenantConfig.branding,
-                name: t.branding?.name || t.name || defaultTenantConfig.branding.name,
-                favicon: t.branding?.favicon || t.favicon || defaultTenantConfig.branding.favicon,
-                logo: t.branding?.logo || t.logo || defaultTenantConfig.branding.logo,
-              },
-            };
-            setTenant(config as TenantConfig);
-          }
-        }).catch(() => {});
+        document.title = "ICMS — Dashboard";
       }
       return;
     }
@@ -279,9 +263,9 @@ export function TenantProvider({
   useEffect(() => {
     if (!tenant?.branding) return;
 
-    // Update ALL favicon links — Next.js may generate multiple
-    if (tenant.branding.favicon) {
-      const faviconUrl = tenant.branding.favicon;
+    // Update ALL favicon links — use favicon, or logo as fallback, or reset to default
+    {
+      const faviconUrl = tenant.branding.favicon || tenant.branding.logo || "/favicon-16.png";
       // Update all existing icon links
       const existingIcons = document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="shortcut icon"]');
       if (existingIcons.length > 0) {

@@ -61,6 +61,7 @@ interface DisplayEvent {
     sponsors: { name: string; tier: string; logo: string | null }[];
     speakers: number;
     sessions: number;
+    currency: string;
     tenantSlug: string | null;
     tenantName: string | null;
 }
@@ -142,6 +143,7 @@ export default function PublicEventsPage() {
                         capacity: event.capacity,
                         status: event.status,
                         price: event.price,
+                        currency: event.currency || "INR",
                         earlyBirdPrice: event.earlyBirdPrice,
                         earlyBirdDeadline: event.earlyBirdDeadline ? new Date(event.earlyBirdDeadline).toLocaleDateString("en-IN", {
                             day: "numeric",
@@ -418,7 +420,7 @@ export default function PublicEventsPage() {
                                         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-4 pt-6 border-t">
                                             <div>
                                                 <span className="text-2xl sm:text-3xl font-bold text-primary">
-                                                    {Number(featuredEvent.price) > 0 ? `₹${Number(featuredEvent.price).toLocaleString()}` : "Free"}
+                                                    {Number(featuredEvent.price) > 0 ? `${featuredEvent.currency === "INR" ? "₹" : featuredEvent.currency + " "}${Number(featuredEvent.price).toLocaleString()}` : "Free"}
                                                 </span>
                                             </div>
                                             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -571,11 +573,11 @@ export default function PublicEventsPage() {
                                                     <div>
                                                         {event.earlyBirdPrice && (
                                                             <span className="text-xs text-muted-foreground line-through mr-1">
-                                                                ₹{Number(event.price).toLocaleString()}
+                                                                {event.currency === "INR" ? "₹" : event.currency + " "}{Number(event.price).toLocaleString()}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-primary">
-                                                            {Number(event.price) > 0 ? `₹${Number(event.price).toLocaleString()}` : "Free"}
+                                                            {Number(event.price) > 0 ? `${event.currency === "INR" ? "₹" : event.currency + " "}${Number(event.price).toLocaleString()}` : "Free"}
                                                         </span>
                                                     </div>
                                                     {event.status === "UPCOMING" || event.status === "ACTIVE" ? (

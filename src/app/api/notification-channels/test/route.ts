@@ -37,21 +37,21 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     if (channel.channel === "EMAIL") {
       success = await sendEmail({
         to: testTo,
-        subject: "CareNS Test Email",
-        html: `<div style="font-family: Arial; padding: 20px;"><h2 style="color: #0d9488;">Test Email</h2><p>This is a test email from CareNS notification system.</p><p style="color: #666;">Channel: ${channel.name}<br/>Provider: ${channel.provider}</p></div>`,
+        subject: "ICMS Test Email",
+        html: `<div style="font-family: Arial; padding: 20px;"><h2 style="color: #0d9488;">Test Email</h2><p>This is a test email from ICMS notification system.</p><p style="color: #666;">Channel: ${channel.name}<br/>Provider: ${channel.provider}</p></div>`,
         tenantId: channel.tenantId,
       });
     } else if (channel.channel === "SMS") {
       // SMS test — use the user's phone if available, else skip
       success = await sendSms({
         to: testTo, // Will use the configured channel
-        message: `CareNS Test SMS from channel "${channel.name}". If you receive this, your SMS configuration is working.`,
+        message: `ICMS Test SMS from channel "${channel.name}". If you receive this, your SMS configuration is working.`,
         tenantId: channel.tenantId,
       });
     } else if (channel.channel === "WHATSAPP") {
       success = await sendWhatsApp({
         to: testTo,
-        message: `CareNS Test WhatsApp from channel "${channel.name}". If you receive this, your WhatsApp configuration is working.`,
+        message: `ICMS Test WhatsApp from channel "${channel.name}". If you receive this, your WhatsApp configuration is working.`,
         tenantId: channel.tenantId,
       });
     }

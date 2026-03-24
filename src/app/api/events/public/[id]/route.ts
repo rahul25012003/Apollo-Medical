@@ -26,9 +26,8 @@ export async function GET(
           allowDraft = true;
         }
       } catch {
-        // Auth failed (cookie/domain issue on production) — still allow preview
-        // for published events, but try to show draft anyway since user clicked preview
-        allowDraft = true;
+        // Auth failed (cookie/domain issue on production) — only show published events
+        allowDraft = false;
       }
     }
 

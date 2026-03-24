@@ -77,6 +77,13 @@ function notificationIcon(type: string) {
     }
 }
 
+// Role accent colors
+// Premium role accent colors
+const headerAccentMap: Record<string, string> = {
+    ATTENDEE: "#0d9488", SUPER_ADMIN: "#a1a1aa", ADMIN: "#2563eb",
+    EVENT_MANAGER: "#7c3aed", REGISTRATION_MANAGER: "#3b82f6", CERTIFICATE_MANAGER: "#db2777",
+};
+
 export function Header({ title, subtitle }: HeaderProps) {
     const { sidebarCollapsed } = useUIStore();
     const [searchOpen, setSearchOpen] = React.useState(false);
@@ -86,6 +93,7 @@ export function Header({ title, subtitle }: HeaderProps) {
     const displayName = user?.name || user?.email?.split("@")[0] || "User";
     const displayRole = user?.role ? formatRole(user.role) : "User";
     const initials = getInitials(user?.name, user?.email);
+    const acColor = headerAccentMap[user?.role || "ATTENDEE"] || headerAccentMap.ATTENDEE;
 
     // Notifications
     const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
@@ -132,9 +140,11 @@ export function Header({ title, subtitle }: HeaderProps) {
         : null;
 
     const handleSignOut = () => {
-        const isLocalhost = typeof window !== 'undefined' &&
-            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        signOut({ callbackUrl: isLocalhost ? (tenantSlug ? `/t/${tenantSlug}` : "/") : "/" });
+        if (tenantSlug) {
+            signOut({ callbackUrl: `/auth/login?tenant=${tenantSlug}` });
+        } else {
+            signOut({ callbackUrl: "/auth/login" });
+        }
     };
 
     return (
@@ -148,8 +158,8 @@ export function Header({ title, subtitle }: HeaderProps) {
             sidebarCollapsed ? "lg:left-[72px]" : "lg:left-64",
             "left-0"
         )}>
-            {/* Animated gradient border at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-teal-500/50 via-cyan-500/30 to-teal-500/10" />
+            {/* Role-colored accent line at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 h-[1px]" style={{ background: `linear-gradient(to right, ${acColor}80, ${acColor}30, transparent)` }} />
 
             <div className="flex items-center justify-between h-full px-4 lg:px-6">
                 {/* Left side */}
@@ -193,11 +203,10 @@ export function Header({ title, subtitle }: HeaderProps) {
                                 )} />
                                 {unreadCount > 0 && (
                                     <>
-                                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-[10px] font-bold rounded-full ring-2 ring-background px-1 shadow-lg shadow-teal-500/30">
+                                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center text-white text-[10px] font-bold rounded-full ring-2 ring-background px-1 shadow-lg" style={{ background: acColor, boxShadow: `0 4px 12px ${acColor}50` }}>
                                             {unreadCount > 99 ? "99+" : unreadCount}
                                         </span>
-                                        {/* Pulse animation for unread */}
-                                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-teal-500/40 animate-ping" />
+                                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full animate-ping" style={{ background: `${acColor}40` }} />
                                     </>
                                 )}
                             </button>
@@ -291,9 +300,9 @@ export function Header({ title, subtitle }: HeaderProps) {
                                 ) : (
                                     <>
                                         <div className="relative">
-                                            <Avatar className="w-8 h-8 ring-2 ring-teal-500/20 group-hover:ring-teal-500/40 transition-all duration-200">
+                                            <Avatar className="w-8 h-8 ring-2 transition-all duration-200" style={{ boxShadow: `0 0 0 2px ${acColor}33` }}>
                                                 <AvatarImage src={user?.image || undefined} alt={displayName} />
-                                                <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white text-sm font-medium">
+                                                <AvatarFallback className="text-white text-sm font-bold" style={{ background: acColor }}>
                                                     {initials}
                                                 </AvatarFallback>
                                             </Avatar>

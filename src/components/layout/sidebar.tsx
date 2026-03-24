@@ -205,6 +205,19 @@ export function Sidebar() {
     const tenantId = (session?.user as any)?.tenantId as string | null | undefined;
     const isAdmin = ADMIN_ROLES.includes(userRole);
 
+    // Role-based accent colors for sidebar
+    // Role accent — using CSS color values for dynamic styling
+    // Premium role accent colors — deep, rich tones
+    const accentColors: Record<string, { color: string; colorLight: string }> = {
+        ATTENDEE:             { color: "#0d9488", colorLight: "rgba(13,148,136,0.15)" },
+        SUPER_ADMIN:          { color: "#a1a1aa", colorLight: "rgba(161,161,170,0.12)" },
+        ADMIN:                { color: "#2563eb", colorLight: "rgba(37,99,235,0.15)" },
+        EVENT_MANAGER:        { color: "#7c3aed", colorLight: "rgba(124,58,237,0.15)" },
+        REGISTRATION_MANAGER: { color: "#3b82f6", colorLight: "rgba(59,130,246,0.15)" },
+        CERTIFICATE_MANAGER:  { color: "#db2777", colorLight: "rgba(219,39,119,0.15)" },
+    };
+    const ac = accentColors[userRole] || accentColors.ATTENDEE;
+
     // Fetch tenant sections config for non-super-admin users
     useEffect(() => {
         if (!tenantId || userRole === "SUPER_ADMIN") {
@@ -303,21 +316,24 @@ export function Sidebar() {
         return true;
     });
 
-    // Get tenant slug for logout redirect (only for actual tenant users, not SUPER_ADMIN)
+    // Get tenant context — but SUPER_ADMIN without selected tenant should see ICMS, not any tenant
     const { tenant } = useTenant();
+    const isSuperAdminNoTenant = userRole === "SUPER_ADMIN" && (!tenant?.slug || tenant.slug === "default");
+    const sidebarBrandName = isSuperAdminNoTenant ? "ICMS" : (tenant?.branding?.name || "");
+    const sidebarBrandLogo = isSuperAdminNoTenant ? null : (tenant?.branding?.logo || null);
     const tenantSlug = userRole !== "SUPER_ADMIN" && tenant?.slug && tenant.slug !== "default"
         ? tenant.slug
         : null;
 
-    // Handle logout — redirect to tenant home page if user belongs to a tenant
-    // On custom domain, middleware rewrites / to /t/{slug} internally
-    // So we just redirect to / — the URL bar stays clean
+    // Handle logout — redirect to tenant login page (guaranteed to work on all environments)
     const handleLogout = () => {
-        // On production (any non-localhost), redirect to / — middleware handles tenant rewrite
-        // On localhost, use /t/{slug} since there's no domain mapping
-        const isLocalhost = typeof window !== 'undefined' &&
-            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        signOut({ callbackUrl: isLocalhost ? (tenantSlug ? `/t/${tenantSlug}` : "/") : "/" });
+        if (tenantSlug) {
+            // Tenant user → go to that tenant's login page
+            signOut({ callbackUrl: `/auth/login?tenant=${tenantSlug}` });
+        } else {
+            // Super admin / no tenant → go to ICMS login
+            signOut({ callbackUrl: "/auth/login" });
+        }
     };
 
     // Prevent hydration mismatch by only applying client state after mount
@@ -347,13 +363,19 @@ export function Sidebar() {
         return (
             <aside className="fixed top-0 left-0 z-50 h-full bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 flex flex-col transition-all duration-300 ease-in-out lg:w-64 w-[280px] -translate-x-full lg:translate-x-0">
                 {/* Right edge accent line */}
-                <div className="absolute top-0 right-0 w-[1px] h-full bg-gradient-to-b from-teal-500/40 via-cyan-500/20 to-transparent" />
+                <div className="absolute top-0 right-0 w-[1px] h-full" style={{ background: `linear-gradient(to bottom, ${ac.color}66, transparent)` }} />
                 <div className="flex items-center h-16 border-b border-white/[0.06] px-4 justify-between">
                     <Link href="/dashboard" className="flex items-center gap-3">
-                        <div className="relative w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shadow-lg overflow-hidden p-1">
-                            <img src="/aiims-logo.jpg" alt="CareNS" className="w-full h-full object-contain" style={{ mixBlendMode: "screen" }} />
-                        </div>
-                        <span className="text-sm font-bold text-white tracking-tight">CareNS</span>
+                        {sidebarBrandLogo ? (
+                            <div className="relative w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden">
+                                <img src={sidebarBrandLogo} alt={sidebarBrandName || "Logo"} className="w-[80%] h-[80%] object-contain" />
+                            </div>
+                        ) : (
+                            <div className="relative w-9 h-9 rounded-full flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${ac.color}, ${ac.color}cc)` }}>
+                                <span className="text-white font-bold text-sm">{sidebarBrandName.slice(0, 2)}</span>
+                            </div>
+                        )}
+                        <span className="text-sm font-bold text-white tracking-tight">{sidebarBrandName}</span>
                     </Link>
                 </div>
             </aside>
@@ -386,7 +408,7 @@ export function Sidebar() {
                 )}
             >
                 {/* Right edge accent line */}
-                <div className="absolute top-0 right-0 w-[1px] h-full bg-gradient-to-b from-teal-500/40 via-cyan-500/20 to-transparent pointer-events-none z-10" />
+                <div className="absolute top-0 right-0 w-[1px] h-full pointer-events-none z-10" style={{ background: `linear-gradient(to bottom, ${ac.color}66, transparent)` }} />
 
                 {/* Logo Header */}
                 <div className={cn(
@@ -397,16 +419,22 @@ export function Sidebar() {
                         "flex items-center gap-3",
                         isCollapsed && "lg:justify-center"
                     )}>
-                        <div className="relative w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden p-1.5">
-                            <img src="/aiims-logo.jpg" alt="CareNS" className="w-full h-full object-contain" style={{ mixBlendMode: "screen" }} />
-                        </div>
+                        {sidebarBrandLogo ? (
+                            <div className="relative w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden">
+                                <img src={sidebarBrandLogo} alt={sidebarBrandName || "Logo"} className="w-[80%] h-[80%] object-contain" />
+                            </div>
+                        ) : (
+                            <div className="relative w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg" style={{ background: `linear-gradient(135deg, ${ac.color}, ${ac.color}cc)` }}>
+                                <span className="text-white font-bold">{sidebarBrandName.slice(0, 2)}</span>
+                            </div>
+                        )}
                         <div className={cn(
                             "transition-all duration-200",
                             isCollapsed ? "lg:hidden" : "block"
                         )}>
-                            <h1 className="text-white font-bold text-lg leading-tight tracking-tight">CareNS</h1>
-                            <p className="text-teal-400/60 text-[10px] leading-tight font-medium tracking-wider uppercase">
-                                Conference Management
+                            <h1 className="text-white font-bold text-lg leading-tight tracking-tight">{sidebarBrandName}</h1>
+                            <p className="text-white/40 text-[10px] leading-tight font-medium tracking-wider uppercase">
+                                {isSuperAdminNoTenant ? "Platform Administration" : "Conference Management"}
                             </p>
                         </div>
                     </Link>
@@ -439,7 +467,7 @@ export function Sidebar() {
                                 >
                                     <span className={cn(
                                         "truncate text-left",
-                                        selectedEventName ? "text-teal-300 font-medium" : "text-white/40"
+                                        selectedEventName ? "text-white font-medium" : "text-white/40"
                                     )}>
                                         {eventsLoading ? "Loading..." : selectedEventName || "Select event..."}
                                     </span>
@@ -465,7 +493,7 @@ export function Sidebar() {
                                                 className={cn(
                                                     "w-full px-3 py-2 text-left text-sm hover:bg-white/[0.06] transition-colors truncate",
                                                     evt.id === selectedEventId
-                                                        ? "text-teal-300 bg-teal-500/10"
+                                                        ? "text-white bg-white/10"
                                                         : "text-white/70"
                                                 )}
                                             >
@@ -487,16 +515,16 @@ export function Sidebar() {
                             <div
                                 className={cn(
                                     "flex items-center justify-center p-2 rounded-lg cursor-pointer group relative",
-                                    selectedEventId ? "bg-teal-500/10" : "bg-white/[0.04]"
+                                    selectedEventId ? "bg-white/10" : "bg-white/[0.04]"
                                 )}
                                 title={selectedEventName || "No event selected"}
                             >
                                 <Calendar className={cn(
                                     "w-5 h-5",
-                                    selectedEventId ? "text-teal-400" : "text-white/30"
+                                    selectedEventId ? "text-white" : "text-white/30"
                                 )} />
                                 {selectedEventId && (
-                                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_6px_rgba(20,184,166,0.6)]" />
+                                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full" style={{ background: ac.color, boxShadow: `0 0 6px ${ac.color}99` }} />
                                 )}
                                 <span className="hidden lg:group-hover:flex absolute left-full ml-3 px-2.5 py-1.5 rounded-lg bg-slate-800 text-white text-xs font-medium whitespace-nowrap shadow-xl shadow-black/30 border border-white/10 z-50 pointer-events-none">
                                     {selectedEventName || "No event selected"}
@@ -545,22 +573,22 @@ export function Sidebar() {
                                                         "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
                                                         isCollapsed && "lg:justify-center lg:px-0",
                                                         isActive
-                                                            ? "bg-gradient-to-r from-teal-500/20 via-cyan-500/10 to-transparent text-white shadow-[0_0_20px_-5px_rgba(20,184,166,0.3)]"
+                                                            ? "text-white"
                                                             : "text-white/50 hover:text-white hover:bg-white/[0.06] hover:translate-x-0.5"
                                                     )}
+                                                    style={isActive ? { background: `linear-gradient(to right, ${ac.colorLight}, transparent)` } : undefined}
                                                     title={isCollapsed ? item.title : undefined}
                                                 >
                                                     {/* Active indicator bar */}
                                                     {isActive && (
-                                                        <span className="absolute left-0 top-[6px] bottom-[6px] w-[3px] bg-gradient-to-b from-teal-400 to-cyan-500 rounded-r-full shadow-[0_0_8px_rgba(20,184,166,0.6)]" />
+                                                        <span className="absolute left-0 top-[6px] bottom-[6px] w-[3px] rounded-r-full" style={{ background: ac.color, boxShadow: `0 0 8px ${ac.color}88` }} />
                                                     )}
                                                     <item.icon
                                                         className={cn(
                                                             "w-5 h-5 flex-shrink-0 transition-all duration-200",
-                                                            isActive
-                                                                ? "text-teal-400 drop-shadow-[0_0_6px_rgba(20,184,166,0.5)]"
-                                                                : "group-hover:text-teal-300/70 group-hover:scale-110"
+                                                            !isActive && "group-hover:text-white/80 group-hover:scale-110"
                                                         )}
+                                                        style={isActive ? { color: ac.color, filter: `drop-shadow(0 0 6px ${ac.color}80)` } : undefined}
                                                     />
                                                     <span className={cn(
                                                         "font-medium text-sm whitespace-nowrap transition-all duration-200",
@@ -599,7 +627,7 @@ export function Sidebar() {
                     >
                         <ChevronLeft
                             className={cn(
-                                "w-5 h-5 transition-all duration-300 group-hover:text-teal-400",
+                                "w-5 h-5 transition-all duration-300 group-hover:text-white/80",
                                 isCollapsed && "rotate-180"
                             )}
                         />

@@ -43,6 +43,7 @@ import {
   BookOpen,
   Activity,
   Menu,
+  ArrowUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -132,13 +133,19 @@ function AnimatedCounter({ value, suffix = "" }: { value: string | number; suffi
   return <span ref={ref} className="counter-number">{prefix}{count}{suffixFromValue}{suffix}</span>;
 }
 
-// Decorative background component
+// Animated gradient mesh background (for hero when no bg image)
 function DecorativeBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl -top-40 -right-40 animate-pulse" />
-      <div className="absolute w-[200px] h-[200px] md:w-[400px] md:h-[400px] bg-gradient-to-br from-secondary/20 to-transparent rounded-full blur-3xl bottom-20 -left-40 animate-pulse" style={{ animationDelay: "1s" }} />
-      <div className="absolute w-[150px] h-[150px] md:w-[300px] md:h-[300px] bg-gradient-to-br from-accent/15 to-transparent rounded-full blur-3xl top-1/2 left-1/2 animate-pulse" style={{ animationDelay: "2s" }} />
+      {/* Base gradient */}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #0f172a 60%, #1e293b 100%)" }} />
+      {/* Moving mesh blobs */}
+      <div className="absolute w-[500px] h-[500px] md:w-[800px] md:h-[800px] rounded-full blur-[120px] -top-48 -right-48" style={{ background: "radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)", animation: "float 15s ease-in-out infinite" }} />
+      <div className="absolute w-[400px] h-[400px] md:w-[700px] md:h-[700px] rounded-full blur-[100px] bottom-0 -left-48" style={{ background: "radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)", animation: "float 12s ease-in-out 2s infinite reverse" }} />
+      <div className="absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full blur-[80px] top-1/3 left-1/3" style={{ background: "radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)", animation: "float 18s ease-in-out 4s infinite" }} />
+      <div className="absolute w-[250px] h-[250px] rounded-full blur-[60px] top-1/4 right-1/4" style={{ background: "radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)", animation: "float 10s ease-in-out 1s infinite reverse" }} />
+      {/* Grid pattern */}
+      <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
     </div>
   );
 }
@@ -164,16 +171,15 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
     <section
       id="faq"
       className="py-12 lg:py-20 relative overflow-hidden"
-      style={{ background: `linear-gradient(180deg, #ffffff, ${theme.primaryColor}06, ${theme.secondaryColor}04)` }}
+      style={{ background: "linear-gradient(180deg, #ffffff, #f8fafc, #ffffff)" }}
     >
       <div className="container mx-auto px-4 lg:px-8 relative z-10">
         <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
           <Badge
             variant="outline"
-            className="mb-4 px-5 py-1.5 rounded-full"
-            style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
+            className="mb-4 px-5 py-1.5 rounded-full border-slate-200 bg-slate-50"
           >
-            <HelpCircle className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
+            <HelpCircle className="h-3.5 w-3.5 mr-2 text-slate-600" />
             FAQ
           </Badge>
           <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Frequently Asked Questions</h2>
@@ -182,39 +188,54 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-4">
-          {faqs.map((faq, index) => (
+        <div className="max-w-3xl mx-auto space-y-3">
+          {faqs.map((faq, index) => {
+            const isOpen = openIndex === index;
+            return (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-md hover:shadow-lg hover:bg-slate-50/80 transition-all duration-300 overflow-hidden"
+              data-scroll-reveal
+              data-scroll-delay={String(index + 1)}
+              className={cn(
+                "rounded-2xl border-2 transition-all duration-300 overflow-hidden",
+                isOpen ? "bg-white shadow-lg border-emerald-200" : "bg-white shadow-sm border-slate-100 hover:border-slate-200 hover:shadow-md"
+              )}
+              style={isOpen ? { borderLeftWidth: "4px", borderLeftColor: "#10b981" } : {}}
             >
               <button
                 type="button"
-                aria-expanded={openIndex === index}
-                onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full flex items-center justify-between p-6 text-left gap-4"
+                aria-expanded={isOpen}
+                onClick={() => setOpenIndex(isOpen ? null : index)}
+                className="w-full flex items-center justify-between p-5 sm:p-6 text-left gap-4"
               >
-                <span className="font-semibold text-base">{faq.question}</span>
-                <ChevronDown
-                  className={cn(
-                    "h-5 w-5 flex-shrink-0 transition-transform duration-300",
-                    openIndex === index && "rotate-180"
-                  )}
-                  style={{ color: theme.primaryColor }}
-                />
+                <span className={cn("font-semibold text-base transition-colors", isOpen ? "text-slate-900" : "text-slate-700")}>{faq.question}</span>
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300",
+                  isOpen ? "bg-emerald-500 rotate-180" : "bg-slate-100"
+                )}>
+                  <ChevronDown className={cn("h-4 w-4", isOpen ? "text-white" : "text-slate-500")} />
+                </div>
               </button>
-              <div
-                className={cn(
-                  "overflow-hidden transition-all duration-300",
-                  openIndex === index ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-                )}
-              >
-                <p className="px-6 pb-6 text-muted-foreground leading-relaxed">
-                  {faq.answer}
-                </p>
+              <div className={cn("faq-content", isOpen && "faq-content--open")}>
+                <div>
+                  <p className="px-5 sm:px-6 pb-5 sm:pb-6 text-slate-500 leading-relaxed">
+                    {faq.answer}
+                  </p>
+                </div>
               </div>
             </div>
-          ))}
+            );
+          })}
+        </div>
+
+        {/* Still have questions? CTA */}
+        <div className="text-center mt-10" data-scroll-reveal>
+          <p className="text-slate-500 mb-3">Still have questions?</p>
+          <a href="#contact">
+            <Button variant="outline" className="rounded-full px-8 border-2 border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 font-semibold">
+              <Mail className="h-4 w-4 mr-2" /> Get in Touch
+            </Button>
+          </a>
         </div>
       </div>
     </section>
@@ -248,17 +269,39 @@ function CountdownTimer({ targetDate, theme, bgDark }: { targetDate: string; the
   ];
 
   return (
-    <div className="flex items-center justify-center gap-3 sm:gap-4">
-      {units.map((unit) => (
-        <div key={unit.label} className="text-center">
-          <div
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white text-2xl sm:text-3xl font-bold shadow-lg backdrop-blur-sm border border-white/20"
-            style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
-          >
-            {String(unit.value).padStart(2, "0")}
+    <div className="flex items-center justify-center gap-2.5 sm:gap-4">
+      {units.map((unit, i) => (
+        <span key={unit.label} className="contents">
+          <div className="text-center">
+            <div className="relative w-[60px] h-[68px] sm:w-[76px] sm:h-[84px]">
+              {/* Card background with split effect */}
+              <div className={cn(
+                "absolute inset-0 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl",
+                bgDark ? "bg-white/15 backdrop-blur-md border border-white/20" : "bg-slate-900 border border-slate-700"
+              )}>
+                {/* Top half slightly lighter */}
+                <div className={cn("absolute inset-x-0 top-0 h-1/2", bgDark ? "bg-white/5" : "bg-white/5")} />
+                {/* Center divider line */}
+                <div className={cn("absolute inset-x-0 top-1/2 h-px", bgDark ? "bg-white/10" : "bg-white/10")} />
+                {/* Side notches */}
+                <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full", bgDark ? "bg-black/30" : "bg-slate-950")} />
+                <div className={cn("absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-2.5 h-2.5 rounded-full", bgDark ? "bg-black/30" : "bg-slate-950")} />
+              </div>
+              {/* Number */}
+              <span className={cn(
+                "absolute inset-0 flex items-center justify-center text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums",
+                bgDark ? "text-white" : "text-white"
+              )}>
+                {String(unit.value).padStart(2, "0")}
+              </span>
+            </div>
+            <p className={cn("text-[10px] sm:text-xs mt-2 font-bold uppercase tracking-wider", bgDark ? "text-white/70" : "text-slate-500")}>{unit.label}</p>
           </div>
-          <p className={cn("text-xs sm:text-sm mt-2 font-semibold", bgDark ? "text-white/80" : "text-gray-600")}>{unit.label}</p>
-        </div>
+          {/* Separator colon */}
+          {i < units.length - 1 && (
+            <span className={cn("text-xl sm:text-2xl font-bold -mt-5 sm:-mt-6 animate-pulse", bgDark ? "text-white/50" : "text-slate-400")}>:</span>
+          )}
+        </span>
       ))}
     </div>
   );
@@ -304,6 +347,14 @@ export default function TenantHomePage() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [pricingCategories, setPricingCategories] = useState<any[]>([]);
   const [activeScheduleDay, setActiveScheduleDay] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  // Back-to-top visibility
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 600);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Scroll-triggered reveal animations
   useScrollReveal();
@@ -421,12 +472,13 @@ export default function TenantHomePage() {
     fetchStats();
   }, [tenantSlug, tenant?.id]);
 
-  // Auto-rotate carousel
+  // Auto-rotate carousel every 6 seconds
   useEffect(() => {
     if (events.length <= 1) return;
+    const total = Math.min(events.length, 3);
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % Math.min(events.length, 3));
-    }, 5000);
+      setCurrentSlide((prev) => (prev + 1) % total);
+    }, 6000);
     return () => clearInterval(timer);
   }, [events.length]);
 
@@ -686,7 +738,7 @@ export default function TenantHomePage() {
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
-              <Link href={"/auth/login"}>
+              <Link href={`/auth/login?tenant=${tenantSlug}`}>
                 <Button
                   className="text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 text-xs sm:text-sm"
                   style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
@@ -723,9 +775,7 @@ export default function TenantHomePage() {
         <section
           id="hero"
           className="relative min-h-screen flex items-center overflow-hidden pb-16 md:pb-20"
-          style={hero.bgImage ? {} : {
-            background: `linear-gradient(135deg, ${theme.primaryColor}18 0%, ${theme.secondaryColor}12 50%, ${theme.accentColor}18 100%)`,
-          }}
+          style={{ backgroundColor: hero.bgImage ? "#0a0f1e" : "#0f172a" }}
         >
           {/* Background image — use img tag for full quality (no compression) */}
           {hero.bgImage && (
@@ -739,70 +789,95 @@ export default function TenantHomePage() {
 
           {!hero.bgImage && <DecorativeBackground />}
 
-          {/* Dark overlay for background image */}
+          {/* Cinematic overlay for background image */}
           {hero.bgImage && (
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60 pointer-events-none" />
+            <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(10,15,30,0.3) 0%, rgba(10,15,30,0.4) 40%, rgba(10,15,30,0.55) 75%, rgba(10,15,30,0.7) 100%)" }} />
           )}
 
-          {/* Hero Logos — absolute left/right on lg+, inline on smaller screens */}
+          {/* Floating particles */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none z-[2]">
+            {[3,5,8,12,18,25,35,45,55,65,75,85,92].map((left, i) => (
+              <span
+                key={i}
+                className={cn("hero-particle", !hero.bgImage && "hero-particle--light")}
+                style={{
+                  left: `${left}%`,
+                  bottom: `-${4 + (i % 3) * 4}px`,
+                  width: `${3 + (i % 4)}px`,
+                  height: `${3 + (i % 4)}px`,
+                  animationDuration: `${10 + (i * 1.7)}s`,
+                  animationDelay: `${(i * 0.8)}s`,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Hero Logos — floating glass cards on desktop, inline on mobile */}
           {branding.logo && (
-            <div className="hidden lg:flex absolute left-[5%] xl:left-[8%] 2xl:left-[12%] top-[45%] -translate-y-1/2 z-10">
-              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-2xl bg-white shadow-xl flex items-center justify-center p-2 overflow-hidden">
+            <div className="hidden lg:flex absolute left-[4%] xl:left-[7%] 2xl:left-[11%] top-[42%] -translate-y-1/2 z-10 animate-fadeInUp">
+              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl flex items-center justify-center p-3 overflow-hidden border border-white/50 hover:scale-105 transition-transform duration-500" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.2)" }}>
                 <img src={branding.logo} alt={branding.name} className="w-full h-full object-contain" />
               </div>
             </div>
           )}
           {branding.secondaryLogo && (
-            <div className="hidden lg:flex absolute right-[5%] xl:right-[8%] 2xl:right-[12%] top-[45%] -translate-y-1/2 z-10">
-              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-2xl bg-white shadow-xl flex items-center justify-center p-2 overflow-hidden">
+            <div className="hidden lg:flex absolute right-[4%] xl:right-[7%] 2xl:right-[11%] top-[42%] -translate-y-1/2 z-10 animate-fadeInUp animation-delay-200">
+              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl flex items-center justify-center p-3 overflow-hidden border border-white/50 hover:scale-105 transition-transform duration-500" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.2)" }}>
                 <img src={branding.secondaryLogo} alt="Secondary Logo" className="w-full h-full object-contain" />
               </div>
             </div>
           )}
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-8 sm:pt-10">
-            <div className={cn(
-              "text-center max-w-4xl mx-auto",
-              isVisible ? "animate-fadeInUp" : "opacity-0"
-            )}>
-              <div className="mb-4 animate-scaleIn flex items-center justify-center gap-4">
-                <div className={cn("h-px w-12 lg:w-20", hero.bgImage ? "bg-white/50" : "bg-gray-800/40")} />
-                <span className={cn("text-sm lg:text-base font-bold tracking-[0.2em] uppercase", hero.bgImage ? "text-white/90" : "text-gray-800")}>
+            <div className="text-center max-w-4xl mx-auto">
+              {/* Tagline pill */}
+              <div className="mb-5 hero-stagger-1">
+                <span className={cn(
+                  "inline-flex items-center gap-3 px-5 py-2 rounded-full text-sm font-bold tracking-wide border backdrop-blur-md",
+                  "bg-white/10 border-white/20 text-white/90"
+                )}>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   {branding.tagline || "Welcome to"}
                 </span>
-                <div className={cn("h-px w-12 lg:w-20", hero.bgImage ? "bg-white/50" : "bg-gray-800/40")} />
               </div>
 
-              {/* Mobile/Tablet: logos inline above title */}
+              {/* Mobile/Tablet: logos — stagger 2 */}
               {(branding.logo || branding.secondaryLogo) && (
                 <div className="flex lg:hidden items-center justify-center gap-4 sm:gap-6 mb-6">
                   {branding.logo && (
-                    <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-2xl bg-white shadow-lg flex items-center justify-center p-1.5 flex-shrink-0 overflow-hidden">
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl flex items-center justify-center p-2 flex-shrink-0 overflow-hidden border border-white/50">
                       <img src={branding.logo} alt={branding.name} className="w-full h-full object-contain" />
                     </div>
                   )}
                   {branding.secondaryLogo && (
-                    <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-2xl bg-white shadow-lg flex items-center justify-center p-1.5 flex-shrink-0 overflow-hidden">
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl flex items-center justify-center p-2 flex-shrink-0 overflow-hidden border border-white/50">
                       <img src={branding.secondaryLogo} alt="Secondary Logo" className="w-full h-full object-contain" />
                     </div>
                   )}
                 </div>
               )}
 
-              <div className="text-center mb-4">
-                <h1 className={cn("text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight drop-shadow-md", hero.bgImage ? "text-white" : "text-gray-900")}>
+              {/* Title */}
+              <div className="text-center mb-5 hero-stagger-2">
+                <h1 className={cn(
+                  "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold tracking-tight leading-[1.1]",
+                  "text-white"
+                )} style={{ textShadow: "0 4px 30px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3)" }}>
                   {hero.title || branding.name}
                 </h1>
-                <div className="mt-4 flex flex-col items-center gap-1.5">
-                  <span className="text-[12px] font-bold uppercase tracking-[0.2em] px-3 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.35)", color: "rgba(255,255,255,0.9)", backdropFilter: "blur(4px)" }}>
+
+                {/* Indo French badge */}
+                <div className="mt-5 flex flex-col items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.25em] px-4 py-1 rounded-full bg-white/15 text-white/80 backdrop-blur-sm border border-white/10">
                     In association with
                   </span>
                   <div
-                    className="inline-flex items-center gap-3 px-7 py-3 rounded-2xl font-extrabold text-lg sm:text-2xl tracking-wide"
+                    className="inline-flex items-center gap-3 px-6 py-2.5 rounded-xl font-bold text-base sm:text-lg tracking-wide border border-blue-400/30"
                     style={{
-                      background: "linear-gradient(135deg, #1e3a8a, #2563eb)",
+                      background: "linear-gradient(135deg, rgba(30,58,138,0.9), rgba(37,99,235,0.9))",
                       color: "#ffffff",
-                      boxShadow: "0 8px 32px rgba(37,99,235,0.5), 0 0 0 2px rgba(96,165,250,0.4)",
+                      backdropFilter: "blur(12px)",
+                      boxShadow: "0 8px 32px rgba(37,99,235,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
                     }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -814,39 +889,31 @@ export default function TenantHomePage() {
                 </div>
               </div>
 
-              <p className={cn("text-lg lg:text-xl font-medium max-w-2xl mx-auto mb-6 animation-delay-200 animate-fadeInUp", hero.bgImage ? "text-white/85" : "text-gray-700")}>
+              {/* Subtitle */}
+              <p className={cn("text-lg lg:text-xl font-medium max-w-2xl mx-auto mb-8 hero-stagger-3 leading-relaxed", "text-white/80")}>
                 {hero.subtitle || "Register for the upcoming CME and workshop programs."}
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center animation-delay-400 animate-fadeInUp">
-                {hasEvents ? (
-                  <a href="#events">
-                    <Button
-                      size="lg"
-                      className="text-white rounded-full px-8 shadow-xl hover:shadow-2xl transition-all hover:scale-105 group"
-                      style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`, boxShadow: `0 8px 30px ${theme.primaryColor}40` }}
-                    >
-                      Browse Events
-                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </a>
-                ) : (
-                  <a href="#events">
-                    <Button
-                      size="lg"
-                      className="text-white rounded-full px-8 shadow-xl hover:shadow-2xl transition-all hover:scale-105 group"
-                      style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`, boxShadow: `0 8px 30px ${theme.primaryColor}40` }}
-                    >
-                      Explore Events
-                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </a>
-                )}
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center hero-stagger-4">
+                <a href="#events">
+                  <Button
+                    size="lg"
+                    className="rounded-full px-10 h-13 text-base font-bold shadow-2xl hover:shadow-3xl transition-all hover:scale-105 hover:-translate-y-0.5 group bg-emerald-500 hover:bg-emerald-600 text-white border-0"
+                    style={{ boxShadow: "0 10px 40px rgba(16,185,129,0.4), 0 4px 12px rgba(16,185,129,0.3)" }}
+                  >
+                    {hasEvents ? "Browse Events" : "Explore Events"}
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </a>
                 <a href="#about">
                   <Button
                     size="lg"
                     variant="outline"
-                    className={cn("rounded-full px-8 border-2 backdrop-blur-sm transition-all font-semibold", hero.bgImage ? "bg-white/20 border-white/40 text-white hover:bg-white/30" : "bg-white/80 hover:bg-white")}
+                    className={cn(
+                      "rounded-full px-10 h-13 text-base font-semibold border-2 backdrop-blur-md transition-all hover:scale-105",
+                      "bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    )}
                   >
                     Learn More
                   </Button>
@@ -854,7 +921,7 @@ export default function TenantHomePage() {
               </div>
 
               {nextEvent && (
-                <div className="mt-6 animation-delay-400 animate-fadeInUp flex flex-col items-center gap-3" data-scroll-reveal>
+                <div className="mt-6 hero-stagger-5 flex flex-col items-center gap-3">
                   {/* Flashing registration date */}
                   {(nextEvent.registrationOpensDate || nextEvent.startDate) && (
                     <div
@@ -869,48 +936,62 @@ export default function TenantHomePage() {
                   )}
                   {nextEvent.startDate && new Date(nextEvent.startDate) > new Date() && (
                     <>
-                      <p className={cn("text-sm font-medium", hero.bgImage ? "text-white/70" : "text-gray-600")}>
-                        Next Event: <span className={cn("font-bold", hero.bgImage ? "text-white" : "text-gray-900")}>{nextEvent.title}</span>
+                      <p className={cn("text-sm font-medium", "text-white/70")}>
+                        Next Event: <span className={cn("font-bold", "text-white")}>{nextEvent.title}</span>
                       </p>
                       <CountdownTimer targetDate={nextEvent.startDate} theme={theme} bgDark={!!hero.bgImage} />
                     </>
                   )}
                 </div>
               )}
-              {/* Yearly Stats — commented out for now */}
-              {/* {yearlyStats && (yearlyStats.events || yearlyStats.attendees || yearlyStats.speakers) && (
-                <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6 mt-6 sm:mt-8 max-w-xl mx-auto animation-delay-600 animate-fadeInUp">
+              {/* Yearly Stats */}
+              {yearlyStats && (yearlyStats.events || yearlyStats.attendees || yearlyStats.speakers) && (
+                <div className="flex items-center justify-center gap-4 sm:gap-6 lg:gap-10 mt-8 animation-delay-600 animate-fadeInUp">
                   {yearlyStats.events && String(yearlyStats.events) !== "0" && (
-                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50" data-scroll-reveal data-scroll-delay="1">
-                      <p className="text-xl sm:text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
+                    <div className="text-center" data-scroll-reveal data-scroll-delay="1">
+                      <p className={cn("text-2xl sm:text-3xl lg:text-4xl font-extrabold", "text-white")}>
                         <AnimatedCounter value={yearlyStats.events} />
                       </p>
-                      <p className="text-xs lg:text-sm text-muted-foreground mt-1">Events in {yearlyStats.year || new Date().getFullYear()}</p>
+                      <p className={cn("text-xs lg:text-sm mt-1 font-medium", "text-white/60")}>Events</p>
                     </div>
                   )}
                   {yearlyStats.attendees && String(yearlyStats.attendees) !== "0" && (
-                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50" data-scroll-reveal data-scroll-delay="2">
-                      <p className="text-xl sm:text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
-                        <AnimatedCounter value={yearlyStats.attendees} />
-                      </p>
-                      <p className="text-xs lg:text-sm text-muted-foreground mt-1">Attendees in {yearlyStats.year || new Date().getFullYear()}</p>
-                    </div>
+                    <>
+                      <div className={cn("w-px h-10", "bg-white/20")} />
+                      <div className="text-center" data-scroll-reveal data-scroll-delay="2">
+                        <p className={cn("text-2xl sm:text-3xl lg:text-4xl font-extrabold", "text-white")}>
+                          <AnimatedCounter value={yearlyStats.attendees} />
+                        </p>
+                        <p className={cn("text-xs lg:text-sm mt-1 font-medium", "text-white/60")}>Attendees</p>
+                      </div>
+                    </>
                   )}
                   {yearlyStats.speakers && String(yearlyStats.speakers) !== "0" && (
-                    <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl py-5 px-3 shadow-lg border border-white/50" data-scroll-reveal data-scroll-delay="3">
-                      <p className="text-xl sm:text-3xl lg:text-4xl font-bold" style={{ color: theme.primaryColor }}>
-                        <AnimatedCounter value={yearlyStats.speakers} />
-                      </p>
-                      <p className="text-xs lg:text-sm text-muted-foreground mt-1">Speakers in {yearlyStats.year || new Date().getFullYear()}</p>
-                    </div>
+                    <>
+                      <div className={cn("w-px h-10", "bg-white/20")} />
+                      <div className="text-center" data-scroll-reveal data-scroll-delay="3">
+                        <p className={cn("text-2xl sm:text-3xl lg:text-4xl font-extrabold", "text-white")}>
+                          <AnimatedCounter value={yearlyStats.speakers} />
+                        </p>
+                        <p className={cn("text-xs lg:text-sm mt-1 font-medium", "text-white/60")}>Speakers</p>
+                      </div>
+                    </>
                   )}
                 </div>
-              )} */}
+              )}
             </div>
           </div>
 
-          {/* Bottom gradient fade — dims background into next section */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 md:h-40 pointer-events-none" style={{ background: `linear-gradient(to top, ${hasSponsors ? '#f9fafb' : '#ffffff'} 0%, ${hasSponsors ? 'rgba(249,250,251,0.7)' : 'rgba(255,255,255,0.7)'} 40%, transparent 100%)` }} />
+          {/* Scroll indicator */}
+          <div className="absolute bottom-24 md:bottom-28 left-1/2 -translate-x-1/2 z-10 scroll-indicator hero-stagger-6">
+            <a href="#events" className={cn("flex flex-col items-center gap-1.5 group", "text-white/50 hover:text-white/80")}>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Scroll</span>
+              <ChevronDown className="h-5 w-5" />
+            </a>
+          </div>
+
+          {/* Gradient fade into next section */}
+          <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none" style={{ zIndex: 5, background: "linear-gradient(to bottom, transparent, #0f172a)" }} />
         </section>
       )}
 
@@ -961,24 +1042,45 @@ export default function TenantHomePage() {
 
       {/* Events Carousel Section */}
       {sections.events && featuredEvents.length > 0 && (
-        <section id="events" className="pt-12 pb-8 lg:pt-20 lg:pb-14 relative overflow-hidden bg-white">
-          <DecorativeBackground />
+        <section id="events" className="pt-6 pb-10 lg:pt-8 lg:pb-16 relative overflow-hidden bg-slate-900">
+          {/* Dark section decorative elements */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+            <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-emerald-500/5 blur-3xl" />
+            <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-slate-700/30 blur-3xl" />
+          </div>
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            {/* Section Heading */}
-            <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
-              <Badge
-                variant="outline"
-                className="mb-4 px-5 py-1.5 rounded-full bg-white"
-                style={{ borderColor: `${theme.primaryColor}30` }}
-              >
-                <Calendar className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
-                Events
-              </Badge>
-              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Upcoming Events</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Explore our upcoming conferences, workshops, and training programs
-              </p>
+            {/* Event status strip — connects hero to events */}
+            <div className="flex items-center justify-center gap-3 sm:gap-5 mb-6 lg:mb-8" data-scroll-reveal>
+              {featuredEvents.map((ev, i) => {
+                const now = new Date();
+                const start = ev.startDate ? new Date(ev.startDate) : null;
+                const end = ev.endDate ? new Date(ev.endDate) : start;
+                const endOfDay = end ? new Date(end.getTime() + 24 * 60 * 60 * 1000) : null;
+                const isLive = start && endOfDay && now >= start && now <= endOfDay;
+                const isUpcoming = start && now < start;
+                const isActive = i === currentSlide;
+                return (
+                  <button
+                    key={ev.id}
+                    onClick={() => setCurrentSlide(i)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 border",
+                      isActive
+                        ? isLive ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-lg scale-105" : isUpcoming ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-lg scale-105" : "bg-slate-600/30 border-slate-500/40 text-slate-300 shadow-lg scale-105"
+                        : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300"
+                    )}
+                  >
+                    {isLive && <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />}
+                    {isUpcoming && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />}
+                    {!isLive && !isUpcoming && <span className="w-2 h-2 rounded-full bg-slate-500" />}
+                    <span className="hidden sm:inline">{isLive ? "Live Now" : isUpcoming ? "Upcoming" : "Completed"}</span>
+                    <span className="hidden sm:inline text-white/40">·</span>
+                    <span className="truncate max-w-[120px] sm:max-w-[180px]">{ev.title}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Carousel */}
@@ -1009,15 +1111,44 @@ export default function TenantHomePage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
                         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white">
-                          <Badge className="mb-4 bg-white/20 backdrop-blur-sm border-0">
-                            {event.type || "Conference"}
-                          </Badge>
+                          {/* Status + Type badges */}
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
+                            {(() => {
+                              const now = new Date();
+                              const start = event.startDate ? new Date(event.startDate) : null;
+                              const end = event.endDate ? new Date(event.endDate) : start;
+                              const endOfDay = end ? new Date(end.getTime() + 24 * 60 * 60 * 1000) : null;
+                              const isLive = start && endOfDay && now >= start && now <= endOfDay;
+                              const isUpcoming = start && now < start;
+                              if (isLive) return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500 text-white shadow-lg" style={{ boxShadow: "0 0 16px rgba(239,68,68,0.5)" }}>
+                                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                                  Live Now
+                                </span>
+                              );
+                              if (isUpcoming) return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500 text-white shadow-lg" style={{ boxShadow: "0 0 12px rgba(16,185,129,0.4)" }}>
+                                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                                  Upcoming
+                                </span>
+                              );
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-500 text-white">
+                                  Completed
+                                </span>
+                              );
+                            })()}
+                            <Badge className="bg-white/20 backdrop-blur-sm border-0 text-white text-xs">
+                              {event.type || "Conference"}
+                            </Badge>
+                          </div>
+
                           <h3 className="text-lg sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3">{event.title}</h3>
-                          <div className="flex flex-wrap gap-4 text-sm mb-3">
+                          <div className="flex flex-wrap gap-4 text-sm mb-4 text-white/80">
                             {event.startDate && (
                               <span className="flex items-center gap-2">
                                 <Calendar className="h-4 w-4" />
-                                {new Date(event.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                {fmtEventRange(event.startDate, event.endDate)}
                               </span>
                             )}
                             {(event.address || event.location || event.city) && (
@@ -1027,21 +1158,23 @@ export default function TenantHomePage() {
                               </span>
                             )}
                           </div>
-                          {(event.registrationOpensDate || event.startDate) && (
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-base font-extrabold mb-4 shadow-md" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)" }}>
-                              <span className="w-2.5 h-2.5 rounded-full bg-white animate-flash flex-shrink-0" />
-                              <span className="animate-flash">
-                                Registrations open for {fmtEventRange(event.startDate, event.endDate)}
-                              </span>
-                            </div>
-                          )}
-                          <Link href={`/events/${event.id}/register`}>
-                            <Button className="rounded-full bg-white text-black hover:bg-white/90 shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 relative overflow-hidden">
+                          <Link href={`/events/${event.id}/register?tenant=${tenantSlug}`}>
+                            <Button className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300" style={{ boxShadow: "0 8px 24px rgba(16,185,129,0.4)" }}>
                               Register Now
                               <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                           </Link>
                         </div>
+
+                        {/* Auto-scroll progress bar */}
+                        {featuredEvents.length > 1 && index === currentSlide && (
+                          <div className="absolute top-0 left-0 right-0 h-1 z-10">
+                            <div
+                              className="h-full bg-emerald-400 rounded-full"
+                              style={{ animation: "carousel-progress 6s linear forwards" }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1054,16 +1187,14 @@ export default function TenantHomePage() {
                   <button
                     aria-label="Previous event slide"
                     onClick={() => setCurrentSlide((prev) => (prev - 1 + featuredEvents.length) % featuredEvents.length)}
-                    className="absolute left-1 sm:left-0 top-1/2 -translate-y-1/2 sm:-translate-x-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-xl flex items-center justify-center hover:scale-110 transition-transform z-10"
-                    style={{ color: theme.primaryColor }}
+                    className="absolute left-1 sm:left-0 top-1/2 -translate-y-1/2 sm:-translate-x-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 shadow-xl flex items-center justify-center hover:scale-110 hover:bg-white/20 transition-all z-10 text-white"
                   >
                     <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
                   </button>
                   <button
                     aria-label="Next event slide"
                     onClick={() => setCurrentSlide((prev) => (prev + 1) % featuredEvents.length)}
-                    className="absolute right-1 sm:right-0 top-1/2 -translate-y-1/2 sm:translate-x-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-xl flex items-center justify-center hover:scale-110 transition-transform z-10"
-                    style={{ color: theme.primaryColor }}
+                    className="absolute right-1 sm:right-0 top-1/2 -translate-y-1/2 sm:translate-x-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 shadow-xl flex items-center justify-center hover:scale-110 hover:bg-white/20 transition-all z-10 text-white"
                   >
                     <ChevronRight className="h-6 w-6" />
                   </button>
@@ -1077,9 +1208,8 @@ export default function TenantHomePage() {
                         onClick={() => setCurrentSlide(index)}
                         className={cn(
                           "h-2.5 rounded-full transition-all duration-300 py-0 min-h-[10px]",
-                          currentSlide === index ? "w-8" : "w-2.5 bg-gray-300 hover:bg-gray-400"
+                          currentSlide === index ? "w-8 bg-emerald-400" : "w-2.5 bg-slate-600 hover:bg-slate-500"
                         )}
-                        style={{ backgroundColor: currentSlide === index ? theme.primaryColor : undefined }}
                       />
                     ))}
                   </div>
@@ -1093,7 +1223,9 @@ export default function TenantHomePage() {
                 {events.slice(3, 6).map((event, index) => (
                   <Card
                     key={event.id}
-                    className="overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 hover:-translate-y-2 group"
+                    data-scroll-reveal
+                    data-scroll-delay={String(index + 1)}
+                    className="overflow-hidden shadow-lg card-tilt border-slate-700 bg-slate-800 group"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
                     <div className="relative h-48 overflow-hidden">
@@ -1113,24 +1245,32 @@ export default function TenantHomePage() {
                           <Calendar className="h-12 w-12" style={{ color: theme.primaryColor }} />
                         </div>
                       )}
-                      <div className="absolute top-3 left-3">
-                        <Badge
-                          className="text-white border-0"
-                          style={{ backgroundColor: theme.primaryColor }}
-                        >
+                      <div className="absolute top-3 left-3 flex items-center gap-2">
+                        {(() => {
+                          const now = new Date();
+                          const start = event.startDate ? new Date(event.startDate) : null;
+                          const end = event.endDate ? new Date(event.endDate) : start;
+                          const endOfDay = end ? new Date(end.getTime() + 24 * 60 * 60 * 1000) : null;
+                          const isLive = start && endOfDay && now >= start && now <= endOfDay;
+                          const isUpcoming = start && now < start;
+                          if (isLive) return <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white shadow-lg flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />Live</span>;
+                          if (isUpcoming) return <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500 text-white shadow flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />Upcoming</span>;
+                          return <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-500 text-white">Completed</span>;
+                        })()}
+                        <Badge className="text-white border-0 bg-white/20 backdrop-blur-sm text-[10px]">
                           {event.type || "Event"}
                         </Badge>
                       </div>
                     </div>
                     <CardContent className="p-5">
-                      <h3 className="font-semibold text-lg mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                      <h3 className="font-semibold text-lg mb-3 line-clamp-2 text-white group-hover:text-emerald-400 transition-colors">
                         {event.title}
                       </h3>
-                      <div className="space-y-2 text-sm text-muted-foreground mb-3">
+                      <div className="space-y-2 text-sm text-slate-400 mb-3">
                         {event.startDate && (
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
-                            {new Date(event.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                            {fmtEventRange(event.startDate, event.endDate)}
                           </div>
                         )}
                         {(event.address || event.location || event.city) && (
@@ -1151,10 +1291,10 @@ export default function TenantHomePage() {
                           </span>
                         </div>
                       )}
-                      <Link href={`/events/${event.id}/register`}>
+                      <Link href={`/events/${event.id}/register?tenant=${tenantSlug}`}>
                         <Button
-                          className="w-full text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 relative overflow-hidden"
-                          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+                          className="w-full text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
+                          style={{ boxShadow: "0 6px 20px rgba(16,185,129,0.3)" }}
                         >
                           Register Now
                         </Button>
@@ -1166,6 +1306,11 @@ export default function TenantHomePage() {
             )}
 
           </div>
+
+          {/* Wave transition from dark events to light sections */}
+          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" className="absolute bottom-0 left-0 right-0 w-full h-[50px] md:h-[70px]" style={{ zIndex: 5 }}>
+            <path d="M0,40 C360,75 720,10 1080,50 C1260,65 1380,30 1440,45 L1440,80 L0,80 Z" fill="#ffffff" />
+          </svg>
         </section>
       )}
 
@@ -1545,126 +1690,18 @@ export default function TenantHomePage() {
         </section>
       )}
 
-      {/* Pricing / Registration Section */}
-      {sections.events && pricingCategories.length > 0 && (
-        <section
-          id="pricing"
-          className="py-6 lg:py-8 relative overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` }}
-        >
-          <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
-              <Badge
-                variant="outline"
-                className="mb-4 px-5 py-1.5 rounded-full"
-                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
-              >
-                <Ticket className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
-                Registration
-              </Badge>
-              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Register Now</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Choose your registration category
-              </p>
-              {(() => {
-                if (!events[0]?.startDate) return null;
-                return (
-                  <div
-                    className="mt-4 inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-extrabold text-base text-white shadow-lg"
-                    style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.45)" }}
-                  >
-                    <span className="inline-block w-3 h-3 rounded-full bg-white animate-flash flex-shrink-0" />
-                    <span className="animate-flash text-base">
-                      Registrations open for {fmtEventRange(events[0].startDate, events[0].endDate)}
-                    </span>
-                  </div>
-                );
-              })()}
-            </div>
-
-            <div className={cn("grid gap-6", adaptiveGrid(pricingCategories.length))}>
-              {pricingCategories.map((category: any, index: number) => {
-                const isMiddle = pricingCategories.length >= 3 ? index === Math.floor(pricingCategories.length / 2) : index === 0;
-                const hasEarlyBird = category.earlyBirdPrice && category.earlyBirdDeadline && new Date(category.earlyBirdDeadline) > new Date();
-                const displayPrice = hasEarlyBird ? category.earlyBirdPrice : category.price;
-                const slotsUsed = category.totalSlots ? (category.totalSlots - (category.availableSlots ?? category.totalSlots)) : 0;
-                const slotsPercent = category.totalSlots ? Math.min((slotsUsed / category.totalSlots) * 100, 100) : 0;
-
-                return (
-                  <div
-                    key={category.id || index}
-                    className={cn(
-                      "relative rounded-2xl border bg-white p-6 lg:p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
-                      isMiddle ? "border-2 shadow-lg scale-[1.03]" : "border-gray-100 shadow-sm"
-                    )}
-                    style={isMiddle ? { borderColor: theme.primaryColor } : undefined}
-                  >
-                    {isMiddle && (
-                      <div
-                        className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white"
-                        style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
-                      >
-                        Popular
-                      </div>
-                    )}
-
-                    <h3 className="font-bold text-lg mb-4">{category.name}</h3>
-
-                    <div className="mb-6">
-                      {hasEarlyBird && (
-                        <p className="text-sm text-muted-foreground line-through mb-1">
-                          ₹{Number(category.price).toLocaleString('en-IN')}
-                        </p>
-                      )}
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold" style={{ color: theme.primaryColor }}>
-                          ₹{Number(displayPrice).toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                      {/* Early bird hidden */}
-                    </div>
-
-                    {category.totalSlots && (
-                      <div className="mb-6">
-                        <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                          <span>{category.availableSlots ?? category.totalSlots} slots available</span>
-                          <span>{category.totalSlots} total</span>
-                        </div>
-                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${slotsPercent}%`,
-                              background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <Link href={events[0] ? `/events/${events[0].id}/register` : "#events"}>
-                      <Button
-                        className="w-full rounded-full text-white shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 relative overflow-hidden"
-                        style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
-                      >
-                        Register
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Pricing section removed — registration is available via event cards */}
 
       {/* Ongoing Research Section */}
       {(sections.ongoingResearch !== false) && researchItems.length > 0 && (
         <section
           id="research"
-          className="py-12 lg:py-20 relative overflow-hidden bg-white"
+          className="py-16 lg:py-24 relative overflow-hidden"
+          style={{ background: "linear-gradient(180deg, #ffffff 0%, #f1f5f9 40%, #e8edf3 60%, #f1f5f9 100%)" }}
         >
+          {/* Decorative dots */}
+          <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "radial-gradient(#64748b 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
               <Badge
@@ -1681,40 +1718,29 @@ export default function TenantHomePage() {
               </p>
             </div>
 
-            <div className={cn("grid gap-8", adaptiveGrid(researchItems.length))}>
+            <div className={cn("grid gap-6 lg:gap-8", adaptiveGrid(researchItems.length))}>
               {researchItems.map((research, index) => {
                 const IconComponent = iconMap[research.icon] || FlaskConical;
                 return (
-                  <Card
+                  <div
                     key={research.id || index}
-                    className="group p-6 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden relative"
+                    className="group relative rounded-2xl bg-white border-2 border-slate-100 p-6 lg:p-7 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 shadow-md overflow-hidden hover:border-slate-200"
                   >
-                    <div
-                      className="absolute top-0 left-0 w-full h-1"
-                      style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
-                    />
+                    {/* Top accent bar */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-slate-600 via-slate-400 to-slate-600" />
                     <div className="flex items-start gap-4">
-                      <div
-                        className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center shadow-md"
-                        style={{ background: `linear-gradient(135deg, ${theme.primaryColor}20, ${theme.secondaryColor}20)` }}
-                      >
-                        <IconComponent className="h-6 w-6" style={{ color: theme.primaryColor }} />
+                      <div className="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center bg-slate-100 group-hover:bg-slate-200 group-hover:scale-105 transition-all duration-300 shadow-sm">
+                        <IconComponent className="h-7 w-7 text-slate-700" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-bold text-lg">{research.title}</h3>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className="mb-3 text-xs"
-                          style={{ borderColor: `${theme.primaryColor}40`, color: theme.primaryColor, backgroundColor: `${theme.primaryColor}08` }}
-                        >
+                        <h3 className="font-bold text-lg mb-2 text-slate-800">{research.title}</h3>
+                        <span className="inline-block mb-3 text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                           {research.status}
-                        </Badge>
-                        <p className="text-muted-foreground text-sm leading-relaxed">{research.description}</p>
+                        </span>
+                        <p className="text-slate-500 text-sm leading-relaxed">{research.description}</p>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 );
               })}
             </div>
@@ -1724,8 +1750,7 @@ export default function TenantHomePage() {
 
       {/* Gallery Section */}
       {sections.gallery && hasGallery && (
-        <section id="gallery" className="py-12 lg:py-20 relative overflow-hidden" style={{ background: `linear-gradient(180deg, #ffffff, ${theme.primaryColor}08, ${theme.secondaryColor}06)` }}>
-          <DecorativeBackground />
+        <section id="gallery" className="py-16 lg:py-24 relative overflow-hidden bg-white">
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
@@ -2140,8 +2165,9 @@ export default function TenantHomePage() {
 
       {/* About Section */}
       {sections.about && (
-        <section id="about" className="py-12 lg:py-20 relative overflow-hidden" style={{ background: `linear-gradient(180deg, ${theme.primaryColor}06, #f8fafc, ${theme.secondaryColor}04)` }} data-scroll-reveal>
-          <DecorativeBackground />
+        <section id="about" className="py-16 lg:py-24 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%)" }} data-scroll-reveal>
+          {/* Light decorative dots */}
+          <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "radial-gradient(#475569 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             {/* Two-column: Slideshow + Text */}
@@ -2179,14 +2205,21 @@ export default function TenantHomePage() {
 
               {/* Text Content */}
               {about.description && (
-                <div className="space-y-6 text-center">
+                <div className="space-y-6">
                   {about.description.split("\n\n").map((paragraph: string, idx: number) => {
                     const colonIdx = paragraph.indexOf(":");
-                    const heading = idx === 0 ? "About Us" : (colonIdx > 0 && colonIdx < 60) ? paragraph.slice(0, colonIdx) : null;
-                    const text = idx === 0 ? paragraph : (colonIdx > 0 && colonIdx < 60) ? paragraph.slice(colonIdx + 1).trim() : paragraph;
+                    const hasSubHeading = idx > 0 && colonIdx > 0 && colonIdx < 60;
+                    const heading = hasSubHeading ? paragraph.slice(0, colonIdx) : null;
+                    const text = hasSubHeading ? paragraph.slice(colonIdx + 1).trim() : paragraph;
                     return (
-                      <div key={idx}>
-                        {heading && <h3 className="text-xl font-bold mb-2" style={{ color: theme.primaryColor }}>{heading}</h3>}
+                      <div key={idx} className={idx === 0 ? "" : "pt-4 border-t border-slate-200"}>
+                        {idx === 0 && <h3 className="text-2xl font-bold mb-3 text-slate-900">About Us</h3>}
+                        {heading && (
+                          <h4 className="text-lg font-bold mb-2 text-slate-800 flex items-center gap-2">
+                            <span className="w-1.5 h-6 rounded-full bg-emerald-500 flex-shrink-0" />
+                            {heading}
+                          </h4>
+                        )}
                         <p className="text-slate-600 text-base leading-relaxed">{text}</p>
                       </div>
                     );
@@ -2200,23 +2233,18 @@ export default function TenantHomePage() {
                 {about.features.map((feature, index) => {
                   const IconComponent = iconMap[feature.icon] || Award;
                   return (
-                    <Card
+                    <div
                       key={index}
                       data-scroll-reveal
                       data-scroll-delay={String(index + 1)}
-                      className="text-center p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg"
+                      className="group text-center p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white rounded-2xl shadow-md hover:shadow-xl border-2 border-slate-100 hover:border-slate-200 relative overflow-hidden"
                     >
-                      <div
-                        className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg"
-                        style={{ background: `linear-gradient(135deg, ${theme.primaryColor}20, ${theme.secondaryColor}20)` }}
-                      >
-                        <span style={{ color: theme.primaryColor }}>
-                          <IconComponent className="h-8 w-8" />
-                        </span>
+                      <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300 bg-slate-100 group-hover:bg-slate-200 border border-slate-200">
+                        <IconComponent className="h-8 w-8 text-slate-700" />
                       </div>
-                      <h3 className="font-bold text-lg mb-3">{feature.title}</h3>
-                      <p className="text-muted-foreground">{feature.description}</p>
-                    </Card>
+                      <h3 className="font-bold text-lg mb-3 text-slate-800">{feature.title}</h3>
+                      <p className="text-slate-500">{feature.description}</p>
+                    </div>
                   );
                 })}
               </div>
@@ -2245,15 +2273,16 @@ export default function TenantHomePage() {
         return (
         <section
           id="contact"
-          className="py-12 lg:py-20 relative overflow-hidden bg-white"
+          className="py-16 lg:py-24 relative overflow-hidden bg-white"
           data-scroll-reveal
         >
+
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             <div className="text-center mb-10 lg:mb-14">
               <Badge
                 variant="outline"
-                className="mb-4 px-5 py-1.5 rounded-full bg-white"
-                style={{ borderColor: `${theme.primaryColor}30` }}
+                className="mb-4 px-5 py-1.5 rounded-full"
+                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
               >
                 <Mail className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
                 Contact
@@ -2267,16 +2296,13 @@ export default function TenantHomePage() {
             <div className={cn("max-w-5xl mx-auto grid gap-6", gridCols)}>
               {contactCards.map((card) => {
                 const content = (
-                  <Card key={card.label} className="text-center p-5 sm:p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white h-full flex flex-col items-center justify-center">
-                    <div
-                      className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center flex-shrink-0"
-                      style={{ background: `linear-gradient(135deg, ${theme.primaryColor}20, ${theme.secondaryColor}20)` }}
-                    >
-                      <card.icon className="h-7 w-7" style={{ color: theme.primaryColor }} />
+                  <div key={card.label} className="group text-center p-5 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-slate-50 hover:bg-white border-2 border-slate-100 hover:border-slate-200 rounded-2xl h-full flex flex-col items-center justify-center relative overflow-hidden shadow-sm">
+                    <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center flex-shrink-0 bg-white shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300 border border-slate-100">
+                      <card.icon className="h-7 w-7 text-slate-700" />
                     </div>
-                    <h3 className="font-bold mb-2">{card.label}</h3>
-                    <p className="text-muted-foreground text-sm break-words">{card.value}</p>
-                  </Card>
+                    <h3 className="font-bold mb-2 text-slate-800">{card.label}</h3>
+                    <p className="text-slate-500 text-sm break-words">{card.value}</p>
+                  </div>
                 );
                 return card.href ? (
                   <a key={card.label} href={card.href} target={card.external ? "_blank" : undefined} rel={card.external ? "noopener noreferrer" : undefined} className="hover:no-underline h-full">
@@ -2346,6 +2372,9 @@ export default function TenantHomePage() {
 
             {/* Social Links — same card style as contact cards */}
             {hasSocial && (() => {
+              const brandColors: Record<string, string> = {
+                Facebook: "#1877F2", Twitter: "#000000", LinkedIn: "#0A66C2", YouTube: "#FF0000", Instagram: "#E4405F",
+              };
               const socialCards = [
                 social.facebook && { icon: Facebook, label: "Facebook", href: social.facebook },
                 social.twitter && { icon: Twitter, label: "Twitter", href: social.twitter },
@@ -2355,19 +2384,22 @@ export default function TenantHomePage() {
               ].filter(Boolean) as { icon: typeof Facebook; label: string; href: string }[];
 
               return (
-                <div className={cn("max-w-5xl mx-auto grid gap-6 mt-8", adaptiveGrid(socialCards.length, socialCards.length >= 4 ? 4 : 3))}>
+                <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-center gap-4 mt-10">
                   {socialCards.map((s) => (
-                    <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="hover:no-underline h-full">
-                      <Card className="text-center p-5 sm:p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white h-full flex flex-col items-center justify-center">
-                        <div
-                          className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center flex-shrink-0 hover:scale-110 transition-all duration-300"
-                          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}20, ${theme.secondaryColor}20)` }}
-                        >
-                          <s.icon className="h-7 w-7 hover:text-primary transition-all duration-300" style={{ color: theme.primaryColor }} />
-                        </div>
-                        <h3 className="font-bold mb-1">{s.label}</h3>
-                        <p className="text-muted-foreground text-xs">Follow us</p>
-                      </Card>
+                    <a
+                      key={s.label}
+                      href={s.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-slate-100 hover:border-slate-200 bg-white hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                    >
+                      <div
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-300"
+                        style={{ backgroundColor: brandColors[s.label] || "#64748b" }}
+                      >
+                        <s.icon className="h-4.5 w-4.5" />
+                      </div>
+                      <span className="font-semibold text-sm text-slate-700">{s.label}</span>
                     </a>
                   ))}
                 </div>
@@ -2381,19 +2413,21 @@ export default function TenantHomePage() {
       {/* FAQ Section */}
       {(sections.faq !== false) && <FAQSection theme={theme} faqs={faqs} />}
 
+
       {/* Footer */}
-      <footer className="text-white relative overflow-hidden mb-16 md:mb-0 border-t border-slate-200/50">
+      <footer className="text-white relative overflow-hidden mb-16 md:mb-0">
         {/* Smooth wavy transition into footer */}
-        <div className="relative h-12 md:h-16" style={{ background: faqs.length > 0 ? `linear-gradient(135deg, ${theme.primaryColor}05, ${theme.secondaryColor}05)` : "#ffffff" }}>
-          <svg className="absolute bottom-0 left-0 right-0 w-full h-full" viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-            <path d="M0,50 C360,80 720,20 1080,50 C1260,65 1380,40 1440,50 L1440,80 L0,80 Z" fill={theme.primaryColor} />
+        <div className="relative h-14 md:h-20 bg-white">
+          <svg className="absolute bottom-0 left-0 right-0 w-full h-full" viewBox="0 0 1440 100" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <path d="M0,70 C240,100 480,40 720,65 C960,90 1200,35 1440,60 L1440,100 L0,100 Z" fill="#334155" opacity="0.4" />
+            <path d="M0,80 C360,100 600,50 900,75 C1100,90 1300,55 1440,70 L1440,100 L0,100 Z" fill="#1e293b" />
           </svg>
         </div>
 
-        {/* Main footer with theme gradient + bubbles */}
+        {/* Main footer */}
         <div
-          className="py-8 pb-0 relative overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+          className="py-10 pb-0 relative overflow-hidden"
+          style={{ background: "linear-gradient(160deg, #1e293b 0%, #334155 50%, #1e293b 100%)" }}
         >
           {/* Floating bubbles background */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -2414,8 +2448,8 @@ export default function TenantHomePage() {
             <div className="grid md:grid-cols-3 gap-10 lg:gap-16">
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                    <GraduationCap className="h-6 w-6 text-white" />
+                  <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
+                    <GraduationCap className="h-6 w-6 text-teal-400" />
                   </div>
                   <div>
                     <p className="font-bold text-xl tracking-tight">{branding.name}</p>
@@ -2590,16 +2624,24 @@ export default function TenantHomePage() {
 
       {/* Mobile sticky register button */}
       <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-xl border-t shadow-lg md:hidden">
-        <Link href={events[0] ? `/events/${events[0].id}/register` : "/auth/login"} className="block">
-          <Button
-            className="w-full text-white rounded-full font-semibold py-3"
-            style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
-          >
+        <Link href={events[0] ? `/events/${events[0].id}/register?tenant=${tenantSlug}` : `/auth/login?tenant=${tenantSlug}`} className="block">
+          <Button className="w-full text-white rounded-full font-semibold py-3 bg-emerald-500 hover:bg-emerald-600" style={{ boxShadow: "0 4px 16px rgba(16,185,129,0.35)" }}>
             Register Now
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </Link>
       </div>
+
+      {/* Back to top */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-20 md:bottom-8 right-4 md:right-8 z-40 w-11 h-11 rounded-full bg-slate-800 hover:bg-slate-700 text-white shadow-xl flex items-center justify-center back-to-top-btn hover:scale-110 transition-transform"
+          aria-label="Back to top"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </button>
+      )}
     </div>
   );
 }

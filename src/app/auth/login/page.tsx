@@ -48,18 +48,23 @@ function LoginPageInner() {
 
     const [isLoading, setIsLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const [loginMode, setLoginMode] = React.useState<"delegate" | "admin">("delegate");
+    // If tenant slug is present (via query param or middleware injection), it's a tenant login
+    // Otherwise it's the ICMS admin login (no OTP, no tenant branding)
+    const isTenantLogin = !!tenantSlug;
+    const [loginMode, setLoginMode] = React.useState<"delegate" | "admin">(isTenantLogin ? "delegate" : "admin");
     const [tenantBranding, setTenantBranding] = React.useState<TenantBranding | null>(null);
 
-    // Compute the "home" URL based on tenant context
-    // On production (any non-localhost), use / — middleware rewrites internally
-    // On localhost only, use /t/{slug} since there's no domain mapping
-    const isLocalhost = typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const homeHref = isLocalhost ? (tenantSlug ? `/t/${tenantSlug}` : "/") : "/";
-
-    // Fetch tenant branding — try query param, then hostname, then first available tenant
+    // Compute the "home" URL based on tenant context (deferred to avoid hydration mismatch)
+    const [homeHref, setHomeHref] = React.useState("/");
     React.useEffect(() => {
+        const local = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        setHomeHref(local && tenantSlug ? `/t/${tenantSlug}` : "/");
+    }, [tenantSlug]);
+
+    // Fetch tenant branding — only for tenant logins, not ICMS home
+    React.useEffect(() => {
+        if (!isTenantLogin) return; // ICMS home — no tenant branding needed
+
         async function fetchTenant() {
             try {
                 let response: Response | null = null;
@@ -74,28 +79,10 @@ function LoginPageInner() {
                     response = await fetch(`/api/tenants/${window.location.hostname}`);
                 }
 
-                // Try 3: fallback — get first tenant
+                // No tenant found — use ICMS defaults, don't load another tenant's branding
                 if (!response?.ok) {
-                    response = await fetch('/api/tenants?limit=1');
-                    if (response.ok) {
-                        const listData = await response.json();
-                        if (listData.success && listData.data?.length > 0) {
-                            const t = listData.data[0];
-                            const name = t.branding?.name || t.name || "CareNS";
-                            const favicon = t.branding?.favicon || t.favicon || null;
-                            setTenantBranding({
-                                name,
-                                logo: t.branding?.logo || t.logo || null,
-                                primaryColor: t.theme?.primaryColor || t.primaryColor || "#0d9488",
-                                secondaryColor: t.theme?.secondaryColor || t.secondaryColor || "#0891b2",
-                            });
-                            document.title = `Login — ${name}`;
-                            if (favicon) {
-                                const icons = document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="shortcut icon"]');
-                                if (icons.length > 0) { icons.forEach(i => { i.href = favicon; }); } else { const l = document.createElement("link"); l.rel = "icon"; l.href = favicon; document.head.appendChild(l); }
-                            }
-                            return;
-                        }
+                    if (!isTenantLogin) {
+                        document.title = "ICMS — Login";
                     }
                     return;
                 }
@@ -104,7 +91,7 @@ function LoginPageInner() {
                     const data = await response.json();
                     if (data.success && data.data) {
                         const t = data.data;
-                        const name = t.branding?.name || t.name || "CareNS";
+                        const name = t.branding?.name || t.name || "";
                         const favicon = t.branding?.favicon || t.favicon || null;
                         setTenantBranding({
                             name,
@@ -188,7 +175,7 @@ function LoginPageInner() {
             const res = await fetch("/api/auth/otp/send", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: delegateEmail, purpose: "LOGIN" }),
+                body: JSON.stringify({ email: delegateEmail, purpose: "LOGIN", tenantSlug: tenantSlug || undefined }),
             });
             const data = await res.json();
             if (!res.ok) {
@@ -222,6 +209,7 @@ function LoginPageInner() {
             const result = await signIn("otp-login", {
                 email: delegateEmail,
                 code: otp,
+                tenantSlug: tenantSlug || "",
                 redirect: false,
             });
 
@@ -230,6 +218,10 @@ function LoginPageInner() {
                     setError("Your code has expired. Please request a new one.");
                 } else if (result.error.includes("INVALID_OTP")) {
                     setError("Invalid verification code. Please try again.");
+                } else if (result.error.includes("NO_ACCOUNT_FOR_TENANT")) {
+                    setError("No account found for this email on this platform. Please make sure you're logging into the correct conference portal.");
+                } else if (result.error.includes("NO_REGISTRATION_FOR_TENANT")) {
+                    setError("No registration found for this email. Please register for an event first before logging in.");
                 } else if (result.error === "CredentialsSignin") {
                     setError("Invalid verification code. Please try again.");
                 } else {
@@ -264,7 +256,14 @@ function LoginPageInner() {
     return (
         <div className="min-h-screen flex flex-col lg:flex-row relative overflow-hidden">
             {/* ===== LEFT PANEL: Animated Gradient Branding ===== */}
-            <div className="hidden lg:flex lg:w-[55%] relative login-mesh-bg login-noise overflow-hidden">
+            <div
+                className="hidden lg:flex lg:w-[55%] relative login-noise overflow-hidden"
+                style={tenantBranding ? {
+                    background: `radial-gradient(ellipse 80% 80% at 10% 20%, ${tenantBranding.primaryColor}59 0%, transparent 50%), radial-gradient(ellipse 60% 60% at 85% 80%, ${tenantBranding.secondaryColor}4d 0%, transparent 50%), radial-gradient(ellipse 50% 50% at 50% 50%, rgba(124,58,237,0.15) 0%, transparent 50%), linear-gradient(135deg, #0a0f1e 0%, #111827 40%, #0f172a 100%)`
+                } : undefined}
+            >
+            {/* If no tenant branding loaded yet, use default mesh gradient */}
+            {!tenantBranding && <div className="absolute inset-0 login-mesh-bg" />}
                 {/* Animated orbs */}
                 <div className="absolute top-[10%] left-[15%] w-72 h-72 rounded-full bg-teal-500/20 blur-[100px] animate-orb-1" />
                 <div className="absolute bottom-[15%] right-[10%] w-96 h-96 rounded-full bg-blue-500/20 blur-[120px] animate-orb-2" />
@@ -304,50 +303,71 @@ function LoginPageInner() {
                         {/* Logo mark */}
                         <div className="flex items-center gap-4">
                             <div
-                                className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-premium-lg"
-                                style={tenantBranding
+                                className="w-14 h-14 rounded-full flex items-center justify-center shadow-premium-lg overflow-hidden bg-white"
+                                style={!tenantBranding?.logo ? (tenantBranding
                                     ? { background: `linear-gradient(135deg, ${tenantBranding.primaryColor}, ${tenantBranding.secondaryColor})` }
-                                    : { background: 'linear-gradient(135deg, #0d9488, #0891b2)' }
+                                    : { background: 'linear-gradient(135deg, #0d9488, #0891b2)' }) : undefined
                                 }
                             >
                                 {tenantBranding?.logo ? (
-                                    <img src={tenantBranding.logo} alt={tenantBranding.name} className="w-10 h-10 object-contain rounded-lg" />
+                                    <img src={tenantBranding.logo} alt={tenantBranding.name} className="w-[75%] h-[75%] object-contain" />
                                 ) : (
                                     <Stethoscope className="w-7 h-7 text-white" />
                                 )}
                             </div>
                             <div>
                                 <h2 className="text-white/90 text-lg font-semibold tracking-tight">
-                                    {tenantBranding?.name || "CARENS"}
+                                    {tenantBranding?.name || (isTenantLogin ? "" : "ICMS")}
                                 </h2>
                                 <p className="text-white/40 text-xs tracking-widest uppercase">
-                                    Conference Management
+                                    {isTenantLogin ? "" : "Conference Management"}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Headline */}
+                        {/* Headline — tenant-specific or ICMS platform */}
                         <div className="space-y-4 max-w-lg">
-                            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight" style={{ fontFamily: 'inherit' }}>
-                                Where Medical{" "}
-                                <span className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
-                                    Excellence
-                                </span>{" "}
-                                Meets Innovation
-                            </h1>
-                            <p className="text-white/50 text-lg leading-relaxed">
-                                Streamlined conference management for healthcare professionals worldwide.
-                            </p>
+                            {isTenantLogin ? (
+                                <>
+                                    <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight" style={{ fontFamily: 'inherit' }}>
+                                        Welcome to{" "}
+                                        <span className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
+                                            {tenantBranding?.name || "Conference"}
+                                        </span>
+                                    </h1>
+                                    <p className="text-white/50 text-lg leading-relaxed">
+                                        Sign in to access your dashboard, registrations, certificates, and more.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight" style={{ fontFamily: 'inherit' }}>
+                                        Where Medical{" "}
+                                        <span className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
+                                            Excellence
+                                        </span>{" "}
+                                        Meets Innovation
+                                    </h1>
+                                    <p className="text-white/50 text-lg leading-relaxed">
+                                        Streamlined conference management for healthcare professionals worldwide.
+                                    </p>
+                                </>
+                            )}
                         </div>
 
-                        {/* Feature pills */}
+                        {/* Feature pills — tenant-specific or ICMS platform */}
                         <div className="flex flex-wrap gap-3">
-                            {[
+                            {(isTenantLogin ? [
+                                { icon: Shield, label: "Secure Login" },
+                                { icon: Activity, label: "Dashboard" },
+                                { icon: Heart, label: "Certificates" },
+                                { icon: Sparkles, label: "Registrations" },
+                            ] : [
                                 { icon: Shield, label: "Secure Access" },
                                 { icon: Activity, label: "Real-time Analytics" },
                                 { icon: Heart, label: "Healthcare Focus" },
                                 { icon: Sparkles, label: "AI-Powered" },
-                            ].map(({ icon: Icon, label }) => (
+                            ]).map(({ icon: Icon, label }) => (
                                 <div
                                     key={label}
                                     className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/[0.08] border border-white/[0.12] text-white/70 text-sm backdrop-blur-md hover:bg-white/[0.12] hover:text-white/90 transition-all duration-300"
@@ -359,23 +379,29 @@ function LoginPageInner() {
                         </div>
                     </div>
 
-                    {/* Bottom: Stats or social proof */}
-                    <div className="flex items-center gap-8">
-                        <div>
-                            <div className="text-2xl font-bold text-white">500+</div>
-                            <div className="text-white/40 text-xs">Conferences</div>
+                    {/* Bottom: Stats — only for ICMS platform, hidden for tenant logins */}
+                    {!isTenantLogin ? (
+                        <div className="flex items-center gap-8">
+                            <div>
+                                <div className="text-2xl font-bold text-white">500+</div>
+                                <div className="text-white/40 text-xs">Conferences</div>
+                            </div>
+                            <div className="w-px h-8 bg-white/10" />
+                            <div>
+                                <div className="text-2xl font-bold text-white">50K+</div>
+                                <div className="text-white/40 text-xs">Delegates</div>
+                            </div>
+                            <div className="w-px h-8 bg-white/10" />
+                            <div>
+                                <div className="text-2xl font-bold text-white">98%</div>
+                                <div className="text-white/40 text-xs">Satisfaction</div>
+                            </div>
                         </div>
-                        <div className="w-px h-8 bg-white/10" />
-                        <div>
-                            <div className="text-2xl font-bold text-white">50K+</div>
-                            <div className="text-white/40 text-xs">Delegates</div>
+                    ) : (
+                        <div className="text-white/30 text-xs">
+                            &copy; {new Date().getFullYear()} {tenantBranding?.name || "Conference"}. All rights reserved.
                         </div>
-                        <div className="w-px h-8 bg-white/10" />
-                        <div>
-                            <div className="text-2xl font-bold text-white">98%</div>
-                            <div className="text-white/40 text-xs">Satisfaction</div>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
 
@@ -403,38 +429,40 @@ function LoginPageInner() {
                             {/* Mobile logo */}
                             <div className="lg:hidden mb-6">
                                 <div
-                                    className="inline-flex items-center justify-center w-16 h-16 rounded-2xl shadow-premium-lg mb-3"
-                                    style={tenantBranding
+                                    className="inline-flex items-center justify-center w-16 h-16 rounded-full shadow-premium-lg mb-3 overflow-hidden bg-white"
+                                    style={!tenantBranding?.logo ? (tenantBranding
                                         ? { background: `linear-gradient(135deg, ${tenantBranding.primaryColor}, ${tenantBranding.secondaryColor})` }
-                                        : { background: 'linear-gradient(135deg, #0d9488, #0891b2)' }
+                                        : { background: 'linear-gradient(135deg, #0d9488, #0891b2)' }) : undefined
                                     }
                                 >
                                     {tenantBranding?.logo ? (
-                                        <img src={tenantBranding.logo} alt={tenantBranding.name} className="w-10 h-10 object-contain rounded-lg" />
+                                        <img src={tenantBranding.logo} alt={tenantBranding.name} className="w-[75%] h-[75%] object-contain" />
                                     ) : (
                                         <Stethoscope className="w-8 h-8 text-white" />
                                     )}
                                 </div>
                                 <p className="text-xs text-muted-foreground tracking-widest uppercase">
-                                    {tenantBranding?.name || "CARENS"} Conference Management
+                                    {isTenantLogin ? (tenantBranding?.name || "") : "ICMS — Conference Management"}
                                 </p>
                             </div>
 
-                            {/* Mode indicator */}
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/10 text-primary text-xs font-semibold mb-5 shadow-sm">
-                                {loginMode === "delegate" ? (
-                                    <><Mail className="w-3 h-3" /> Delegate / Speaker / Organizer</>
-                                ) : (
-                                    <><Shield className="w-3 h-3" /> Admin Access</>
-                                )}
-                            </div>
+                            {/* Mode indicator — only show on tenant login */}
+                            {isTenantLogin && (
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/10 text-primary text-xs font-semibold mb-5 shadow-sm">
+                                    {loginMode === "delegate" ? (
+                                        <><Mail className="w-3 h-3" /> OTP Login</>
+                                    ) : (
+                                        <><Shield className="w-3 h-3" /> Admin Login</>
+                                    )}
+                                </div>
+                            )}
 
                             <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
                                 {loginMode === "delegate" ? "Welcome back" : "Admin Sign In"}
                             </h1>
                             <p className="text-muted-foreground mt-2 text-sm">
                                 {loginMode === "delegate"
-                                    ? "Delegates, speakers & organizers — enter your registered email to receive a login code."
+                                    ? "Enter your registered email to receive a secure login code."
                                     : "Sign in with your admin credentials."}
                             </p>
                         </div>
@@ -563,15 +591,17 @@ function LoginPageInner() {
                                         </div>
                                     </div>
 
-                                    {/* Admin link */}
-                                    <button
-                                        type="button"
-                                        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border/60 text-sm text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-all duration-200"
-                                        onClick={() => { setLoginMode("admin"); setError(null); resetOtpState(); }}
-                                    >
-                                        <Shield className="w-3.5 h-3.5" />
-                                        Sign in as Admin (password)
-                                    </button>
+                                    {/* Admin link — only on tenant login */}
+                                    {isTenantLogin && (
+                                        <button
+                                            type="button"
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border/60 text-sm text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-all duration-200"
+                                            onClick={() => { setLoginMode("admin"); setError(null); resetOtpState(); }}
+                                        >
+                                            <Shield className="w-3.5 h-3.5" />
+                                            Sign in with Password
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
                                 /* Admin Email Login */
@@ -630,25 +660,27 @@ function LoginPageInner() {
                                         </Button>
                                     </form>
 
-                                    {/* Divider */}
-                                    <div className="relative">
-                                        <div className="absolute inset-0 flex items-center">
-                                            <div className="w-full border-t border-border/60" />
+                                    {/* Divider + OTP toggle — only on tenant login */}
+                                    {isTenantLogin && (
+                                        <div className="relative">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <div className="w-full border-t border-border/60" />
+                                            </div>
+                                            <div className="relative flex justify-center">
+                                                <span className="bg-white px-3 text-xs text-muted-foreground">or</span>
+                                            </div>
                                         </div>
-                                        <div className="relative flex justify-center">
-                                            <span className="bg-white px-3 text-xs text-muted-foreground">or</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Back to delegate login */}
-                                    <button
-                                        type="button"
-                                        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border/60 text-sm text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-all duration-200"
-                                        onClick={() => { setLoginMode("delegate"); setError(null); }}
-                                    >
-                                        <Mail className="w-3.5 h-3.5" />
-                                        Sign in with OTP (Delegate / Speaker / Organizer)
-                                    </button>
+                                    )}
+                                    {isTenantLogin && (
+                                        <button
+                                            type="button"
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border/60 text-sm text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-all duration-200"
+                                            onClick={() => { setLoginMode("delegate"); setError(null); }}
+                                        >
+                                            <Mail className="w-3.5 h-3.5" />
+                                            Sign in with OTP
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -665,7 +697,7 @@ function LoginPageInner() {
 
                 {/* Footer */}
                 <footer className="p-4 sm:p-6 flex flex-col items-center gap-1.5 text-xs text-muted-foreground relative z-10">
-                    <span>&copy; {new Date().getFullYear()} {tenantBranding?.name || "CareNS"}. All rights reserved.</span>
+                    <span>&copy; {new Date().getFullYear()} {tenantBranding?.name || (isTenantLogin ? "" : "ICMS")}. All rights reserved.</span>
                     <a href="https://summitsolutions.in" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity">
                         Powered by
                         <img src="/summit-logo.png" alt="Summit Solutions" className="h-10 inline-block" />

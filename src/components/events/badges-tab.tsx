@@ -259,7 +259,7 @@ export function BadgesTab({ eventId, eventTitle }: BadgesTabProps) {
                     </div>
                     <div class="footer">
                         <span class="footer-dot"></span>
-                        <span class="footer-text">CareNS Conference</span>
+                        <span class="footer-text">${eventTitle}</span>
                         <span class="footer-dot"></span>
                     </div>
                 </div>
@@ -811,7 +811,7 @@ export function BadgesTab({ eventId, eventTitle }: BadgesTabProps) {
                                     </div>
                                     <div className="bg-slate-50 px-4 py-2 text-center border-t flex items-center justify-center gap-2">
                                         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                                        <span className="text-[9px] text-slate-400 font-medium tracking-widest uppercase">CareNS Conference</span>
+                                        <span className="text-[9px] text-slate-400 font-medium tracking-widest uppercase">{eventTitle}</span>
                                         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
                                     </div>
                                 </div>

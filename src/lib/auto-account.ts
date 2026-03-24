@@ -84,7 +84,7 @@ export async function sendAccountCreatedEmail(params: {
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
-      <h2 style="color: #0d9488; margin-bottom: 4px;">CareNS</h2>
+      <h2 style="color: #0d9488; margin-bottom: 4px;">ICMS</h2>
       <p style="color: #666; margin-top: 0;">Your Account is Ready</p>
       <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 16px 0;">
         <p style="margin: 0 0 8px;"><strong>Hello ${name || "there"},</strong></p>
@@ -103,7 +103,7 @@ export async function sendAccountCreatedEmail(params: {
       </div>
       <p style="color: #666; font-size: 14px;">Simply enter your email on the login page and click "Send Login Code". A 6-digit code will be sent to your inbox.</p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-      <p style="color: #999; font-size: 12px;">This is an automated email from CareNS Conference Management System.</p>
+      <p style="color: #999; font-size: 12px;">This is an automated email from ICMS Conference Management System.</p>
     </div>
   `;
 
@@ -124,7 +124,7 @@ export async function sendAccountCreatedEmail(params: {
     to: email,
     subject: eventTitle
       ? `Your account for ${eventTitle} is ready`
-      : "Your CareNS account is ready",
+      : "Your ICMS account is ready",
     html,
     tenantId,
   }).catch((err) => console.error("Failed to send account created email:", err));

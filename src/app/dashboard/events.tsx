@@ -79,7 +79,7 @@ const events = [
         category: "Conference",
         date: "2026-01-10",
         time: "09:00 AM",
-        venue: "AIIMS, New Delhi",
+        venue: "Convention Centre, New Delhi",
         totalSlots: 200,
         bookedSlots: 156,
         price: 6500,

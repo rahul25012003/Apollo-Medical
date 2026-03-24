@@ -11,18 +11,23 @@ interface AiimsLoaderProps {
 
 export function AiimsLoader({ size = "md", text = "Loading", fullPage = false }: AiimsLoaderProps) {
   const uid = useId().replace(/:/g, "");
+  let tenantSlug: string | null = null;
   let tenantLogo: string | null = null;
+  let tenantName: string | null = null;
   try {
     const { tenant } = useTenant();
-    // Use tenant's uploaded logo if available, otherwise AIIMS logo
+    tenantSlug = tenant?.slug ?? null;
     tenantLogo = tenant?.branding?.logo || null;
+    tenantName = tenant?.branding?.name || null;
   } catch {
     // Outside TenantProvider
   }
 
-  // Always show AIIMS logo as default — it's the primary tenant
-  // Only use tenant logo if it's a different uploaded image
-  const logoSrc = tenantLogo || "/aiims-logo.jpg";
+  // Show AIIMS logo only for carens tenant. Other tenants get their own logo or initials.
+  const isCarens = tenantSlug === "carens";
+  const logoSrc = isCarens ? "/aiims-logo.jpg" : (tenantLogo || null);
+  // Fallback text: tenant name initials, or empty (never show "ICMS" to tenant users)
+  const fallbackText = tenantName ? tenantName.split(" ").map(w => w[0]).filter(Boolean).slice(0, 3).join("") : "";
 
   const dims = size === "sm" ? 56 : size === "md" ? 90 : 120;
   const pad = size === "sm" ? 8 : size === "md" ? 14 : 18;
@@ -74,7 +79,7 @@ export function AiimsLoader({ size = "md", text = "Loading", fullPage = false }:
             />
           ) : (
             <span className="font-extrabold bg-gradient-to-br from-teal-600 to-cyan-600 bg-clip-text text-transparent" style={{ fontSize: dims * 0.22 }}>
-              CareNS
+              {isCarens ? "CareNS" : fallbackText}
             </span>
           )}
         </div>

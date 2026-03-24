@@ -428,7 +428,7 @@ function RevenueAnalytics({ data }: { data: RevenueReport | null }) {
                 <div key={e.eventTitle} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <span className="text-sm truncate mr-3 flex-1">{e.eventTitle}</span>
                   <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                    ₹{e.amount.toLocaleString()}
+                    ₹{Number(e.amount).toLocaleString()}
                   </span>
                 </div>
               ))}

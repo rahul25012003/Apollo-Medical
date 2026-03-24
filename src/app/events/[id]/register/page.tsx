@@ -184,7 +184,7 @@ export default function RegisterPage() {
                     if (data.success && data.data) {
                         const t = data.data;
                         setTenantBranding({
-                            name: t.branding?.name || t.name || "CareNS",
+                            name: t.branding?.name || t.name || "",
                             logo: t.branding?.logo || t.logo || null,
                             primaryColor: t.theme?.primaryColor || t.primaryColor || "#0d9488",
                             secondaryColor: t.theme?.secondaryColor || t.secondaryColor || "#0891b2",
@@ -563,7 +563,7 @@ export default function RegisterPage() {
                     key: orderData.data.keyId,
                     amount: orderData.data.amount,
                     currency: orderData.data.currency,
-                    name: tenantBranding?.name || "CareNS",
+                    name: tenantBranding?.name || "",
                     description: `Registration for ${eventData!.title}`,
                     image: tenantBranding?.logo || undefined,
                     order_id: orderData.data.orderId,
@@ -656,7 +656,7 @@ export default function RegisterPage() {
 
     const buildReceiptHtml = () => {
         if (!eventData || !registrationId) return "";
-        const brandName = tenantBranding?.name || "CareNS";
+        const brandName = tenantBranding?.name || "";
         const brandColor = tenantBranding?.primaryColor || "#0d9488";
         const brandColorDark = tenantBranding?.secondaryColor || "#0f766e";
 
@@ -817,7 +817,7 @@ export default function RegisterPage() {
                                     <GraduationCap className="h-5 w-5 text-white" />
                                 </div>
                             )}
-                            <span className="font-bold text-xl">{tenantBranding?.name || "CareNS"}</span>
+                            <span className="font-bold text-xl">{tenantBranding?.name || ""}</span>
                         </Link>
                         <div className="flex items-center gap-3">
                             <Link href="/auth/login">
@@ -1281,7 +1281,7 @@ export default function RegisterPage() {
                                             <Input
                                                 value={formData.institution}
                                                 onChange={(e) => handleInputChange("institution", e.target.value)}
-                                                placeholder="AIIMS, New Delhi"
+                                                placeholder="e.g., University Hospital"
                                             />
                                         </div>
                                         <div className="space-y-2">

@@ -128,6 +128,7 @@ interface DisplayEvent {
     image: string | null;
     featured: boolean;
     status: string;
+    currency: string;
     tenantSlug: string | null;
     tenantName: string | null;
 }
@@ -284,6 +285,7 @@ export default function PublicHomePage() {
                         registrations: event._count?.registrations || 0,
                         capacity: event.capacity,
                         price: event.price,
+                        currency: event.currency || "INR",
                         earlyBirdPrice: event.earlyBirdPrice,
                         earlyBirdDeadline: event.earlyBirdDeadline,
                         cmeCredits: event.cmeCredits,
@@ -777,11 +779,11 @@ export default function PublicHomePage() {
                                                     <div>
                                                         {event.earlyBirdPrice && (
                                                             <span className="text-sm text-white/50 line-through mr-2">
-                                                                ₹{Number(event.price).toLocaleString()}
+                                                                {event.currency === "INR" ? "₹" : event.currency + " "}{Number(event.price).toLocaleString()}
                                                             </span>
                                                         )}
                                                         <span className="text-2xl lg:text-3xl font-bold text-cyan-300">
-                                                            {Number(event.price) > 0 ? `₹${Number(event.price).toLocaleString()}` : "Free"}
+                                                            {Number(event.price) > 0 ? `${event.currency === "INR" ? "₹" : event.currency + " "}${Number(event.price).toLocaleString()}` : "Free"}
                                                         </span>
                                                         {/* Early bird hidden */}
                                                     </div>
@@ -976,11 +978,11 @@ export default function PublicHomePage() {
                                                     <div>
                                                         {event.earlyBirdPrice && (
                                                             <span className="text-xs text-muted-foreground line-through mr-1.5">
-                                                                ₹{Number(event.price).toLocaleString()}
+                                                                {event.currency === "INR" ? "₹" : event.currency + " "}{Number(event.price).toLocaleString()}
                                                             </span>
                                                         )}
                                                         <span className="text-lg font-bold text-primary">
-                                                            {Number(event.price) > 0 ? `₹${Number(event.price).toLocaleString()}` : "Free"}
+                                                            {Number(event.price) > 0 ? `${event.currency === "INR" ? "₹" : event.currency + " "}${Number(event.price).toLocaleString()}` : "Free"}
                                                         </span>
                                                         {/* Early bird hidden */}
                                                     </div>
@@ -1376,28 +1378,28 @@ export default function PublicHomePage() {
                                 icon: Award,
                                 title: "CME Accredited Events",
                                 description: "All our conferences and workshops are accredited by recognized medical councils including MCI, State Medical Councils, and International Bodies. Earn verified CME credits that count towards your professional development.",
-                                color: "from-teal-500 to-cyan-500",
+                                color: "linear-gradient(135deg, #0f766e, #06b6d4)",
                                 year: "Quality"
                             },
                             {
                                 icon: Zap,
                                 title: "Seamless Registration",
                                 description: "Experience hassle-free registration with our OTP-based verification system. Secure payment gateway integration ensures your transactions are safe. Register in under 2 minutes!",
-                                color: "from-amber-500 to-orange-500",
+                                color: "linear-gradient(135deg, #d97706, #ea580c)",
                                 year: "Speed"
                             },
                             {
                                 icon: GraduationCap,
                                 title: "Instant Digital Certificates",
                                 description: "No more waiting for certificates! Download your CME certificates instantly after event completion. QR-verified certificates that are accepted nationwide for professional records.",
-                                color: "from-emerald-500 to-green-500",
+                                color: "linear-gradient(135deg, #047857, #22c55e)",
                                 year: "Convenience"
                             },
                             {
                                 icon: Globe,
                                 title: "Hybrid Event Access",
                                 description: "Can't attend in person? Join virtually with our high-quality live streaming. Access recorded sessions, presentation materials, and interactive Q&A from anywhere in the world.",
-                                color: "from-violet-500 to-purple-500",
+                                color: "linear-gradient(135deg, #6d28d9, #a855f7)",
                                 year: "Flexibility"
                             }
                         ].map((item, idx) => (
@@ -1415,18 +1417,12 @@ export default function PublicHomePage() {
                                 )}>
                                     <div className="bg-white rounded-2xl p-6 lg:p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-border/50 group hover:-translate-y-1">
                                         {/* Year/Label Badge */}
-                                        <div className={cn(
-                                            "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold text-white mb-4",
-                                            `bg-gradient-to-r ${item.color}`
-                                        )}>
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold text-white mb-4" style={{ background: item.color }}>
                                             {item.year}
                                         </div>
 
                                         {/* Mobile Icon (shown only on mobile) */}
-                                        <div className={cn(
-                                            "lg:hidden w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br text-white",
-                                            item.color
-                                        )}>
+                                        <div className="lg:hidden w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-white" style={{ background: item.color }}>
                                             <item.icon className="h-6 w-6" />
                                         </div>
 
@@ -1443,10 +1439,7 @@ export default function PublicHomePage() {
                                 <div className="absolute left-0 lg:left-1/2 lg:-translate-x-1/2 flex items-center justify-center">
                                     <div className="relative">
                                         {/* Icon Container */}
-                                        <div className={cn(
-                                            "relative w-8 h-8 lg:w-14 lg:h-14 rounded-full flex items-center justify-center bg-gradient-to-br text-white shadow-lg ring-4 ring-white",
-                                            item.color
-                                        )}>
+                                        <div className="relative w-8 h-8 lg:w-14 lg:h-14 rounded-full flex items-center justify-center text-white shadow-lg ring-4 ring-white" style={{ background: item.color }}>
                                             <item.icon className="h-4 w-4 lg:h-7 lg:w-7" />
                                         </div>
                                     </div>

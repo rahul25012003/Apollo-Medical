@@ -360,7 +360,7 @@ export default function PaymentSettingsPage() {
                                         <Label htmlFor="bankBeneficiary">Beneficiary Name</Label>
                                         <Input
                                             id="bankBeneficiary"
-                                            placeholder="e.g., CARE in Neuromodulation"
+                                            placeholder="e.g., Organization Name"
                                             value={settings.bankBeneficiary || ""}
                                             onChange={(e) => setSettings(prev => ({ ...prev, bankBeneficiary: e.target.value }))}
                                         />

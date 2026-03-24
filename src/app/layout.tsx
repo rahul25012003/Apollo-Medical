@@ -17,7 +17,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "CareNS — Conference Management",
+  title: "ICMS — Conference Management System",
   description: "Conference Management System",
 };
 

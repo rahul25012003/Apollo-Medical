@@ -78,7 +78,7 @@ export const FIELD_META: Record<string, { label: string; type: string; placehold
   smtpPort: { label: "Port", type: "number", placeholder: "587" },
   email: { label: "Email", type: "email", placeholder: "admin@example.com" },
   password: { label: "App Password", type: "password", placeholder: "" },
-  fromName: { label: "From Name", type: "text", placeholder: "CareNS Notifications" },
+  fromName: { label: "From Name", type: "text", placeholder: "ICMS Notifications" },
   apiKey: { label: "API Key", type: "password", placeholder: "" },
   fromEmail: { label: "From Email", type: "email", placeholder: "noreply@example.com" },
   domain: { label: "Domain", type: "text", placeholder: "mg.example.com" },
@@ -405,7 +405,7 @@ async function sendTwilioWhatsApp(config: WhatsAppTwilioConfig, to: string, mess
 // Email Templates
 // ============================================================================
 
-export function otpEmailHtml(code: string, purpose: string, appName: string = "CareNS"): string {
+export function otpEmailHtml(code: string, purpose: string, appName: string = "ICMS"): string {
   const purposeText = {
     REGISTRATION: "complete your registration",
     LOGIN: "log in to your account",
@@ -437,7 +437,7 @@ export function registrationConfirmationHtml(params: {
   status: string;
   appName?: string;
 }): string {
-  const { name, eventTitle, eventDate, registrationId, amount, currency, status, appName = "CareNS" } = params;
+  const { name, eventTitle, eventDate, registrationId, amount, currency, status, appName = "ICMS" } = params;
   const isFree = amount === 0;
   const statusColor = status === "CONFIRMED" ? "#10b981" : "#f59e0b";
   const statusText = status === "CONFIRMED" ? "Confirmed" : "Pending Payment";
@@ -463,7 +463,7 @@ export function registrationConfirmationHtml(params: {
   `;
 }
 
-export function otpSmsText(code: string, purpose: string, appName: string = "CareNS"): string {
+export function otpSmsText(code: string, purpose: string, appName: string = "ICMS"): string {
   return `${code} is your ${appName} OTP for ${purpose.toLowerCase().replace("_", " ")}. Valid for 10 minutes.`;
 }
 

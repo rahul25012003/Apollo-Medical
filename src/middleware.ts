@@ -159,12 +159,18 @@ export async function middleware(request: NextRequest) {
   const tenantSlug = await getTenantSlugByDomain(hostname);
 
   if (tenantSlug) {
-    // NEVER rewrite /dashboard, /auth, /api, /t paths — these are app-level routes
+    // App-level routes that should NOT be rewritten to /t/[slug]
     const isAppRoute = pathname.startsWith("/dashboard") ||
-      pathname.startsWith("/auth") ||
       pathname.startsWith("/api") ||
       pathname.startsWith("/t/") ||
       pathname.startsWith("/_next");
+
+    // Inject tenant param into /auth/login so the login page knows which tenant
+    if (pathname.startsWith("/auth") && !request.nextUrl.searchParams.has("tenant")) {
+      const url = request.nextUrl.clone();
+      url.searchParams.set("tenant", tenantSlug);
+      return withCorsHeaders(NextResponse.rewrite(url), request);
+    }
 
     if (!isAppRoute) {
       if (pathname === "/") {

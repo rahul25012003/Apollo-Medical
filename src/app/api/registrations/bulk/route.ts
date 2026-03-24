@@ -140,7 +140,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
     case "send_email": {
       const emails = existingRegistrations.map((r) => r.email);
-      const subject = (data as Record<string, string>)?.subject || "Update from CareNS";
+      const subject = (data as Record<string, string>)?.subject || "Update from ICMS";
       const body = (data as Record<string, string>)?.body || "You have an update regarding your registration.";
       // Send emails in parallel (non-blocking per email)
       const results = await Promise.allSettled(

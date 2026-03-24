@@ -688,7 +688,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                     <div className="flex items-center gap-2">
                                         <Input
                                             id="slug"
-                                            placeholder="carens"
+                                            placeholder="my-conference"
                                             value={formData.slug}
                                             onChange={(e) => {
                                                 setSlugManuallyEdited(true);
@@ -1838,11 +1838,11 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                             <div className="space-y-4 py-2">
                                 <div className="space-y-2">
                                     <Label>Question *</Label>
-                                    <Input placeholder="What is CareNS?" value={faqForm.question} onChange={(e) => setFaqForm((p) => ({ ...p, question: e.target.value }))} />
+                                    <Input placeholder="What is this conference?" value={faqForm.question} onChange={(e) => setFaqForm((p) => ({ ...p, question: e.target.value }))} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Answer *</Label>
-                                    <Textarea placeholder="CareNS is a professional organization dedicated to..." value={faqForm.answer} onChange={(e) => setFaqForm((p) => ({ ...p, answer: e.target.value }))} rows={4} />
+                                    <Textarea placeholder="A professional organization dedicated to..." value={faqForm.answer} onChange={(e) => setFaqForm((p) => ({ ...p, answer: e.target.value }))} rows={4} />
                                 </div>
                             </div>
                             <DialogFooter>
@@ -1903,7 +1903,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                             <div className="space-y-4 py-2">
                                 <div className="space-y-2">
                                     <Label>Title *</Label>
-                                    <Input placeholder="Neuromodulation Techniques" value={researchForm.title} onChange={(e) => setResearchForm((p) => ({ ...p, title: e.target.value }))} />
+                                    <Input placeholder="e.g., Research Topic" value={researchForm.title} onChange={(e) => setResearchForm((p) => ({ ...p, title: e.target.value }))} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Description *</Label>
