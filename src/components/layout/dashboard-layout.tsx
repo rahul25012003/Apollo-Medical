@@ -30,7 +30,7 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
     const accentColor = roleColors[session?.user?.role || "ATTENDEE"] || roleColors.ATTENDEE;
 
     return (
-        <div className="min-h-screen bg-slate-50/50">
+        <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950">
             <Sidebar />
             <Header title={title} subtitle={subtitle} />
 
@@ -54,8 +54,10 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
                         </div>
                     </div>
 
-                    {/* Page content */}
-                    {children}
+                    {/* Page content with transition */}
+                    <div className="page-transition">
+                        {children}
+                    </div>
                 </div>
             </main>
         </div>

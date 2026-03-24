@@ -204,7 +204,7 @@ export default function DashboardPage() {
 
     // ========== SHARED WRAPPER ==========
     const Shell = ({ children, subtitle }: { children: React.ReactNode; subtitle?: string }) => (
-        <div className="min-h-screen bg-slate-50/50">
+        <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950">
             <Sidebar />
             <Header title="Dashboard" subtitle={subtitle || `Welcome back, ${userName}`} />
             <main className={mainCn}>{children}</main>
@@ -292,54 +292,54 @@ export default function DashboardPage() {
 
         return (
             <Shell>
-                <div className="p-4 sm:p-6 lg:p-8">
+                <div className="p-4 sm:p-6 lg:p-8 page-transition">
                     <HeroGreeting />
 
                     {/* Quick Stats Row */}
                     <div className={cn("grid gap-4 mb-6", isSpeaker ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-3")}>
                         {/* Browse Events */}
-                        <Link href="/dashboard/browse-events" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white border-2 border-slate-100 hover:border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <Link href="/dashboard/browse-events" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                             <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #3b82f6, #06b6d4)", boxShadow: "0 8px 20px rgba(59,130,246,0.3)" }}>
                                 <Calendar className="w-6 h-6" />
                             </div>
                             <div className="flex-1">
-                                <span className="text-base font-bold text-slate-800 block">Browse Events</span>
-                                <span className="text-xs text-slate-500">Discover conferences</span>
+                                <span className="text-base font-bold text-slate-800 dark:text-slate-100 block">Browse Events</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">Discover conferences</span>
                             </div>
                             <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
                         </Link>
 
                         {/* My Registrations */}
-                        <Link href="/dashboard/my-registrations" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white border-2 border-slate-100 hover:border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <Link href="/dashboard/my-registrations" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                             <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #10b981, #14b8a6)", boxShadow: "0 8px 20px rgba(16,185,129,0.3)" }}>
                                 <CheckCircle2 className="w-6 h-6" />
                             </div>
                             <div>
-                                <span className="text-4xl font-black text-slate-900 block tracking-tighter leading-none">{delegateRegistrationCount}</span>
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1 block">Registrations</span>
+                                <span className="text-4xl font-black text-slate-900 dark:text-white block tracking-tighter leading-none animate-number-pop">{delegateRegistrationCount}</span>
+                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">Registrations</span>
                             </div>
                         </Link>
 
                         {/* My Certificates */}
-                        <Link href="/dashboard/my-certificates" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white border-2 border-slate-100 hover:border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <Link href="/dashboard/my-certificates" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                             <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #8b5cf6, #a855f7)", boxShadow: "0 8px 20px rgba(139,92,246,0.3)" }}>
                                 <Award className="w-6 h-6" />
                             </div>
                             <div>
-                                <span className="text-4xl font-black text-slate-900 block tracking-tighter leading-none">{delegateCertificateCount}</span>
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1 block">Certificates</span>
+                                <span className="text-4xl font-black text-slate-900 dark:text-white block tracking-tighter leading-none animate-number-pop">{delegateCertificateCount}</span>
+                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">Certificates</span>
                             </div>
                         </Link>
 
                         {/* Speaker Sessions */}
                         {isSpeaker && (
-                            <Link href="/dashboard/my-sessions" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white border-2 border-slate-100 hover:border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <Link href="/dashboard/my-sessions" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                                 <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)", boxShadow: "0 8px 20px rgba(59,130,246,0.3)" }}>
                                     <Presentation className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <span className="text-4xl font-black text-slate-900 block tracking-tighter leading-none">{speakerSessionCount}</span>
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1 block">My Sessions</span>
+                                    <span className="text-4xl font-black text-slate-900 dark:text-white block tracking-tighter leading-none animate-number-pop">{speakerSessionCount}</span>
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">My Sessions</span>
                                 </div>
                             </Link>
                         )}
@@ -362,8 +362,8 @@ export default function DashboardPage() {
                     )}
 
                     {/* Upcoming Events */}
-                    <div className="rounded-2xl bg-white border-2 border-slate-100 overflow-hidden">
-                        <div className="p-5 border-b border-slate-100 flex items-center gap-3">
+                    <div className="rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 overflow-hidden">
+                        <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
                             <div className="p-2 rounded-lg text-white shadow-md" style={{ background: "linear-gradient(135deg, #10b981, #14b8a6)" }}>
                                 <CalendarDays className="w-4 h-4" />
                             </div>
@@ -381,7 +381,7 @@ export default function DashboardPage() {
                                             <CalendarDays className="w-5 h-5 text-emerald-600" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-semibold text-slate-800 truncate group-hover:text-emerald-700 transition-colors">{event.title}</h3>
+                                            <h3 className="font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-emerald-700 transition-colors">{event.title}</h3>
                                             <div className="flex items-center gap-3 mt-1">
                                                 <span className="flex items-center gap-1.5 text-xs text-slate-500"><Calendar className="w-3 h-3" /> {event.date}</span>
                                                 <span className="flex items-center gap-1.5 text-xs text-slate-500"><Clock className="w-3 h-3" /> {event.time}</span>
@@ -455,7 +455,7 @@ export default function DashboardPage() {
 
     return (
         <Shell>
-            <div className="p-4 sm:p-6 lg:p-8">
+            <div className="p-4 sm:p-6 lg:p-8 page-transition">
                 <HeroGreeting />
 
                 {/* Stats Grid */}
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                                     <stat.icon className="w-5 h-5" />
                                 </div>
                             </div>
-                            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{stat.value}</p>
+                            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">{stat.value}</p>
                             <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">{stat.title}</p>
                             {stat.sub && <p className="text-[11px] font-bold mt-1" style={{ color: stat.color1 }}>↑ {stat.sub}</p>}
                             <div className="mt-3 flex items-end gap-[3px] h-5">
@@ -483,8 +483,8 @@ export default function DashboardPage() {
                 {/* Two-column: Events + Registrations */}
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
                     {/* Upcoming Events */}
-                    <div className="lg:col-span-3 rounded-2xl bg-white border-2 border-slate-100 overflow-hidden">
-                        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div className="lg:col-span-3 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 overflow-hidden">
+                        <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-lg text-white shadow-md" style={{ background: "linear-gradient(135deg, #3b82f6, #06b6d4)" }}>
                                     <CalendarDays className="w-4 h-4" />
@@ -510,7 +510,7 @@ export default function DashboardPage() {
                                             <CalendarDays className="w-5 h-5 text-blue-600" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-semibold text-slate-800 truncate">{event.title}</h3>
+                                            <h3 className="font-semibold text-slate-800 dark:text-slate-100 truncate">{event.title}</h3>
                                             <div className="flex flex-wrap items-center gap-2 mt-1.5">
                                                 <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">{event.date}</span>
                                                 <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">{event.time}</span>
@@ -529,8 +529,8 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Recent Registrations */}
-                    <div className="lg:col-span-2 rounded-2xl bg-white border-2 border-slate-100 overflow-hidden">
-                        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div className="lg:col-span-2 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 overflow-hidden">
+                        <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-lg text-white shadow-md" style={{ background: "linear-gradient(135deg, #8b5cf6, #a855f7)" }}>
                                     <Users className="w-4 h-4" />
@@ -556,7 +556,7 @@ export default function DashboardPage() {
                                             {initials}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-slate-800 truncate">{reg.name}</p>
+                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{reg.name}</p>
                                             <p className="text-xs text-slate-500 truncate">{reg.event}</p>
                                         </div>
                                         <div className="text-right flex-shrink-0">

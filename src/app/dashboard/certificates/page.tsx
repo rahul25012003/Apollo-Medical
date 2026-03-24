@@ -143,6 +143,98 @@ export default function CertificatesPage() {
     });
     const [generating, setGenerating] = useState(false);
 
+    // Custom certificate state
+    const [isCustomOpen, setIsCustomOpen] = useState(false);
+    const [customForm, setCustomForm] = useState({
+        eventId: "",
+        registrationId: "",
+        certificateType: "",
+        sessionId: "",
+        title: "",
+        cmeCredits: "",
+    });
+    const [customDelegateSearch, setCustomDelegateSearch] = useState("");
+    const [customTitleSearch, setCustomTitleSearch] = useState("");
+    const [customRegistrations, setCustomRegistrations] = useState<any[]>([]);
+    const [customSessions, setCustomSessions] = useState<any[]>([]);
+    const [selectedDelegate, setSelectedDelegate] = useState<any>(null);
+    const [customIssuing, setCustomIssuing] = useState(false);
+
+    // Fetch registrations for custom cert delegate search
+    useEffect(() => {
+        if (!customForm.eventId) { setCustomRegistrations([]); return; }
+        const fetchRegs = async () => {
+            try {
+                const res = await registrationsService.getAll({ eventId: customForm.eventId, limit: 500, ...tenantFilterParams });
+                if (res.success && Array.isArray(res.data)) setCustomRegistrations(res.data);
+            } catch { /* */ }
+        };
+        fetchRegs();
+    }, [customForm.eventId]);
+
+    // Fetch sessions for custom cert title search
+    useEffect(() => {
+        if (!customForm.eventId) { setCustomSessions([]); return; }
+        const fetchSessions = async () => {
+            try {
+                const res = await fetch(`/api/events/${customForm.eventId}/sessions`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.data)) setCustomSessions(data.data);
+                }
+            } catch { /* */ }
+        };
+        fetchSessions();
+    }, [customForm.eventId]);
+
+    const filteredDelegates = customRegistrations.filter((r: any) =>
+        !customDelegateSearch || r.name?.toLowerCase().includes(customDelegateSearch.toLowerCase()) || r.email?.toLowerCase().includes(customDelegateSearch.toLowerCase())
+    ).slice(0, 10);
+
+    const filteredSessions = customSessions.filter((s: any) =>
+        !customTitleSearch || s.title?.toLowerCase().includes(customTitleSearch.toLowerCase())
+    );
+
+    const handleCustomIssue = async () => {
+        if (!customForm.registrationId || !customForm.eventId || !selectedDelegate) {
+            toast.error("Please select a delegate and certificate type");
+            return;
+        }
+        try {
+            setCustomIssuing(true);
+            const payload: any = {
+                registrationId: customForm.registrationId,
+                eventId: customForm.eventId,
+                recipientName: selectedDelegate.name,
+                recipientEmail: selectedDelegate.email,
+                title: customForm.title || undefined,
+                cmeCredits: customForm.cmeCredits ? parseInt(customForm.cmeCredits) : undefined,
+                status: "ISSUED",
+            };
+
+            const res = await certificatesService.create(payload);
+            if (res.success) {
+                toast.success("Certificate issued successfully!");
+                setIsCustomOpen(false);
+                setCustomForm({ eventId: "", registrationId: "", certificateType: "", sessionId: "", title: "", cmeCredits: "" });
+                setSelectedDelegate(null);
+                setCustomDelegateSearch("");
+                setCustomTitleSearch("");
+                // Refresh
+                const certsRes = await certificatesService.getAll({ ...tenantFilterParams, limit: 500 });
+                if (certsRes.success && certsRes.data) {
+                    setCertificates(Array.isArray(certsRes.data) ? certsRes.data as unknown as Certificate[] : []);
+                }
+            } else {
+                toast.error((res as any).error?.message || "Failed to issue certificate");
+            }
+        } catch (err) {
+            toast.error("Failed to issue certificate");
+        } finally {
+            setCustomIssuing(false);
+        }
+    };
+
     // Fetch data
     useEffect(() => {
         if (sessionLoading) return;
@@ -500,12 +592,12 @@ export default function CertificatesPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
                             {templatePreviews.map((template) => (
                                 <div
                                     key={template.type}
                                     onClick={() => handleTemplateClick(template.type)}
-                                    className="p-3 sm:p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-teal-500/5 transition-all cursor-pointer group overflow-hidden"
+                                    className="p-3 sm:p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer group overflow-hidden"
                                 >
                                     <div className="h-12 sm:h-16 w-full rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform" style={{ background: template.color }}>
                                         <Award className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
@@ -519,6 +611,22 @@ export default function CertificatesPage() {
                                     </p>
                                 </div>
                             ))}
+                            {/* Custom Certificate Card */}
+                            <div
+                                onClick={() => setIsCustomOpen(true)}
+                                className="p-3 sm:p-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 hover:border-slate-400 dark:hover:border-slate-500 hover:shadow-lg transition-all cursor-pointer group overflow-hidden"
+                            >
+                                <div className="h-12 sm:h-16 w-full rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform" style={{ background: "linear-gradient(135deg, #18181b, #3f3f46)" }}>
+                                    <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                                </div>
+                                <h4 className="font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200">Custom</h4>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 line-clamp-2">
+                                    Issue to specific delegate
+                                </p>
+                                <p className="text-[10px] text-slate-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity font-semibold">
+                                    Click to create
+                                </p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -780,6 +888,187 @@ export default function CertificatesPage() {
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}
                                 Revoke Certificate
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Custom Certificate Dialog */}
+                <Dialog open={isCustomOpen} onOpenChange={(open) => {
+                    setIsCustomOpen(open);
+                    if (!open) { setSelectedDelegate(null); setCustomDelegateSearch(""); setCustomTitleSearch(""); setCustomForm({ eventId: "", registrationId: "", certificateType: "", sessionId: "", title: "", cmeCredits: "" }); }
+                }}>
+                    <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                            <div className="flex items-start gap-3">
+                                <div className="p-2.5 rounded-xl" style={{ background: "linear-gradient(135deg, #18181b, #3f3f46)" }}>
+                                    <Award className="h-5 w-5 text-white" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-lg">Issue Custom Certificate</DialogTitle>
+                                    <DialogDescription>Select a delegate, choose template type, and assign a session title.</DialogDescription>
+                                </div>
+                            </div>
+                        </DialogHeader>
+
+                        <div className="space-y-5 py-2">
+                            {/* Step 1: Select Event */}
+                            <div className="space-y-2">
+                                <Label className="text-sm font-bold">Event *</Label>
+                                <Select value={customForm.eventId} onValueChange={(v) => {
+                                    setCustomForm(p => ({ ...p, eventId: v, registrationId: "", sessionId: "", title: "" }));
+                                    setSelectedDelegate(null); setCustomDelegateSearch(""); setCustomTitleSearch("");
+                                }}>
+                                    <SelectTrigger><SelectValue placeholder="Select event..." /></SelectTrigger>
+                                    <SelectContent>
+                                        {events.map(e => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Step 2: Select Delegate */}
+                            {customForm.eventId && (
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-bold">Delegate Name *</Label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search by name or email..."
+                                            value={customDelegateSearch}
+                                            onChange={(e) => { setCustomDelegateSearch(e.target.value); if (selectedDelegate) setSelectedDelegate(null); }}
+                                            className="pl-10"
+                                        />
+                                    </div>
+                                    {/* Suggestions dropdown */}
+                                    {customDelegateSearch && !selectedDelegate && filteredDelegates.length > 0 && (
+                                        <div className="border rounded-xl bg-white dark:bg-slate-900 shadow-lg max-h-48 overflow-y-auto">
+                                            {filteredDelegates.map((r: any) => (
+                                                <button
+                                                    key={r.id}
+                                                    type="button"
+                                                    className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b last:border-0 border-slate-100 dark:border-slate-800"
+                                                    onClick={() => {
+                                                        setSelectedDelegate(r);
+                                                        setCustomDelegateSearch(r.name || r.email);
+                                                        setCustomForm(p => ({ ...p, registrationId: r.id }));
+                                                    }}
+                                                >
+                                                    <p className="font-semibold text-sm">{r.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{r.email} {r.phone ? `· ${r.phone}` : ""}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {customDelegateSearch && !selectedDelegate && filteredDelegates.length === 0 && (
+                                        <p className="text-xs text-muted-foreground px-1">No delegates found matching &ldquo;{customDelegateSearch}&rdquo;</p>
+                                    )}
+                                    {/* Selected delegate details */}
+                                    {selectedDelegate && (
+                                        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-4 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{selectedDelegate.name}</span>
+                                                <Badge variant="outline" className="text-[10px]">{selectedDelegate.status || "REGISTERED"}</Badge>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                                <span>Email: {selectedDelegate.email}</span>
+                                                {selectedDelegate.phone && <span>Phone: {selectedDelegate.phone}</span>}
+                                                {selectedDelegate.institution && <span>Institution: {selectedDelegate.institution}</span>}
+                                                {selectedDelegate.participantRole && <span>Role: {selectedDelegate.participantRole}</span>}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Step 3: Certificate Type */}
+                            {selectedDelegate && (
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-bold">Certificate Type *</Label>
+                                    <Select value={customForm.certificateType} onValueChange={(v) => setCustomForm(p => ({ ...p, certificateType: v }))}>
+                                        <SelectTrigger><SelectValue placeholder="Select template type..." /></SelectTrigger>
+                                        <SelectContent>
+                                            {templatePreviews.map(t => <SelectItem key={t.type} value={t.type}>{t.name} — {t.description}</SelectItem>)}
+                                            <SelectItem value="ATTENDANCE">Attendance — General Certificate</SelectItem>
+                                            <SelectItem value="SPEAKER_SESSION">Speaker Session — Per Session Certificate</SelectItem>
+                                            <SelectItem value="ORGANIZATION">Organization — Organizer Certificate</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
+                            {/* Step 4: Title from Sessions */}
+                            {selectedDelegate && customForm.certificateType && (
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-bold">Title / Session</Label>
+                                    {customSessions.length > 0 ? (
+                                        <>
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder="Search sessions..."
+                                                    value={customTitleSearch}
+                                                    onChange={(e) => setCustomTitleSearch(e.target.value)}
+                                                    className="pl-10"
+                                                />
+                                            </div>
+                                            <div className="border rounded-xl bg-white dark:bg-slate-900 shadow-sm max-h-36 overflow-y-auto">
+                                                {filteredSessions.map((s: any) => (
+                                                    <button
+                                                        key={s.id}
+                                                        type="button"
+                                                        className={cn(
+                                                            "w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b last:border-0 text-sm",
+                                                            customForm.sessionId === s.id ? "bg-slate-100 dark:bg-slate-800 font-semibold" : ""
+                                                        )}
+                                                        onClick={() => {
+                                                            setCustomForm(p => ({ ...p, sessionId: s.id, title: s.title }));
+                                                            setCustomTitleSearch(s.title);
+                                                        }}
+                                                    >
+                                                        <span className="font-medium">{s.title}</span>
+                                                        {s.sessionType && <span className="text-xs text-muted-foreground ml-2">({s.sessionType})</span>}
+                                                    </button>
+                                                ))}
+                                                {filteredSessions.length === 0 && (
+                                                    <p className="text-xs text-muted-foreground p-3">No sessions found</p>
+                                                )}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <Input
+                                            placeholder="Enter certificate title manually..."
+                                            value={customForm.title}
+                                            onChange={(e) => setCustomForm(p => ({ ...p, title: e.target.value }))}
+                                        />
+                                    )}
+                                </div>
+                            )}
+
+                            {/* CME Credits */}
+                            {selectedDelegate && customForm.certificateType && (
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-bold">CME Credits (optional)</Label>
+                                    <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={customForm.cmeCredits}
+                                        onChange={(e) => setCustomForm(p => ({ ...p, cmeCredits: e.target.value }))}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <DialogFooter className="gap-2 sm:gap-0 pt-2">
+                            <Button variant="outline" onClick={() => setIsCustomOpen(false)} disabled={customIssuing}>Cancel</Button>
+                            <Button
+                                onClick={handleCustomIssue}
+                                disabled={customIssuing || !customForm.registrationId || !customForm.eventId}
+                                className="text-white"
+                                style={{ background: "linear-gradient(135deg, #18181b, #3f3f46)" }}
+                            >
+                                {customIssuing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                <Award className="mr-2 h-4 w-4" />
+                                Map & Issue Certificate
                             </Button>
                         </DialogFooter>
                     </DialogContent>
