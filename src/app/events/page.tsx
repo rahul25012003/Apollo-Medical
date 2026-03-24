@@ -219,7 +219,7 @@ export default function PublicEventsPage() {
                             <div className="h-8 w-8 rounded-xl gradient-medical flex items-center justify-center">
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
-                            <span className="font-bold text-xl">CareNS</span>
+                            <span className="font-bold text-xl">ICMS</span>
                         </Link>
                         <nav className="hidden md:flex items-center gap-6">
                             <Link href="/events" className="text-sm font-medium text-primary">
@@ -633,7 +633,7 @@ export default function PublicEventsPage() {
                                 <GraduationCap className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                                <span className="font-bold text-lg">CareNS</span>
+                                <span className="font-bold text-lg">ICMS</span>
                                 <p className="text-sm text-muted-foreground">
                                     Integrated Conference Management System
                                 </p>
