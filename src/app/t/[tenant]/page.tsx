@@ -136,9 +136,9 @@ function AnimatedCounter({ value, suffix = "" }: { value: string | number; suffi
 function DecorativeBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl -top-40 -right-40 animate-pulse" />
-      <div className="absolute w-[200px] h-[200px] md:w-[400px] md:h-[400px] bg-gradient-to-br from-secondary/10 to-transparent rounded-full blur-3xl bottom-20 -left-40 animate-pulse" style={{ animationDelay: "1s" }} />
-      <div className="absolute w-[150px] h-[150px] md:w-[300px] md:h-[300px] bg-gradient-to-br from-accent/10 to-transparent rounded-full blur-3xl top-1/2 left-1/2 animate-pulse" style={{ animationDelay: "2s" }} />
+      <div className="absolute w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl -top-40 -right-40 animate-pulse" />
+      <div className="absolute w-[200px] h-[200px] md:w-[400px] md:h-[400px] bg-gradient-to-br from-secondary/20 to-transparent rounded-full blur-3xl bottom-20 -left-40 animate-pulse" style={{ animationDelay: "1s" }} />
+      <div className="absolute w-[150px] h-[150px] md:w-[300px] md:h-[300px] bg-gradient-to-br from-accent/15 to-transparent rounded-full blur-3xl top-1/2 left-1/2 animate-pulse" style={{ animationDelay: "2s" }} />
     </div>
   );
 }
@@ -663,7 +663,7 @@ export default function TenantHomePage() {
               >
                 <GraduationCap className="h-5 w-5 text-white" />
               </div>
-              <span className="font-bold text-base lg:text-lg tracking-tight">CARE in Neuromodulation</span>
+              <span className="font-bold text-base lg:text-lg tracking-tight">{branding.name}</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-6 lg:gap-8">
@@ -724,7 +724,7 @@ export default function TenantHomePage() {
           id="hero"
           className="relative min-h-screen flex items-center overflow-hidden pb-16 md:pb-20"
           style={hero.bgImage ? {} : {
-            background: `linear-gradient(135deg, ${theme.primaryColor}08 0%, ${theme.secondaryColor}08 50%, ${theme.accentColor}08 100%)`,
+            background: `linear-gradient(135deg, ${theme.primaryColor}18 0%, ${theme.secondaryColor}12 50%, ${theme.accentColor}18 100%)`,
           }}
         >
           {/* Background image — use img tag for full quality (no compression) */}
@@ -795,10 +795,10 @@ export default function TenantHomePage() {
                 </h1>
                 <div className="mt-4 flex flex-col items-center gap-1.5">
                   <span className="text-[12px] font-bold uppercase tracking-[0.2em] px-3 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.35)", color: "rgba(255,255,255,0.9)", backdropFilter: "blur(4px)" }}>
-                    proudly supported by
+                    In association with
                   </span>
                   <div
-                    className="inline-flex items-center gap-3 px-7 py-3 rounded-2xl font-extrabold text-2xl tracking-wide"
+                    className="inline-flex items-center gap-3 px-7 py-3 rounded-2xl font-extrabold text-lg sm:text-2xl tracking-wide"
                     style={{
                       background: "linear-gradient(135deg, #1e3a8a, #2563eb)",
                       color: "#ffffff",
@@ -807,7 +807,7 @@ export default function TenantHomePage() {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="https://flagcdn.com/24x18/fr.png" srcSet="https://flagcdn.com/48x36/fr.png 2x" width="24" height="18" alt="France" className="rounded-sm shadow-sm" />
-                    <span>Indo-French Centre</span>
+                    <span>Indo French Centre for AI in Health Care</span>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="https://flagcdn.com/24x18/in.png" srcSet="https://flagcdn.com/48x36/in.png 2x" width="24" height="18" alt="India" className="rounded-sm shadow-sm" />
                   </div>
@@ -1171,8 +1171,8 @@ export default function TenantHomePage() {
 
       </div>{/* End background wrapper */}
 
-      {/* Organizing Committee Section */}
-      <section id="committee" className="py-12 lg:py-20 bg-white relative overflow-hidden">
+      {/* Organizing Committee Section — only for tenants with hardcoded committee data */}
+      {tenantSlug === "carens" && <section id="committee" className="py-12 lg:py-20 bg-white relative overflow-hidden">
         {/* Subtle dot-grid tinted with primary */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -1354,7 +1354,7 @@ export default function TenantHomePage() {
           </div>
 
         </div>
-      </section>
+      </section>}
 
       {/* Speakers Section */}
       {sections.events && speakers.length > 0 && (
@@ -1677,7 +1677,7 @@ export default function TenantHomePage() {
               </Badge>
               <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Our Research</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Pioneering studies advancing the frontiers of neuromodulation and neuroscience
+                Pioneering studies advancing the frontiers of medical science
               </p>
             </div>
 
