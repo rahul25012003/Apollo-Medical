@@ -388,7 +388,7 @@ export function hasRole(userRole: UserRole, allowedRoles: UserRole[]): boolean {
 export const ROLE_PERMISSIONS = {
   SUPER_ADMIN: ["*"], // Full platform access
   ADMIN: ["*"], // Full access within own tenant
-  EVENT_MANAGER: ["events", "speakers", "sponsors"],
+  EVENT_MANAGER: ["events", "registrations", "speakers", "sponsors", "certificates", "communications", "reports"],
   REGISTRATION_MANAGER: ["registrations", "attendees"],
   CERTIFICATE_MANAGER: ["certificates"],
   ATTENDEE: ["profile", "registrations:own", "certificates:own"],
