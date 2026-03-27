@@ -708,31 +708,31 @@ export default function TenantHomePage() {
       <header className={cn("sticky top-0 z-50 transition-all duration-500", scrolled ? "bg-white/90 backdrop-blur-2xl shadow-xl shadow-slate-900/5 border-b border-slate-200/50 py-0" : "bg-white/60 backdrop-blur-xl border-b border-transparent py-1")}>
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex h-16 lg:h-20 items-center justify-between">
-            <Link href={`/t/${tenantSlug}`} className="flex items-center gap-2 group">
+            <Link href={`/t/${tenantSlug}`} className="flex items-center gap-2 group flex-shrink-0">
               <div
-                className="h-9 w-9 rounded-xl flex items-center justify-center shadow-md"
+                className="h-8 w-8 lg:h-9 lg:w-9 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
                 style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
               >
-                <GraduationCap className="h-5 w-5 text-white" />
+                <GraduationCap className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
               </div>
-              <span className="font-bold text-base lg:text-lg tracking-tight">{branding.name}</span>
+              <span className="font-bold text-sm lg:text-lg tracking-tight hidden sm:block max-w-[140px] lg:max-w-[220px] truncate">{branding.name}</span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-6 lg:gap-8">
-              {sections.hero && <a href="#hero" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Home</a>}
-              {sections.events && hasEvents && <a href="#events" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Events</a>}
-              {sections.gallery && hasGallery && <a href="#gallery" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Gallery</a>}
-              {(sections.ongoingResearch !== false) && researchItems.length > 0 && <a href="#research" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Research</a>}
-              {sections.testimonials && hasRealTestimonials && <a href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>}
-              {sections.about && <a href="#about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">About</a>}
-              {sections.contact && <a href="#contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Contact</a>}
-              {(sections.faq !== false) && faqs.length > 0 && <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQ</a>}
+            <nav className="hidden lg:flex items-center gap-4 xl:gap-6 flex-1 justify-center">
+              {sections.hero && <a href="#hero" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Home</a>}
+              {sections.events && hasEvents && <a href="#events" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Events</a>}
+              {sections.gallery && hasGallery && <a href="#gallery" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Gallery</a>}
+              {(sections.ongoingResearch !== false) && researchItems.length > 0 && <a href="#research" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Research</a>}
+              {sections.testimonials && hasRealTestimonials && <a href="#testimonials" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Testimonials</a>}
+              {sections.about && <a href="#about" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">About</a>}
+              {sections.contact && <a href="#contact" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Contact</a>}
+              {(sections.faq !== false) && faqs.length > 0 && <a href="#faq" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">FAQ</a>}
             </nav>
 
-            <div className="flex items-center gap-3">
-              {/* Mobile hamburger */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Mobile/tablet hamburger — show on screens < lg */}
               <button
-                className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label="Toggle menu"
               >
@@ -740,10 +740,10 @@ export default function TenantHomePage() {
               </button>
               <Link href={`/auth/login?tenant=${tenantSlug}`}>
                 <Button
-                  className="text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 text-xs sm:text-sm"
+                  className="text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 text-xs sm:text-sm px-4 sm:px-6"
                   style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
                 >
-                  Login / Register
+                  Login
                 </Button>
               </Link>
             </div>
@@ -751,7 +751,7 @@ export default function TenantHomePage() {
 
           {/* Mobile nav dropdown */}
           {mobileMenuOpen && (
-            <div className="md:hidden border-t bg-white/95 backdrop-blur-xl pb-4 px-4">
+            <div className="lg:hidden border-t bg-white/95 backdrop-blur-xl pb-4 px-4">
               <nav className="flex flex-col gap-1 pt-2">
                 {sections.hero && <a href="#hero" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Home</a>}
                 {sections.events && hasEvents && <a href="#events" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Events</a>}
