@@ -12,7 +12,9 @@ export function getEffectiveTenantId(
     if (session.user.role === "SUPER_ADMIN") {
         return searchParams.get("tenantId") || null;
     }
-    return session.user.tenantId ?? null;
+    // Non-super-admin MUST have a tenantId — if missing, return a dummy ID
+    // that won't match anything, preventing data leaks across tenants
+    return session.user.tenantId ?? "no-tenant-assigned";
 }
 
 /**
