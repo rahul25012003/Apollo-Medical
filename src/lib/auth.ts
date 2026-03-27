@@ -95,6 +95,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        tenantSlug: { label: "Tenant", type: "text" },
       },
       async authorize(credentials) {
         const parsed = loginSchema.safeParse(credentials);
@@ -104,6 +105,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         const { email, password } = parsed.data;
+        const tenantSlug = credentials?.tenantSlug as string | undefined;
 
         const user = await prisma.user.findUnique({
           where: { email: email.toLowerCase() },
@@ -131,6 +133,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!isValid) {
           return null;
+        }
+
+        // Tenant isolation for password login
+        if (tenantSlug) {
+          // Tenant-specific login (e.g., CareNS, Apollo, Fortis)
+          // Super admin can login anywhere
+          if (user.role !== "SUPER_ADMIN") {
+            const loginTenant = await prisma.tenant.findUnique({
+              where: { slug: tenantSlug },
+              select: { id: true },
+            });
+            if (loginTenant && user.tenantId && user.tenantId !== loginTenant.id) {
+              throw new Error("WRONG_TENANT");
+            }
+            if (loginTenant && !user.tenantId) {
+              throw new Error("WRONG_TENANT");
+            }
+          }
+        } else {
+          // ICMS home login (no tenant) — only super admin allowed
+          if (user.role !== "SUPER_ADMIN") {
+            throw new Error("ICMS_SUPER_ADMIN_ONLY");
+          }
         }
 
         return {

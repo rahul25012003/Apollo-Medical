@@ -138,13 +138,22 @@ function LoginPageInner() {
             const result = await signIn("credentials", {
                 email: data.email,
                 password: data.password,
+                tenantSlug: tenantSlug || "",
                 redirect: false,
             });
 
             if (result?.error) {
-                setError(result.error === "CredentialsSignin"
-                    ? "Invalid email or password"
-                    : result.error);
+                if (result.error.includes("WRONG_TENANT")) {
+                    setError("No account found for this email on this platform. Please make sure you're logging into the correct conference portal.");
+                } else if (result.error.includes("ICMS_SUPER_ADMIN_ONLY")) {
+                    setError("This login is for platform administrators only. Please login through your conference portal.");
+                } else if (result.error.includes("Account is deactivated")) {
+                    setError("Your account has been deactivated. Please contact the administrator.");
+                } else {
+                    setError(result.error === "CredentialsSignin"
+                        ? "Invalid email or password"
+                        : result.error);
+                }
                 setIsLoading(false);
                 return;
             }
