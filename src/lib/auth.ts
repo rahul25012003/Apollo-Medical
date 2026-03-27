@@ -339,6 +339,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           console.error("Failed to create session record:", error);
         }
       }
+
+      // Auto-fix: if non-super-admin has no tenantId in token, re-fetch from DB
+      // This handles cases where tenantId was updated after the user logged in
+      if (token.id && token.role !== "SUPER_ADMIN" && !token.tenantId) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { tenantId: true, role: true },
+          });
+          if (dbUser?.tenantId) {
+            token.tenantId = dbUser.tenantId;
+          }
+          if (dbUser?.role) {
+            token.role = dbUser.role;
+          }
+        } catch {
+          // Silently fail — don't break auth
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
