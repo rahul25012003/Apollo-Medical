@@ -40,19 +40,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (tenant.paymentMode !== "QR_CODE") {
-      return NextResponse.json(
-        { success: false, error: { code: "BAD_REQUEST", message: "QR code payment is not enabled for this tenant" } },
-        { status: 400 }
-      );
-    }
-
     // Update registration with payment proof (admin will verify later)
+    // Allow proof upload for any payment mode — it's just a receipt screenshot
+    const paymentMethod = tenant.paymentMode === "QR_CODE" ? "qr_code" : "manual";
     await prisma.registration.update({
       where: { id: registrationId },
       data: {
         paymentProof,
-        paymentMethod: "qr_code",
+        paymentMethod,
         paymentId: transactionId || null,
         paymentStatus: "PENDING", // Stays pending until admin verifies
       },
