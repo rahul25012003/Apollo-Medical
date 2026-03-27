@@ -341,6 +341,13 @@ export default function TenantHomePage() {
   const [aboutSlide, setAboutSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // On production (non-localhost), middleware handles tenant injection — no need for ?tenant= in URLs
+  const [isLocal, setIsLocal] = useState(true);
+  useEffect(() => {
+    setIsLocal(window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  }, []);
+  // Build clean URLs: on production no ?tenant= needed, on localhost add it
+  const tUrl = (path: string) => isLocal ? `${path}${path.includes("?") ? "&" : "?"}tenant=${tenantSlug}` : path;
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [testimonialVisibleCount, setTestimonialVisibleCount] = useState(3);
   const [speakers, setSpeakers] = useState<any[]>([]);
@@ -738,7 +745,7 @@ export default function TenantHomePage() {
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
-              <Link href={`/auth/login?tenant=${tenantSlug}`}>
+              <Link href={tUrl('/auth/login')}>
                 <Button
                   className="text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 text-xs sm:text-sm px-4 sm:px-6"
                   style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
@@ -922,18 +929,29 @@ export default function TenantHomePage() {
 
               {nextEvent && (
                 <div className="mt-6 hero-stagger-5 flex flex-col items-center gap-3">
-                  {/* Flashing registration date */}
-                  {(nextEvent.registrationOpensDate || nextEvent.startDate) && (
-                    <div
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-base text-white shadow-lg"
-                      style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.45)" }}
-                    >
-                      <span className="w-3 h-3 rounded-full flex-shrink-0 animate-flash bg-white" />
-                      <span className="animate-flash text-base font-extrabold">
-                        Registrations open for {fmtEventRange(nextEvent.startDate, nextEvent.endDate)}
-                      </span>
-                    </div>
-                  )}
+                  {/* Registration status badge — only show if event hasn't ended */}
+                  {nextEvent.startDate && (() => {
+                    const now = new Date();
+                    const deadline = nextEvent.registrationDeadline ? new Date(nextEvent.registrationDeadline) : null;
+                    const endDate = nextEvent.endDate ? new Date(nextEvent.endDate) : new Date(nextEvent.startDate);
+                    const endOfDay = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
+                    const isEnded = now > endOfDay;
+                    const isDeadlinePassed = deadline && now > deadline;
+                    if (isEnded) return null;
+                    if (isDeadlinePassed) return (
+                      <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full font-bold text-sm text-white/90 bg-slate-600/80 backdrop-blur-sm">
+                        Registration closed — Event: {fmtEventRange(nextEvent.startDate, nextEvent.endDate)}
+                      </div>
+                    );
+                    return (
+                      <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-base text-white shadow-lg" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.45)" }}>
+                        <span className="w-3 h-3 rounded-full flex-shrink-0 animate-flash bg-white" />
+                        <span className="animate-flash text-base font-extrabold">
+                          Registrations open for {fmtEventRange(nextEvent.startDate, nextEvent.endDate)}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   {nextEvent.startDate && new Date(nextEvent.startDate) > new Date() && (
                     <>
                       <p className={cn("text-sm font-medium", "text-white/70")}>
@@ -1158,7 +1176,7 @@ export default function TenantHomePage() {
                               </span>
                             )}
                           </div>
-                          <Link href={`/events/${event.id}/register?tenant=${tenantSlug}`}>
+                          <Link href={tUrl(`/events/${event.id}/register`)}>
                             <Button className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300" style={{ boxShadow: "0 8px 24px rgba(16,185,129,0.4)" }}>
                               Register Now
                               <ArrowRight className="ml-2 h-4 w-4" />
@@ -1280,18 +1298,22 @@ export default function TenantHomePage() {
                           </div>
                         )}
                       </div>
-                      {(event.registrationOpensDate || event.startDate) && (
-                        <div
-                          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-white text-base font-extrabold mb-3 shadow-md"
-                          style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)" }}
-                        >
-                          <span className="w-2.5 h-2.5 rounded-full bg-white animate-flash flex-shrink-0" />
-                          <span className="animate-flash">
-                            Registrations open for {fmtEventRange(event.startDate, event.endDate)}
-                          </span>
-                        </div>
-                      )}
-                      <Link href={`/events/${event.id}/register?tenant=${tenantSlug}`}>
+                      {event.startDate && (() => {
+                        const now = new Date();
+                        const dl = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
+                        const ed = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
+                        const ended = now > new Date(ed.getTime() + 86400000);
+                        const dlPassed = dl && now > dl;
+                        if (ended) return null;
+                        if (dlPassed) return <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-white/80 text-xs font-bold mb-3 bg-slate-600/80">Registration closed</div>;
+                        return (
+                          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-white text-base font-extrabold mb-3 shadow-md" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)" }}>
+                            <span className="w-2.5 h-2.5 rounded-full bg-white animate-flash flex-shrink-0" />
+                            <span className="animate-flash">Registrations open for {fmtEventRange(event.startDate, event.endDate)}</span>
+                          </div>
+                        );
+                      })()}
+                      <Link href={tUrl(`/events/${event.id}/register`)}>
                         <Button
                           className="w-full text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
                           style={{ boxShadow: "0 6px 20px rgba(16,185,129,0.3)" }}
@@ -2624,7 +2646,7 @@ export default function TenantHomePage() {
 
       {/* Mobile sticky register button */}
       <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-xl border-t shadow-lg md:hidden">
-        <Link href={events[0] ? `/events/${events[0].id}/register?tenant=${tenantSlug}` : `/auth/login?tenant=${tenantSlug}`} className="block">
+        <Link href={events[0] ? tUrl(`/events/${events[0].id}/register`) : tUrl('/auth/login')} className="block">
           <Button className="w-full text-white rounded-full font-semibold py-3 bg-emerald-500 hover:bg-emerald-600" style={{ boxShadow: "0 4px 16px rgba(16,185,129,0.35)" }}>
             Register Now
             <ArrowRight className="ml-2 h-4 w-4" />

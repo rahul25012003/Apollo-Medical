@@ -492,7 +492,7 @@ export default function EventDetailPage() {
                             <Button variant="ghost" size="icon">
                                 <Share2 className="h-4 w-4" />
                             </Button>
-                            <Link href="/auth/login">
+                            <Link href={tenantSlug ? `/auth/login?tenant=${tenantSlug}` : "/auth/login"}>
                                 <Button variant="outline" size="sm">
                                     Login
                                 </Button>

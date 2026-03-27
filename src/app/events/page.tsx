@@ -235,7 +235,7 @@ export default function PublicEventsPage() {
                             </Link>
                         </nav>
                         <div className="flex items-center gap-3">
-                            <Link href="/auth/login">
+                            <Link href={tenantSlug ? `/auth/login?tenant=${tenantSlug}` : "/auth/login"}>
                                 <Button variant="outline" size="sm" className="rounded-full">
                                     Login
                                 </Button>
