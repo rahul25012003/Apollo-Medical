@@ -118,13 +118,14 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   const data = parsed.data;
 
-  // Check for duplicate email
-  const existingSpeaker = await prisma.speaker.findUnique({
-    where: { email: data.email.toLowerCase() },
-  });
-
-  if (existingSpeaker) {
-    return Errors.conflict("A speaker with this email already exists");
+  // Check for duplicate email (only if email provided)
+  if (data.email) {
+    const existingSpeaker = await prisma.speaker.findUnique({
+      where: { email: data.email.toLowerCase() },
+    });
+    if (existingSpeaker) {
+      return Errors.conflict("A speaker with this email already exists");
+    }
   }
 
   // Determine tenant: SUPER_ADMIN can specify in body, others use session
@@ -132,35 +133,48 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     ? (typeof body.tenantId === "string" ? body.tenantId : null)
     : (session.user.tenantId || null);
 
+  const speakerEmail = data.email ? data.email.toLowerCase() : null;
   const speaker = await prisma.speaker.create({
     data: {
-      ...data,
-      email: data.email.toLowerCase(),
+      name: data.name,
+      email: speakerEmail,
+      phone: data.phone || null,
+      designation: data.designation || null,
+      department: data.department || null,
+      institution: data.institution || null,
+      biography: data.biography || null,
+      photo: data.photo || null,
+      linkedin: data.linkedin || null,
+      twitter: data.twitter || null,
+      website: data.website || null,
+      isActive: data.isActive ?? true,
       tenantId,
     },
   });
 
-  // Auto-create user account for speaker (OTP-only login)
-  try {
-    const { isNew } = await findOrCreateUserAccount({
-      email: data.email,
-      name: data.name,
-      phone: data.phone,
-      tenantId,
-    });
-    if (isNew) {
-      const baseUrl = request.headers.get("origin") || request.headers.get("host") || "";
-      const loginUrl = `${baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`}/auth/login`;
-      sendAccountCreatedEmail({
+  // Auto-create user account for speaker (OTP-only login) — only if email provided
+  if (data.email) {
+    try {
+      const { isNew } = await findOrCreateUserAccount({
         email: data.email,
         name: data.name,
-        role: "speaker",
-        loginUrl,
+        phone: data.phone,
         tenantId,
       });
+      if (isNew) {
+        const baseUrl = request.headers.get("origin") || request.headers.get("host") || "";
+        const loginUrl = `${baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`}/auth/login`;
+        sendAccountCreatedEmail({
+          email: data.email,
+          name: data.name,
+          role: "speaker",
+          loginUrl,
+          tenantId,
+        });
+      }
+    } catch (err) {
+      console.error("Auto-account creation failed for speaker:", err);
     }
-  } catch (err) {
-    console.error("Auto-account creation failed for speaker:", err);
   }
 
   return successResponse(speaker, "Speaker created successfully", 201);

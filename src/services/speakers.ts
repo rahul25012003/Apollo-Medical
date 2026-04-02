@@ -7,7 +7,7 @@ import { api, ApiResponse } from "@/lib/api-client";
 export interface Speaker {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   designation: string | null;
   department: string | null;
@@ -47,7 +47,7 @@ export interface SpeakerFilters {
 
 export interface CreateSpeakerData {
   name: string;
-  email: string;
+  email?: string;
   phone?: string;
   designation?: string;
   department?: string;

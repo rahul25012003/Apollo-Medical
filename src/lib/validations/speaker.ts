@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const createSpeakerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")).or(z.literal(null)),
   phone: z.string().optional(),
 
   // Professional Info

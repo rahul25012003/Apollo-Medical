@@ -61,7 +61,7 @@ interface DisplaySpeaker {
     designation: string | null;
     department: string | null;
     institution: string | null;
-    email: string;
+    email: string | null;
     phone: string | null;
     biography: string | null;
     isActive: boolean;
@@ -144,7 +144,7 @@ export default function SpeakersPage() {
     const filteredSpeakers = speakers.filter((speaker) => {
         const matchesSearch = searchQuery === "" ||
             speaker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            speaker.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            speaker.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             speaker.institution?.toLowerCase().includes(searchQuery.toLowerCase());
 
         if (selectedTab === "all") return matchesSearch;
@@ -402,7 +402,7 @@ export default function SpeakersPage() {
                                 {/* Contact Info */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="email" className="text-xs sm:text-sm">Email *</Label>
+                                        <Label htmlFor="email" className="text-xs sm:text-sm">Email</Label>
                                         <Input id="email" type="email" placeholder="speaker@institution.edu" className="h-9 sm:h-10" />
                                     </div>
                                     <div className="space-y-2">

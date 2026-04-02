@@ -140,7 +140,7 @@ interface EventSponsorEntry {
 interface ExistingSpeaker {
     id: string;
     name: string;
-    email: string;
+    email: string | null;
     designation: string | null;
     institution: string | null;
 }
@@ -612,10 +612,10 @@ export default function CreateEventPage() {
                     const sp = session.speakers[i];
                     let speakerId = sp.speakerId;
 
-                    if (!sp.isExistingSpeaker && sp.newSpeakerName && sp.newSpeakerEmail) {
+                    if (!sp.isExistingSpeaker && sp.newSpeakerName) {
                         const speakerRes = await speakersService.create({
                             name: sp.newSpeakerName,
-                            email: sp.newSpeakerEmail,
+                            email: sp.newSpeakerEmail || undefined,
                             designation: sp.newSpeakerDesignation || undefined,
                             institution: sp.newSpeakerInstitution || undefined,
                         });
@@ -1827,7 +1827,7 @@ export default function CreateEventPage() {
                                                                     ) : (
                                                                         <div className="grid grid-cols-2 gap-2">
                                                                             <Input value={sp.newSpeakerName} onChange={(e) => updateSessionSpeaker(session.id, sp.id, "newSpeakerName", e.target.value)} placeholder="Name *" className="h-8 text-sm" />
-                                                                            <Input type="email" value={sp.newSpeakerEmail} onChange={(e) => updateSessionSpeaker(session.id, sp.id, "newSpeakerEmail", e.target.value)} placeholder="Email *" className="h-8 text-sm" />
+                                                                            <Input type="email" value={sp.newSpeakerEmail} onChange={(e) => updateSessionSpeaker(session.id, sp.id, "newSpeakerEmail", e.target.value)} placeholder="Email" className="h-8 text-sm" />
                                                                             <Input value={sp.newSpeakerDesignation} onChange={(e) => updateSessionSpeaker(session.id, sp.id, "newSpeakerDesignation", e.target.value)} placeholder="Designation" className="h-8 text-sm" />
                                                                             <Input value={sp.newSpeakerInstitution} onChange={(e) => updateSessionSpeaker(session.id, sp.id, "newSpeakerInstitution", e.target.value)} placeholder="Institution" className="h-8 text-sm" />
                                                                         </div>

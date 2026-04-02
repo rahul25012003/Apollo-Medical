@@ -118,15 +118,14 @@ export const POST = withErrorHandler(
       },
     });
 
-    // Auto-create a SPEAKER registration so they can receive certificates
+    // Auto-create a SPEAKER registration so they can receive certificates (only if email exists)
+    if (speaker.email) {
     try {
-      // Check if registration already exists for this speaker + event
       const existingReg = await prisma.registration.findUnique({
         where: { email_eventId: { email: speaker.email.toLowerCase(), eventId } },
       });
 
       if (!existingReg) {
-        // Create user account if needed
         const { userId } = await findOrCreateUserAccount({
           email: speaker.email,
           name: speaker.name,
@@ -160,6 +159,7 @@ export const POST = withErrorHandler(
       }
     } catch (err) {
       console.error("Auto-registration for speaker failed:", err);
+    }
     }
 
     return successResponse(eventSpeaker, "Speaker added to event", 201);

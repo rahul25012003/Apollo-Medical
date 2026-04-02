@@ -235,11 +235,11 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         },
         include: {
           session: { select: { id: true, title: true } },
-          speaker: { select: { email: true } },
+          speaker: { select: { id: true, email: true } },
         },
       });
       for (const ss of sessionSpeakers) {
-        const email = ss.speaker.email.toLowerCase();
+        const email = (ss.speaker.email || ss.speaker.id).toLowerCase();
         if (!speakerSessions[email]) speakerSessions[email] = [];
         speakerSessions[email].push({ id: ss.session.id, title: ss.session.title });
       }
@@ -394,11 +394,11 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         },
         include: {
           session: { select: { id: true, title: true } },
-          speaker: { select: { email: true } },
+          speaker: { select: { id: true, email: true } },
         },
       });
       for (const ss of sessionSpeakers) {
-        const email = ss.speaker.email.toLowerCase();
+        const email = (ss.speaker.email || ss.speaker.id).toLowerCase();
         if (!speakerSessions[email]) speakerSessions[email] = [];
         speakerSessions[email].push({ id: ss.session.id, title: ss.session.title });
       }
