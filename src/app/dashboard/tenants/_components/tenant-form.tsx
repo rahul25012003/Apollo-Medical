@@ -87,6 +87,7 @@ const TIMEZONES = [
 const defaultFormData: TenantFormData = {
     slug: "",
     name: "",
+    shortName: "",
     tagline: "",
     logo: "",
     favicon: "",
@@ -681,6 +682,16 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                         onChange={(e) => updateField("name", e.target.value)}
                                         required
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="shortName">Sidebar Display Name</Label>
+                                    <Input
+                                        id="shortName"
+                                        placeholder="Apollo"
+                                        value={formData.shortName || ""}
+                                        onChange={(e) => updateField("shortName", e.target.value)}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Short name shown beside logo in dashboard sidebar. Leave empty to use full name.</p>
                                 </div>
                                 {!restrictedMode && (
                                 <div className="space-y-2">

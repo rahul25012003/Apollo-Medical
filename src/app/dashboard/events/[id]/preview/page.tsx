@@ -157,11 +157,41 @@ export default function EventPreviewPage() {
                         )}
 
                         {/* Sessions */}
-                        {sessions.length > 0 && (
+                        {sessions.length > 0 && (() => {
+                            // Group sessions by day
+                            const dayMap = new Map<string, { label: string; date: string; sessions: any[] }>();
+                            let dayCounter = 0;
+                            sessions.forEach((session: any) => {
+                                let dateKey = "unscheduled";
+                                if (session.sessionDate) {
+                                    const d = new Date(session.sessionDate);
+                                    if (!isNaN(d.getTime())) {
+                                        try { dateKey = d.toISOString().split("T")[0]; } catch { /* */ }
+                                    }
+                                }
+                                if (!dayMap.has(dateKey)) {
+                                    dayCounter++;
+                                    let dateLabel = "";
+                                    if (session.sessionDate && dateKey !== "unscheduled") {
+                                        const d = new Date(session.sessionDate);
+                                        if (!isNaN(d.getTime())) dateLabel = d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+                                    }
+                                    dayMap.set(dateKey, { label: dateKey !== "unscheduled" ? `Day ${dayCounter}` : "Unscheduled", date: dateLabel, sessions: [] });
+                                }
+                                dayMap.get(dateKey)!.sessions.push(session);
+                            });
+                            const days = Array.from(dayMap.entries()).sort(([a], [b]) => a.localeCompare(b));
+                            return (
                             <div>
                                 <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><DoorOpen className="h-5 w-5 text-teal-600" /> Scientific Program</h2>
-                                <div className="space-y-3">
-                                    {sessions.map((session: any) => (
+                                {days.map(([key, day]) => (
+                                <div key={key} className="mb-6">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <span className="text-sm font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full">{day.label}</span>
+                                        {day.date && <span className="text-xs text-muted-foreground">{day.date}</span>}
+                                    </div>
+                                    <div className="space-y-3">
+                                    {day.sessions.map((session: any) => (
                                         <Card key={session.id} className="overflow-hidden">
                                             <CardContent className="p-4">
                                                 <div className="flex items-start gap-4">
@@ -182,9 +212,12 @@ export default function EventPreviewPage() {
                                             </CardContent>
                                         </Card>
                                     ))}
+                                    </div>
                                 </div>
+                                ))}
                             </div>
-                        )}
+                            );
+                        })()}
                     </div>
 
                     {/* Sidebar */}

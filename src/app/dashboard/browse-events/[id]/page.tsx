@@ -52,6 +52,19 @@ interface EventDetails {
     _count?: {
         registrations: number;
     };
+    eventSessions?: Array<{
+        id: string;
+        title: string;
+        sessionDate: string | null;
+        startTime: string | null;
+        endTime: string | null;
+        sessionType: string;
+        description: string | null;
+        venue: string | null;
+        hall?: { name: string } | null;
+        speaker?: { name: string; designation: string | null } | null;
+        sessionSpeakers?: Array<{ speaker: { name: string; designation: string | null } }>;
+    }>;
     eventSpeakers?: Array<{
         speaker: {
             id: string;
@@ -277,6 +290,58 @@ export default function EventDetailsPage() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Scientific Program */}
+                        {event.eventSessions && event.eventSessions.length > 0 && (() => {
+                            const dayMap = new Map<string, { label: string; date: string; items: typeof event.eventSessions }>();
+                            let dc = 0;
+                            event.eventSessions!.forEach(s => {
+                                let dk = "unscheduled";
+                                if (s.sessionDate) { const d = new Date(s.sessionDate); if (!isNaN(d.getTime())) { try { dk = d.toISOString().split("T")[0]; } catch { /* */ } } }
+                                if (!dayMap.has(dk)) {
+                                    dc++;
+                                    let dl = "";
+                                    if (s.sessionDate && dk !== "unscheduled") { const d = new Date(s.sessionDate); if (!isNaN(d.getTime())) dl = d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }); }
+                                    dayMap.set(dk, { label: dk !== "unscheduled" ? `Day ${dc}` : "Unscheduled", date: dl, items: [] });
+                                }
+                                dayMap.get(dk)!.items!.push(s);
+                            });
+                            return (
+                                <div className="bg-background rounded-xl border p-6">
+                                    <h2 className="text-lg font-semibold mb-4">Scientific Program</h2>
+                                    {Array.from(dayMap.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([key, day]) => (
+                                        <div key={key} className="mb-5">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">{day.label}</span>
+                                                {day.date && <span className="text-xs text-muted-foreground">{day.date}</span>}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {day.items!.map(session => (
+                                                    <div key={session.id} className="p-3 rounded-lg bg-muted/50 border">
+                                                        <div className="flex items-start gap-3">
+                                                            {session.startTime && (
+                                                                <div className="text-xs font-medium text-muted-foreground min-w-[55px]">
+                                                                    {session.startTime}
+                                                                    {session.endTime && <div>{session.endTime}</div>}
+                                                                </div>
+                                                            )}
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-medium text-sm">{session.title}</p>
+                                                                {(() => {
+                                                                    const spks = [...(session.sessionSpeakers || []).map(ss => ss.speaker.name), ...(session.speaker ? [session.speaker.name] : [])];
+                                                                    return spks.length > 0 ? <p className="text-xs text-muted-foreground mt-0.5">{spks.join(", ")}</p> : null;
+                                                                })()}
+                                                                {session.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{session.description}</p>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })()}
 
                         {/* Contact Information */}
                         {(event.organizer || event.contactEmail || event.contactPhone || event.website) && (

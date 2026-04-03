@@ -108,6 +108,7 @@ model Tenant {
   // Identification
   slug              String   @unique  // Used in URL: medconf.com/t/slug or slug.medconf.com
   name              String             // Display name: "ABC Medical College"
+  shortName         String?            // Short name for sidebar: "ABC" or "CareNS"
   domain            String?  @unique  // Custom domain: "abcmedical.com"
 
   // Branding

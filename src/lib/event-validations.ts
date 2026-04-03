@@ -7,6 +7,7 @@ export interface EventForValidation {
     endDate?: string | null;
     startTime?: string | null;
     endTime?: string | null;
+    registrationOpensDate?: string | null;
     registrationDeadline?: string | null;
     location?: string | null;
     capacity?: number | null;

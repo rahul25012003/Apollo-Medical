@@ -119,12 +119,14 @@ interface EventDisplayData {
     contactPhone: string | null;
     website: string | null;
     includes: string[];
-    speakers: { name: string; designation: string | null; institution: string | null }[];
+    speakers: { name: string; designation: string | null; institution: string | null; photo: string | null }[];
+    bannerImage: string | null;
     sponsors: { name: string; logo: string | null; tier: string }[];
     pricingCategories: PricingCategory[];
     isRegistrationOpen: boolean;
     registrationDeadline: string | null;
     registrationOpensDate: string | null;
+    sessions: { id: string; title: string; sessionDate: string | null; startTime: string | null; endTime: string | null; sessionType: string; description: string | null; venue: string | null; speakers: { name: string; designation: string | null }[] }[];
 }
 
 type Step = "category" | "details" | "preferences" | "payment" | "confirmation";
@@ -150,7 +152,8 @@ export default function RegisterPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const eventId = params.id as string;
-    const tenantSlug = searchParams.get("tenant");
+    const tenantSlugFromParam = searchParams.get("tenant");
+    const [tenantSlug, setTenantSlug] = useState<string | null>(tenantSlugFromParam);
     const [currentStep, setCurrentStep] = useState<Step>("details");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [registrationId, setRegistrationId] = useState<string | null>(null);
@@ -173,29 +176,42 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Fetch tenant branding
+    // Fetch tenant branding — from param or hostname
     useEffect(() => {
-        if (!tenantSlug) return;
         async function fetchTenant() {
             try {
-                const res = await fetch(`/api/tenants/${tenantSlug}`);
-                if (res.ok) {
+                let res: Response | null = null;
+
+                // Try 1: query param
+                if (tenantSlugFromParam) {
+                    res = await fetch(`/api/tenants/${tenantSlugFromParam}`);
+                }
+
+                // Try 2: hostname (production)
+                if (!res?.ok && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                    const hostname = window.location.hostname.replace(/^www\./, '');
+                    res = await fetch(`/api/tenants/${hostname}`);
+                }
+
+                if (res?.ok) {
                     const data = await res.json();
                     if (data.success && data.data) {
                         const t = data.data;
+                        const slug = t.slug || tenantSlugFromParam;
                         setTenantBranding({
                             name: t.branding?.name || t.name || "",
                             logo: t.branding?.logo || t.logo || null,
                             primaryColor: t.theme?.primaryColor || t.primaryColor || "#0d9488",
                             secondaryColor: t.theme?.secondaryColor || t.secondaryColor || "#0891b2",
-                            slug: tenantSlug!,
+                            slug: slug || "",
                         });
+                        if (slug) setTenantSlug(slug);
                     }
                 }
             } catch { /* silently fail */ }
         }
         fetchTenant();
-    }, [tenantSlug]);
+    }, [tenantSlugFromParam]);
 
     // Check if page was opened as preview from dashboard
     useEffect(() => {
@@ -256,7 +272,9 @@ export default function RegisterPage() {
                             name: es.speaker.name,
                             designation: es.speaker.designation,
                             institution: es.speaker.institution,
+                            photo: es.speaker.photo || null,
                         })) || [],
+                        bannerImage: event.bannerImage || null,
                         sponsors: event.eventSponsors?.map(es => ({
                             name: es.sponsor.name,
                             logo: es.sponsor.logo,
@@ -266,6 +284,20 @@ export default function RegisterPage() {
                         isRegistrationOpen: event.isRegistrationOpen !== false,
                         registrationDeadline: event.registrationDeadline || null,
                         registrationOpensDate: event.registrationOpensDate || null,
+                        sessions: event.eventSessions?.map((es: any) => ({
+                            id: es.id,
+                            title: es.title,
+                            sessionDate: es.sessionDate || null,
+                            startTime: es.startTime || null,
+                            endTime: es.endTime || null,
+                            sessionType: es.sessionType || "OTHER",
+                            description: es.description || null,
+                            venue: es.venue || es.hall?.name || null,
+                            speakers: [
+                                ...(es.sessionSpeakers || []).map((ss: any) => ({ name: ss.speaker.name, designation: ss.speaker.designation })),
+                                ...(es.speaker ? [{ name: es.speaker.name, designation: es.speaker.designation }] : []),
+                            ],
+                        })) || [],
                     });
 
                     // Auto-select first pricing category if available
@@ -834,20 +866,23 @@ export default function RegisterPage() {
             <div className="border-b bg-muted/30">
                 <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => isPreviewMode ? window.close() : router.back()}
+                        <Link
+                            href={tenantSlug
+                                ? (typeof window !== 'undefined' && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") ? `/t/${tenantSlug}` : "/")
+                                : "/events"
+                            }
                             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
                             <ArrowLeft className="h-4 w-4" />
-                            {isPreviewMode ? "Close Preview" : "Back"}
-                        </button>
+                            Back to Home
+                        </Link>
                         {isPreviewMode && (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
                                 Preview Mode
                             </Badge>
                         )}
                     </div>
-                    {/* View Details Modal */}
+                    {/* View Details — Full-screen sheet */}
                     <Dialog>
                         <DialogTrigger asChild>
                             <Button variant="outline" size="sm" className="gap-2">
@@ -855,73 +890,92 @@ export default function RegisterPage() {
                                 View Event Details
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh]">
-                            <DialogHeader>
-                                <DialogTitle className="text-xl">{eventData?.title}</DialogTitle>
-                                <DialogDescription>
-                                    <Badge variant="outline" className="mt-1">{eventData?.type}</Badge>
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="max-h-[60vh] overflow-y-auto pr-4">
-                                <div className="space-y-6">
-                                    {/* Date, Time, Location */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="flex items-start gap-3">
-                                            <Calendar className="h-5 w-5 text-primary mt-0.5" />
-                                            <div>
-                                                <p className="font-medium">{eventData?.date}</p>
-                                                <p className="text-sm text-muted-foreground">{eventData?.time}</p>
-                                            </div>
+                        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] p-0 overflow-hidden">
+                            <div className="max-h-[90vh] overflow-y-auto">
+                                {/* Banner */}
+                                {eventData?.bannerImage && (
+                                    <div className="relative h-40 sm:h-52 w-full bg-slate-100">
+                                        <img src={eventData.bannerImage} alt={eventData.title} className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                        <div className="absolute bottom-4 left-6 right-6">
+                                            <Badge variant="outline" className="bg-white/20 text-white border-white/30 backdrop-blur-sm mb-2">{eventData.type}</Badge>
+                                            <h2 className="text-xl sm:text-2xl font-bold text-white">{eventData.title}</h2>
                                         </div>
-                                        <div className="flex items-start gap-3">
-                                            <MapPin className="h-5 w-5 text-primary mt-0.5" />
-                                            <div>
-                                                <p className="font-medium">{eventData?.location}</p>
-                                                {eventData?.address && (
-                                                    <p className="text-sm text-muted-foreground">{eventData.address}</p>
-                                                )}
-                                            </div>
+                                    </div>
+                                )}
+                                {!eventData?.bannerImage && (
+                                    <div className="px-6 pt-6 pb-2">
+                                        <Badge variant="outline" className="mb-2">{eventData?.type}</Badge>
+                                        <h2 className="text-xl sm:text-2xl font-bold">{eventData?.title}</h2>
+                                    </div>
+                                )}
+
+                                <div className="p-6 space-y-6">
+                                    {/* Quick Stats */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-center">
+                                            <Calendar className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                                            <p className="text-xs text-muted-foreground">Date</p>
+                                            <p className="text-sm font-bold">{eventData?.date}</p>
                                         </div>
+                                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-center">
+                                            <Clock className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                                            <p className="text-xs text-muted-foreground">Time</p>
+                                            <p className="text-sm font-bold">{eventData?.time}</p>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-center">
+                                            <MapPin className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                                            <p className="text-xs text-muted-foreground">Venue</p>
+                                            <p className="text-sm font-bold truncate">{eventData?.location}</p>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-center">
+                                            <Users className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                                            <p className="text-xs text-muted-foreground">Spots Left</p>
+                                            <p className="text-sm font-bold">{eventData ? Math.max(0, eventData.capacity - eventData.registrations) : 0}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Pricing & CME */}
+                                    <div className="flex flex-wrap gap-3">
+                                        <div className="flex-1 min-w-[120px] p-3 rounded-xl bg-primary/5 border border-primary/10">
+                                            <p className="text-xs text-muted-foreground">Registration Fee</p>
+                                            <p className="text-xl font-bold text-primary">
+                                                {eventData && Number(eventData.price) > 0 ? `₹${Number(eventData.price).toLocaleString()}` : "Free"}
+                                            </p>
+                                        </div>
+                                        {(eventData?.cmeCredits ?? 0) > 0 && (
+                                            <div className="flex-1 min-w-[120px] p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                                                <p className="text-xs text-muted-foreground">CME Credits</p>
+                                                <p className="text-xl font-bold text-emerald-600">{eventData?.cmeCredits} Credits</p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Description */}
                                     {eventData?.description && (
                                         <div>
-                                            <h4 className="font-semibold mb-2">About This Event</h4>
-                                            <p className="text-sm text-muted-foreground whitespace-pre-line">
-                                                {eventData.description}
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* What's Included */}
-                                    {eventData?.includes && eventData.includes.length > 0 && (
-                                        <div>
-                                            <h4 className="font-semibold mb-2">What's Included</h4>
-                                            <ul className="space-y-2">
-                                                {eventData.includes.map((item, index) => (
-                                                    <li key={index} className="flex items-center gap-2 text-sm">
-                                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                                        {item}
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                            <h4 className="font-bold text-base mb-2">About This Event</h4>
+                                            <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{eventData.description}</p>
                                         </div>
                                     )}
 
                                     {/* Speakers */}
                                     {eventData?.speakers && eventData.speakers.length > 0 && (
                                         <div>
-                                            <h4 className="font-semibold mb-2">Speakers</h4>
-                                            <div className="space-y-2">
+                                            <h4 className="font-bold text-base mb-3">Speakers</h4>
+                                            <div className="grid sm:grid-cols-2 gap-3">
                                                 {eventData.speakers.map((speaker, index) => (
-                                                    <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                                            <User className="h-5 w-5 text-primary" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium text-sm">{speaker.name}</p>
-                                                            <p className="text-xs text-muted-foreground">
+                                                    <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border">
+                                                        {speaker.photo ? (
+                                                            <img src={speaker.photo} alt={speaker.name} className="h-12 w-12 rounded-full object-cover" />
+                                                        ) : (
+                                                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                                <User className="h-6 w-6 text-primary" />
+                                                            </div>
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <p className="font-semibold text-sm">{speaker.name}</p>
+                                                            <p className="text-xs text-muted-foreground truncate">
                                                                 {[speaker.designation, speaker.institution].filter(Boolean).join(", ")}
                                                             </p>
                                                         </div>
@@ -931,78 +985,89 @@ export default function RegisterPage() {
                                         </div>
                                     )}
 
-                                    {/* Sponsors */}
-                                    {eventData?.sponsors && eventData.sponsors.length > 0 && (
+                                    {/* Scientific Program */}
+                                    {eventData?.sessions && eventData.sessions.length > 0 && (() => {
+                                        const dayMap = new Map<string, { label: string; date: string; items: typeof eventData.sessions }>();
+                                        let dc = 0;
+                                        eventData.sessions.forEach(s => {
+                                            let dk = "unscheduled";
+                                            if (s.sessionDate) { const d = new Date(s.sessionDate); if (!isNaN(d.getTime())) { try { dk = d.toISOString().split("T")[0]; } catch { /* */ } } }
+                                            if (!dayMap.has(dk)) { dc++; let dl = ""; if (s.sessionDate && dk !== "unscheduled") { const d = new Date(s.sessionDate); if (!isNaN(d.getTime())) dl = d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }); } dayMap.set(dk, { label: dk !== "unscheduled" ? `Day ${dc}` : "Unscheduled", date: dl, items: [] }); }
+                                            dayMap.get(dk)!.items.push(s);
+                                        });
+                                        return (
+                                            <div>
+                                                <h4 className="font-bold text-base mb-3">Scientific Program</h4>
+                                                {Array.from(dayMap.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([key, day]) => (
+                                                    <div key={key} className="mb-4">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="text-xs font-bold bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full">{day.label}</span>
+                                                            {day.date && <span className="text-xs text-muted-foreground">{day.date}</span>}
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {day.items.map(session => (
+                                                                <div key={session.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border">
+                                                                    <div className="flex items-start gap-3">
+                                                                        {session.startTime && (
+                                                                            <div className="text-xs font-bold text-muted-foreground min-w-[55px] bg-white dark:bg-slate-800 px-2 py-1 rounded text-center border">
+                                                                                {session.startTime}
+                                                                                {session.endTime && <div className="font-normal">{session.endTime}</div>}
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className="font-semibold text-sm">{session.title}</p>
+                                                                            {session.speakers.length > 0 && <p className="text-xs text-primary mt-0.5">{session.speakers.map(sp => sp.name).join(", ")}</p>}
+                                                                            {session.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{session.description}</p>}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* What's Included */}
+                                    {eventData?.includes && eventData.includes.length > 0 && (
                                         <div>
-                                            <h4 className="font-semibold mb-2">Sponsors</h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                {eventData.sponsors.map((sponsor, index) => (
-                                                    <div key={index} className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/30">
-                                                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                        <span className="text-sm font-medium">{sponsor.name}</span>
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {sponsor.tier}
-                                                        </Badge>
+                                            <h4 className="font-bold text-base mb-2">What&apos;s Included</h4>
+                                            <div className="grid sm:grid-cols-2 gap-2">
+                                                {eventData.includes.map((item, index) => (
+                                                    <div key={index} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10">
+                                                        <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                                                        {item}
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Pricing & CME */}
-                                    {eventData && (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-3 rounded-lg bg-primary/5">
-                                                <p className="text-xs text-muted-foreground">Registration Fee</p>
-                                                <p className="text-lg font-bold text-primary">
-                                                    {Number(eventData.price) > 0 ? `₹${Number(eventData.price).toLocaleString()}` : "Free"}
-                                                </p>
-                                                {/* Early bird hidden */}
+                                    {/* Sponsors */}
+                                    {eventData?.sponsors && eventData.sponsors.length > 0 && (
+                                        <div>
+                                            <h4 className="font-bold text-base mb-2">Sponsors</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {eventData.sponsors.map((sponsor, index) => (
+                                                    <div key={index} className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-slate-50 dark:bg-slate-800/50">
+                                                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                        <span className="text-sm font-medium">{sponsor.name}</span>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            {(eventData.cmeCredits ?? 0) > 0 && (
-                                                <div className="p-3 rounded-lg bg-green-50">
-                                                    <p className="text-xs text-muted-foreground">CME Credits</p>
-                                                    <p className="text-lg font-bold text-green-600">
-                                                        {eventData.cmeCredits} Credits
-                                                    </p>
-                                                </div>
-                                            )}
                                         </div>
                                     )}
 
-                                    {/* Contact Information */}
-                                    {eventData && (eventData.organizer || eventData.contactEmail || eventData.contactPhone) && (
-                                        <div>
-                                            <h4 className="font-semibold mb-2">Contact Information</h4>
-                                            <div className="space-y-2 text-sm">
-                                                {eventData.organizer && (
-                                                    <div className="flex items-center gap-2">
-                                                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                        <span>{eventData.organizer}</span>
-                                                    </div>
-                                                )}
-                                                {eventData.contactEmail && (
-                                                    <div className="flex items-center gap-2">
-                                                        <Mail className="h-4 w-4 text-muted-foreground" />
-                                                        <a href={`mailto:${eventData.contactEmail}`} className="text-primary hover:underline">
-                                                            {eventData.contactEmail}
-                                                        </a>
-                                                    </div>
-                                                )}
-                                                {eventData.contactPhone && (
-                                                    <div className="flex items-center gap-2">
-                                                        <Phone className="h-4 w-4 text-muted-foreground" />
-                                                        <a href={`tel:${eventData.contactPhone}`}>{eventData.contactPhone}</a>
-                                                    </div>
-                                                )}
-                                                {eventData.website && (
-                                                    <div className="flex items-center gap-2">
-                                                        <Globe className="h-4 w-4 text-muted-foreground" />
-                                                        <a href={eventData.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                                            Event Website
-                                                        </a>
-                                                    </div>
-                                                )}
+                                    {/* Contact */}
+                                    {eventData && (eventData.organizer || eventData.contactEmail || eventData.contactPhone || eventData.website) && (
+                                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border">
+                                            <h4 className="font-bold text-base mb-3">Contact Information</h4>
+                                            <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                                                {eventData.organizer && <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" /><span>{eventData.organizer}</span></div>}
+                                                {eventData.contactEmail && <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /><a href={`mailto:${eventData.contactEmail}`} className="text-primary hover:underline">{eventData.contactEmail}</a></div>}
+                                                {eventData.contactPhone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><a href={`tel:${eventData.contactPhone}`}>{eventData.contactPhone}</a></div>}
+                                                {eventData.website && <div className="flex items-center gap-2"><Globe className="h-4 w-4 text-muted-foreground" /><a href={eventData.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Event Website</a></div>}
                                             </div>
                                         </div>
                                     )}
@@ -1040,14 +1105,35 @@ export default function RegisterPage() {
                                             </span>
                                         )}
                                     </div>
-                                    {eventData.startDate && (
-                                        <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full border font-bold text-sm bg-primary/8 border-primary/30 text-primary">
-                                            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-flash flex-shrink-0" />
-                                            <span className="animate-flash">
-                                                Registrations open for {fmtEventRange(eventData.startDate, eventData.endDate)}
-                                            </span>
-                                        </div>
-                                    )}
+                                    {eventData.startDate && (() => {
+                                        const now = new Date();
+                                        const deadline = eventData.registrationDeadline ? new Date(eventData.registrationDeadline) : null;
+                                        const endDate = eventData.endDate ? new Date(eventData.endDate) : new Date(eventData.startDate);
+                                        const isEnded = now > new Date(endDate.getTime() + 86400000);
+                                        const isDeadlinePassed = deadline && now > deadline;
+                                        const isClosed = !eventData.isRegistrationOpen || isDeadlinePassed;
+                                        if (isEnded) return null;
+                                        if (isClosed) return (
+                                            <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full border font-bold text-sm bg-red-50 border-red-200 text-red-700">
+                                                Registration closed
+                                            </div>
+                                        );
+                                        return (
+                                            <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full border font-bold text-sm bg-primary/8 border-primary/30 text-primary">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-primary animate-flash flex-shrink-0" />
+                                                <span className="animate-flash">
+                                                    Registrations open {(() => {
+                                                        const from = eventData.registrationOpensDate ? new Date(eventData.registrationOpensDate) : null;
+                                                        const to = deadline;
+                                                        if (from && to && !isNaN(from.getTime()) && !isNaN(to.getTime())) return `from ${fmtEventRange(eventData.registrationOpensDate!, eventData.registrationDeadline)}`;
+                                                        if (from && !isNaN(from.getTime())) return `from ${fmtEventRange(eventData.registrationOpensDate!)}`;
+                                                        if (to && !isNaN(to.getTime())) return `till ${fmtEventRange(eventData.registrationDeadline!)}`;
+                                                        return `for ${fmtEventRange(eventData.startDate, eventData.endDate)}`;
+                                                    })()}
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                 {totalPrice > 0 && currentStep !== "confirmation" && (
                                     <div className="text-right bg-primary/5 px-4 py-3 rounded-xl">
@@ -1751,12 +1837,15 @@ export default function RegisterPage() {
                                             <Download className="h-4 w-4" />
                                             Save as PDF
                                         </Button>
-                                        <Link href={tenantSlug ? "/" : "/events"}>
+                                        <button onClick={() => {
+                                            const local = typeof window !== 'undefined' && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+                                            router.push(tenantSlug ? (local ? `/t/${tenantSlug}` : "/") : "/events");
+                                        }}>
                                             <Button className="gap-2 gradient-medical text-white">
                                                 Browse More Events
                                                 <ArrowRight className="h-4 w-4" />
                                             </Button>
-                                        </Link>
+                                        </button>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -1770,13 +1859,19 @@ export default function RegisterPage() {
                 <div className="container mx-auto px-4">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
-                                <GraduationCap className="h-5 w-5 text-white" />
-                            </div>
-                            <span className="font-bold">MedConf</span>
+                            {tenantBranding?.logo ? (
+                                <div className="h-8 w-8 rounded-lg overflow-hidden bg-white flex items-center justify-center">
+                                    <img src={tenantBranding.logo} alt={tenantBranding.name} className="h-6 w-6 object-contain" />
+                                </div>
+                            ) : (
+                                <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
+                                    <GraduationCap className="h-5 w-5 text-white" />
+                                </div>
+                            )}
+                            <span className="font-bold">{tenantBranding?.name || "Conference"}</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                            © 2025 MedConf. All rights reserved.
+                            &copy; {new Date().getFullYear()} {tenantBranding?.name || "Conference"}. All rights reserved.
                         </p>
                     </div>
                 </div>

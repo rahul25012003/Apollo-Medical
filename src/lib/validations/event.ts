@@ -56,8 +56,8 @@ export const createEventSchema = z.object({
 
   // Capacity & Registration
   capacity: z.number().int().positive().default(100),
-  registrationOpensDate: z.string().or(z.date()).optional(),
-  registrationDeadline: z.string().or(z.date()).optional(),
+  registrationOpensDate: z.string().or(z.date()).optional().nullable(),
+  registrationDeadline: z.string().or(z.date()).optional().nullable(),
   isRegistrationOpen: z.boolean().default(true),
 
   // Pricing

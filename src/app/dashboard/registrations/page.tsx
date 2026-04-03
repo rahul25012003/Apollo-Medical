@@ -631,6 +631,31 @@ function RegistrationsContent() {
         }
     };
 
+    const handleDeleteRegistration = async (regId: string) => {
+        const ok = await confirm({
+            title: "Delete Registration",
+            description: "This will permanently delete this registration. This action cannot be undone. Are you sure?",
+            confirmText: "Delete",
+            variant: "danger",
+        });
+        if (!ok) return;
+        try {
+            setActionInProgress(regId);
+            const response = await registrationsService.delete(regId);
+            if (response.success) {
+                await refreshRegistrations();
+                alert({ title: "Deleted", description: "Registration deleted successfully.", variant: "success" });
+            } else {
+                alert({ title: "Error", description: (response as any).error?.message || "Failed to delete registration.", variant: "error" });
+            }
+        } catch (error) {
+            console.error("Failed to delete registration:", error);
+            alert({ title: "Error", description: "Failed to delete registration.", variant: "error" });
+        } finally {
+            setActionInProgress(null);
+        }
+    };
+
     // Handle generate certificate - show dialog first
     const handleGenerateCertificate = async (reg: Registration) => {
         // Find the event for this registration
@@ -1712,6 +1737,19 @@ function RegistrationsContent() {
                                                                     </DropdownMenuItem>
                                                                 </>
                                                             )}
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                className="text-destructive"
+                                                                onClick={() => handleDeleteRegistration(reg.id)}
+                                                                disabled={actionInProgress === reg.id}
+                                                            >
+                                                                {actionInProgress === reg.id ? (
+                                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                                )}
+                                                                Delete Registration
+                                                            </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>

@@ -62,6 +62,7 @@ export interface TenantBranding {
   favicon?: string;
   secondaryLogo?: string;
   name: string;
+  shortName?: string;
   tagline?: string;
 }
 
@@ -189,6 +190,7 @@ export interface TenantModel {
   id: string;
   slug: string;
   name: string;
+  shortName: string | null;
   domain: string | null;
   logo: string | null;
   favicon: string | null;
@@ -256,6 +258,7 @@ export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
 
     branding: {
       name: tenant.name,
+      shortName: tenant.shortName || undefined,
       logo: normalizeUrl(tenant.logo),
       favicon: normalizeUrl(tenant.favicon),
       secondaryLogo: normalizeUrl(tenant.secondaryLogo),

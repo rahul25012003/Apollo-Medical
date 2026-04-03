@@ -31,6 +31,7 @@ import {
     ChevronDown,
     BarChart3,
     Mail,
+    Eye,
 } from "lucide-react";
 import { eventsService, Event } from "@/services/events";
 
@@ -319,7 +320,7 @@ export function Sidebar() {
     // Get tenant context — but SUPER_ADMIN without selected tenant should see ICMS, not any tenant
     const { tenant } = useTenant();
     const isSuperAdminNoTenant = userRole === "SUPER_ADMIN" && (!tenant?.slug || tenant.slug === "default");
-    const sidebarBrandName = isSuperAdminNoTenant ? "ICMS" : (tenant?.branding?.name || "");
+    const sidebarBrandName = isSuperAdminNoTenant ? "ICMS" : (tenant?.branding?.shortName || tenant?.branding?.name || "");
     const sidebarBrandLogo = isSuperAdminNoTenant ? null : (tenant?.branding?.logo || null);
     const tenantSlug = userRole !== "SUPER_ADMIN" && tenant?.slug && tenant.slug !== "default"
         ? tenant.slug
@@ -375,7 +376,7 @@ export function Sidebar() {
                                 <span className="text-white font-bold text-sm">{sidebarBrandName.slice(0, 2)}</span>
                             </div>
                         )}
-                        <span className="text-sm font-bold text-white tracking-tight">{sidebarBrandName}</span>
+                        <span className="text-xs font-bold text-white tracking-tight truncate max-w-[160px]">{sidebarBrandName}</span>
                     </Link>
                 </div>
             </aside>
@@ -432,7 +433,7 @@ export function Sidebar() {
                             "transition-all duration-200",
                             isCollapsed ? "lg:hidden" : "block"
                         )}>
-                            <h1 className="text-white font-bold text-lg leading-tight tracking-tight">{sidebarBrandName}</h1>
+                            <h1 className="text-white font-bold text-sm leading-tight tracking-tight truncate max-w-[180px]">{sidebarBrandName}</h1>
                             <p className="text-white/40 text-[10px] leading-tight font-medium tracking-wider uppercase">
                                 {isSuperAdminNoTenant ? "Platform Administration" : "Conference Management"}
                             </p>
@@ -461,21 +462,32 @@ export function Sidebar() {
                                 Active Event
                             </span>
                             <div className="relative">
-                                <button
-                                    onClick={() => setEventSelectorOpen(!eventSelectorOpen)}
-                                    className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-sm transition-all duration-200"
-                                >
-                                    <span className={cn(
-                                        "truncate text-left",
-                                        selectedEventName ? "text-white font-medium" : "text-white/40"
-                                    )}>
-                                        {eventsLoading ? "Loading..." : selectedEventName || "Select event..."}
-                                    </span>
-                                    <ChevronDown className={cn(
-                                        "w-3.5 h-3.5 text-white/40 flex-shrink-0 transition-transform duration-200",
-                                        eventSelectorOpen && "rotate-180"
-                                    )} />
-                                </button>
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        onClick={() => setEventSelectorOpen(!eventSelectorOpen)}
+                                        className="flex-1 flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-sm transition-all duration-200 min-w-0"
+                                    >
+                                        <span className={cn(
+                                            "truncate text-left",
+                                            selectedEventName ? "text-white font-medium" : "text-white/40"
+                                        )}>
+                                            {eventsLoading ? "Loading..." : selectedEventName || "Select event..."}
+                                        </span>
+                                        <ChevronDown className={cn(
+                                            "w-3.5 h-3.5 text-white/40 flex-shrink-0 transition-transform duration-200",
+                                            eventSelectorOpen && "rotate-180"
+                                        )} />
+                                    </button>
+                                    {selectedEventId && (
+                                        <Link
+                                            href={`/dashboard/events/${selectedEventId}`}
+                                            className="flex-shrink-0 p-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] transition-all duration-200 group"
+                                            title="View event details"
+                                        >
+                                            <Eye className="w-3.5 h-3.5 text-white/40 group-hover:text-white transition-colors" />
+                                        </Link>
+                                    )}
+                                </div>
                                 {eventSelectorOpen && (
                                     <div className="absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg bg-slate-800 border border-white/10 shadow-xl shadow-black/30 z-50">
                                         {selectedEventId && (

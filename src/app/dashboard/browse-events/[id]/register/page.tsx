@@ -24,7 +24,15 @@ import {
     Building2,
     CreditCard,
     Download,
+    Eye,
+    Globe,
+    Users,
 } from "lucide-react";
+import {
+    Dialog,
+    DialogContent,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { format } from "date-fns";
@@ -56,10 +64,18 @@ interface EventDetails {
     earlyBirdPrice: number | null;
     earlyBirdDeadline: string | null;
     cmeCredits: number | null;
+    description: string | null;
+    organizer: string | null;
+    contactEmail: string | null;
+    contactPhone: string | null;
+    bannerImage: string | null;
+    includes: string[];
     pricingCategories?: PricingCategory[];
     _count?: {
         registrations: number;
     };
+    eventSpeakers?: Array<{ speaker: { id: string; name: string; designation: string | null; institution: string | null; photo: string | null } }>;
+    eventSessions?: Array<{ id: string; title: string; sessionDate: string | null; startTime: string | null; endTime: string | null; sessionType: string; description: string | null; speaker?: { name: string; designation: string | null } | null; sessionSpeakers?: Array<{ speaker: { name: string; designation: string | null } }> }>;
 }
 
 interface FormData {
@@ -634,6 +650,164 @@ export default function RegisterPage() {
                                     {/* Early bird hidden */}
                                 </div>
                             </div>
+                            {/* View Event Details Button */}
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" className="w-full gap-2 mt-4">
+                                        <Eye className="h-4 w-4" />
+                                        View Full Event Details
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] p-0 overflow-hidden">
+                                    <div className="max-h-[90vh] overflow-y-auto">
+                                        {/* Banner */}
+                                        {event.bannerImage ? (
+                                            <div className="relative h-40 sm:h-52 w-full bg-slate-100">
+                                                <img src={event.bannerImage} alt={event.title} className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                                <div className="absolute bottom-4 left-6 right-6">
+                                                    <Badge variant="outline" className="bg-white/20 text-white border-white/30 backdrop-blur-sm mb-2">{event.type}</Badge>
+                                                    <h2 className="text-xl sm:text-2xl font-bold text-white">{event.title}</h2>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="px-6 pt-6 pb-2">
+                                                <Badge variant="outline" className="mb-2">{event.type}</Badge>
+                                                <h2 className="text-xl sm:text-2xl font-bold">{event.title}</h2>
+                                            </div>
+                                        )}
+
+                                        <div className="p-6 space-y-6">
+                                            {/* Quick Stats */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-center">
+                                                    <Calendar className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                                                    <p className="text-xs text-muted-foreground">Date</p>
+                                                    <p className="text-sm font-bold">{format(new Date(event.startDate), "MMM d, yyyy")}</p>
+                                                </div>
+                                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-center">
+                                                    <Clock className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                                                    <p className="text-xs text-muted-foreground">Time</p>
+                                                    <p className="text-sm font-bold">{event.startTime || "TBA"}</p>
+                                                </div>
+                                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-center">
+                                                    <MapPin className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                                                    <p className="text-xs text-muted-foreground">Venue</p>
+                                                    <p className="text-sm font-bold truncate">{event.location || event.city || "TBA"}</p>
+                                                </div>
+                                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-center">
+                                                    <Users className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                                                    <p className="text-xs text-muted-foreground">Spots Left</p>
+                                                    <p className="text-sm font-bold">{Math.max(0, event.capacity - (event._count?.registrations || 0))}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Description */}
+                                            {event.description && (
+                                                <div>
+                                                    <h4 className="font-bold text-base mb-2">About This Event</h4>
+                                                    <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{event.description}</p>
+                                                </div>
+                                            )}
+
+                                            {/* Speakers */}
+                                            {event.eventSpeakers && event.eventSpeakers.length > 0 && (
+                                                <div>
+                                                    <h4 className="font-bold text-base mb-3">Speakers</h4>
+                                                    <div className="grid sm:grid-cols-2 gap-3">
+                                                        {event.eventSpeakers.map((es, i) => (
+                                                            <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border">
+                                                                {es.speaker.photo ? (
+                                                                    <img src={es.speaker.photo} alt={es.speaker.name} className="h-12 w-12 rounded-full object-cover" />
+                                                                ) : (
+                                                                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                                        <User className="h-6 w-6 text-primary" />
+                                                                    </div>
+                                                                )}
+                                                                <div className="min-w-0">
+                                                                    <p className="font-semibold text-sm">{es.speaker.name}</p>
+                                                                    <p className="text-xs text-muted-foreground truncate">{[es.speaker.designation, es.speaker.institution].filter(Boolean).join(", ")}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Scientific Program */}
+                                            {event.eventSessions && event.eventSessions.length > 0 && (() => {
+                                                const dayMap = new Map<string, { label: string; date: string; items: typeof event.eventSessions }>();
+                                                let dc = 0;
+                                                event.eventSessions!.forEach(s => {
+                                                    let dk = "unscheduled";
+                                                    if (s.sessionDate) { const d = new Date(s.sessionDate); if (!isNaN(d.getTime())) { try { dk = d.toISOString().split("T")[0]; } catch { /* */ } } }
+                                                    if (!dayMap.has(dk)) { dc++; let dl = ""; if (s.sessionDate && dk !== "unscheduled") { const d = new Date(s.sessionDate); if (!isNaN(d.getTime())) dl = d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }); } dayMap.set(dk, { label: dk !== "unscheduled" ? `Day ${dc}` : "Unscheduled", date: dl, items: [] }); }
+                                                    dayMap.get(dk)!.items!.push(s);
+                                                });
+                                                return (
+                                                    <div>
+                                                        <h4 className="font-bold text-base mb-3">Scientific Program</h4>
+                                                        {Array.from(dayMap.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([key, day]) => (
+                                                            <div key={key} className="mb-4">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <span className="text-xs font-bold bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full">{day.label}</span>
+                                                                    {day.date && <span className="text-xs text-muted-foreground">{day.date}</span>}
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    {day.items!.map(session => (
+                                                                        <div key={session.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border">
+                                                                            <div className="flex items-start gap-3">
+                                                                                {session.startTime && (
+                                                                                    <div className="text-xs font-bold text-muted-foreground min-w-[55px] bg-white dark:bg-slate-800 px-2 py-1 rounded text-center border">
+                                                                                        {session.startTime}
+                                                                                        {session.endTime && <div className="font-normal">{session.endTime}</div>}
+                                                                                    </div>
+                                                                                )}
+                                                                                <div className="flex-1 min-w-0">
+                                                                                    <p className="font-semibold text-sm">{session.title}</p>
+                                                                                    {(() => { const sp = [...(session.sessionSpeakers || []).map(ss => ss.speaker.name), ...(session.speaker ? [session.speaker.name] : [])]; return sp.length > 0 ? <p className="text-xs text-primary mt-0.5">{sp.join(", ")}</p> : null; })()}
+                                                                                    {session.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{session.description}</p>}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            {/* What's Included */}
+                                            {event.includes && event.includes.length > 0 && (
+                                                <div>
+                                                    <h4 className="font-bold text-base mb-2">What&apos;s Included</h4>
+                                                    <div className="grid sm:grid-cols-2 gap-2">
+                                                        {event.includes.map((item: string, i: number) => (
+                                                            <div key={i} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10">
+                                                                <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                                                                {item}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Contact */}
+                                            {(event.organizer || event.contactEmail || event.contactPhone) && (
+                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border">
+                                                    <h4 className="font-bold text-base mb-3">Contact</h4>
+                                                    <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                                                        {event.organizer && <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" />{event.organizer}</div>}
+                                                        {event.contactEmail && <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /><a href={`mailto:${event.contactEmail}`} className="text-primary hover:underline">{event.contactEmail}</a></div>}
+                                                        {event.contactPhone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" />{event.contactPhone}</div>}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     </div>
                 </div>

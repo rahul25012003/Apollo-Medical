@@ -232,8 +232,8 @@ export default function EventDetailPage() {
                             title: es.title,
                             description: es.description,
                             sessionType: es.sessionType || "OTHER",
-                            date: es.sessionDate ? new Date(es.sessionDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null,
-                            dateRaw: es.sessionDate || null,
+                            date: es.sessionDate && !isNaN(new Date(es.sessionDate).getTime()) ? new Date(es.sessionDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null,
+                            dateRaw: es.sessionDate && !isNaN(new Date(es.sessionDate).getTime()) ? es.sessionDate : null,
                             startTime: es.startTime,
                             endTime: es.endTime,
                             venue: es.venue,
@@ -653,16 +653,22 @@ export default function EventDetailPage() {
                                     event.sessions.forEach((session) => {
                                         let dateKey = "unscheduled";
                                         if (session.dateRaw) {
-                                            try { dateKey = new Date(session.dateRaw).toISOString().split("T")[0]; } catch { dateKey = "unscheduled"; }
+                                            const d = new Date(session.dateRaw);
+                                            if (!isNaN(d.getTime())) {
+                                                try { dateKey = d.toISOString().split("T")[0]; } catch { dateKey = "unscheduled"; }
+                                            }
                                         }
                                         if (!dayMap.has(dateKey)) {
                                             dayCounter++;
                                             let dateLabel = "Unscheduled";
                                             if (session.dateRaw && dateKey !== "unscheduled") {
-                                                try { dateLabel = new Date(session.dateRaw).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }); } catch { /* keep default */ }
+                                                const d = new Date(session.dateRaw);
+                                                if (!isNaN(d.getTime())) {
+                                                    dateLabel = d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+                                                }
                                             }
                                             dayMap.set(dateKey, {
-                                                label: session.dateRaw ? `Day ${dayCounter}` : "Unscheduled",
+                                                label: dateKey !== "unscheduled" ? `Day ${dayCounter}` : "Unscheduled",
                                                 date: dateLabel,
                                                 sessions: [],
                                             });

@@ -199,6 +199,11 @@ export const PUT = withErrorHandler(
     }
 
     // Handle optional date fields - empty string means null
+    if (data.registrationOpensDate !== undefined) {
+      updateData.registrationOpensDate = data.registrationOpensDate
+        ? new Date(data.registrationOpensDate)
+        : null;
+    }
     if (data.registrationDeadline !== undefined) {
       updateData.registrationDeadline = data.registrationDeadline
         ? new Date(data.registrationDeadline)

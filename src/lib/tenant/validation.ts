@@ -12,6 +12,7 @@ export const tenantFormSchema = z.object({
     .max(50, "Slug must be less than 50 characters")
     .regex(slugRegex, "Slug can only contain lowercase letters, numbers, and hyphens"),
   name: z.string().min(2, "Name is required"),
+  shortName: z.string().optional().nullable(),
   tagline: z.string().optional().nullable(),
   logo: z.string().optional().nullable(),
   favicon: z.string().optional().nullable(),

@@ -135,6 +135,7 @@ export interface CreateEventData {
   isVirtual?: boolean;
   virtualLink?: string;
   capacity?: number;
+  registrationOpensDate?: string | null;
   registrationDeadline?: string;
   isRegistrationOpen?: boolean;
   price?: number;
