@@ -327,6 +327,28 @@ function fmtEventRange(start: string, end?: string | null) {
     ? `${sd} ${sm} to ${ed} ${em} ${ey}`
     : `${sd} ${sm} ${s.getFullYear()} to ${ed} ${em} ${ey}`;
 }
+// Format registration window: "from 23rd March to 22nd April 2026"
+function fmtRegWindow(opensDate?: string | null, deadline?: string | null, eventStart?: string, eventEnd?: string | null) {
+  const from = opensDate ? new Date(opensDate) : null;
+  const to = deadline ? new Date(deadline) : null;
+  // If both registration dates exist, show registration window
+  if (from && to && !isNaN(from.getTime()) && !isNaN(to.getTime())) {
+    return `from ${fmtEventRange(opensDate!, deadline)}`;
+  }
+  // If only opens date
+  if (from && !isNaN(from.getTime())) {
+    return `from ${ordSuffix(from.getDate())} ${from.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}`;
+  }
+  // If only deadline
+  if (to && !isNaN(to.getTime())) {
+    return `till ${ordSuffix(to.getDate())} ${to.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}`;
+  }
+  // Fallback to event dates
+  if (eventStart) {
+    return `for ${fmtEventRange(eventStart, eventEnd)}`;
+  }
+  return "";
+}
 
 export default function TenantHomePage() {
   const { tenant, isLoading, tenantSlug } = useTenant();
@@ -949,7 +971,7 @@ export default function TenantHomePage() {
                       <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-base text-white shadow-lg" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.45)" }}>
                         <span className="w-3 h-3 rounded-full flex-shrink-0 animate-flash bg-white" />
                         <span className="animate-flash text-base font-extrabold">
-                          Registrations open for {fmtEventRange(nextEvent.startDate, nextEvent.endDate)}
+                          Registrations open {fmtRegWindow(nextEvent.registrationOpensDate, nextEvent.registrationDeadline, nextEvent.startDate, nextEvent.endDate)}
                         </span>
                       </div>
                     );
@@ -1311,7 +1333,7 @@ export default function TenantHomePage() {
                         return (
                           <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-white text-base font-extrabold mb-3 shadow-md" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)" }}>
                             <span className="w-2.5 h-2.5 rounded-full bg-white animate-flash flex-shrink-0" />
-                            <span className="animate-flash">Registrations open for {fmtEventRange(event.startDate, event.endDate)}</span>
+                            <span className="animate-flash">Registrations open {fmtRegWindow(event.registrationOpensDate, event.registrationDeadline, event.startDate, event.endDate)}</span>
                           </div>
                         );
                       })()}
