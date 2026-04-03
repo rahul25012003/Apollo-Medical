@@ -51,20 +51,26 @@ function LoginPageInner() {
     const [tenantBranding, setTenantBranding] = React.useState<TenantBranding | null>(null);
     // Resolved tenant slug — from query param OR hostname detection
     const [resolvedTenantSlug, setResolvedTenantSlug] = React.useState<string | null>(tenantSlugFromParam);
+    // Default to delegate (OTP) mode — same as original working code
+    // On ICMS home (no tenant detected), will switch to admin after hostname check
+    const [loginMode, setLoginMode] = React.useState<"delegate" | "admin">(tenantSlugFromParam ? "delegate" : "delegate");
+    const [isTenantLogin, setIsTenantLogin] = React.useState(!!tenantSlugFromParam);
 
-    // Detect if this is a tenant login:
-    // - Has ?tenant= param (localhost or explicit link)
-    // - OR is on a non-localhost domain (production — tenant detected by hostname)
-    const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const isTenantLogin = !!resolvedTenantSlug || (!isLocalhost && typeof window !== 'undefined');
-    const [loginMode, setLoginMode] = React.useState<"delegate" | "admin">(isTenantLogin ? "delegate" : "admin");
-
-    // Update login mode when isTenantLogin changes (after hostname detection)
+    // After mount: detect if this is a tenant login from hostname (production)
     React.useEffect(() => {
-        if (isTenantLogin && loginMode === "admin" && !tenantSlugFromParam) {
-            setLoginMode("delegate");
+        const local = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (tenantSlugFromParam) {
+            // Has explicit param — definitely tenant login
+            setIsTenantLogin(true);
+        } else if (!local) {
+            // Production domain — tenant login (will be resolved by hostname fetch)
+            setIsTenantLogin(true);
+        } else {
+            // Localhost with no param — ICMS admin login
+            setIsTenantLogin(false);
+            setLoginMode("admin");
         }
-    }, [isTenantLogin]);
+    }, [tenantSlugFromParam]);
 
     // Compute the "home" URL
     const [homeHref, setHomeHref] = React.useState("/");
@@ -95,6 +101,8 @@ function LoginPageInner() {
                 if (!response?.ok) {
                     document.title = "ICMS — Login";
                     setResolvedTenantSlug(null);
+                    setIsTenantLogin(false);
+                    setLoginMode("admin");
                     return;
                 }
 
