@@ -155,7 +155,9 @@ export async function middleware(request: NextRequest) {
   // Domain-based tenant rewriting: serve /t/[slug] content at root URL
   // The client never sees /t/slug in the URL bar.
   // ---------------------------------------------------------------------------
-  const hostname = request.headers.get("host")?.split(":")[0] || "";
+  const rawHostname = request.headers.get("host")?.split(":")[0] || "";
+  // Strip www. prefix for consistent domain matching
+  const hostname = rawHostname.replace(/^www\./, "");
   const tenantSlug = await getTenantSlugByDomain(hostname);
 
   if (tenantSlug) {

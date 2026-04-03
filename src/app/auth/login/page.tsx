@@ -44,46 +44,57 @@ interface TenantBranding {
 function LoginPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const tenantSlug = searchParams.get("tenant");
+    const tenantSlugFromParam = searchParams.get("tenant");
 
     const [isLoading, setIsLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    // If tenant slug is present (via query param or middleware injection), it's a tenant login
-    // Otherwise it's the ICMS admin login (no OTP, no tenant branding)
-    const isTenantLogin = !!tenantSlug;
-    const [loginMode, setLoginMode] = React.useState<"delegate" | "admin">(isTenantLogin ? "delegate" : "admin");
     const [tenantBranding, setTenantBranding] = React.useState<TenantBranding | null>(null);
+    // Resolved tenant slug — from query param OR hostname detection
+    const [resolvedTenantSlug, setResolvedTenantSlug] = React.useState<string | null>(tenantSlugFromParam);
 
-    // Compute the "home" URL based on tenant context (deferred to avoid hydration mismatch)
+    // Detect if this is a tenant login:
+    // - Has ?tenant= param (localhost or explicit link)
+    // - OR is on a non-localhost domain (production — tenant detected by hostname)
+    const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const isTenantLogin = !!resolvedTenantSlug || (!isLocalhost && typeof window !== 'undefined');
+    const [loginMode, setLoginMode] = React.useState<"delegate" | "admin">(isTenantLogin ? "delegate" : "admin");
+
+    // Update login mode when isTenantLogin changes (after hostname detection)
+    React.useEffect(() => {
+        if (isTenantLogin && loginMode === "admin" && !tenantSlugFromParam) {
+            setLoginMode("delegate");
+        }
+    }, [isTenantLogin]);
+
+    // Compute the "home" URL
     const [homeHref, setHomeHref] = React.useState("/");
     React.useEffect(() => {
         const local = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        setHomeHref(local && tenantSlug ? `/t/${tenantSlug}` : "/");
-    }, [tenantSlug]);
+        setHomeHref(local && resolvedTenantSlug ? `/t/${resolvedTenantSlug}` : "/");
+    }, [resolvedTenantSlug]);
 
-    // Fetch tenant branding — only for tenant logins, not ICMS home
+    // Fetch tenant branding — detect from param OR hostname
     React.useEffect(() => {
-        if (!isTenantLogin) return; // ICMS home — no tenant branding needed
-
         async function fetchTenant() {
             try {
                 let response: Response | null = null;
+                let detectedSlug: string | null = tenantSlugFromParam;
 
                 // Try 1: query param tenant slug
-                if (tenantSlug) {
-                    response = await fetch(`/api/tenants/${tenantSlug}`);
+                if (tenantSlugFromParam) {
+                    response = await fetch(`/api/tenants/${tenantSlugFromParam}`);
                 }
 
-                // Try 2: hostname as domain
+                // Try 2: hostname as domain (production — no query param needed)
                 if (!response?.ok && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-                    response = await fetch(`/api/tenants/${window.location.hostname}`);
+                    const hostname = window.location.hostname.replace(/^www\./, '');
+                    response = await fetch(`/api/tenants/${hostname}`);
                 }
 
-                // No tenant found — use ICMS defaults, don't load another tenant's branding
+                // No tenant found — ICMS defaults
                 if (!response?.ok) {
-                    if (!isTenantLogin) {
-                        document.title = "ICMS — Login";
-                    }
+                    document.title = "ICMS — Login";
+                    setResolvedTenantSlug(null);
                     return;
                 }
 
@@ -92,6 +103,7 @@ function LoginPageInner() {
                     if (data.success && data.data) {
                         const t = data.data;
                         const name = t.branding?.name || t.name || "";
+                        const slug = t.slug || detectedSlug;
                         const favicon = t.branding?.favicon || t.favicon || null;
                         setTenantBranding({
                             name,
@@ -99,6 +111,7 @@ function LoginPageInner() {
                             primaryColor: t.theme?.primaryColor || t.primaryColor || "#0d9488",
                             secondaryColor: t.theme?.secondaryColor || t.secondaryColor || "#0891b2",
                         });
+                        if (slug) setResolvedTenantSlug(slug);
                         document.title = `Login — ${name}`;
                         if (favicon) {
                             let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
@@ -112,7 +125,7 @@ function LoginPageInner() {
         }
 
         fetchTenant();
-    }, [tenantSlug]);
+    }, [tenantSlugFromParam]);
 
     // Computed tenant gradient for buttons
     const tenantGradient = tenantBranding
@@ -138,7 +151,7 @@ function LoginPageInner() {
             const result = await signIn("credentials", {
                 email: data.email,
                 password: data.password,
-                tenantSlug: tenantSlug || "",
+                tenantSlug: resolvedTenantSlug || "",
                 redirect: false,
             });
 
@@ -184,7 +197,7 @@ function LoginPageInner() {
             const res = await fetch("/api/auth/otp/send", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: delegateEmail, purpose: "LOGIN", tenantSlug: tenantSlug || undefined }),
+                body: JSON.stringify({ email: delegateEmail, purpose: "LOGIN", tenantSlug: resolvedTenantSlug || undefined }),
             });
             const data = await res.json();
             if (!res.ok) {
@@ -218,7 +231,7 @@ function LoginPageInner() {
             const result = await signIn("otp-login", {
                 email: delegateEmail,
                 code: otp,
-                tenantSlug: tenantSlug || "",
+                tenantSlug: resolvedTenantSlug || "",
                 redirect: false,
             });
 
