@@ -137,6 +137,7 @@ function formatTime(t: string | null): string {
 function dateLabel(dateStr: string, index: number): string {
     try {
         const d = parseISO(dateStr);
+        if (isNaN(d.getTime())) return `Day ${index + 1}`;
         return `Day ${index + 1} - ${format(d, "MMM d")}`;
     } catch {
         return `Day ${index + 1}`;
@@ -236,7 +237,10 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
         sessions.forEach((s) => {
             if (s.sessionDate) {
                 try {
-                    dates.add(format(parseISO(s.sessionDate), "yyyy-MM-dd"));
+                    const d = parseISO(s.sessionDate);
+                    if (!isNaN(d.getTime())) {
+                        dates.add(format(d, "yyyy-MM-dd"));
+                    }
                 } catch {
                     // ignore invalid dates
                 }

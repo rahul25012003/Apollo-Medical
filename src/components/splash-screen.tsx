@@ -18,14 +18,16 @@ export function SplashScreen() {
     checkedRef.current = true;
     const p = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
-    // Show AIIMS splash on carens tenant pages:
+    // Show AIIMS splash ONLY on carens tenant pages:
     // - /t/carens (localhost)
     // - ?tenant=carens (login/events pages)
-    // - Production domain root / (middleware rewrites to /t/carens)
+    // - Production root / ONLY if domain contains "carens" or "aiims"
     const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const hostname = window.location.hostname.toLowerCase();
+    const isCarensDomain = hostname.includes("carens") || hostname.includes("aiims") || hostname.includes("careneuromodulation");
     const isCarensPage = p.startsWith("/t/carens")
       || params.get("tenant") === "carens"
-      || (!isLocalhost && !p.startsWith("/t/") && !p.startsWith("/dashboard"));
+      || (!isLocalhost && isCarensDomain && (p === "/" || p.startsWith("/events") || p.startsWith("/auth") || p.startsWith("/gallery")));
     if (isCarensPage) {
       setShowSplash(true);
     } else {

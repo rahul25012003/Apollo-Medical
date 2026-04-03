@@ -341,12 +341,14 @@ export default function TenantHomePage() {
   const [aboutSlide, setAboutSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  // On production (non-localhost), middleware handles tenant injection — no need for ?tenant= in URLs
-  const [isLocal, setIsLocal] = useState(true);
+  // On production, middleware handles tenant injection — no ?tenant= needed in URLs
+  // Default to false (production-first) to avoid hydration mismatch
+  const [isLocal, setIsLocal] = useState(false);
   useEffect(() => {
-    setIsLocal(window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+    const local = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    setIsLocal(local);
   }, []);
-  // Build clean URLs: on production no ?tenant= needed, on localhost add it
+  // Build clean URLs: on localhost add ?tenant=, on production middleware injects it
   const tUrl = (path: string) => isLocal ? `${path}${path.includes("?") ? "&" : "?"}tenant=${tenantSlug}` : path;
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [testimonialVisibleCount, setTestimonialVisibleCount] = useState(3);

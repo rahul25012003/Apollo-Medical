@@ -371,7 +371,7 @@ export default function EventDetailPage() {
                             title: es.title,
                             description: es.description,
                             sessionType: es.sessionType || "OTHER",
-                            date: es.sessionDate ? new Date(es.sessionDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null,
+                            date: es.sessionDate && !isNaN(new Date(es.sessionDate).getTime()) ? new Date(es.sessionDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null,
                             dateRaw: es.sessionDate || null,
                             startTime: es.startTime,
                             endTime: es.endTime,
