@@ -440,6 +440,9 @@ model Event {
   category             String?
   tags                 String[]
 
+  // Brochure
+  brochureUrl          String?            // PDF brochure URL
+
   // Additional Info
   cmeCredits           Int?
   cmeCoordinatorName   String?

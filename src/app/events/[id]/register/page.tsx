@@ -121,6 +121,7 @@ interface EventDisplayData {
     includes: string[];
     speakers: { name: string; designation: string | null; institution: string | null; photo: string | null }[];
     bannerImage: string | null;
+    brochureUrl: string | null;
     sponsors: { name: string; logo: string | null; tier: string }[];
     pricingCategories: PricingCategory[];
     isRegistrationOpen: boolean;
@@ -275,6 +276,7 @@ export default function RegisterPage() {
                             photo: es.speaker.photo || null,
                         })) || [],
                         bannerImage: event.bannerImage || null,
+                        brochureUrl: event.brochureUrl || null,
                         sponsors: event.eventSponsors?.map(es => ({
                             name: es.sponsor.name,
                             logo: es.sponsor.logo,
@@ -1069,6 +1071,15 @@ export default function RegisterPage() {
                                                 {eventData.contactPhone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><a href={`tel:${eventData.contactPhone}`}>{eventData.contactPhone}</a></div>}
                                                 {eventData.website && <div className="flex items-center gap-2"><Globe className="h-4 w-4 text-muted-foreground" /><a href={eventData.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Event Website</a></div>}
                                             </div>
+                                        </div>
+                                    )}
+                                    {/* Brochure */}
+                                    {eventData?.brochureUrl && (
+                                        <div className="pt-2">
+                                            <a href={eventData.brochureUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 text-primary hover:bg-primary/10 transition-colors font-semibold text-sm">
+                                                <Download className="h-5 w-5" />
+                                                Download Event Brochure (PDF)
+                                            </a>
                                         </div>
                                     )}
                                 </div>

@@ -95,6 +95,7 @@ export const createEventSchema = z.object({
   // Media
   bannerImage: z.string().optional(),
   thumbnailImage: z.string().optional(),
+  brochureUrl: z.string().optional().nullable(),
 
   // Certificate Signatories
   signatory1Name: z.string().optional(),

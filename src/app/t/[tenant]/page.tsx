@@ -182,7 +182,7 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
             <HelpCircle className="h-3.5 w-3.5 mr-2 text-slate-600" />
             FAQ
           </Badge>
-          <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Frequently Asked Questions</h2>
+          <h2 className="text-2xl lg:text-4xl font-extrabold mb-4 tracking-tight">Frequently Asked Questions</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Find answers to common questions about our organization and events
           </p>
@@ -320,9 +320,9 @@ function fmtEventRange(start: string, end?: string | null) {
   const ed = ordSuffix(e.getDate());
   const em = e.toLocaleDateString("en-IN", { month: "long" });
   const ey = e.getFullYear();
-  if (s.getMonth() === e.getMonth() && s.getFullYear() === ey)
-    return `${sd} to ${ed} ${em} ${ey}`;
   const sm = s.toLocaleDateString("en-IN", { month: "long" });
+  if (s.getMonth() === e.getMonth() && s.getFullYear() === ey)
+    return `${sd} ${sm} to ${ed} ${em} ${ey}`;
   return s.getFullYear() === ey
     ? `${sd} ${sm} to ${ed} ${em} ${ey}`
     : `${sd} ${sm} ${s.getFullYear()} to ${ed} ${em} ${ey}`;
@@ -451,17 +451,8 @@ export default function TenantHomePage() {
           console.error("Error fetching speakers:", e);
         }
 
-        // Fetch sessions for the first event
+        // Sessions fetch removed — sessions visible in View Event Details, not on home page
         if (eventsData.length > 0) {
-          try {
-            const sessionsRes = await fetch(`/api/events/${eventsData[0].id}/sessions`);
-            if (sessionsRes.ok) {
-              const sessionsData = await sessionsRes.json();
-              setSessions(sessionsData.data || sessionsData || []);
-            }
-          } catch (e) {
-            console.error("Error fetching sessions:", e);
-          }
 
           // Fetch pricing categories
           try {
@@ -666,43 +657,72 @@ export default function TenantHomePage() {
           font-feature-settings: "tnum";
         }
 
-        /* Gallery images — smooth zoom */
-        [class*="overflow-hidden"] img {
-          transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        /* Gallery images — cinematic zoom + brightness on hover */
+        [class*="overflow-hidden"][class*="cursor-pointer"] img,
+        [class*="overflow-hidden"][class*="group"] img {
+          transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.5s ease !important;
+        }
+        [class*="overflow-hidden"][class*="cursor-pointer"]:hover img,
+        [class*="overflow-hidden"][class*="group"]:hover img {
+          transform: scale(1.1) !important;
+          filter: brightness(1.05);
         }
 
-        [class*="overflow-hidden"]:hover img {
-          transform: scale(1.08) !important;
+        /* Section badges — subtle glow */
+        section [class*="rounded-full"][class*="px-5"][class*="py-1"] {
+          transition: all 0.3s ease;
+        }
+        section [class*="rounded-full"][class*="px-5"][class*="py-1"]:hover {
+          transform: translateY(-1px);
         }
 
-        /* Speaker cards — refined hover */
-        [class*="text-center"][class*="group"] {
-          transition: transform 0.35s ease, box-shadow 0.35s ease !important;
+        /* Section headings — dramatic weight */
+        section h2[class*="font-bold"] {
+          letter-spacing: -0.02em;
         }
 
-        /* FAQ items — smooth expand */
-        details summary {
-          cursor: pointer;
-          transition: color 0.2s ease;
+        /* Cards — premium glass shadow on hover */
+        [class*="rounded-2xl"][class*="border"]:not(header):not(footer) {
+          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                      box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        [class*="rounded-2xl"][class*="border"]:not(header):not(footer):hover {
+          box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.1),
+                      0 10px 20px -10px rgba(0, 0, 0, 0.05) !important;
         }
 
-        details[open] summary {
-          color: var(--primary);
-        }
-
-        /* Smooth anchor scrolling for nav */
+        /* Smooth anchor scrolling */
         html { scroll-behavior: smooth; }
 
-        /* Hero text — refined shadow for readability on images */
-        [class*="text-white"][class*="font-bold"][class*="text-5xl"],
-        [class*="text-white"][class*="font-bold"][class*="text-6xl"],
-        [class*="text-white"][class*="font-bold"][class*="text-4xl"] {
-          text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 0, 0, 0.1);
+        /* Hero text — cinematic text shadow */
+        [class*="text-white"][class*="font-extrabold"] {
+          text-shadow: 0 2px 30px rgba(0, 0, 0, 0.4), 0 0 60px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Image slideshow — smooth crossfade */
+        [style*="opacity: 1"], [style*="opacity: 0"] {
+          transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        /* Buttons — micro interaction */
+        button, a[class*="rounded"] {
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        button:active, a[class*="rounded"]:active {
+          transform: scale(0.97);
         }
 
         /* Footer — subtle top border glow */
         footer {
           border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Gradient text for emphasis */
+        .gradient-text {
+          background: linear-gradient(135deg, #0f766e, #0d9488, #2563eb);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         /* Mobile nav — smooth slide */
@@ -859,10 +879,10 @@ export default function TenantHomePage() {
             </div>
           )}
 
-          <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-8 sm:pt-10">
+          <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-6 sm:pt-8">
             <div className="text-center max-w-4xl mx-auto">
               {/* Tagline pill */}
-              <div className="mb-5 hero-stagger-1">
+              <div className="mb-3 hero-stagger-1">
                 <span className={cn(
                   "inline-flex items-center gap-3 px-5 py-2 rounded-full text-sm font-bold tracking-wide border backdrop-blur-md",
                   "bg-white/10 border-white/20 text-white/90"
@@ -889,16 +909,22 @@ export default function TenantHomePage() {
               )}
 
               {/* Title */}
-              <div className="text-center mb-5 hero-stagger-2">
+              <div className="text-center mb-3 hero-stagger-2">
                 <h1 className={cn(
                   "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold tracking-tight leading-[1.1]",
                   "text-white"
                 )} style={{ textShadow: "0 4px 30px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3)" }}>
                   {hero.title || branding.name}
                 </h1>
+                {/* Decorative accent line */}
+                <div className="flex items-center justify-center gap-3 mt-3">
+                  <div className="h-[2px] w-10 bg-gradient-to-r from-transparent to-emerald-400" />
+                  <div className="h-[3px] w-16 rounded-full bg-emerald-400" />
+                  <div className="h-[2px] w-10 bg-gradient-to-l from-transparent to-emerald-400" />
+                </div>
 
                 {/* Indo French badge */}
-                <div className="mt-5 flex flex-col items-center gap-2">
+                <div className="mt-3 flex flex-col items-center gap-1.5">
                   <span className="text-[11px] font-bold uppercase tracking-[0.25em] px-4 py-1 rounded-full bg-white/15 text-white/80 backdrop-blur-sm border border-white/10">
                     In association with
                   </span>
@@ -921,7 +947,7 @@ export default function TenantHomePage() {
               </div>
 
               {/* Subtitle */}
-              <p className={cn("text-lg lg:text-xl font-medium max-w-2xl mx-auto mb-8 hero-stagger-3 leading-relaxed", "text-white/80")}>
+              <p className={cn("text-base lg:text-lg font-medium max-w-2xl mx-auto mb-5 hero-stagger-3 leading-relaxed", "text-white/80")}>
                 {hero.subtitle || "Register for the upcoming CME and workshop programs."}
               </p>
 
@@ -1052,31 +1078,36 @@ export default function TenantHomePage() {
         </div>
       )}
 
-      {/* No Events — Coming Soon placeholder */}
+      {/* No Events — Coming Soon */}
       {sections.events && featuredEvents.length === 0 && (
-        <section id="events" className="py-12 lg:py-20 relative overflow-hidden bg-white">
-          <div className="container mx-auto px-4 lg:px-8 text-center">
-            <div className="max-w-lg mx-auto py-8">
-              <div
-                className="w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center"
-                style={{ background: `linear-gradient(135deg, ${theme.primaryColor}15, ${theme.secondaryColor}15)` }}
-              >
-                <Calendar className="h-10 w-10" style={{ color: theme.primaryColor }} />
+        <section id="events" className="py-16 lg:py-24 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #f8fafc, #ffffff)" }}>
+          <div className="container mx-auto px-4 lg:px-8">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="relative inline-block mb-6">
+                <div className="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center bg-slate-100 border-2 border-slate-200">
+                  <Calendar className="h-9 w-9 text-slate-400" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <Sparkles className="h-3 w-3 text-white" />
+                </div>
               </div>
-              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">Events Coming Soon</h2>
-              <p className="text-gray-500 mb-5">
-                We&apos;re preparing exciting conferences, workshops, and training programs. Stay tuned for updates!
+              <h2 className="text-2xl lg:text-3xl font-extrabold text-slate-800 mb-3">Exciting Events Coming Soon</h2>
+              <p className="text-slate-500 mb-6 max-w-md mx-auto leading-relaxed">
+                We&apos;re preparing conferences, workshops, and hands-on training programs. Subscribe to get notified when registrations open.
               </p>
-              <a href="#contact">
-                <Button
-                  variant="outline"
-                  className="rounded-full px-6 border-2"
-                  style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Get Notified
-                </Button>
-              </a>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="#contact">
+                  <Button className="rounded-full px-6 bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg gap-2">
+                    <Mail className="h-4 w-4" />
+                    Contact Us
+                  </Button>
+                </a>
+                <a href="#about">
+                  <Button variant="outline" className="rounded-full px-6 gap-2 border-2 border-slate-200 hover:border-slate-300">
+                    Learn About Us
+                  </Button>
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -1380,14 +1411,19 @@ export default function TenantHomePage() {
           {/* Header */}
           <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
             <div
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-white text-sm font-semibold mb-4 shadow-md"
-              style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-white text-sm font-bold mb-4 shadow-lg"
+              style={{ background: "linear-gradient(135deg, #0f766e, #0d9488)" }}
             >
               <Users className="h-4 w-4" />
               Organizing Committee
             </div>
-            <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Meet Our Team</h2>
-            <p className="text-gray-500 max-w-xl mx-auto text-sm lg:text-base">The dedicated faculty guiding this program</p>
+            <h2 className="text-2xl lg:text-4xl font-extrabold mb-3 tracking-tight">Meet Our Team</h2>
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="h-[2px] w-8 bg-emerald-300" />
+              <div className="h-[3px] w-12 rounded-full bg-emerald-500" />
+              <div className="h-[2px] w-8 bg-emerald-300" />
+            </div>
+            <p className="text-slate-500 max-w-xl mx-auto text-sm lg:text-base">The dedicated faculty guiding this program</p>
           </div>
 
           {/* ── Tier 1: Chief & Co Secretary ── */}
@@ -1547,8 +1583,8 @@ export default function TenantHomePage() {
         </div>
       </section>}
 
-      {/* Speakers Section */}
-      {sections.events && speakers.length > 0 && (
+      {/* Speakers and Schedule removed from home page — visible in View Event Details on all event/registration pages */}
+      {false && speakers.length > 0 && (
         <section
           id="speakers"
           className="py-12 lg:py-20 relative overflow-hidden"
@@ -1559,12 +1595,12 @@ export default function TenantHomePage() {
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
-                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
+                style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc" }}
               >
                 <Users className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
                 Our Faculty
               </Badge>
-              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Distinguished Speakers</h2>
+              <h2 className="text-2xl lg:text-4xl font-extrabold mb-4 tracking-tight">Distinguished Speakers</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Meet the experts and thought leaders sharing their knowledge
               </p>
@@ -1619,8 +1655,8 @@ export default function TenantHomePage() {
         </section>
       )}
 
-      {/* Schedule / Agenda Section */}
-      {sections.events && sessions.length > 0 && (
+      {/* Schedule / Agenda removed from home page — visible in View Event Details */}
+      {false && sessions.length > 0 && (
         <section
           id="schedule"
           className="py-6 lg:py-8 relative overflow-hidden bg-white"
@@ -1630,12 +1666,12 @@ export default function TenantHomePage() {
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
-                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
+                style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc" }}
               >
                 <Calendar className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
                 Schedule
               </Badge>
-              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Event Agenda</h2>
+              <h2 className="text-2xl lg:text-4xl font-extrabold mb-4 tracking-tight">Event Agenda</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Explore the full schedule of sessions, workshops, and keynotes
               </p>
@@ -1753,12 +1789,12 @@ export default function TenantHomePage() {
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
-                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
+                style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc" }}
               >
-                <FlaskConical className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
+                <FlaskConical className="h-3.5 w-3.5 mr-2 text-slate-600" />
                 Ongoing Research
               </Badge>
-              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Our Research</h2>
+              <h2 className="text-2xl lg:text-4xl font-extrabold mb-4 tracking-tight">Our Research</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Pioneering studies advancing the frontiers of medical science
               </p>
@@ -1796,19 +1832,19 @@ export default function TenantHomePage() {
 
       {/* Gallery Section */}
       {sections.gallery && hasGallery && (
-        <section id="gallery" className="py-16 lg:py-24 relative overflow-hidden bg-white">
+        <section id="gallery" className="py-16 lg:py-24 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%)" }}>
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             <div className="text-center mb-10 lg:mb-14" data-scroll-reveal>
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
-                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
+                style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc" }}
               >
                 <Camera className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
                 Gallery
               </Badge>
-              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Event Highlights</h2>
+              <h2 className="text-2xl lg:text-4xl font-extrabold mb-4 tracking-tight">Event Highlights</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Moments captured from our past events and conferences
               </p>
@@ -2037,12 +2073,12 @@ export default function TenantHomePage() {
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full backdrop-blur-sm"
-                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
+                style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc" }}
               >
                 <Star className="h-3.5 w-3.5 mr-2 fill-yellow-400 text-yellow-400" />
                 Testimonials
               </Badge>
-              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">
+              <h2 className="text-2xl lg:text-4xl font-extrabold mb-4 tracking-tight">
                 Trusted by{" "}
                 <span className="bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}>
                   Professionals
@@ -2258,15 +2294,22 @@ export default function TenantHomePage() {
                     const heading = hasSubHeading ? paragraph.slice(0, colonIdx) : null;
                     const text = hasSubHeading ? paragraph.slice(colonIdx + 1).trim() : paragraph;
                     return (
-                      <div key={idx} className={idx === 0 ? "" : "pt-4 border-t border-slate-200"}>
-                        {idx === 0 && <h3 className="text-2xl font-bold mb-3 text-slate-900">About Us</h3>}
+                      <div key={idx} className={idx === 0 ? "" : "pt-5 border-t border-slate-200"}>
+                        {idx === 0 && (
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                              <BookOpen className="h-5 w-5 text-white" />
+                            </div>
+                            <h3 className="text-2xl font-extrabold text-slate-900">About Us</h3>
+                          </div>
+                        )}
                         {heading && (
                           <h4 className="text-lg font-bold mb-2 text-slate-800 flex items-center gap-2">
                             <span className="w-1.5 h-6 rounded-full bg-emerald-500 flex-shrink-0" />
                             {heading}
                           </h4>
                         )}
-                        <p className="text-slate-600 text-base leading-relaxed">{text}</p>
+                        <p className="text-slate-600 text-[15px] leading-[1.8]">{text}</p>
                       </div>
                     );
                   })}
@@ -2328,12 +2371,12 @@ export default function TenantHomePage() {
               <Badge
                 variant="outline"
                 className="mb-4 px-5 py-1.5 rounded-full"
-                style={{ borderColor: `${theme.primaryColor}30`, backgroundColor: `${theme.primaryColor}08` }}
+                style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc" }}
               >
                 <Mail className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
                 Contact
               </Badge>
-              <h2 className="text-2xl lg:text-4xl font-bold mb-3 tracking-tight">Get In Touch</h2>
+              <h2 className="text-2xl lg:text-4xl font-extrabold mb-4 tracking-tight">Get In Touch</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Have questions? We&apos;d love to hear from you.
               </p>

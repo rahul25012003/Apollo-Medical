@@ -45,6 +45,7 @@ export interface Event {
   website: string | null;
   bannerImage: string | null;
   thumbnailImage: string | null;
+  brochureUrl: string | null;
   signatory1Name: string | null;
   signatory1Title: string | null;
   signatory2Name: string | null;
@@ -156,6 +157,7 @@ export interface CreateEventData {
   website?: string;
   bannerImage?: string;
   thumbnailImage?: string;
+  brochureUrl?: string | null;
   signatory1Name?: string;
   signatory1Title?: string;
   signatory2Name?: string;

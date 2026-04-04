@@ -146,6 +146,7 @@ interface FormData {
     website: string;
     bannerImage: string;
     thumbnailImage: string;
+    brochureUrl: string;
     signatory1Name: string;
     signatory1Title: string;
     signatory2Name: string;
@@ -268,6 +269,7 @@ export default function EditEventPage() {
         website: "",
         bannerImage: "",
         thumbnailImage: "",
+        brochureUrl: "",
         signatory1Name: "",
         signatory1Title: "",
         signatory2Name: "",
@@ -336,6 +338,7 @@ export default function EditEventPage() {
                         website: e.website || "",
                         bannerImage: e.bannerImage || "",
                         thumbnailImage: e.thumbnailImage || "",
+                        brochureUrl: e.brochureUrl || "",
                         signatory1Name: e.signatory1Name || "",
                         signatory1Title: e.signatory1Title || "",
                         signatory2Name: e.signatory2Name || "",
@@ -505,6 +508,26 @@ export default function EditEventPage() {
             toast.error("Error uploading banner image");
         } finally {
             setBannerUploading(false);
+        }
+    };
+
+    const [brochureUploading, setBrochureUploading] = useState(false);
+    const handleBrochureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setBrochureUploading(true);
+            const res = await uploadFile(file, "events/brochures");
+            if (res.success && res.data) {
+                handleChange("brochureUrl", res.data.url);
+                toast.success("Brochure uploaded successfully");
+            } else {
+                toast.error("Failed to upload brochure");
+            }
+        } catch {
+            toast.error("Error uploading brochure");
+        } finally {
+            setBrochureUploading(false);
         }
     };
 
@@ -1585,6 +1608,42 @@ export default function EditEventPage() {
                                                 >
                                                     <Trash2 className="h-3 w-3" />
                                                     Remove
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Brochure Upload */}
+                                <Card className="card-hover">
+                                    <CardHeader>
+                                        <CardTitle className="text-sm flex items-center gap-2">
+                                            <FileText className="h-4 w-4" />
+                                            Event Brochure (PDF)
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <div className="space-y-2">
+                                            <Input
+                                                id="brochureUpload"
+                                                type="file"
+                                                accept="application/pdf,image/jpeg,image/png"
+                                                onChange={handleBrochureUpload}
+                                                disabled={brochureUploading}
+                                                className="cursor-pointer"
+                                            />
+                                            {brochureUploading && <p className="text-xs text-muted-foreground">Uploading...</p>}
+                                        </div>
+                                        {formData.brochureUrl && (
+                                            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                                                    <a href={formData.brochureUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate">
+                                                        View Brochure
+                                                    </a>
+                                                </div>
+                                                <Button type="button" variant="outline" size="sm" onClick={() => handleChange("brochureUrl", "")} className="gap-1 text-destructive flex-shrink-0">
+                                                    <Trash2 className="h-3 w-3" /> Remove
                                                 </Button>
                                             </div>
                                         )}
