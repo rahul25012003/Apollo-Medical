@@ -34,7 +34,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   // Determine allowed types based on folder
   let allowedTypes = UPLOAD_CONFIG.allowedImageTypes;
-  if (folder === "documents") {
+  if (folder === "documents" || folder === "events/brochures") {
     allowedTypes = [...UPLOAD_CONFIG.allowedImageTypes, ...UPLOAD_CONFIG.allowedDocumentTypes];
   }
 
