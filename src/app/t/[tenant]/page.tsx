@@ -1013,7 +1013,7 @@ export default function TenantHomePage() {
                 </div>
               )}
               {/* Yearly Stats */}
-              {yearlyStats && (yearlyStats.events || yearlyStats.attendees || yearlyStats.speakers) && (
+              {yearlyStats && ((yearlyStats.events && String(yearlyStats.events) !== "0") || (yearlyStats.attendees && String(yearlyStats.attendees) !== "0") || (yearlyStats.speakers && String(yearlyStats.speakers) !== "0")) && (
                 <div className="flex items-center justify-center gap-4 sm:gap-6 lg:gap-10 mt-8 animation-delay-600 animate-fadeInUp">
                   {yearlyStats.events && String(yearlyStats.events) !== "0" && (
                     <div className="text-center" data-scroll-reveal data-scroll-delay="1">
@@ -1050,13 +1050,7 @@ export default function TenantHomePage() {
             </div>
           </div>
 
-          {/* Scroll indicator */}
-          <div className="absolute bottom-24 md:bottom-28 left-1/2 -translate-x-1/2 z-10 scroll-indicator hero-stagger-6">
-            <a href="#events" className={cn("flex flex-col items-center gap-1.5 group", "text-white/50 hover:text-white/80")}>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Scroll</span>
-              <ChevronDown className="h-5 w-5" />
-            </a>
-          </div>
+          {/* Scroll indicator removed — cleaner hero */}
 
           {/* Gradient fade into next section */}
           <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none" style={{ zIndex: 5, background: "linear-gradient(to bottom, transparent, #0f172a)" }} />

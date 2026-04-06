@@ -362,7 +362,7 @@ export default function EventDetailPage() {
     // Render a list of sessions (used in day-wise tabs)
     const renderSessionList = (sessions: DisplaySession[], getInitialsFn: (name: string) => string) => (
         <>
-            {sessions.map((session) => {
+            {[...sessions].sort((a, b) => (a.startTime || "").localeCompare(b.startTime || "")).map((session) => {
                 const typeConfig = SESSION_TYPE_CONFIG[session.sessionType] || SESSION_TYPE_CONFIG.OTHER;
                 const isBreak = session.sessionType === "BREAK";
                 const allSpeakers = session.speakers.length > 0 ? session.speakers : (session.speaker ? [{
