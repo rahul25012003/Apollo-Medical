@@ -191,7 +191,7 @@ export default function EventPreviewPage() {
                                         {day.date && <span className="text-xs text-muted-foreground">{day.date}</span>}
                                     </div>
                                     <div className="space-y-3">
-                                    {[...day.sessions].sort((a: any, b: any) => (a.startTime || "").localeCompare(b.startTime || "")).map((session: any) => (
+                                    {[...day.sessions].sort((a: any, b: any) => (a.startTime || "").padStart(5, "0").localeCompare((b.startTime || "").padStart(5, "0"))).map((session: any) => (
                                         <Card key={session.id} className="overflow-hidden">
                                             <CardContent className="p-4">
                                                 <div className="flex items-start gap-4">

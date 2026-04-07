@@ -1706,7 +1706,7 @@ export default function TenantHomePage() {
 
                   <div className="space-y-4">
                     {(groupedByDate[dateKeys[activeScheduleDay]] || [])
-                      .sort((a: any, b: any) => (a.startTime || '').localeCompare(b.startTime || ''))
+                      .sort((a: any, b: any) => (a.startTime || '').padStart(5, '0').localeCompare((b.startTime || '').padStart(5, '0')))
                       .map((session: any, idx: number) => {
                         const title = (session.title || '').toLowerCase();
                         let accentColor = theme.primaryColor;

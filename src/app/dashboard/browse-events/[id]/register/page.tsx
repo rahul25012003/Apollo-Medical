@@ -754,7 +754,7 @@ export default function RegisterPage() {
                                                                     {day.date && <span className="text-xs text-muted-foreground">{day.date}</span>}
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                    {[...day.items!].sort((a, b) => (a.startTime || "").localeCompare(b.startTime || "")).map(session => (
+                                                                    {[...day.items!].sort((a, b) => (a.startTime || "").padStart(5, "0").localeCompare((b.startTime || "").padStart(5, "0"))).map(session => (
                                                                         <div key={session.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border">
                                                                             <div className="flex items-start gap-3">
                                                                                 {session.startTime && (
