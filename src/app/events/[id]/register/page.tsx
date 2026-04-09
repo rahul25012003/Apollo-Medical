@@ -821,9 +821,14 @@ export default function RegisterPage() {
             <div className="min-h-screen flex flex-col items-center justify-center gap-4">
                 <AlertCircle className="h-12 w-12 text-destructive" />
                 <h1 className="text-xl font-semibold">{error}</h1>
-                <Link href={tenantSlug ? "/" : "/events"}>
-                    <Button variant="outline">Back to Events</Button>
-                </Link>
+                <div className="flex gap-3">
+                    <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"}>
+                        <Button variant="outline">Back to Home</Button>
+                    </Link>
+                    <Link href={tenantSlug ? `/events?tenant=${tenantSlug}` : "/events"}>
+                        <Button variant="outline">All Events</Button>
+                    </Link>
+                </div>
             </div>
         );
     }
@@ -840,7 +845,7 @@ export default function RegisterPage() {
             <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-sm">
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
-                        <Link href="/" className="flex items-center gap-2">
+                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"} className="flex items-center gap-2">
                             {tenantBranding?.logo ? (
                                 <img src={tenantBranding.logo} alt={tenantBranding.name} className="h-8 w-8 rounded-lg object-contain" />
                             ) : (
@@ -869,10 +874,7 @@ export default function RegisterPage() {
                 <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link
-                            href={tenantSlug
-                                ? (typeof window !== 'undefined' && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") ? `/t/${tenantSlug}` : "/")
-                                : "/events"
-                            }
+                            href={tenantSlug ? `/t/${tenantSlug}` : "/"}
                             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
                             <ArrowLeft className="h-4 w-4" />

@@ -172,6 +172,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         tenantId,
         startDate: eventData.startDate ? new Date(eventData.startDate) : null,
         endDate: eventData.endDate ? new Date(eventData.endDate) : null,
+        registrationOpensDate: eventData.registrationOpensDate
+          ? new Date(eventData.registrationOpensDate)
+          : null,
         registrationDeadline: eventData.registrationDeadline
           ? new Date(eventData.registrationDeadline)
           : null,

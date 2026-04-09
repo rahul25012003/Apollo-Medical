@@ -166,6 +166,8 @@ export default function EventDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [tenantSlug, setTenantSlug] = useState<string | null>(null);
+    const [tenantName, setTenantName] = useState<string | null>(null);
+    const [tenantThemeColor, setTenantThemeColor] = useState<string>("#0f766e");
 
     // Fetch event — check URL params directly to avoid timing issues
     useEffect(() => {
@@ -335,9 +337,11 @@ export default function EventDetailPage() {
 
                     setEvent(displayEvent);
 
-                    // Set tenant slug from API response if not already set from query param
-                    if (!tenantSlug && apiEvent.tenant?.slug) {
-                        setTenantSlug(apiEvent.tenant.slug);
+                    // Set tenant info from API response
+                    if (apiEvent.tenant?.slug) {
+                        if (!tenantSlug) setTenantSlug(apiEvent.tenant.slug);
+                        if (apiEvent.tenant.name) setTenantName(apiEvent.tenant.name);
+                        if (apiEvent.tenant.theme?.primaryColor) setTenantThemeColor(apiEvent.tenant.theme.primaryColor);
                     }
                 } else {
                     setError("Event not found");
@@ -462,9 +466,16 @@ export default function EventDetailPage() {
             <div className="min-h-screen flex flex-col items-center justify-center gap-4">
                 <AlertCircle className="h-12 w-12 text-destructive" />
                 <h1 className="text-xl font-semibold">{error || "Event not found"}</h1>
-                <Link href="/events">
-                    <Button variant="outline">Back to Events</Button>
-                </Link>
+                <div className="flex gap-3">
+                    {tenantSlug && (
+                        <Link href={`/t/${tenantSlug}`}>
+                            <Button variant="outline">Back to Home</Button>
+                        </Link>
+                    )}
+                    <Link href={tenantSlug ? `/events?tenant=${tenantSlug}` : "/events"}>
+                        <Button variant="outline">All Events</Button>
+                    </Link>
+                </div>
             </div>
         );
     }
@@ -482,11 +493,11 @@ export default function EventDetailPage() {
             <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
-                        <Link href="/" className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
+                        <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"} className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${tenantThemeColor}, ${tenantThemeColor}dd)` }}>
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
-                            <span className="font-bold text-xl">ICMS</span>
+                            <span className="font-bold text-xl">{tenantName || "ICMS"}</span>
                         </Link>
                         <div className="flex items-center gap-3">
                             <Button variant="ghost" size="icon">
@@ -514,10 +525,18 @@ export default function EventDetailPage() {
                             Close Preview
                         </button>
                     ) : (
-                        <Link href="/events" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                            <ArrowLeft className="h-4 w-4" />
-                            Back to Events
-                        </Link>
+                        <div className="flex items-center gap-4">
+                            {tenantSlug && (
+                                <Link href={`/t/${tenantSlug}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                                    <ArrowLeft className="h-4 w-4" />
+                                    Back to Home
+                                </Link>
+                            )}
+                            <Link href={tenantSlug ? `/events?tenant=${tenantSlug}` : "/events"} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                                <ArrowLeft className="h-4 w-4" />
+                                All Events
+                            </Link>
+                        </div>
                     )}
                     {isPreviewMode && (
                         <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
@@ -1006,13 +1025,13 @@ export default function EventDetailPage() {
                 <div className="container mx-auto px-4">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-lg gradient-medical flex items-center justify-center">
+                            <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${tenantThemeColor}, ${tenantThemeColor}dd)` }}>
                                 <GraduationCap className="h-5 w-5 text-white" />
                             </div>
-                            <span className="font-bold">ICMS</span>
+                            <span className="font-bold">{tenantName || "Conference Management"}</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                            © 2025 Medical College. All rights reserved.
+                            © {new Date().getFullYear()} {tenantName || "Conference Management System"}. All rights reserved.
                         </p>
                     </div>
                 </div>

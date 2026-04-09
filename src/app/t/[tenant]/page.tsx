@@ -48,6 +48,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { eventsService, Event } from "@/services/events";
+import { EventCard, EventCardData } from "@/components/events/EventCard";
+import { getEventImage } from "@/lib/event-utils";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
 
 // Icon mapping for dynamic icons
@@ -356,6 +358,11 @@ export default function TenantHomePage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [heroStats, setHeroStats] = useState({ events: 0, registrations: 0, speakers: 0 });
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [evtCarouselIdx, setEvtCarouselIdx] = useState(0);
+  const [evtPaused, setEvtPaused] = useState(false);
+  const [evtItemsPerView, setEvtItemsPerView] = useState(3);
+  const evtCarouselRef = useRef<HTMLDivElement>(null);
+  const [evtContainerW, setEvtContainerW] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -494,7 +501,7 @@ export default function TenantHomePage() {
     fetchStats();
   }, [tenantSlug, tenant?.id]);
 
-  // Auto-rotate carousel every 6 seconds
+  // Auto-rotate old carousel every 6 seconds (kept for backward compat if used elsewhere)
   useEffect(() => {
     if (events.length <= 1) return;
     const total = Math.min(events.length, 3);
@@ -503,6 +510,28 @@ export default function TenantHomePage() {
     }, 6000);
     return () => clearInterval(timer);
   }, [events.length]);
+
+  // Events carousel: responsive items per view
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setEvtItemsPerView(w >= 1024 ? 3 : w >= 640 ? 2 : 1);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  // Events carousel: measure container width
+  useEffect(() => {
+    if (!evtCarouselRef.current) return;
+    const el = evtCarouselRef.current;
+    const observer = new ResizeObserver(entries => {
+      if (entries[0]) setEvtContainerW(entries[0].contentRect.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   if (isLoading) {
     return (
@@ -522,9 +551,42 @@ export default function TenantHomePage() {
   const faqs = tenantFaqs || [];
   const researchItems = tenantResearchItems || [];
   const hasRealTestimonials = testimonials.length > 0;
-  const featuredEvents = events.slice(0, 3);
+  // Hide events whose end date is past; sort chronologically by registration open (fallback startDate); tiebreak by soonest startDate
+  const _now = new Date();
+  const visibleEvents = events
+    .filter(e => {
+      if (!e.startDate) return false;
+      const end = e.endDate ? new Date(e.endDate) : new Date(e.startDate);
+      const endOfDay = new Date(end.getTime() + 86400000);
+      return _now <= endOfDay;
+    })
+    .sort((a, b) => {
+      const ak = new Date(a.registrationOpensDate || a.startDate!).getTime();
+      const bk = new Date(b.registrationOpensDate || b.startDate!).getTime();
+      if (ak !== bk) return ak - bk;
+      return new Date(a.startDate!).getTime() - new Date(b.startDate!).getTime();
+    });
+  // Active event for hero orange banner: first event whose registration deadline has not passed
+  const nextEvent =
+    visibleEvents.find(e => {
+      const dl = e.registrationDeadline ? new Date(e.registrationDeadline) : null;
+      return !dl || _now <= dl;
+    }) || visibleEvents[0];
+  const featuredEvents = visibleEvents.slice(0, 3);
+  const remainingEvents = visibleEvents.filter(e => e.id !== nextEvent?.id);
+
+  // Events carousel: auto-advance every 5 seconds
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (evtPaused || remainingEvents.length <= evtItemsPerView) return;
+    const maxI = Math.max(0, remainingEvents.length - evtItemsPerView);
+    const id = setInterval(() => {
+      setEvtCarouselIdx(prev => (prev >= maxI ? 0 : prev + 1));
+    }, 5000);
+    return () => clearInterval(id);
+  }, [evtPaused, remainingEvents.length, evtItemsPerView]);
+
   const hasEvents = featuredEvents.length > 0;
-  const nextEvent = events.find(e => e.startDate && new Date(e.startDate) > new Date()) || events[0];
   const hasSponsors = sponsors.length > 0;
   const hasGallery = galleryImages.length > 0 || galleryVideos.length > 0;
 
@@ -753,6 +815,78 @@ export default function TenantHomePage() {
         [class*="rounded-2xl"][class*="shadow-2xl"]:hover img {
           transform: scale(1.03);
         }
+
+        /* ── Glass card glow for dark event section ── */
+        .bg-slate-900 .group[class*="rounded-2xl"] {
+          background: rgba(30, 41, 59, 0.7) !important;
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        .bg-slate-900 .group[class*="rounded-2xl"]:hover {
+          background: rgba(30, 41, 59, 0.9) !important;
+          border-color: rgba(16, 185, 129, 0.3) !important;
+          box-shadow: 0 0 30px rgba(16, 185, 129, 0.1),
+                      0 20px 60px -15px rgba(0, 0, 0, 0.4) !important;
+          transform: translateY(-8px) !important;
+        }
+
+        /* Glass card text contrast on dark bg */
+        .bg-slate-900 .group h3 {
+          color: #f1f5f9 !important;
+        }
+        .bg-slate-900 .group [class*="text-muted"] {
+          color: #94a3b8 !important;
+        }
+
+        /* Featured Event label glow */
+        .bg-slate-900 .text-emerald-400 {
+          text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
+        }
+
+        /* Scroll reveal — stagger children */
+        [data-scroll-reveal] {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                      transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        [data-scroll-reveal].revealed {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        [data-scroll-delay="1"] { transition-delay: 0.1s; }
+        [data-scroll-delay="2"] { transition-delay: 0.2s; }
+        [data-scroll-delay="3"] { transition-delay: 0.3s; }
+        [data-scroll-delay="4"] { transition-delay: 0.4s; }
+
+        /* Button ripple on click */
+        button::after, a[class*="rounded"]::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          opacity: 0;
+          background: radial-gradient(circle at center, rgba(255,255,255,0.3), transparent 70%);
+          transition: opacity 0.3s;
+          pointer-events: none;
+        }
+        button:active::after, a[class*="rounded"]:active::after {
+          opacity: 1;
+        }
+
+        /* Section divider — subtle gradient line */
+        section + section::before {
+          content: '';
+          display: block;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(0,0,0,0.06), transparent);
+          margin: 0 auto;
+          max-width: 80%;
+        }
+        .bg-slate-900 + section::before,
+        section + .bg-slate-900::before,
+        section:first-child::before { display: none; }
       `}</style>
 
       {/* Header */}
@@ -1107,283 +1241,196 @@ export default function TenantHomePage() {
         </section>
       )}
 
-      {/* Events Carousel Section */}
-      {sections.events && featuredEvents.length > 0 && (
-        <section id="events" className="pt-6 pb-10 lg:pt-8 lg:pb-16 relative overflow-hidden bg-slate-900">
-          {/* Dark section decorative elements */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
-            <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-emerald-500/5 blur-3xl" />
-            <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-slate-700/30 blur-3xl" />
-          </div>
+      {/* Events Section — first event static, rest below */}
+      {sections.events && visibleEvents.length > 0 && (() => {
+        const evtGap = 24;
+        const evtCardW = evtContainerW > 0
+          ? (evtContainerW - (evtItemsPerView - 1) * evtGap) / evtItemsPerView
+          : 0;
+        const carouselEvts = remainingEvents;
+        const evtMaxIdx = Math.max(0, carouselEvts.length - evtItemsPerView);
+        const evtTotalDots = evtMaxIdx + 1;
 
-          <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            {/* Event status strip — connects hero to events */}
-            <div className="flex items-center justify-center gap-3 sm:gap-5 mb-6 lg:mb-8" data-scroll-reveal>
-              {featuredEvents.map((ev, i) => {
-                const now = new Date();
-                const start = ev.startDate ? new Date(ev.startDate) : null;
-                const end = ev.endDate ? new Date(ev.endDate) : start;
-                const endOfDay = end ? new Date(end.getTime() + 24 * 60 * 60 * 1000) : null;
-                const isLive = start && endOfDay && now >= start && now <= endOfDay;
-                const isUpcoming = start && now < start;
-                const isActive = i === currentSlide;
-                return (
-                  <button
-                    key={ev.id}
-                    onClick={() => setCurrentSlide(i)}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 border",
-                      isActive
-                        ? isLive ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-lg scale-105" : isUpcoming ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-lg scale-105" : "bg-slate-600/30 border-slate-500/40 text-slate-300 shadow-lg scale-105"
-                        : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300"
-                    )}
-                  >
-                    {isLive && <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />}
-                    {isUpcoming && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />}
-                    {!isLive && !isUpcoming && <span className="w-2 h-2 rounded-full bg-slate-500" />}
-                    <span className="hidden sm:inline">{isLive ? "Live Now" : isUpcoming ? "Upcoming" : "Completed"}</span>
-                    <span className="hidden sm:inline text-white/40">·</span>
-                    <span className="truncate max-w-[120px] sm:max-w-[180px]">{ev.title}</span>
-                  </button>
-                );
-              })}
+        // Map Event to EventCardData
+        const mapToCard = (e: any): EventCardData => ({
+          id: e.id,
+          title: e.title,
+          shortDescription: e.shortDescription || null,
+          startDate: e.startDate!,
+          endDate: e.endDate || null,
+          startTime: e.startTime || null,
+          endTime: e.endTime || null,
+          location: [e.location, e.city].filter(Boolean).join(", ") || (e.isVirtual ? "Virtual" : "TBA"),
+          type: e.type || "Conference",
+          registrations: (e as any)._count?.registrations || 0,
+          capacity: e.capacity || 100,
+          status: e.status || "UPCOMING",
+          price: e.price || 0,
+          earlyBirdPrice: e.earlyBirdPrice || null,
+          cmeCredits: e.cmeCredits || null,
+          image: getEventImage(e.bannerImage, e.thumbnailImage, e.type),
+          currency: e.currency || "INR",
+          tenantSlug: null,
+          tenantName: null,
+          registrationOpensDate: e.registrationOpensDate || null,
+          registrationDeadline: e.registrationDeadline || null,
+          isVirtual: e.isVirtual,
+        });
+
+        const featuredCard = nextEvent ? mapToCard(nextEvent) : null;
+        const carouselCards = carouselEvts.map(mapToCard);
+
+        return (
+          <section id="events" className="pt-6 pb-10 lg:pt-8 lg:pb-16 relative overflow-hidden bg-slate-900">
+            {/* Dark decorative bg */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+              <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-emerald-500/5 blur-3xl" />
+              <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-slate-700/30 blur-3xl" />
             </div>
 
-            {/* Carousel */}
-            <div className="relative max-w-5xl mx-auto">
-              <div className="overflow-hidden rounded-3xl">
-                <div
-                  className="flex transition-transform duration-500 ease-out"
-                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-                >
-                  {featuredEvents.map((event, index) => (
-                    <div key={event.id} className="w-full flex-shrink-0 px-4">
-                      <div className="relative h-[250px] sm:h-[300px] md:h-[380px] lg:h-[420px] rounded-3xl overflow-hidden group">
-                        {event.bannerImage ? (
-                          <Image
-                            src={event.bannerImage}
-                            alt={event.title}
-                            fill
-                            className="object-cover transition-transform duration-700 group-hover:scale-105"
-                            placeholder="empty"
-                            {...(index === 0 ? { priority: true } : {})}
-                          />
-                        ) : (
-                          <div
-                            className="absolute inset-0"
-                            style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
-                          />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            <div className="container mx-auto px-4 lg:px-8 relative z-10">
+              {/* Section header */}
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className="h-8 w-1.5 rounded-full" style={{ background: theme.primaryColor }} />
+                    <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">Upcoming Events</h2>
+                    <span className="inline-flex items-center justify-center h-7 min-w-[1.75rem] px-2 rounded-full text-xs font-bold text-white" style={{ background: theme.primaryColor }}>
+                      {visibleEvents.length}
+                    </span>
+                  </div>
+                  <p className="text-slate-400 ml-[1.375rem] text-sm">{carouselCards.length > 0 ? "Swipe or use arrows to browse more events" : ""}</p>
+                </div>
+                {carouselCards.length > evtItemsPerView && (
+                  <div className="hidden sm:flex items-center gap-2">
+                    <button
+                      onClick={() => setEvtCarouselIdx(prev => (prev <= 0 ? evtMaxIdx : prev - 1))}
+                      className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+                      aria-label="Previous"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => setEvtCarouselIdx(prev => (prev >= evtMaxIdx ? 0 : prev + 1))}
+                      className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+                      aria-label="Next"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
 
-                        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white">
-                          {/* Status + Type badges */}
-                          <div className="flex flex-wrap items-center gap-2 mb-3">
-                            {(() => {
-                              const now = new Date();
-                              const start = event.startDate ? new Date(event.startDate) : null;
-                              const end = event.endDate ? new Date(event.endDate) : start;
-                              const endOfDay = end ? new Date(end.getTime() + 24 * 60 * 60 * 1000) : null;
-                              const isLive = start && endOfDay && now >= start && now <= endOfDay;
-                              const isUpcoming = start && now < start;
-                              if (isLive) return (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500 text-white shadow-lg" style={{ boxShadow: "0 0 16px rgba(239,68,68,0.5)" }}>
-                                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                                  Live Now
-                                </span>
-                              );
-                              if (isUpcoming) return (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500 text-white shadow-lg" style={{ boxShadow: "0 0 12px rgba(16,185,129,0.4)" }}>
-                                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                                  Upcoming
-                                </span>
-                              );
-                              return (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-500 text-white">
-                                  Completed
-                                </span>
-                              );
-                            })()}
-                            <Badge className="bg-white/20 backdrop-blur-sm border-0 text-white text-xs">
-                              {event.type || "Conference"}
-                            </Badge>
-                          </div>
+              {/* STATIC FEATURED EVENT CARD */}
+              {featuredCard && (
+                <div className="mb-8">
+                  <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-3 ml-1">Featured Event</p>
+                  <EventCard event={featuredCard} variant="list" themeColor={theme.primaryColor} hrefPrefix="" darkBg />
+                </div>
+              )}
 
-                          <h3 className="text-lg sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3">{event.title}</h3>
-                          <div className="flex flex-wrap gap-4 text-sm mb-4 text-white/80">
-                            {event.startDate && (
-                              <span className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4" />
-                                {fmtEventRange(event.startDate, event.endDate)}
-                              </span>
-                            )}
-                            {(event.address || event.location || event.city) && (
-                              <span className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4" />
-                                {event.address || [event.location, event.city].filter(Boolean).join(", ")}
-                              </span>
-                            )}
-                          </div>
-                          <Link href={tUrl(`/events/${event.id}/register`)}>
-                            <Button className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300" style={{ boxShadow: "0 8px 24px rgba(16,185,129,0.4)" }}>
-                              Register Now
-                              <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                          </Link>
-                        </div>
+              {/* Remaining events — adaptive layout */}
+              {carouselCards.length === 1 && (
+                <div>
+                  <EventCard event={carouselCards[0]} variant="list" themeColor={theme.primaryColor} hrefPrefix="" darkBg />
+                </div>
+              )}
 
-                        {/* Auto-scroll progress bar */}
-                        {featuredEvents.length > 1 && index === currentSlide && (
-                          <div className="absolute top-0 left-0 right-0 h-1 z-10">
-                            <div
-                              className="h-full bg-emerald-400 rounded-full"
-                              style={{ animation: "carousel-progress 6s linear forwards" }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
+              {carouselCards.length === 2 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {carouselCards.map(card => (
+                    <EventCard key={card.id} event={card} variant="grid" themeColor={theme.primaryColor} hrefPrefix="" darkBg />
                   ))}
                 </div>
-              </div>
+              )}
 
-              {/* Carousel Navigation */}
-              {featuredEvents.length > 1 && (
-                <>
-                  <button
-                    aria-label="Previous event slide"
-                    onClick={() => setCurrentSlide((prev) => (prev - 1 + featuredEvents.length) % featuredEvents.length)}
-                    className="absolute left-1 sm:left-0 top-1/2 -translate-y-1/2 sm:-translate-x-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 shadow-xl flex items-center justify-center hover:scale-110 hover:bg-white/20 transition-all z-10 text-white"
-                  >
-                    <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
-                  </button>
-                  <button
-                    aria-label="Next event slide"
-                    onClick={() => setCurrentSlide((prev) => (prev + 1) % featuredEvents.length)}
-                    className="absolute right-1 sm:right-0 top-1/2 -translate-y-1/2 sm:translate-x-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 shadow-xl flex items-center justify-center hover:scale-110 hover:bg-white/20 transition-all z-10 text-white"
-                  >
-                    <ChevronRight className="h-6 w-6" />
-                  </button>
+              {carouselCards.length >= 3 && (<>
+              <div
+                ref={evtCarouselRef}
+                className="relative"
+                onMouseEnter={() => setEvtPaused(true)}
+                onMouseLeave={() => setEvtPaused(false)}
+                onFocus={() => setEvtPaused(true)}
+                onBlur={() => setEvtPaused(false)}
+              >
+                {carouselCards.length > evtItemsPerView && evtCarouselIdx > 0 && (
+                  <div className="absolute left-0 top-0 bottom-0 w-16 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, #0f172a, transparent)" }} />
+                )}
+                {carouselCards.length > evtItemsPerView && evtCarouselIdx < evtMaxIdx && (
+                  <div className="absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, #0f172a, transparent)" }} />
+                )}
 
-                  {/* Dots */}
-                  <div className="flex justify-center gap-2 mt-4">
-                    {featuredEvents.map((_, index) => (
-                      <button
-                        key={index}
-                        aria-label={`Go to event slide ${index + 1}`}
-                        onClick={() => setCurrentSlide(index)}
-                        className={cn(
-                          "h-2.5 rounded-full transition-all duration-300 py-0 min-h-[10px]",
-                          currentSlide === index ? "w-8 bg-emerald-400" : "w-2.5 bg-slate-600 hover:bg-slate-500"
-                        )}
-                      />
+                <div className="overflow-hidden">
+                  <div
+                    className="flex"
+                    style={{
+                      gap: `${evtGap}px`,
+                      transform: `translateX(-${evtCarouselIdx * (evtCardW + evtGap)}px)`,
+                      transition: "transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                    }}
+                  >
+                    {carouselCards.map(card => (
+                      <div key={card.id} style={evtCardW > 0 ? { minWidth: `${evtCardW}px`, maxWidth: `${evtCardW}px` } : { flex: `0 0 calc(${100 / evtItemsPerView}% - ${evtGap * (evtItemsPerView - 1) / evtItemsPerView}px)` }}>
+                        <EventCard event={card} variant="grid" themeColor={theme.primaryColor} hrefPrefix="" darkBg />
+                      </div>
                     ))}
                   </div>
-                </>
+                </div>
+
+                {carouselCards.length > evtItemsPerView && (
+                  <>
+                    <button
+                      onClick={() => setEvtCarouselIdx(prev => (prev <= 0 ? evtMaxIdx : prev - 1))}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 backdrop-blur shadow-xl border border-white/20 flex items-center justify-center sm:hidden text-white"
+                      aria-label="Previous"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => setEvtCarouselIdx(prev => (prev >= evtMaxIdx ? 0 : prev + 1))}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 backdrop-blur shadow-xl border border-white/20 flex items-center justify-center sm:hidden text-white"
+                      aria-label="Next"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {evtTotalDots > 1 && evtTotalDots <= 10 && (
+                <div className="flex justify-center gap-2 mt-6">
+                  {Array.from({ length: evtTotalDots }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setEvtCarouselIdx(i)}
+                      className={cn(
+                        "rounded-full transition-all duration-300",
+                        i === evtCarouselIdx ? "w-8 h-2.5 bg-emerald-400" : "w-2.5 h-2.5 bg-slate-600 hover:bg-slate-500"
+                      )}
+                      aria-label={`Go to slide ${i + 1}`}
+                    />
+                  ))}
+                </div>
               )}
+
+              {evtTotalDots > 10 && (
+                <div className="flex justify-center mt-6">
+                  <div className="w-48 h-1.5 rounded-full bg-slate-700 overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500 bg-emerald-400" style={{ width: `${((evtCarouselIdx + 1) / evtTotalDots) * 100}%` }} />
+                  </div>
+                </div>
+              )}
+              </>)}
             </div>
 
-            {/* Event Cards Grid */}
-            {events.length > 3 && (
-              <div className={cn("grid gap-6 mt-6", adaptiveGrid(Math.min(events.length - 3, 3)))}>
-                {events.slice(3, 6).map((event, index) => (
-                  <Card
-                    key={event.id}
-                    data-scroll-reveal
-                    data-scroll-delay={String(index + 1)}
-                    className="overflow-hidden shadow-lg card-tilt border-slate-700 bg-slate-800 group"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <div className="relative h-48 overflow-hidden">
-                      {event.bannerImage ? (
-                        <Image
-                          src={event.bannerImage}
-                          alt={event.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
-                          placeholder="empty"
-                        />
-                      ) : (
-                        <div
-                          className="absolute inset-0 flex items-center justify-center"
-                          style={{ background: `linear-gradient(135deg, ${theme.primaryColor}20, ${theme.secondaryColor}20)` }}
-                        >
-                          <Calendar className="h-12 w-12" style={{ color: theme.primaryColor }} />
-                        </div>
-                      )}
-                      <div className="absolute top-3 left-3 flex items-center gap-2">
-                        {(() => {
-                          const now = new Date();
-                          const start = event.startDate ? new Date(event.startDate) : null;
-                          const end = event.endDate ? new Date(event.endDate) : start;
-                          const endOfDay = end ? new Date(end.getTime() + 24 * 60 * 60 * 1000) : null;
-                          const isLive = start && endOfDay && now >= start && now <= endOfDay;
-                          const isUpcoming = start && now < start;
-                          if (isLive) return <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white shadow-lg flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />Live</span>;
-                          if (isUpcoming) return <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500 text-white shadow flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />Upcoming</span>;
-                          return <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-500 text-white">Completed</span>;
-                        })()}
-                        <Badge className="text-white border-0 bg-white/20 backdrop-blur-sm text-[10px]">
-                          {event.type || "Event"}
-                        </Badge>
-                      </div>
-                    </div>
-                    <CardContent className="p-5">
-                      <h3 className="font-semibold text-lg mb-3 line-clamp-2 text-white group-hover:text-emerald-400 transition-colors">
-                        {event.title}
-                      </h3>
-                      <div className="space-y-2 text-sm text-slate-400 mb-3">
-                        {event.startDate && (
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            {fmtEventRange(event.startDate, event.endDate)}
-                          </div>
-                        )}
-                        {(event.address || event.location || event.city) && (
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            {event.address || [event.location, event.city].filter(Boolean).join(", ")}
-                          </div>
-                        )}
-                      </div>
-                      {event.startDate && (() => {
-                        const now = new Date();
-                        const dl = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
-                        const ed = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
-                        const ended = now > new Date(ed.getTime() + 86400000);
-                        const dlPassed = dl && now > dl;
-                        if (ended) return null;
-                        if (dlPassed) return <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-white/80 text-xs font-bold mb-3 bg-slate-600/80">Registration closed</div>;
-                        return (
-                          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-white text-base font-extrabold mb-3 shadow-md" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)" }}>
-                            <span className="w-2.5 h-2.5 rounded-full bg-white animate-flash flex-shrink-0" />
-                            <span className="animate-flash">Registrations open {fmtRegWindow(event.registrationOpensDate, event.registrationDeadline, event.startDate, event.endDate)}</span>
-                          </div>
-                        );
-                      })()}
-                      <Link href={tUrl(`/events/${event.id}/register`)}>
-                        <Button
-                          className="w-full text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
-                          style={{ boxShadow: "0 6px 20px rgba(16,185,129,0.3)" }}
-                        >
-                          Register Now
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-
-          </div>
-
-          {/* Wave transition from dark events to light sections */}
-          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" className="absolute bottom-0 left-0 right-0 w-full h-[50px] md:h-[70px]" style={{ zIndex: 5 }}>
-            <path d="M0,40 C360,75 720,10 1080,50 C1260,65 1380,30 1440,45 L1440,80 L0,80 Z" fill="#ffffff" />
-          </svg>
-        </section>
-      )}
+            {/* Wave transition */}
+            <svg viewBox="0 0 1440 80" preserveAspectRatio="none" className="absolute bottom-0 left-0 right-0 w-full h-[50px] md:h-[70px]" style={{ zIndex: 5 }}>
+              <path d="M0,40 C360,75 720,10 1080,50 C1260,65 1380,30 1440,45 L1440,80 L0,80 Z" fill="#ffffff" />
+            </svg>
+          </section>
+        );
+      })()}
 
       </div>{/* End background wrapper */}
 

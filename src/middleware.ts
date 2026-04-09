@@ -161,10 +161,16 @@ export async function middleware(request: NextRequest) {
   const tenantSlug = await getTenantSlugByDomain(hostname);
 
   if (tenantSlug) {
+    // On custom domains, redirect /t/slug to / so URLs stay clean (no slug visible)
+    if (pathname.startsWith("/t/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return withCorsHeaders(NextResponse.redirect(url), request);
+    }
+
     // App-level routes that should NOT be rewritten to /t/[slug]
     const isAppRoute = pathname.startsWith("/dashboard") ||
       pathname.startsWith("/api") ||
-      pathname.startsWith("/t/") ||
       pathname.startsWith("/_next");
 
     // Inject tenant param into /auth/login so the login page knows which tenant

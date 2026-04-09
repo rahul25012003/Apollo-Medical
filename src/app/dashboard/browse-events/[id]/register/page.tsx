@@ -269,7 +269,7 @@ export default function RegisterPage() {
 </head>
 <body>
     <div class="header">
-        <h1>ICMS - Registration Receipt</h1>
+        <h1>${event?.organizer || "Conference"} - Registration Receipt</h1>
         <span class="success-badge">${receiptPrice > 0 ? '⏳ Registration Submitted — Payment Pending' : '✓ Registration Confirmed'}</span>
     </div>
     <div class="section">
@@ -299,7 +299,7 @@ export default function RegisterPage() {
     </div>
     <div class="footer">
         <p>Thank you for registering! This receipt serves as confirmation of your registration.</p>
-        <p style="margin-top: 5px;">© ${new Date().getFullYear()} ICMS - Conference Management System</p>
+        <p style="margin-top: 5px;">© ${new Date().getFullYear()} ${event?.organizer || "Conference Management System"}</p>
     </div>
 </body>
 </html>`;

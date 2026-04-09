@@ -64,7 +64,7 @@ export const createEventSchema = z.object({
   price: z.number().nonnegative().default(0),
   earlyBirdPrice: z.number().nonnegative().optional(),
   earlyBirdDeadline: z.string().or(z.date()).optional(),
-  currency: z.string().default("USD"),
+  currency: z.string().default("INR"),
 
   // Status & Meta
   status: eventStatusEnum.default("DRAFT"),
