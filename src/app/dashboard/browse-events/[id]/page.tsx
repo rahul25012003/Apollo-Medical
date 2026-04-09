@@ -49,6 +49,9 @@ interface EventDetails {
     contactEmail: string | null;
     contactPhone: string | null;
     website: string | null;
+    registrationOpensDate: string | null;
+    registrationDeadline: string | null;
+    isRegistrationOpen: boolean;
     _count?: {
         registrations: number;
     };

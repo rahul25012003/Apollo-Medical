@@ -8,6 +8,7 @@ export interface Tenant {
   id: string;
   slug: string;
   name: string;
+  shortName: string | null;
   domain: string | null;
   logo: string | null;
   favicon: string | null;

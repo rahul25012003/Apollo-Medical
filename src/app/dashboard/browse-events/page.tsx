@@ -50,6 +50,8 @@ interface PublicEvent {
     currency: string;
     earlyBirdPrice: number | null;
     cmeCredits: number | null;
+    registrationOpensDate: string | null;
+    registrationDeadline: string | null;
     _count?: {
         registrations: number;
     };
