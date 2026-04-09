@@ -184,6 +184,7 @@ export function TenantProvider({
               isActive: raw.isActive,
               branding: {
                 name: raw.name,
+                shortName: raw.shortName || undefined,
                 logo: normalizeUrl(raw.logo),
                 favicon: normalizeUrl(raw.favicon),
                 secondaryLogo: normalizeUrl(raw.secondaryLogo),

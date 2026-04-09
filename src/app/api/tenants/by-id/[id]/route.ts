@@ -94,7 +94,7 @@ export const PUT = withErrorHandler(
 
     // Whitelist only known Prisma fields to avoid unknown field errors
     const allowedFields = [
-      "name", "tagline", "logo", "favicon", "secondaryLogo",
+      "name", "shortName", "tagline", "logo", "favicon", "secondaryLogo",
       "primaryColor", "secondaryColor", "accentColor",
       "email", "phone", "address", "city", "state", "country", "website", "mapUrl", "businessHours",
       "facebook", "twitter", "linkedin", "instagram", "youtube",

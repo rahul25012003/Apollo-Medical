@@ -62,7 +62,7 @@ function getRegStatus(event: EventCardData) {
   if (now > endOfDay) return { kind: "ended" as const, label: "Event Ended" };
   if (opens && now < opens) {
     const diffDays = Math.ceil((opens.getTime() - now.getTime()) / 86400000);
-    return { kind: "upcoming" as const, label: `Opens in ${diffDays}d`, opens };
+    return { kind: "upcoming" as const, label: `Opens in ${diffDays} ${diffDays === 1 ? "day" : "days"}`, opens };
   }
   if (deadline && now > deadline) return { kind: "closed" as const, label: "Registration Closed" };
   if (deadline) {
@@ -70,10 +70,10 @@ function getRegStatus(event: EventCardData) {
     const diffHrs = diffMs / 3600000;
     if (diffHrs <= 48) {
       const hrs = Math.max(0, Math.floor(diffHrs));
-      return { kind: "closing" as const, label: `Closes in ${hrs}h`, deadline };
+      return { kind: "closing" as const, label: `Closes in ${hrs} ${hrs === 1 ? "hour" : "hours"}`, deadline };
     }
     const days = Math.ceil(diffHrs / 24);
-    return { kind: "open" as const, label: `Closes in ${days}d`, deadline };
+    return { kind: "open" as const, label: `Closes in ${days} ${days === 1 ? "day" : "days"}`, deadline };
   }
   return { kind: "open" as const, label: "Registration Open" };
 }
@@ -88,7 +88,7 @@ function fmtDateBadge(iso: string) {
 
 function fmtMoney(amount: number, currency: string) {
   if (!amount || amount <= 0) return "Free";
-  const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency + " ";
+  const sym = currency === "INR" ? "₹" : currency === "EUR" ? "€" : "₹";
   return `${sym}${Number(amount).toLocaleString()}`;
 }
 
@@ -226,7 +226,7 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
                   Details
                 </Button>
               </Link>
-              {isOpen && (
+              {isOpen ? (
                 <Link href={registerHref} onClick={e => e.stopPropagation()}>
                   <Button
                     className="rounded-xl text-white font-bold shadow-lg h-11 px-6"
@@ -235,7 +235,20 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
                     Register <ArrowRight className="h-4 w-4 ml-1.5" />
                   </Button>
                 </Link>
-              )}
+              ) : reg.kind === "upcoming" ? (
+                <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-white/15 text-white backdrop-blur-sm border border-white/20">
+                  <Clock className="h-4 w-4" />
+                  {reg.label}
+                </span>
+              ) : reg.kind === "closed" ? (
+                <span className="inline-flex items-center px-5 py-2.5 rounded-xl font-bold text-sm bg-white/10 text-white/60 backdrop-blur-sm border border-white/10">
+                  Registration Closed
+                </span>
+              ) : reg.kind === "ended" ? (
+                <span className="inline-flex items-center px-5 py-2.5 rounded-xl font-bold text-sm bg-white/10 text-white/60 backdrop-blur-sm border border-white/10">
+                  Event Ended
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -363,11 +376,18 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
               </Button>
             </Link>
           ) : reg.kind === "upcoming" ? (
-            <Badge variant="outline" className="rounded-full">Coming Soon</Badge>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold" style={{ background: darkBg ? "rgba(59,130,246,0.25)" : "#eff6ff", color: darkBg ? "#93c5fd" : "#1d4ed8", border: `1px solid ${darkBg ? "rgba(59,130,246,0.3)" : "#bfdbfe"}` }}>
+              <Clock className="h-3 w-3" />
+              {reg.label}
+            </span>
           ) : reg.kind === "closed" ? (
-            <Badge variant="secondary" className="rounded-full">Closed</Badge>
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold" style={{ background: darkBg ? "rgba(239,68,68,0.2)" : "#fef2f2", color: darkBg ? "#fca5a5" : "#dc2626", border: `1px solid ${darkBg ? "rgba(239,68,68,0.3)" : "#fecaca"}` }}>
+              Closed
+            </span>
           ) : (
-            <Badge variant="secondary" className="rounded-full">Ended</Badge>
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold" style={{ background: darkBg ? "rgba(100,116,139,0.25)" : "#f1f5f9", color: darkBg ? "#94a3b8" : "#64748b", border: `1px solid ${darkBg ? "rgba(100,116,139,0.3)" : "#e2e8f0"}` }}>
+              Ended
+            </span>
           )}
         </div>
       </div>

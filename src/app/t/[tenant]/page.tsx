@@ -1116,17 +1116,31 @@ export default function TenantHomePage() {
                   {/* Registration status badge — only show if event hasn't ended */}
                   {nextEvent.startDate && (() => {
                     const now = new Date();
+                    const opens = nextEvent.registrationOpensDate ? new Date(nextEvent.registrationOpensDate) : null;
                     const deadline = nextEvent.registrationDeadline ? new Date(nextEvent.registrationDeadline) : null;
                     const endDate = nextEvent.endDate ? new Date(nextEvent.endDate) : new Date(nextEvent.startDate);
                     const endOfDay = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
                     const isEnded = now > endOfDay;
                     const isDeadlinePassed = deadline && now > deadline;
+                    const isNotOpenYet = opens && now < opens;
                     if (isEnded) return null;
                     if (isDeadlinePassed) return (
                       <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full font-bold text-sm text-white/90 bg-slate-600/80 backdrop-blur-sm">
                         Registration closed — Event: {fmtEventRange(nextEvent.startDate, nextEvent.endDate)}
                       </div>
                     );
+                    if (isNotOpenYet) {
+                      const opensStr = opens!.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+                      const deadlineStr = deadline ? deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : null;
+                      return (
+                        <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-base text-white shadow-lg" style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", boxShadow: "0 4px 20px rgba(29,78,216,0.45)" }}>
+                          <span className="w-3 h-3 rounded-full flex-shrink-0 bg-white" />
+                          <span className="text-base font-extrabold">
+                            Registrations will open from {opensStr}{deadlineStr ? ` to ${deadlineStr}` : ""}
+                          </span>
+                        </div>
+                      );
+                    }
                     return (
                       <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-base text-white shadow-lg" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.45)" }}>
                         <span className="w-3 h-3 rounded-full flex-shrink-0 animate-flash bg-white" />
@@ -2752,15 +2766,29 @@ export default function TenantHomePage() {
         </div>
       )}
 
-      {/* Mobile sticky register button */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-xl border-t shadow-lg md:hidden">
-        <Link href={events[0] ? tUrl(`/events/${events[0].id}/register`) : tUrl('/auth/login')} className="block">
-          <Button className="w-full text-white rounded-full font-semibold py-3 bg-emerald-500 hover:bg-emerald-600" style={{ boxShadow: "0 4px 16px rgba(16,185,129,0.35)" }}>
-            Register Now
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </Link>
-      </div>
+      {/* Mobile sticky register button — only show if registration is open for the featured event */}
+      {(() => {
+        const evt = nextEvent || events[0];
+        if (!evt) return null;
+        const now = new Date();
+        const opens = evt.registrationOpensDate ? new Date(evt.registrationOpensDate) : null;
+        const deadline = evt.registrationDeadline ? new Date(evt.registrationDeadline) : null;
+        const endDate = evt.endDate ? new Date(evt.endDate) : new Date(evt.startDate!);
+        const isEnded = now > new Date(endDate.getTime() + 86400000);
+        const isNotOpenYet = opens && now < opens;
+        const isDeadlinePassed = deadline && now > deadline;
+        if (isEnded || isDeadlinePassed || isNotOpenYet) return null;
+        return (
+          <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-xl border-t shadow-lg md:hidden">
+            <Link href={tUrl(`/events/${evt.id}/register`)} className="block">
+              <Button className="w-full text-white rounded-full font-semibold py-3 bg-emerald-500 hover:bg-emerald-600" style={{ boxShadow: "0 4px 16px rgba(16,185,129,0.35)" }}>
+                Register Now
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        );
+      })()}
 
       {/* Back to top */}
       {showBackToTop && (

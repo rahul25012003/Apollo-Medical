@@ -1120,29 +1120,34 @@ export default function RegisterPage() {
                                     </div>
                                     {eventData.startDate && (() => {
                                         const now = new Date();
+                                        const opens = eventData.registrationOpensDate ? new Date(eventData.registrationOpensDate) : null;
                                         const deadline = eventData.registrationDeadline ? new Date(eventData.registrationDeadline) : null;
                                         const endDate = eventData.endDate ? new Date(eventData.endDate) : new Date(eventData.startDate);
                                         const isEnded = now > new Date(endDate.getTime() + 86400000);
                                         const isDeadlinePassed = deadline && now > deadline;
                                         const isClosed = !eventData.isRegistrationOpen || isDeadlinePassed;
+                                        const isNotOpenYet = opens && now < opens;
                                         if (isEnded) return null;
                                         if (isClosed) return (
                                             <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full border font-bold text-sm bg-red-50 border-red-200 text-red-700">
                                                 Registration closed
                                             </div>
                                         );
+                                        if (isNotOpenYet) {
+                                            const opensStr = opens!.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+                                            const deadlineStr = deadline ? deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : null;
+                                            return (
+                                                <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full border font-bold text-sm bg-blue-50 border-blue-200 text-blue-700">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0" />
+                                                    Registrations will open from {opensStr}{deadlineStr ? ` to ${deadlineStr}` : ""}
+                                                </div>
+                                            );
+                                        }
                                         return (
                                             <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full border font-bold text-sm bg-primary/8 border-primary/30 text-primary">
                                                 <span className="w-2.5 h-2.5 rounded-full bg-primary animate-flash flex-shrink-0" />
                                                 <span className="animate-flash">
-                                                    Registrations open {(() => {
-                                                        const from = eventData.registrationOpensDate ? new Date(eventData.registrationOpensDate) : null;
-                                                        const to = deadline;
-                                                        if (from && to && !isNaN(from.getTime()) && !isNaN(to.getTime())) return `from ${fmtEventRange(eventData.registrationOpensDate!, eventData.registrationDeadline)}`;
-                                                        if (from && !isNaN(from.getTime())) return `from ${fmtEventRange(eventData.registrationOpensDate!)}`;
-                                                        if (to && !isNaN(to.getTime())) return `till ${fmtEventRange(eventData.registrationDeadline!)}`;
-                                                        return `for ${fmtEventRange(eventData.startDate, eventData.endDate)}`;
-                                                    })()}
+                                                    Registrations open{deadline ? ` till ${deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}` : ""}
                                                 </span>
                                             </div>
                                         );
@@ -1216,6 +1221,15 @@ export default function RegisterPage() {
 
                     {/* Step Content */}
                     <div className="animate-fadeIn stagger-2">
+                        {/* Registration not open yet warning */}
+                        {eventData && eventData.registrationOpensDate && new Date(eventData.registrationOpensDate) > new Date() && (
+                            <div className="mb-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
+                                <p className="font-medium text-blue-700">Registration Has Not Opened Yet</p>
+                                <p className="text-sm text-blue-600 mt-1">
+                                    Registration opens on {new Date(eventData.registrationOpensDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                                </p>
+                            </div>
+                        )}
                         {/* Registration closed warning */}
                         {eventData && (!eventData.isRegistrationOpen || (eventData.registrationDeadline && new Date(eventData.registrationDeadline) < new Date())) && (
                             <div className="mb-4 p-4 rounded-lg bg-destructive/10 border border-destructive/20">

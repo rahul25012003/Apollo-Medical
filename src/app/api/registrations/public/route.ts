@@ -47,6 +47,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       tenantId: true,
       capacity: true,
       isRegistrationOpen: true,
+      registrationOpensDate: true,
       registrationDeadline: true,
       isPublished: true,
       price: true,
@@ -79,6 +80,10 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   if (!event.isRegistrationOpen) {
     return Errors.badRequest("Registration is closed for this event");
+  }
+
+  if (event.registrationOpensDate && new Date() < event.registrationOpensDate) {
+    return Errors.badRequest("Registration has not opened yet");
   }
 
   if (event.registrationDeadline && new Date() > event.registrationDeadline) {

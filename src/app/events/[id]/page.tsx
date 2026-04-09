@@ -561,14 +561,46 @@ export default function EventDetailPage() {
                                         {event.cmeCredits} CME Credits
                                     </Badge>
                                 )}
-                                {event.startDate && (
-                                    <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border font-bold text-sm bg-primary/8 border-primary/30 text-primary">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-primary animate-flash flex-shrink-0" />
-                                        <span className="animate-flash">
-                                            Registrations open for {fmtEventRange(event.startDate, event.endDate)}
+                                {event.startDate && (() => {
+                                    const now = new Date();
+                                    const opens = event.registrationOpensDate ? new Date(event.registrationOpensDate) : null;
+                                    const deadline = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
+                                    const endDate = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
+                                    const isEnded = now > new Date(endDate.getTime() + 86400000);
+                                    const isDeadlinePassed = deadline && now > deadline;
+                                    const isNotOpenYet = opens && now < opens;
+
+                                    if (isEnded) return (
+                                        <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border font-bold text-sm bg-muted border-muted-foreground/20 text-muted-foreground">
+                                            Event Ended
                                         </span>
-                                    </span>
-                                )}
+                                    );
+                                    if (isDeadlinePassed || event.isRegistrationOpen === false) return (
+                                        <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border font-bold text-sm bg-red-50 border-red-200 text-red-700">
+                                            Registration Closed
+                                        </span>
+                                    );
+                                    if (isNotOpenYet) {
+                                        const dateStr = opens!.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+                                        const deadlineStr = deadline ? deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : null;
+                                        return (
+                                            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border font-bold text-sm bg-blue-50 border-blue-200 text-blue-700">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0" />
+                                                Registrations will open from {dateStr}{deadlineStr ? ` to ${deadlineStr}` : ""}
+                                            </span>
+                                        );
+                                    }
+                                    // Registration is currently open
+                                    const deadlineStr = deadline ? deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : null;
+                                    return (
+                                        <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border font-bold text-sm bg-primary/8 border-primary/30 text-primary">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-flash flex-shrink-0" />
+                                            <span className="animate-flash">
+                                                Registrations open{deadlineStr ? ` till ${deadlineStr}` : ""}
+                                            </span>
+                                        </span>
+                                    );
+                                })()}
                             </div>
                             <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.title}</h1>
                             <div className="flex flex-wrap gap-4 text-muted-foreground">
@@ -926,15 +958,32 @@ export default function EventDetailPage() {
 
                                 {/* Early bird hidden */}
 
-                                {/* Registration opens date */}
-                                {event.startDate && (
-                                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border font-bold text-sm bg-primary/8 border-primary/30 text-primary">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-primary animate-flash flex-shrink-0" />
-                                        <span className="animate-flash">
-                                            Registrations open for {fmtEventRange(event.startDate, event.endDate)}
-                                        </span>
-                                    </div>
-                                )}
+                                {/* Registration window */}
+                                {event.startDate && (() => {
+                                    const now = new Date();
+                                    const opens = event.registrationOpensDate ? new Date(event.registrationOpensDate) : null;
+                                    const deadline = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
+                                    const isNotOpenYet = opens && now < opens;
+                                    const deadlineStr = deadline ? deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : null;
+
+                                    if (isNotOpenYet) {
+                                        const opensStr = opens!.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+                                        return (
+                                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border font-bold text-sm bg-blue-50 border-blue-200 text-blue-700">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0" />
+                                                Registrations will open from {opensStr}{deadlineStr ? ` to ${deadlineStr}` : ""}
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border font-bold text-sm bg-primary/8 border-primary/30 text-primary">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-flash flex-shrink-0" />
+                                            <span className="animate-flash">
+                                                Registrations open{deadlineStr ? ` till ${deadlineStr}` : ""}
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Progress */}
                                 <div className="space-y-2">
@@ -952,29 +1001,54 @@ export default function EventDetailPage() {
                                     </div>
                                 </div>
 
-                                {/* Registration closed check */}
-                                {event.isRegistrationOpen === false || (event.registrationDeadline && new Date(event.registrationDeadline) < new Date()) ? (
-                                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
-                                        <p className="text-sm font-medium text-destructive">Registration Closed</p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {event.registrationDeadline && new Date(event.registrationDeadline) < new Date()
-                                                ? "The registration deadline has passed"
-                                                : "Registration is currently closed for this event"}
-                                        </p>
-                                    </div>
-                                ) : event.registrations >= event.capacity ? (
-                                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
-                                        <p className="text-sm font-medium text-destructive">Event Full</p>
-                                        <p className="text-xs text-muted-foreground mt-1">All slots have been filled</p>
-                                    </div>
-                                ) : (
-                                    <Link href={`/events/${event.id}/register`} className="block">
-                                        <Button className="w-full gap-2 gradient-medical text-white hover:opacity-90" size="lg">
-                                            <Ticket className="h-5 w-5" />
-                                            Register Now
-                                        </Button>
-                                    </Link>
-                                )}
+                                {/* Registration status check */}
+                                {(() => {
+                                    const now = new Date();
+                                    const opens = event.registrationOpensDate ? new Date(event.registrationOpensDate) : null;
+                                    const deadline = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
+                                    const endDate = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
+                                    const isEnded = now > new Date(endDate.getTime() + 86400000);
+                                    const isNotOpenYet = opens && now < opens;
+                                    const isDeadlinePassed = deadline && now > deadline;
+                                    const isClosed = event.isRegistrationOpen === false || isDeadlinePassed;
+                                    const isFull = event.registrations >= event.capacity;
+
+                                    if (isEnded) return (
+                                        <div className="p-3 rounded-lg bg-muted/50 border text-center">
+                                            <p className="text-sm font-medium text-muted-foreground">Event Ended</p>
+                                        </div>
+                                    );
+                                    if (isClosed) return (
+                                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
+                                            <p className="text-sm font-medium text-destructive">Registration Closed</p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                {isDeadlinePassed ? "The registration deadline has passed" : "Registration is currently closed for this event"}
+                                            </p>
+                                        </div>
+                                    );
+                                    if (isNotOpenYet) return (
+                                        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-center">
+                                            <p className="text-sm font-medium text-blue-700">Registration Opens Soon</p>
+                                            <p className="text-xs text-blue-600 mt-1">
+                                                Opens on {opens!.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                                            </p>
+                                        </div>
+                                    );
+                                    if (isFull) return (
+                                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
+                                            <p className="text-sm font-medium text-destructive">Event Full</p>
+                                            <p className="text-xs text-muted-foreground mt-1">All slots have been filled</p>
+                                        </div>
+                                    );
+                                    return (
+                                        <Link href={`/events/${event.id}/register`} className="block">
+                                            <Button className="w-full gap-2 gradient-medical text-white hover:opacity-90" size="lg">
+                                                <Ticket className="h-5 w-5" />
+                                                Register Now
+                                            </Button>
+                                        </Link>
+                                    );
+                                })()}
                             </CardContent>
                         </Card>
 

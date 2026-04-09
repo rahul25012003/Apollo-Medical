@@ -58,7 +58,7 @@ async function main() {
       footerText: 'Advancing global health through collaboration and innovation.',
       copyrightText: 'Global Health Summit. All rights reserved.',
       isActive: true,
-      defaultCurrency: 'USD',
+      defaultCurrency: 'INR',
       defaultTimezone: 'America/New_York'
     }
   });

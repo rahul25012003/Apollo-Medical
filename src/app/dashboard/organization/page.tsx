@@ -40,6 +40,7 @@ export default function OrganizationPage() {
                     const formData: Partial<TenantFormData> = {
                         slug: t.slug,
                         name: t.name,
+                        shortName: t.shortName || "",
                         tagline: t.tagline || "",
                         logo: t.logo || "",
                         favicon: t.favicon || "",

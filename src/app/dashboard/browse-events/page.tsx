@@ -279,9 +279,16 @@ export default function BrowseEventsPage() {
                     <div className="grid gap-4">
                         {filteredEvents.map((event) => {
                             const availability = getAvailability(event);
+                            const now = new Date();
                             const eventDate = new Date(event.startDate);
-                            const isPastEvent = eventDate < new Date();
+                            const endDate = event.endDate ? new Date(event.endDate) : eventDate;
+                            const isPastEvent = now > new Date(endDate.getTime() + 86400000);
                             const isSoldOut = availability.available === 0;
+                            const opens = event.registrationOpensDate ? new Date(event.registrationOpensDate) : null;
+                            const deadline = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
+                            const isNotOpenYet = opens && now < opens;
+                            const isDeadlinePassed = deadline && now > deadline;
+                            const isRegClosed = isPastEvent || isDeadlinePassed;
 
                             return (
                                 <div
@@ -364,17 +371,25 @@ export default function BrowseEventsPage() {
                                                         <CheckCircle2 className="w-4 h-4" />
                                                         Already Registered
                                                     </Button>
-                                                ) : !isPastEvent && !isSoldOut ? (
+                                                ) : isNotOpenYet ? (
+                                                    <Button size="sm" variant="outline" disabled className="gap-2 text-blue-700 border-blue-200 bg-blue-50">
+                                                        Opens {opens!.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                                    </Button>
+                                                ) : isRegClosed ? (
+                                                    <Button size="sm" variant="outline" disabled className="gap-2 text-red-700 border-red-200 bg-red-50">
+                                                        Registration Closed
+                                                    </Button>
+                                                ) : isSoldOut ? (
+                                                    <Button size="sm" disabled>
+                                                        Sold Out
+                                                    </Button>
+                                                ) : !isPastEvent ? (
                                                     <Link href={`/dashboard/browse-events/${event.id}/register`}>
                                                         <Button size="sm" className="gap-2 text-white font-semibold shadow-lg" style={{ background: "linear-gradient(135deg, #0f766e, #0d9488)", boxShadow: "0 4px 16px rgba(15,118,110,0.25)" }}>
                                                             <Ticket className="w-4 h-4" />
                                                             Register
                                                         </Button>
                                                     </Link>
-                                                ) : isSoldOut ? (
-                                                    <Button size="sm" disabled>
-                                                        Sold Out
-                                                    </Button>
                                                 ) : null}
                                             </div>
                                         </div>

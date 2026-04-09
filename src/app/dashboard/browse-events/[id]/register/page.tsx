@@ -70,6 +70,9 @@ interface EventDetails {
     contactPhone: string | null;
     bannerImage: string | null;
     includes: string[];
+    registrationOpensDate: string | null;
+    registrationDeadline: string | null;
+    isRegistrationOpen: boolean;
     pricingCategories?: PricingCategory[];
     _count?: {
         registrations: number;
@@ -420,6 +423,26 @@ export default function RegisterPage() {
                 <div className="grid lg:grid-cols-3 gap-6">
                     {/* Registration Form */}
                     <div className="lg:col-span-2">
+                        {/* Registration not open yet warning */}
+                        {event.registrationOpensDate && new Date(event.registrationOpensDate) > new Date() && (
+                            <div className="mb-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
+                                <p className="font-medium text-blue-700">Registration Has Not Opened Yet</p>
+                                <p className="text-sm text-blue-600 mt-1">
+                                    Registration opens on {new Date(event.registrationOpensDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                                </p>
+                            </div>
+                        )}
+                        {/* Registration closed warning */}
+                        {(event.isRegistrationOpen === false || (event.registrationDeadline && new Date(event.registrationDeadline) < new Date())) && (
+                            <div className="mb-4 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                                <p className="font-medium text-destructive">Registration Closed</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {event.registrationDeadline && new Date(event.registrationDeadline) < new Date()
+                                        ? "The registration deadline for this event has passed."
+                                        : "Registration is currently closed for this event."}
+                                </p>
+                            </div>
+                        )}
                         <form onSubmit={handleSubmit} className="bg-background rounded-xl border p-6 space-y-6">
                             <div>
                                 <h2 className="text-lg font-semibold mb-1">Personal Information</h2>

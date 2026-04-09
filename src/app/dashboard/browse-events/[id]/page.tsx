@@ -166,9 +166,15 @@ export default function EventDetailsPage() {
     }
 
     const availability = getAvailability();
+    const now = new Date();
     const eventDate = new Date(event.startDate);
-    const isPastEvent = eventDate < new Date();
+    const endDate = event.endDate ? new Date(event.endDate) : eventDate;
+    const isPastEvent = now > new Date(endDate.getTime() + 86400000);
     const isSoldOut = availability.available === 0;
+    const regOpens = event.registrationOpensDate ? new Date(event.registrationOpensDate) : null;
+    const regDeadline = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
+    const isNotOpenYet = regOpens && now < regOpens;
+    const isDeadlinePassed = regDeadline && now > regDeadline;
 
     return (
         <DashboardLayout
@@ -434,21 +440,32 @@ export default function EventDetailsPage() {
                                     <CheckCircle2 className="w-5 h-5" />
                                     Already Registered
                                 </Button>
-                            ) : !isPastEvent && !isSoldOut ? (
+                            ) : isPastEvent ? (
+                                <Button className="w-full" size="lg" disabled>
+                                    Event Ended
+                                </Button>
+                            ) : isDeadlinePassed ? (
+                                <Button className="w-full" size="lg" disabled>
+                                    Registration Closed
+                                </Button>
+                            ) : isNotOpenYet ? (
+                                <div className="w-full p-3 rounded-lg bg-blue-50 border border-blue-200 text-center">
+                                    <p className="text-sm font-medium text-blue-700">Registration Opens Soon</p>
+                                    <p className="text-xs text-blue-600 mt-1">
+                                        Opens on {regOpens!.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                                    </p>
+                                </div>
+                            ) : isSoldOut ? (
+                                <Button className="w-full" size="lg" disabled>
+                                    Sold Out
+                                </Button>
+                            ) : (
                                 <Link href={`/dashboard/browse-events/${event.id}/register`} className="block">
                                     <Button className="w-full gap-2" size="lg">
                                         <Ticket className="w-5 h-5" />
                                         Register Now
                                     </Button>
                                 </Link>
-                            ) : isPastEvent ? (
-                                <Button className="w-full" size="lg" disabled>
-                                    Event Ended
-                                </Button>
-                            ) : (
-                                <Button className="w-full" size="lg" disabled>
-                                    Sold Out
-                                </Button>
                             )}
 
                             <p className="text-xs text-center text-muted-foreground mt-3">
