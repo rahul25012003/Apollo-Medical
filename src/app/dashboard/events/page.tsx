@@ -367,7 +367,7 @@ export default function EventsPage() {
 
     const getCapacityStatus = (registrations: number, capacity: number) => {
         const percentage = capacity > 0 ? (registrations / capacity) * 100 : 0;
-        if (percentage >= 100) return { text: "Sold Out", color: "text-red-600", bgColor: "bg-red-500" };
+        if (percentage >= 100) return { text: "Registration Closed", color: "text-red-600", bgColor: "bg-red-500" };
         if (percentage >= 80) return { text: "Almost Full", color: "text-orange-600", bgColor: "bg-orange-500" };
         if (percentage >= 50) return { text: "Filling Up", color: "text-yellow-600", bgColor: "bg-yellow-500" };
         return { text: "Available", color: "text-green-600", bgColor: "bg-green-500" };

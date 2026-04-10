@@ -65,6 +65,8 @@ function getRegStatus(event: EventCardData) {
     return { kind: "upcoming" as const, label: `Opens in ${diffDays} ${diffDays === 1 ? "day" : "days"}`, opens };
   }
   if (deadline && now > deadline) return { kind: "closed" as const, label: "Registration Closed" };
+  const soldOut = event.capacity > 0 && event.registrations >= event.capacity;
+  if (soldOut) return { kind: "closed" as const, label: "Registration Closed" };
   if (deadline) {
     const diffMs = deadline.getTime() - now.getTime();
     const diffHrs = diffMs / 3600000;
@@ -210,7 +212,7 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
                 <span className="text-white/50">{Math.round(fillPct)}% filled</span>
                 <span className="font-semibold flex items-center gap-1" style={{ color: fillPct >= 90 ? "#fca5a5" : fillPct >= 70 ? "#fbbf24" : "#34d399" }}>
                   {slotsLeft <= 10 && slotsLeft > 0 && <span className="w-1.5 h-1.5 rounded-full bg-current" style={{ animation: "pulse 1s ease-in-out infinite" }} />}
-                  {slotsLeft <= 0 ? "Sold Out" : `${slotsLeft} spots left`}
+                  {slotsLeft <= 0 ? "Registration Closed" : `${slotsLeft} spots left`}
                 </span>
               </div>
               <div className="h-2 rounded-full overflow-hidden bg-white/15">
@@ -353,7 +355,7 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
             <span className="font-medium" style={{ color: textMuted }}>{Math.round(fillPct)}% filled</span>
             <span className="font-semibold flex items-center gap-1" style={{ color: fillPct >= 90 ? "#dc2626" : fillPct >= 70 ? "#ea580c" : (darkBg ? "#34d399" : themeColor) }}>
               {slotsLeft <= 10 && slotsLeft > 0 && <span className="w-1.5 h-1.5 rounded-full bg-current" style={{ animation: "pulse 1s ease-in-out infinite" }} />}
-              {slotsLeft <= 0 ? "Sold Out" : `${slotsLeft} spots left`}
+              {slotsLeft <= 0 ? "Registration Closed" : `${slotsLeft} spots left`}
             </span>
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: barBg || "#e2e8f0" }}>

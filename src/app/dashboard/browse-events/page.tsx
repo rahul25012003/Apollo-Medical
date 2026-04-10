@@ -132,7 +132,7 @@ export default function BrowseEventsPage() {
         const available = event.capacity - registered;
         const percentage = event.capacity > 0 ? (registered / event.capacity) * 100 : 0;
 
-        if (percentage >= 100) return { text: "Sold Out", color: "text-red-600", available: 0 };
+        if (percentage >= 100) return { text: "Registration Closed", color: "text-red-600", available: 0 };
         if (percentage >= 90) return { text: `Only ${available} left!`, color: "text-orange-600", available };
         if (percentage >= 70) return { text: "Filling Fast", color: "text-yellow-600", available };
         return { text: `${available} spots available`, color: "text-green-600", available };
@@ -383,7 +383,7 @@ export default function BrowseEventsPage() {
                                                     </Button>
                                                 ) : isSoldOut ? (
                                                     <Button size="sm" disabled>
-                                                        Sold Out
+                                                        Registration Closed
                                                     </Button>
                                                 ) : !isPastEvent ? (
                                                     <Link href={`/dashboard/browse-events/${event.id}/register`}>

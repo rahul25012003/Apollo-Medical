@@ -458,7 +458,7 @@ export default function PublicHomePage() {
 
     const getSlotsInfo = (event: DisplayEvent) => {
         const remaining = event.capacity - event.registrations;
-        if (remaining <= 0) return { text: "Sold Out", color: "text-red-500", urgent: true };
+        if (remaining <= 0) return { text: "Registration Closed", color: "text-red-500", urgent: true };
         if (remaining <= 10) return { text: `Only ${remaining} left!`, color: "text-orange-500", urgent: true };
         return { text: `${remaining} spots available`, color: "text-green-600", urgent: false };
     };

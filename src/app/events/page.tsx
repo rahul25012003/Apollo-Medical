@@ -390,7 +390,7 @@ export default function PublicEventsPage() {
                   <div className="mb-8 max-w-md">
                     <div className="flex items-center justify-between text-white/80 text-sm mb-2">
                       <span>{featuredEvent.registrations} / {featuredEvent.capacity} registered</span>
-                      <span className="font-semibold">{slotsLeft <= 0 ? "Sold Out" : `${slotsLeft} spots left`}</span>
+                      <span className="font-semibold">{slotsLeft <= 0 ? "Registration Closed" : `${slotsLeft} spots left`}</span>
                     </div>
                     <div className="h-2.5 rounded-full bg-white/20 overflow-hidden backdrop-blur">
                       <div className="h-full rounded-full transition-all duration-700" style={{ width: `${fillPct}%`, background: fillPct >= 90 ? "linear-gradient(90deg, #fca5a5, #dc2626)" : "linear-gradient(90deg, #ffffff, #ffffff99)" }} />

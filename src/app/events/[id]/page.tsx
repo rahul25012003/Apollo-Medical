@@ -467,11 +467,9 @@ export default function EventDetailPage() {
                 <AlertCircle className="h-12 w-12 text-destructive" />
                 <h1 className="text-xl font-semibold">{error || "Event not found"}</h1>
                 <div className="flex gap-3">
-                    {tenantSlug && (
-                        <Link href={`/t/${tenantSlug}`}>
-                            <Button variant="outline">Back to Home</Button>
-                        </Link>
-                    )}
+                    <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"}>
+                        <Button variant="outline">Back to Home</Button>
+                    </Link>
                     <Link href={tenantSlug ? `/events?tenant=${tenantSlug}` : "/events"}>
                         <Button variant="outline">All Events</Button>
                     </Link>
@@ -526,14 +524,11 @@ export default function EventDetailPage() {
                         </button>
                     ) : (
                         <div className="flex items-center gap-4">
-                            {tenantSlug && (
-                                <Link href={`/t/${tenantSlug}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                                    <ArrowLeft className="h-4 w-4" />
-                                    Back to Home
-                                </Link>
-                            )}
-                            <Link href={tenantSlug ? `/events?tenant=${tenantSlug}` : "/events"} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                            <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
                                 <ArrowLeft className="h-4 w-4" />
+                                Back to Home
+                            </Link>
+                            <Link href={tenantSlug ? `/events?tenant=${tenantSlug}` : "/events"} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
                                 All Events
                             </Link>
                         </div>
@@ -1036,7 +1031,7 @@ export default function EventDetailPage() {
                                     );
                                     if (isFull) return (
                                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
-                                            <p className="text-sm font-medium text-destructive">Event Full</p>
+                                            <p className="text-sm font-medium text-destructive">Registration Closed</p>
                                             <p className="text-xs text-muted-foreground mt-1">All slots have been filled</p>
                                         </div>
                                     );
