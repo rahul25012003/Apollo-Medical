@@ -566,11 +566,14 @@ export default function TenantHomePage() {
       if (ak !== bk) return ak - bk;
       return new Date(a.startDate!).getTime() - new Date(b.startDate!).getTime();
     });
-  // Active event for hero orange banner: first event whose registration deadline has not passed
+  // Active event for hero orange banner: first event whose registration is still actionable
+  // (deadline not passed AND not sold out)
   const nextEvent =
     visibleEvents.find(e => {
       const dl = e.registrationDeadline ? new Date(e.registrationDeadline) : null;
-      return !dl || _now <= dl;
+      const deadlinePassed = dl && _now > dl;
+      const soldOut = e.capacity > 0 && (e._count?.registrations ?? 0) >= e.capacity;
+      return !deadlinePassed && !soldOut;
     }) || visibleEvents[0];
   const featuredEvents = visibleEvents.slice(0, 3);
   const remainingEvents = visibleEvents.filter(e => e.id !== nextEvent?.id);
