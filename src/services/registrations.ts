@@ -204,4 +204,19 @@ export const registrationsService = {
       attendanceStatus: "checked_in",
       checkedInAt: new Date().toISOString(),
     }),
+
+  /**
+   * Send registration confirmation email to one registrant
+   */
+  sendConfirmationEmail: (id: string) =>
+    api.post<{ sent: boolean; email: string }>(`/api/registrations/${id}/send-email`, {}),
+
+  /**
+   * Send registration confirmation emails to multiple registrants
+   */
+  sendBulkConfirmationEmails: (ids: string[]) =>
+    api.post<{ sent: number; failed: number; total: number; failures: { id: string; email: string; error: string }[] }>(
+      "/api/registrations/send-emails",
+      { ids }
+    ),
 };

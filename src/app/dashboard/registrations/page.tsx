@@ -81,6 +81,7 @@ import { eventsService, Event } from "@/services/events";
 import { certificatesService } from "@/services/certificates";
 import { useConfirmDialog, useAlertDialog } from "@/components/ui/confirm-dialog";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
+import { toast } from "sonner";
 
 // Main page wrapper with Suspense for useSearchParams
 export default function RegistrationsPage() {
@@ -345,6 +346,70 @@ function RegistrationsContent() {
             eventId,
             amount: Number(event?.price) || 0,
         }));
+    };
+
+    // Send registration confirmation email to a single registrant
+    const handleSendEmail = async (reg: Registration) => {
+        const ok = await confirm({
+            title: "Send Registration Email",
+            description: `Send the registration confirmation email to ${reg.name} (${reg.email})?`,
+            confirmText: "Send Email",
+        });
+        if (!ok) return;
+
+        const loadingToast = toast.loading(`Sending email to ${reg.name}...`);
+        try {
+            const res = await registrationsService.sendConfirmationEmail(reg.id);
+            toast.dismiss(loadingToast);
+            if (res.success) {
+                toast.success(`Email sent to ${reg.email}`);
+            } else {
+                toast.error(typeof res.error === "string" ? res.error : res.error?.message || "Failed to send email");
+            }
+        } catch (err) {
+            toast.dismiss(loadingToast);
+            toast.error("Failed to send email");
+            console.error(err);
+        }
+    };
+
+    // Send registration confirmation email to multiple registrants (selected or all filtered)
+    const handleSendBulkEmails = async (mode: "selected" | "filtered") => {
+        const targets = mode === "selected"
+            ? filteredRegistrations.filter(r => selectedRegistrations.includes(r.id))
+            : filteredRegistrations;
+
+        if (targets.length === 0) {
+            toast.error("No registrations to send to");
+            return;
+        }
+
+        const ok = await confirm({
+            title: "Send Registration Emails",
+            description: `Send the registration confirmation email to ${targets.length} ${targets.length === 1 ? "registrant" : "registrants"}? This action cannot be undone.`,
+            confirmText: `Send to ${targets.length}`,
+        });
+        if (!ok) return;
+
+        const loadingToast = toast.loading(`Sending ${targets.length} emails...`);
+        try {
+            const res = await registrationsService.sendBulkConfirmationEmails(targets.map(r => r.id));
+            toast.dismiss(loadingToast);
+            if (res.success && res.data) {
+                const { sent, failed, total } = res.data;
+                if (failed === 0) {
+                    toast.success(`Sent ${sent} of ${total} emails successfully`);
+                } else {
+                    toast.warning(`Sent ${sent} of ${total} — ${failed} failed`);
+                }
+            } else {
+                toast.error(typeof res.error === "string" ? res.error : res.error?.message || "Failed to send emails");
+            }
+        } catch (err) {
+            toast.dismiss(loadingToast);
+            toast.error("Failed to send emails");
+            console.error(err);
+        }
     };
 
     // Handle form submission
@@ -994,18 +1059,12 @@ function RegistrationsContent() {
                         </div>
                         <div className="flex gap-2">
                             {selectedRegistrations.length > 0 && (
-                                <Button variant="outline" size="sm" className="gap-2" onClick={() => {
-                                    const emails = filteredRegistrations.filter(r => selectedRegistrations.includes(r.id)).map(r => r.email).join(",");
-                                    window.open(`mailto:${emails}?subject=Update regarding your registration`, "_blank");
-                                }}>
+                                <Button variant="outline" size="sm" className="gap-2" onClick={() => handleSendBulkEmails("selected")}>
                                     <Mail className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Email</span> ({selectedRegistrations.length})
+                                    <span className="hidden sm:inline">Send Email</span> ({selectedRegistrations.length})
                                 </Button>
                             )}
-                            <Button variant="outline" size="sm" className="gap-2" onClick={() => {
-                                const emails = filteredRegistrations.map(r => r.email).join(",");
-                                window.open(`mailto:${emails}?subject=Update regarding your registration`, "_blank");
-                            }}>
+                            <Button variant="outline" size="sm" className="gap-2" onClick={() => handleSendBulkEmails("filtered")}>
                                 <Mail className="w-4 h-4" />
                                 <span className="hidden sm:inline">Email All</span>
                             </Button>
@@ -1452,10 +1511,10 @@ function RegistrationsContent() {
                                             size="sm"
                                             variant="outline"
                                             className="gap-1.5"
-                                            onClick={() => window.open(`mailto:${selectedReg.email}?subject=Regarding your registration — ${selectedReg.event?.title || "Event"}`, "_blank")}
+                                            onClick={() => handleSendEmail(selectedReg)}
                                         >
                                             <Mail className="h-3.5 w-3.5" />
-                                            Email
+                                            Send Email
                                         </Button>
                                     </div>
                                 </div>
@@ -1617,7 +1676,7 @@ function RegistrationsContent() {
                                                                 Edit Registration
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem onClick={() => window.open(`mailto:${reg.email}?subject=Regarding your registration — ${reg.event?.title || "Event"}`, "_blank")}>
+                                                            <DropdownMenuItem onClick={() => handleSendEmail(reg)}>
                                                                 <Mail className="mr-2 h-4 w-4" />
                                                                 Send Email
                                                             </DropdownMenuItem>
@@ -1794,8 +1853,8 @@ function RegistrationsContent() {
                                                 <DropdownMenuItem onClick={() => { setSelectedReg(reg); setIsViewOpen(true); }}>
                                                     <Eye className="mr-2 h-4 w-4" /> View / Edit
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => window.open(`mailto:${reg.email}?subject=Regarding your registration — ${reg.event?.title || "Event"}`, "_blank")}>
-                                                    <Mail className="mr-2 h-4 w-4" /> Email
+                                                <DropdownMenuItem onClick={() => handleSendEmail(reg)}>
+                                                    <Mail className="mr-2 h-4 w-4" /> Send Email
                                                 </DropdownMenuItem>
                                                 {(reg.paymentStatus === "PAID" || reg.paymentStatus === "FREE" || reg.status === "CONFIRMED" || reg.status === "ATTENDED") && (
                                                     <DropdownMenuItem
