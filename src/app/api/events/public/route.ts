@@ -128,7 +128,12 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
           },
         },
         _count: {
-          select: { registrations: true },
+          select: {
+            // Only DELEGATE (and legacy null) registrations count toward capacity display.
+            registrations: {
+              where: { OR: [{ participantRole: "DELEGATE" }, { participantRole: null }] },
+            },
+          },
         },
         eventSpeakers: {
           where: { isPublished: true },

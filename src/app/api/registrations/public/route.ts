@@ -64,7 +64,13 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         },
       },
       _count: {
-        select: { registrations: true },
+        select: {
+          // Only DELEGATE (and legacy null) registrations count toward capacity.
+          // Speakers, faculty, organizers, etc. don't consume public spots.
+          registrations: {
+            where: { OR: [{ participantRole: "DELEGATE" }, { participantRole: null }] },
+          },
+        },
       },
     },
   });
@@ -90,10 +96,12 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     return Errors.badRequest("Registration deadline has passed");
   }
 
-  // Check capacity
+  // Check capacity — only applies to DELEGATE registrations.
+  // Speakers, faculty, organizers etc. never consume a delegate spot.
   let status = data.status || "PENDING";
-  const availableSlots = event.capacity - event._count.registrations;
-  if (availableSlots <= 0) {
+  const isDelegate = !data.participantRole || data.participantRole === "DELEGATE";
+  const delegateCount = event._count.registrations;
+  if (isDelegate && event.capacity - delegateCount <= 0) {
     status = "WAITLIST";
   }
 

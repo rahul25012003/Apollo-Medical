@@ -101,6 +101,7 @@ export interface UpdateRegistrationData {
   organization?: string;
   designation?: string;
   category?: string;
+  participantRole?: string;
   status?: string;
   paymentStatus?: string;
   amount?: number;

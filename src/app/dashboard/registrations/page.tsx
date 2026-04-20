@@ -110,7 +110,23 @@ function RegistrationsContent() {
     const [selectedRegistrations, setSelectedRegistrations] = useState<string[]>([]);
     const [isViewOpen, setIsViewOpen] = useState(false);
     const [isAddOpen, setIsAddOpen] = useState(actionParam === "add");
+    const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
+    const [editFormData, setEditFormData] = useState({
+        name: "",
+        email: "",
+        phone: "",
+        organization: "",
+        designation: "",
+        category: "",
+        participantRole: "DELEGATE",
+        amount: 0,
+        status: "PENDING" as Registration["status"],
+        paymentStatus: "PENDING" as Registration["paymentStatus"],
+        notes: "",
+        specialRequests: "",
+    });
+    const [editSubmitting, setEditSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedEventFilter, setSelectedEventFilter] = useState(eventIdParam || "all");
     const [selectedPaymentFilter, setSelectedPaymentFilter] = useState("all");
@@ -465,6 +481,64 @@ function RegistrationsContent() {
             alert({ title: "Error", description: "Failed to create registration. Please try again.", variant: "error" });
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    // Open the edit dialog pre-filled with the registration's current values
+    const handleOpenEdit = (reg: Registration) => {
+        setSelectedReg(reg);
+        setEditFormData({
+            name: reg.name || "",
+            email: reg.email || "",
+            phone: reg.phone || "",
+            organization: reg.organization || "",
+            designation: reg.designation || "",
+            category: reg.category || "",
+            participantRole: reg.participantRole || "DELEGATE",
+            amount: Number(reg.amount) || 0,
+            status: reg.status,
+            paymentStatus: reg.paymentStatus,
+            notes: reg.notes || "",
+            specialRequests: reg.specialRequests || "",
+        });
+        setIsEditOpen(true);
+    };
+
+    // Save edited registration
+    const handleEditSubmit = async () => {
+        if (!selectedReg) return;
+        if (!editFormData.name) {
+            alert({ title: "Validation", description: "Name is required.", variant: "error" });
+            return;
+        }
+        try {
+            setEditSubmitting(true);
+            const response = await registrationsService.update(selectedReg.id, {
+                name: editFormData.name,
+                phone: editFormData.phone || undefined,
+                organization: editFormData.organization || undefined,
+                designation: editFormData.designation || undefined,
+                category: editFormData.category || undefined,
+                participantRole: editFormData.participantRole || undefined,
+                amount: Number(editFormData.amount) || 0,
+                status: editFormData.status,
+                paymentStatus: editFormData.paymentStatus,
+                notes: editFormData.notes || undefined,
+                specialRequests: editFormData.specialRequests || undefined,
+            });
+            if (response.success) {
+                await refreshRegistrations();
+                setIsEditOpen(false);
+                alert({ title: "Success", description: "Registration updated successfully", variant: "success" });
+            } else {
+                const errorMsg = typeof response.error === "string" ? response.error : response.error?.message || "Failed to update registration";
+                alert({ title: "Error", description: errorMsg, variant: "error" });
+            }
+        } catch (error) {
+            console.error("Failed to update registration:", error);
+            alert({ title: "Error", description: "Failed to update registration. Please try again.", variant: "error" });
+        } finally {
+            setEditSubmitting(false);
         }
     };
 
@@ -1263,6 +1337,204 @@ function RegistrationsContent() {
                     </DialogContent>
                 </Dialog>
 
+                {/* Edit Registration Dialog */}
+                <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                    <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-white/95">
+                        <DialogHeader>
+                            <DialogTitle>Edit Registration</DialogTitle>
+                            <DialogDescription>
+                                {selectedReg ? `Update details for ${selectedReg.name}` : "Update registration details"}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            {/* Event (read-only) */}
+                            <div className="space-y-2">
+                                <Label>Event</Label>
+                                <Input value={selectedReg?.event?.title || "N/A"} disabled />
+                            </div>
+
+                            <div className="section-divider-gradient my-2" />
+
+                            {/* Personal Info */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="sm:col-span-2 space-y-2">
+                                    <Label htmlFor="edit-name">Full Name *</Label>
+                                    <Input
+                                        id="edit-name"
+                                        value={editFormData.name}
+                                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-email">Email</Label>
+                                    <Input
+                                        id="edit-email"
+                                        type="email"
+                                        value={editFormData.email}
+                                        disabled
+                                        title="Email cannot be changed after registration"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-phone">Phone</Label>
+                                    <Input
+                                        id="edit-phone"
+                                        type="tel"
+                                        value={editFormData.phone}
+                                        onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="section-divider-gradient my-2" />
+
+                            {/* Professional Info */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-designation">Designation</Label>
+                                    <Input
+                                        id="edit-designation"
+                                        value={editFormData.designation}
+                                        onChange={(e) => setEditFormData({ ...editFormData, designation: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-organization">Organization</Label>
+                                    <Input
+                                        id="edit-organization"
+                                        value={editFormData.organization}
+                                        onChange={(e) => setEditFormData({ ...editFormData, organization: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-category">Category</Label>
+                                    <Select
+                                        value={editFormData.category}
+                                        onValueChange={(value) => setEditFormData({ ...editFormData, category: value })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Faculty">Faculty</SelectItem>
+                                            <SelectItem value="Resident/Fellow">Resident/Fellow</SelectItem>
+                                            <SelectItem value="Student">Student</SelectItem>
+                                            <SelectItem value="Industry">Industry</SelectItem>
+                                            <SelectItem value="Other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-participantRole">Role</Label>
+                                    <Select
+                                        value={editFormData.participantRole}
+                                        onValueChange={(value) => setEditFormData({ ...editFormData, participantRole: value })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select role" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {DEFAULT_PARTICIPANT_ROLES.map(role => (
+                                                <SelectItem key={role.id} value={role.id}>{role.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-amount">Amount (₹)</Label>
+                                    <Input
+                                        id="edit-amount"
+                                        type="number"
+                                        value={editFormData.amount}
+                                        onChange={(e) => setEditFormData({ ...editFormData, amount: Number(e.target.value) })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="section-divider-gradient my-2" />
+
+                            {/* Status & Payment */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-status">Status</Label>
+                                    <Select
+                                        value={editFormData.status}
+                                        onValueChange={(value) => setEditFormData({ ...editFormData, status: value as Registration["status"] })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="PENDING">Pending</SelectItem>
+                                            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                                            <SelectItem value="WAITLIST">Waitlist</SelectItem>
+                                            <SelectItem value="ATTENDED">Attended</SelectItem>
+                                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-paymentStatus">Payment Status</Label>
+                                    <Select
+                                        value={editFormData.paymentStatus}
+                                        onValueChange={(value) => setEditFormData({ ...editFormData, paymentStatus: value as Registration["paymentStatus"] })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="PENDING">Unpaid</SelectItem>
+                                            <SelectItem value="PAID">Paid</SelectItem>
+                                            <SelectItem value="FREE">Free</SelectItem>
+                                            <SelectItem value="REFUNDED">Refunded</SelectItem>
+                                            <SelectItem value="FAILED">Failed</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-notes">Notes (Internal)</Label>
+                                <Textarea
+                                    id="edit-notes"
+                                    rows={2}
+                                    value={editFormData.notes}
+                                    onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-specialRequests">Special Requests</Label>
+                                <Textarea
+                                    id="edit-specialRequests"
+                                    rows={2}
+                                    value={editFormData.specialRequests}
+                                    onChange={(e) => setEditFormData({ ...editFormData, specialRequests: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleEditSubmit}
+                                disabled={editSubmitting || !editFormData.name}
+                            >
+                                {editSubmitting ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    "Save Changes"
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
                 {/* View Registration Dialog */}
                 <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
                     <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-white/95">
@@ -1671,7 +1943,7 @@ function RegistrationsContent() {
                                                                 <Eye className="mr-2 h-4 w-4" />
                                                                 View Details
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => { setSelectedReg(reg); setIsViewOpen(true); }}>
+                                                            <DropdownMenuItem onClick={() => handleOpenEdit(reg)}>
                                                                 <Edit className="mr-2 h-4 w-4" />
                                                                 Edit Registration
                                                             </DropdownMenuItem>
@@ -1851,7 +2123,10 @@ function RegistrationsContent() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuItem onClick={() => { setSelectedReg(reg); setIsViewOpen(true); }}>
-                                                    <Eye className="mr-2 h-4 w-4" /> View / Edit
+                                                    <Eye className="mr-2 h-4 w-4" /> View Details
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleOpenEdit(reg)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> Edit Registration
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => handleSendEmail(reg)}>
                                                     <Mail className="mr-2 h-4 w-4" /> Send Email

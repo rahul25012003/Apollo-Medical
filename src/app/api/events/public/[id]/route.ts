@@ -118,7 +118,10 @@ export async function GET(
         },
         _count: {
           select: {
-            registrations: true,
+            // Only DELEGATE (and legacy null) registrations count toward capacity display.
+            registrations: {
+              where: { OR: [{ participantRole: "DELEGATE" }, { participantRole: null }] },
+            },
           },
         },
       },
