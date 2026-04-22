@@ -359,6 +359,21 @@ export const eventsService = {
     api.post<Event>(`/api/events/${id}/duplicate`, {}),
 
   /**
+   * Import schedule (sessions, halls, speaker links) from another event
+   */
+  importSchedule: (targetEventId: string, payload: {
+    sourceEventId: string;
+    mode?: "replace" | "append";
+    shiftDates?: boolean;
+    includeSpeakers?: boolean;
+    includeHalls?: boolean;
+  }) =>
+    api.post<{ imported: number; replaced: number; mode: string; shiftDates: boolean; offsetDays: number }>(
+      `/api/events/${targetEventId}/import-schedule`,
+      payload
+    ),
+
+  /**
    * Get event speakers
    */
   getSpeakers: (eventId: string) =>

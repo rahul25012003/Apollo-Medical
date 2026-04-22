@@ -629,7 +629,7 @@ function LoginPageInner() {
                                             onClick={() => { setLoginMode("admin"); setError(null); resetOtpState(); }}
                                         >
                                             <Shield className="w-3.5 h-3.5" />
-                                            Sign in with Password
+                                            Admin Login
                                         </button>
                                     )}
                                 </div>
