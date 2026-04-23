@@ -37,6 +37,8 @@ import {
     DoorOpen,
     Eye,
     EyeOff,
+    Download,
+    Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -47,8 +49,12 @@ import {
     EventSpeaker,
     CreateSessionData,
     SessionSpeakerData,
+    Event,
 } from "@/services/events";
 import { format, parseISO } from "date-fns";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -200,6 +206,17 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
     const [deleteTarget, setDeleteTarget] = useState<EventSession | null>(null);
     const [deleting, setDeleting] = useState(false);
 
+    // Import schedule state
+    const [importOpen, setImportOpen] = useState(false);
+    const [importableEvents, setImportableEvents] = useState<Event[]>([]);
+    const [loadingImportable, setLoadingImportable] = useState(false);
+    const [importSourceId, setImportSourceId] = useState<string>("");
+    const [importMode, setImportMode] = useState<"append" | "replace">("append");
+    const [importShiftDates, setImportShiftDates] = useState(true);
+    const [importIncludeSpeakers, setImportIncludeSpeakers] = useState(true);
+    const [importIncludeHalls, setImportIncludeHalls] = useState(true);
+    const [importing, setImporting] = useState(false);
+
     // -----------------------------------------------------------------------
     // Data fetching
     // -----------------------------------------------------------------------
@@ -298,6 +315,69 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
             }),
         [groupedSessions]
     );
+
+    // -----------------------------------------------------------------------
+    // Import Schedule handlers
+    // -----------------------------------------------------------------------
+
+    const openImportDialog = async () => {
+        setImportOpen(true);
+        setImportSourceId("");
+        setImportMode("append");
+        setImportShiftDates(true);
+        setImportIncludeSpeakers(true);
+        setImportIncludeHalls(true);
+        setLoadingImportable(true);
+        try {
+            const res = await eventsService.getAll({ limit: 100, sortBy: "startDate", sortOrder: "desc" });
+            if (res.success && Array.isArray(res.data)) {
+                setImportableEvents(res.data.filter((e) => e.id !== eventId));
+            }
+        } catch (err) {
+            console.error("Failed to load events:", err);
+            toast.error("Could not load events list");
+        } finally {
+            setLoadingImportable(false);
+        }
+    };
+
+    const handleImportSchedule = async () => {
+        if (!importSourceId) {
+            toast.error("Please choose an event to import from");
+            return;
+        }
+        setImporting(true);
+        const loadingId = toast.loading("Importing schedule...");
+        try {
+            const res = await eventsService.importSchedule(eventId, {
+                sourceEventId: importSourceId,
+                mode: importMode,
+                shiftDates: importShiftDates,
+                includeSpeakers: importIncludeSpeakers,
+                includeHalls: importIncludeHalls,
+            });
+            toast.dismiss(loadingId);
+            if (res.success && res.data) {
+                const { imported, replaced } = res.data;
+                if (replaced > 0) {
+                    toast.success(`Imported ${imported} session${imported === 1 ? "" : "s"} (replaced ${replaced})`);
+                } else {
+                    toast.success(`Imported ${imported} session${imported === 1 ? "" : "s"}`);
+                }
+                setImportOpen(false);
+                await Promise.all([fetchSessions(), fetchHalls()]);
+            } else {
+                const msg = typeof res.error === "string" ? res.error : res.error?.message || "Import failed";
+                toast.error(msg);
+            }
+        } catch (err) {
+            toast.dismiss(loadingId);
+            console.error(err);
+            toast.error("Import failed");
+        } finally {
+            setImporting(false);
+        }
+    };
 
     // -----------------------------------------------------------------------
     // Form helpers
@@ -462,6 +542,14 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
                             )}
                         </Label>
                     </div>
+                    <Button
+                        variant="outline"
+                        onClick={openImportDialog}
+                        className="gap-2 border-teal-200 text-teal-700 hover:bg-teal-50 hover:text-teal-800"
+                    >
+                        <Download className="h-4 w-4" />
+                        Import Schedule
+                    </Button>
                     <Button onClick={openAddDialog} className="gap-2 bg-teal-600 hover:bg-teal-700">
                         <Plus className="h-4 w-4" />
                         Add Session
@@ -1060,6 +1148,155 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
                 loading={deleting}
                 onConfirm={handleDelete}
             />
+
+            {/* Import Schedule Dialog */}
+            <Dialog open={importOpen} onOpenChange={(open) => !importing && setImportOpen(open)}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-teal-600" />
+                            Import Schedule
+                        </DialogTitle>
+                        <DialogDescription>
+                            Copy sessions, halls, and speakers from another event to save time. You can tweak everything after importing.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-5 py-2">
+                        {/* Source event picker */}
+                        <div className="space-y-2">
+                            <Label htmlFor="import-source" className="text-sm font-semibold">
+                                Copy from
+                            </Label>
+                            <Select
+                                value={importSourceId}
+                                onValueChange={setImportSourceId}
+                                disabled={loadingImportable || importing}
+                            >
+                                <SelectTrigger id="import-source">
+                                    <SelectValue placeholder={loadingImportable ? "Loading events..." : "Select an event"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {importableEvents.length === 0 && !loadingImportable && (
+                                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                            No other events found
+                                        </div>
+                                    )}
+                                    {importableEvents.map((e) => (
+                                        <SelectItem key={e.id} value={e.id}>
+                                            <span className="flex flex-col">
+                                                <span className="font-medium">{e.title}</span>
+                                                {e.startDate && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {format(parseISO(e.startDate), "dd MMM yyyy")}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Mode */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-semibold">How to handle existing sessions</Label>
+                            <RadioGroup
+                                value={importMode}
+                                onValueChange={(v) => setImportMode(v as "append" | "replace")}
+                                disabled={importing}
+                                className="gap-2"
+                            >
+                                <label className={cn(
+                                    "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+                                    importMode === "append" ? "border-teal-400 bg-teal-50/60" : "border-border hover:bg-muted/40"
+                                )}>
+                                    <RadioGroupItem value="append" id="import-append" className="mt-0.5" />
+                                    <div className="flex-1">
+                                        <div className="font-medium text-sm">Append to existing</div>
+                                        <div className="text-xs text-muted-foreground">Keeps current sessions and adds imported ones on top.</div>
+                                    </div>
+                                </label>
+                                <label className={cn(
+                                    "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+                                    importMode === "replace" ? "border-red-400 bg-red-50/60" : "border-border hover:bg-muted/40"
+                                )}>
+                                    <RadioGroupItem value="replace" id="import-replace" className="mt-0.5" />
+                                    <div className="flex-1">
+                                        <div className="font-medium text-sm">Replace existing</div>
+                                        <div className="text-xs text-muted-foreground">Removes all current sessions first. This cannot be undone.</div>
+                                    </div>
+                                </label>
+                            </RadioGroup>
+                        </div>
+
+                        {/* Options */}
+                        <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                            <div className="text-sm font-semibold">Options</div>
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <Checkbox
+                                    checked={importShiftDates}
+                                    onCheckedChange={(v) => setImportShiftDates(!!v)}
+                                    disabled={importing}
+                                    className="mt-0.5"
+                                />
+                                <div>
+                                    <div className="text-sm font-medium">Shift dates to match this event</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        Align Day 1 with this event&apos;s start date; all sessions move accordingly.
+                                    </div>
+                                </div>
+                            </label>
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <Checkbox
+                                    checked={importIncludeSpeakers}
+                                    onCheckedChange={(v) => setImportIncludeSpeakers(!!v)}
+                                    disabled={importing}
+                                    className="mt-0.5"
+                                />
+                                <div>
+                                    <div className="text-sm font-medium">Include speaker assignments</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        Keep the same speakers linked to each session.
+                                    </div>
+                                </div>
+                            </label>
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <Checkbox
+                                    checked={importIncludeHalls}
+                                    onCheckedChange={(v) => setImportIncludeHalls(!!v)}
+                                    disabled={importing}
+                                    className="mt-0.5"
+                                />
+                                <div>
+                                    <div className="text-sm font-medium">Copy halls if missing</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        Create halls in this event that don&apos;t exist yet (matched by name).
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setImportOpen(false)}
+                            disabled={importing}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleImportSchedule}
+                            disabled={importing || !importSourceId}
+                            className="gap-2 bg-teal-600 hover:bg-teal-700"
+                        >
+                            {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                            {importing ? "Importing..." : "Import Schedule"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
