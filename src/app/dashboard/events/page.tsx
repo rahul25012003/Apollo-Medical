@@ -82,6 +82,10 @@ interface DisplayEvent {
     revenue: number;
     cmeCredits: number | null;
     isPublished: boolean;
+    /** Total registrations across all roles (delegates + speakers + organizers + ...) */
+    totalRegistrations: number;
+    /** Registrations grouped by participantRole (DELEGATE, SPEAKER, ORGANIZER, …). */
+    registrationsByRole: Record<string, number>;
 }
 
 // Build filter options from shared constants
@@ -128,30 +132,37 @@ export default function EventsPage() {
 
                 if (response.success && response.data) {
                     const eventsList = Array.isArray(response.data) ? response.data : [];
-                    const mappedEvents: DisplayEvent[] = eventsList.map((event: Event) => ({
-                        id: event.id,
-                        title: event.title,
-                        date: new Date(event.startDate).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                        }),
-                        startDate: event.startDate,
-                        endDate: event.endDate,
-                        time: event.startTime && event.endTime
-                            ? `${event.startTime} - ${event.endTime}`
-                            : event.startTime || "TBA",
-                        location: event.location || "TBA",
-                        city: event.city || "Virtual",
-                        registrations: event._count?.registrations || 0,
-                        capacity: event.capacity,
-                        status: event.status,
-                        type: event.type,
-                        category: event.category,
-                        revenue: (event._count?.registrations || 0) * event.price,
-                        cmeCredits: event.cmeCredits,
-                        isPublished: event.isPublished,
-                    }));
+                    const mappedEvents: DisplayEvent[] = eventsList.map((event: Event) => {
+                        const roleCounts = event.registrationsByRole || {};
+                        const totalReg = Object.values(roleCounts).reduce((sum, n) => sum + n, 0);
+                        const delegateCount = event._count?.registrations || 0;
+                        return {
+                            id: event.id,
+                            title: event.title,
+                            date: new Date(event.startDate).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                            }),
+                            startDate: event.startDate,
+                            endDate: event.endDate,
+                            time: event.startTime && event.endTime
+                                ? `${event.startTime} - ${event.endTime}`
+                                : event.startTime || "TBA",
+                            location: event.location || "TBA",
+                            city: event.city || "Virtual",
+                            registrations: delegateCount,
+                            capacity: event.capacity,
+                            status: event.status,
+                            type: event.type,
+                            category: event.category,
+                            revenue: delegateCount * event.price,
+                            cmeCredits: event.cmeCredits,
+                            isPublished: event.isPublished,
+                            totalRegistrations: totalReg,
+                            registrationsByRole: roleCounts,
+                        };
+                    });
                     setEvents(mappedEvents);
                 }
             } catch (error) {
@@ -371,6 +382,25 @@ export default function EventsPage() {
         if (percentage >= 80) return { text: "Almost Full", color: "text-orange-600", bgColor: "bg-orange-500" };
         if (percentage >= 50) return { text: "Filling Up", color: "text-yellow-600", bgColor: "bg-yellow-500" };
         return { text: "Available", color: "text-green-600", bgColor: "bg-green-500" };
+    };
+
+    // Build an ordered list of (roleLabel, count) for display, delegate first
+    const roleBreakdown = (byRole: Record<string, number>): { key: string; label: string; count: number }[] => {
+        const order = ["DELEGATE", "SPEAKER", "ORGANIZER", "CHAIRPERSON", "JUDGE", "VOLUNTEER"];
+        const labelFor = (key: string) => {
+            const k = key.toUpperCase();
+            return k.charAt(0) + k.slice(1).toLowerCase();
+        };
+        const keys = Object.keys(byRole).filter((k) => byRole[k] > 0);
+        keys.sort((a, b) => {
+            const ai = order.indexOf(a.toUpperCase());
+            const bi = order.indexOf(b.toUpperCase());
+            if (ai === -1 && bi === -1) return a.localeCompare(b);
+            if (ai === -1) return 1;
+            if (bi === -1) return -1;
+            return ai - bi;
+        });
+        return keys.map((k) => ({ key: k, label: labelFor(k), count: byRole[k] }));
     };
 
     // Loading state
@@ -734,7 +764,7 @@ export default function EventsPage() {
                                     {/* Capacity Bar */}
                                     <div className="mb-4">
                                         <div className="flex items-center justify-between text-xs mb-1">
-                                            <span className="text-muted-foreground">Registrations</span>
+                                            <span className="text-muted-foreground">Delegate Spots</span>
                                             <span className={cn("font-medium", capacityStatus.color)}>
                                                 {capacityStatus.text}
                                             </span>
@@ -746,11 +776,30 @@ export default function EventsPage() {
                                             />
                                         </div>
                                         <div className="flex items-center justify-between text-xs mt-1">
-                                            <span className="text-muted-foreground">{event.registrations} / {event.capacity}</span>
+                                            <span className="text-muted-foreground">{event.registrations} / {event.capacity} delegates</span>
                                             <span className="text-muted-foreground">
                                                 {event.capacity > 0 ? Math.round((event.registrations / event.capacity) * 100) : 0}%
                                             </span>
                                         </div>
+                                        {/* Role breakdown */}
+                                        {event.totalRegistrations > 0 && (
+                                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                                {roleBreakdown(event.registrationsByRole).map(({ key, label, count }) => (
+                                                    <Badge
+                                                        key={key}
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "text-[10px] px-1.5 py-0 font-medium",
+                                                            key.toUpperCase() === "DELEGATE"
+                                                                ? "bg-primary/5 text-primary border-primary/20"
+                                                                : "bg-muted/60 text-muted-foreground border-border"
+                                                        )}
+                                                    >
+                                                        {label}: {count}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex items-center justify-between pt-4 border-t border-border">
@@ -832,11 +881,29 @@ export default function EventsPage() {
                                                     </Badge>
                                                 </td>
                                                 <td className="px-4 py-4 hidden sm:table-cell">
-                                                    <div className="flex items-center gap-2">
-                                                        <Users className="w-4 h-4 text-muted-foreground" />
-                                                        <span className="text-sm font-medium">
-                                                            {event.registrations}/{event.capacity}
-                                                        </span>
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <Users className="w-4 h-4 text-muted-foreground" />
+                                                            <span className="text-sm font-medium">
+                                                                {event.registrations}/{event.capacity}
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground">delegates</span>
+                                                        </div>
+                                                        {event.totalRegistrations > event.registrations && (
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {roleBreakdown(event.registrationsByRole)
+                                                                    .filter(({ key }) => key.toUpperCase() !== "DELEGATE")
+                                                                    .map(({ key, label, count }) => (
+                                                                        <Badge
+                                                                            key={key}
+                                                                            variant="outline"
+                                                                            className="text-[10px] px-1.5 py-0 font-medium bg-muted/60 text-muted-foreground border-border"
+                                                                        >
+                                                                            {label}: {count}
+                                                                        </Badge>
+                                                                    ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-4 hidden xl:table-cell">

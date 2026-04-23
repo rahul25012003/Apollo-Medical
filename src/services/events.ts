@@ -58,6 +58,8 @@ export interface Event {
   _count?: {
     registrations: number;
   };
+  /** Breakdown of registrations by participantRole (e.g., DELEGATE, SPEAKER, ORGANIZER). null legacy rows bucket into DELEGATE. */
+  registrationsByRole?: Record<string, number>;
   eventSpeakers?: {
     id: string;
     speakerId: string;

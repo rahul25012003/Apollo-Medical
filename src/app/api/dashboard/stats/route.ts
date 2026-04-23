@@ -70,7 +70,12 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
         status: true,
         type: true,
         _count: {
-          select: { registrations: true },
+          select: {
+            // Only DELEGATE (and legacy null) registrations count toward slots.
+            registrations: {
+              where: { OR: [{ participantRole: "DELEGATE" }, { participantRole: null }] },
+            },
+          },
         },
       },
     }),

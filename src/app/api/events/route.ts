@@ -97,12 +97,35 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
       take: limit,
       include: {
         _count: {
-          select: { registrations: true },
+          select: {
+            // Only DELEGATE (and legacy null) registrations count toward slots.
+            registrations: {
+              where: { OR: [{ participantRole: "DELEGATE" }, { participantRole: null }] },
+            },
+          },
         },
       },
     }),
     prisma.event.count({ where }),
   ]);
+
+  // Breakdown of registrations by participant role per event, so the UI can show
+  // how many delegates/speakers/etc. are registered alongside the delegate-only slot count.
+  const eventIds = events.map((e) => e.id);
+  const roleGroups = eventIds.length > 0
+    ? await prisma.registration.groupBy({
+        by: ["eventId", "participantRole"],
+        where: { eventId: { in: eventIds } },
+        _count: { _all: true },
+      })
+    : [];
+  const roleCountsByEvent = new Map<string, Record<string, number>>();
+  for (const g of roleGroups) {
+    const roleKey = g.participantRole || "DELEGATE"; // null legacy rows = delegate
+    const bucket = roleCountsByEvent.get(g.eventId) ?? {};
+    bucket[roleKey] = (bucket[roleKey] || 0) + g._count._all;
+    roleCountsByEvent.set(g.eventId, bucket);
+  }
 
   // Convert Prisma Decimal + compute effective price from categories
   const safeEvents = events.map((e) => {
@@ -113,6 +136,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
       ...e,
       price: effectivePrice,
       earlyBirdPrice: e.earlyBirdPrice ? Number(e.earlyBirdPrice) : null,
+      registrationsByRole: roleCountsByEvent.get(e.id) || {},
     };
   });
 
@@ -207,7 +231,11 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       where: { id: newEvent.id },
       include: {
         _count: {
-          select: { registrations: true },
+          select: {
+            registrations: {
+              where: { OR: [{ participantRole: "DELEGATE" }, { participantRole: null }] },
+            },
+          },
         },
         pricingCategories: {
           orderBy: { displayOrder: "asc" },
