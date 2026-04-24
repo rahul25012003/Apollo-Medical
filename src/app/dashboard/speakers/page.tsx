@@ -91,54 +91,139 @@ export default function SpeakersPage() {
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const { alert, AlertDialog } = useAlertDialog();
 
-    // Fetch speakers from API
+    // Create/Edit speaker form state
+    const DEFAULT_FORM = {
+        name: "",
+        designation: "",
+        department: "",
+        institution: "",
+        email: "",
+        phone: "",
+        biography: "",
+        linkedin: "",
+        website: "",
+        isActive: true,
+    };
+    const [form, setForm] = useState(DEFAULT_FORM);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
+
+    // Fetch speakers — reusable so we can call after create/update
+    const fetchSpeakers = React.useCallback(async () => {
+        try {
+            setLoading(true);
+            const response = await speakersService.getAll({ ...tenantFilterParams, limit: 500 });
+            if (response.success && response.data) {
+                const speakersList = Array.isArray(response.data) ? response.data : [];
+                const mappedSpeakers: DisplaySpeaker[] = speakersList.map((speaker: Speaker) => ({
+                    id: speaker.id,
+                    name: speaker.name,
+                    photo: speaker.photo,
+                    designation: speaker.designation,
+                    department: speaker.department,
+                    institution: speaker.institution,
+                    email: speaker.email,
+                    phone: speaker.phone,
+                    biography: speaker.biography,
+                    isActive: speaker.isActive,
+                    linkedin: speaker.linkedin,
+                    twitter: speaker.twitter,
+                    website: speaker.website,
+                    eventCount: speaker._count?.eventSpeakers || speaker.eventSpeakers?.length || 0,
+                    events: speaker.eventSpeakers?.map((es) => ({
+                        id: es.event.id,
+                        title: es.event.title,
+                        topic: es.topic,
+                        status: es.status,
+                        startDate: new Date(es.event.startDate).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                        }),
+                    })) || [],
+                }));
+                setSpeakers(mappedSpeakers);
+            }
+        } catch (error) {
+            console.error("Failed to fetch speakers:", error);
+        } finally {
+            setLoading(false);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [effectiveTenantId]);
+
     useEffect(() => {
         if (sessionLoading) return;
-        async function fetchSpeakers() {
-            try {
-                setLoading(true);
-                const response = await speakersService.getAll({ ...tenantFilterParams, limit: 500 });
-
-                if (response.success && response.data) {
-                    const speakersList = Array.isArray(response.data) ? response.data : [];
-                    const mappedSpeakers: DisplaySpeaker[] = speakersList.map((speaker: Speaker) => ({
-                        id: speaker.id,
-                        name: speaker.name,
-                        photo: speaker.photo,
-                        designation: speaker.designation,
-                        department: speaker.department,
-                        institution: speaker.institution,
-                        email: speaker.email,
-                        phone: speaker.phone,
-                        biography: speaker.biography,
-                        isActive: speaker.isActive,
-                        linkedin: speaker.linkedin,
-                        twitter: speaker.twitter,
-                        website: speaker.website,
-                        eventCount: speaker._count?.eventSpeakers || speaker.eventSpeakers?.length || 0,
-                        events: speaker.eventSpeakers?.map((es) => ({
-                            id: es.event.id,
-                            title: es.event.title,
-                            topic: es.topic,
-                            status: es.status,
-                            startDate: new Date(es.event.startDate).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                            }),
-                        })) || [],
-                    }));
-                    setSpeakers(mappedSpeakers);
-                }
-            } catch (error) {
-                console.error("Failed to fetch speakers:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
-
         fetchSpeakers();
-    }, [sessionLoading, effectiveTenantId]);
+    }, [sessionLoading, fetchSpeakers]);
+
+    // Open dialog for creating new speaker
+    const openCreateDialog = () => {
+        setEditingId(null);
+        setForm(DEFAULT_FORM);
+        setFormError(null);
+        setIsCreateOpen(true);
+    };
+
+    // Open dialog for editing existing speaker
+    const openEditDialog = (speaker: DisplaySpeaker) => {
+        setEditingId(speaker.id);
+        setForm({
+            name: speaker.name || "",
+            designation: speaker.designation || "",
+            department: speaker.department || "",
+            institution: speaker.institution || "",
+            email: speaker.email || "",
+            phone: speaker.phone || "",
+            biography: speaker.biography || "",
+            linkedin: speaker.linkedin || "",
+            website: speaker.website || "",
+            isActive: speaker.isActive,
+        });
+        setFormError(null);
+        setIsCreateOpen(true);
+    };
+
+    // Save speaker (create or update)
+    const handleSaveSpeaker = async () => {
+        if (!form.name.trim()) {
+            setFormError("Name is required");
+            return;
+        }
+        setSaving(true);
+        setFormError(null);
+        try {
+            const payload = {
+                name: form.name.trim(),
+                designation: form.designation.trim() || undefined,
+                department: form.department.trim() || undefined,
+                institution: form.institution.trim() || undefined,
+                email: form.email.trim() || undefined,
+                phone: form.phone.trim() || undefined,
+                biography: form.biography.trim() || undefined,
+                linkedin: form.linkedin.trim() || undefined,
+                website: form.website.trim() || undefined,
+                isActive: form.isActive,
+            };
+            const res = editingId
+                ? await speakersService.update(editingId, payload)
+                : await speakersService.create(payload);
+            if (res.success) {
+                setIsCreateOpen(false);
+                setEditingId(null);
+                setForm(DEFAULT_FORM);
+                await fetchSpeakers();
+            } else {
+                setFormError(typeof res.error === "string" ? res.error : res.error?.message || "Failed to save speaker");
+            }
+        } catch (err) {
+            console.error(err);
+            setFormError("Failed to save speaker");
+        } finally {
+            setSaving(false);
+        }
+    };
 
     // Filter speakers
     const filteredSpeakers = speakers.filter((speaker) => {
@@ -344,57 +429,75 @@ export default function SpeakersPage() {
                             )}
                         </div>
                     </div>
-                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25">
-                                <Plus className="w-4 h-4" />
-                                Add Speaker
-                            </Button>
-                        </DialogTrigger>
+                    <Dialog open={isCreateOpen} onOpenChange={(open) => { if (!saving) { setIsCreateOpen(open); if (!open) { setEditingId(null); setFormError(null); } } }}>
+                        <Button
+                            onClick={openCreateDialog}
+                            className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Add Speaker
+                        </Button>
                         <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
-                                <DialogTitle>Add New Speaker</DialogTitle>
+                                <DialogTitle>{editingId ? "Edit Speaker" : "Add New Speaker"}</DialogTitle>
                                 <DialogDescription>
-                                    Add a speaker profile for your events
+                                    {editingId ? "Update this speaker's profile." : "Add a speaker profile for your events"}
                                 </DialogDescription>
                             </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                                {/* Photo Upload */}
-                                <div className="flex items-center gap-4">
-                                    <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border">
-                                        <Upload className="h-8 w-8 text-muted-foreground" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Button variant="outline" size="sm">
-                                            Upload Photo
-                                        </Button>
-                                        <p className="text-xs text-muted-foreground">
-                                            Recommended: 400x400px, JPG or PNG
-                                        </p>
-                                    </div>
+                            {formError && (
+                                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                                    {formError}
                                 </div>
-
+                            )}
+                            <div className="grid gap-4 py-4">
                                 <div className="section-divider-gradient my-2" />
 
                                 {/* Basic Info */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div className="sm:col-span-2 space-y-2">
                                         <Label htmlFor="name" className="text-xs sm:text-sm">Full Name *</Label>
-                                        <Input id="name" placeholder="Dr. John Smith" className="h-9 sm:h-10" />
+                                        <Input
+                                            id="name"
+                                            placeholder="Dr. John Smith"
+                                            className="h-9 sm:h-10"
+                                            value={form.name}
+                                            onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
+                                            disabled={saving}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="designation" className="text-xs sm:text-sm">Designation</Label>
-                                        <Input id="designation" placeholder="Professor & Head" className="h-9 sm:h-10" />
+                                        <Input
+                                            id="designation"
+                                            placeholder="Professor & Head"
+                                            className="h-9 sm:h-10"
+                                            value={form.designation}
+                                            onChange={(e) => setForm(f => ({ ...f, designation: e.target.value }))}
+                                            disabled={saving}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="department" className="text-xs sm:text-sm">Department</Label>
-                                        <Input id="department" placeholder="Neurology" className="h-9 sm:h-10" />
+                                        <Input
+                                            id="department"
+                                            placeholder="Neurology"
+                                            className="h-9 sm:h-10"
+                                            value={form.department}
+                                            onChange={(e) => setForm(f => ({ ...f, department: e.target.value }))}
+                                            disabled={saving}
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="institution">Institution</Label>
-                                    <Input id="institution" placeholder="Medical College Name" />
+                                    <Input
+                                        id="institution"
+                                        placeholder="Medical College Name"
+                                        value={form.institution}
+                                        onChange={(e) => setForm(f => ({ ...f, institution: e.target.value }))}
+                                        disabled={saving}
+                                    />
                                 </div>
 
                                 <div className="section-divider-gradient my-2" />
@@ -403,11 +506,27 @@ export default function SpeakersPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="email" className="text-xs sm:text-sm">Email</Label>
-                                        <Input id="email" type="email" placeholder="speaker@institution.edu" className="h-9 sm:h-10" />
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="speaker@institution.edu"
+                                            className="h-9 sm:h-10"
+                                            value={form.email}
+                                            onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+                                            disabled={saving}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="phone" className="text-xs sm:text-sm">Phone</Label>
-                                        <Input id="phone" type="tel" placeholder="+91 98765 43210" className="h-9 sm:h-10" />
+                                        <Input
+                                            id="phone"
+                                            type="tel"
+                                            placeholder="+91 98765 43210"
+                                            className="h-9 sm:h-10"
+                                            value={form.phone}
+                                            onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))}
+                                            disabled={saving}
+                                        />
                                     </div>
                                 </div>
 
@@ -420,6 +539,9 @@ export default function SpeakersPage() {
                                         id="biography"
                                         placeholder="A brief introduction about the speaker's background, achievements, and expertise..."
                                         rows={4}
+                                        value={form.biography}
+                                        onChange={(e) => setForm(f => ({ ...f, biography: e.target.value }))}
+                                        disabled={saving}
                                     />
                                 </div>
 
@@ -427,11 +549,25 @@ export default function SpeakersPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="linkedin" className="text-xs sm:text-sm">LinkedIn URL</Label>
-                                        <Input id="linkedin" placeholder="https://linkedin.com/in/..." className="h-9 sm:h-10" />
+                                        <Input
+                                            id="linkedin"
+                                            placeholder="https://linkedin.com/in/..."
+                                            className="h-9 sm:h-10"
+                                            value={form.linkedin}
+                                            onChange={(e) => setForm(f => ({ ...f, linkedin: e.target.value }))}
+                                            disabled={saving}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="website" className="text-xs sm:text-sm">Website</Label>
-                                        <Input id="website" placeholder="https://..." className="h-9 sm:h-10" />
+                                        <Input
+                                            id="website"
+                                            placeholder="https://..."
+                                            className="h-9 sm:h-10"
+                                            value={form.website}
+                                            onChange={(e) => setForm(f => ({ ...f, website: e.target.value }))}
+                                            disabled={saving}
+                                        />
                                     </div>
                                 </div>
 
@@ -443,14 +579,20 @@ export default function SpeakersPage() {
                                             Active speakers can be assigned to events
                                         </p>
                                     </div>
-                                    <Switch defaultChecked />
+                                    <Switch
+                                        checked={form.isActive}
+                                        onCheckedChange={(v) => setForm(f => ({ ...f, isActive: v }))}
+                                        disabled={saving}
+                                    />
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                                <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={saving}>
                                     Cancel
                                 </Button>
-                                <Button onClick={() => setIsCreateOpen(false)}>Add Speaker</Button>
+                                <Button onClick={handleSaveSpeaker} disabled={saving || !form.name.trim()}>
+                                    {saving ? "Saving..." : editingId ? "Save Changes" : "Add Speaker"}
+                                </Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -592,7 +734,9 @@ export default function SpeakersPage() {
                                     <Button variant="outline" onClick={() => setIsViewOpen(false)}>
                                         Close
                                     </Button>
-                                    <Button>Edit Speaker</Button>
+                                    <Button onClick={() => { if (selectedSpeaker) { setIsViewOpen(false); openEditDialog(selectedSpeaker); } }}>
+                                        Edit Speaker
+                                    </Button>
                                 </DialogFooter>
                             </>
                         )}
@@ -657,7 +801,7 @@ export default function SpeakersPage() {
                                                             <Eye className="mr-2 h-4 w-4" />
                                                             View Details
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => openEditDialog(speaker)}>
                                                             <Edit className="mr-2 h-4 w-4" />
                                                             Edit
                                                         </DropdownMenuItem>
@@ -742,7 +886,7 @@ export default function SpeakersPage() {
                                         : "No speakers match your search"}
                                 </p>
                                 {speakers.length === 0 && (
-                                    <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+                                    <Button onClick={openCreateDialog} className="gap-2">
                                         <Plus className="h-4 w-4" />
                                         Add Speaker
                                     </Button>

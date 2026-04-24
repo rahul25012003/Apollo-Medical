@@ -265,6 +265,18 @@ export default function EventDetailPage() {
         phone: "",
     });
 
+    // Edit speaker dialog state
+    const [editSpeakerOpen, setEditSpeakerOpen] = useState(false);
+    const [editingSpeakerId, setEditingSpeakerId] = useState<string | null>(null);
+    const [editSpeakerForm, setEditSpeakerForm] = useState({
+        name: "",
+        designation: "",
+        institution: "",
+        email: "",
+        phone: "",
+    });
+    const [savingSpeakerEdit, setSavingSpeakerEdit] = useState(false);
+
     // Sponsor modal state
     const [addSponsorOpen, setAddSponsorOpen] = useState(false);
     const [allSponsors, setAllSponsors] = useState<Sponsor[]>([]);
@@ -708,6 +720,68 @@ export default function EventDetailPage() {
         } catch (err) {
             console.error("Failed to remove speaker:", err);
             alert("Failed to remove speaker");
+        }
+    };
+
+    // Open edit speaker dialog — fetch full speaker details first
+    const handleOpenEditSpeaker = async (speakerId: string) => {
+        setEditingSpeakerId(speakerId);
+        setEditSpeakerOpen(true);
+        setEditSpeakerForm({ name: "", designation: "", institution: "", email: "", phone: "" });
+        try {
+            const res = await speakersService.getById(speakerId);
+            if (res.success && res.data) {
+                setEditSpeakerForm({
+                    name: res.data.name || "",
+                    designation: res.data.designation || "",
+                    institution: res.data.institution || "",
+                    email: res.data.email || "",
+                    phone: res.data.phone || "",
+                });
+            }
+        } catch (err) {
+            console.error("Failed to load speaker details:", err);
+        }
+    };
+
+    // Save speaker edits
+    const handleSaveSpeakerEdit = async () => {
+        if (!editingSpeakerId || !event) return;
+        if (!editSpeakerForm.name.trim()) {
+            alert("Speaker name is required");
+            return;
+        }
+        setSavingSpeakerEdit(true);
+        try {
+            const res = await speakersService.update(editingSpeakerId, {
+                name: editSpeakerForm.name.trim(),
+                designation: editSpeakerForm.designation.trim() || undefined,
+                institution: editSpeakerForm.institution.trim() || undefined,
+                email: editSpeakerForm.email.trim() || undefined,
+                phone: editSpeakerForm.phone.trim() || undefined,
+            });
+            if (res.success && res.data) {
+                // Update the speaker in the event state
+                const updated = res.data;
+                setEvent(prev => prev ? {
+                    ...prev,
+                    speakers: prev.speakers.map(s => s.id === editingSpeakerId ? {
+                        ...s,
+                        name: updated.name,
+                        designation: updated.designation,
+                        institution: updated.institution,
+                    } : s),
+                } : null);
+                setEditSpeakerOpen(false);
+                setEditingSpeakerId(null);
+            } else {
+                alert(res.error?.message || "Failed to update speaker");
+            }
+        } catch (err) {
+            console.error("Failed to update speaker:", err);
+            alert("Failed to update speaker");
+        } finally {
+            setSavingSpeakerEdit(false);
         }
     };
 
@@ -1602,11 +1676,9 @@ export default function EventDetailPage() {
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem asChild>
-                                                                    <Link href={`/dashboard/speakers?edit=${speaker.id}`}>
-                                                                        <UserPlus className="mr-2 h-4 w-4" />
-                                                                        View / Edit Speaker
-                                                                    </Link>
+                                                                <DropdownMenuItem onClick={() => handleOpenEditSpeaker(speaker.id)}>
+                                                                    <UserPlus className="mr-2 h-4 w-4" />
+                                                                    Edit Speaker
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator />
                                                                 <DropdownMenuItem
@@ -1916,6 +1988,76 @@ export default function EventDetailPage() {
                             ) : (
                                 "Add Registration"
                             )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Speaker Dialog */}
+            <Dialog open={editSpeakerOpen} onOpenChange={(open) => !savingSpeakerEdit && setEditSpeakerOpen(open)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit Speaker</DialogTitle>
+                        <DialogDescription>
+                            Update the speaker&apos;s details. Changes apply everywhere this speaker is used.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 py-2">
+                        <div>
+                            <Label htmlFor="edit-sp-name">Name *</Label>
+                            <Input
+                                id="edit-sp-name"
+                                value={editSpeakerForm.name}
+                                onChange={(e) => setEditSpeakerForm(f => ({ ...f, name: e.target.value }))}
+                                disabled={savingSpeakerEdit}
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-sp-designation">Designation</Label>
+                            <Input
+                                id="edit-sp-designation"
+                                value={editSpeakerForm.designation}
+                                onChange={(e) => setEditSpeakerForm(f => ({ ...f, designation: e.target.value }))}
+                                disabled={savingSpeakerEdit}
+                                placeholder="e.g. Professor, Psychiatry"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-sp-institution">Institution</Label>
+                            <Input
+                                id="edit-sp-institution"
+                                value={editSpeakerForm.institution}
+                                onChange={(e) => setEditSpeakerForm(f => ({ ...f, institution: e.target.value }))}
+                                disabled={savingSpeakerEdit}
+                                placeholder="e.g. AIIMS, New Delhi"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-sp-email">Email</Label>
+                            <Input
+                                id="edit-sp-email"
+                                type="email"
+                                value={editSpeakerForm.email}
+                                onChange={(e) => setEditSpeakerForm(f => ({ ...f, email: e.target.value }))}
+                                disabled={savingSpeakerEdit}
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-sp-phone">Phone</Label>
+                            <Input
+                                id="edit-sp-phone"
+                                value={editSpeakerForm.phone}
+                                onChange={(e) => setEditSpeakerForm(f => ({ ...f, phone: e.target.value }))}
+                                disabled={savingSpeakerEdit}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditSpeakerOpen(false)} disabled={savingSpeakerEdit}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSaveSpeakerEdit} disabled={savingSpeakerEdit || !editSpeakerForm.name.trim()}>
+                            {savingSpeakerEdit ? "Saving..." : "Save Changes"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
