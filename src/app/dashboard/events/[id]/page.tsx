@@ -702,17 +702,27 @@ export default function EventDetailPage() {
     };
 
     // Remove speaker from event (unlinks; does not delete the speaker globally)
+    // Also removes the speaker from every session of this event (cascade cleanup)
     const handleRemoveSpeaker = async (speakerId: string, speakerName: string) => {
         if (!event) return;
-        const confirmed = window.confirm(`Remove ${speakerName} from this event? The speaker record itself will not be deleted.`);
+        const confirmed = window.confirm(
+            `Remove ${speakerName} from this event?\n\nThis will also remove them from all assigned sessions in the Scientific Program. The speaker record itself will not be deleted and will still be available for other events.`
+        );
         if (!confirmed) return;
 
         try {
             const response = await eventsService.removeSpeaker(event.id, speakerId);
             if (response.success) {
+                // Update speakers list
                 setEvent(prev => prev ? {
                     ...prev,
                     speakers: prev.speakers.filter(s => s.id !== speakerId),
+                    // Also strip this speaker from every session in local state
+                    sessions: prev.sessions.map(s => ({
+                        ...s,
+                        speakers: s.speakers.filter(sp => sp.id !== speakerId),
+                        speaker: s.speaker?.id === speakerId ? null : s.speaker,
+                    })),
                 } : null);
             } else {
                 alert(response.error?.message || "Failed to remove speaker");

@@ -324,15 +324,55 @@ export const DELETE = withErrorHandler(
       return Errors.notFound("Speaker assignment");
     }
 
-    await prisma.eventSpeaker.delete({
-      where: {
-        eventId_speakerId: {
-          eventId,
-          speakerId,
+    // Cascade cleanup — remove the speaker from every session of this event too,
+    // so they disappear from the Scientific Program in one action.
+    const result = await prisma.$transaction(async (tx) => {
+      // Find all sessions of this event
+      const sessions = await tx.eventSession.findMany({
+        where: { eventId },
+        select: { id: true },
+      });
+      const sessionIds = sessions.map((s) => s.id);
+
+      // Delete session-speaker links for this speaker
+      let sessionSpeakersRemoved = 0;
+      if (sessionIds.length > 0) {
+        const delSS = await tx.sessionSpeaker.deleteMany({
+          where: {
+            sessionId: { in: sessionIds },
+            speakerId,
+          },
+        });
+        sessionSpeakersRemoved = delSS.count;
+
+        // Clear legacy speakerId on any session where it points to this speaker
+        await tx.eventSession.updateMany({
+          where: {
+            eventId,
+            speakerId,
+          },
+          data: { speakerId: null },
+        });
+      }
+
+      // Remove the event-level speaker link
+      await tx.eventSpeaker.delete({
+        where: {
+          eventId_speakerId: {
+            eventId,
+            speakerId,
+          },
         },
-      },
+      });
+
+      return { sessionSpeakersRemoved };
     });
 
-    return successResponse({ eventId, speakerId }, "Speaker removed from event");
+    return successResponse(
+      { eventId, speakerId, sessionsCleared: result.sessionSpeakersRemoved },
+      result.sessionSpeakersRemoved > 0
+        ? `Speaker removed from event and ${result.sessionSpeakersRemoved} session${result.sessionSpeakersRemoved === 1 ? "" : "s"}`
+        : "Speaker removed from event"
+    );
   }
 );
