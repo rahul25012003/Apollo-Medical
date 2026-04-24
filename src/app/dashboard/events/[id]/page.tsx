@@ -689,6 +689,28 @@ export default function EventDetailPage() {
         }
     };
 
+    // Remove speaker from event (unlinks; does not delete the speaker globally)
+    const handleRemoveSpeaker = async (speakerId: string, speakerName: string) => {
+        if (!event) return;
+        const confirmed = window.confirm(`Remove ${speakerName} from this event? The speaker record itself will not be deleted.`);
+        if (!confirmed) return;
+
+        try {
+            const response = await eventsService.removeSpeaker(event.id, speakerId);
+            if (response.success) {
+                setEvent(prev => prev ? {
+                    ...prev,
+                    speakers: prev.speakers.filter(s => s.id !== speakerId),
+                } : null);
+            } else {
+                alert(response.error?.message || "Failed to remove speaker");
+            }
+        } catch (err) {
+            console.error("Failed to remove speaker:", err);
+            alert("Failed to remove speaker");
+        }
+    };
+
     // Handle add sponsor to event
     const handleAddSponsor = async () => {
         if (!event) return;
@@ -1557,7 +1579,7 @@ export default function EventDetailPage() {
                                                 className="p-4 rounded-xl border bg-card hover:shadow-md transition-shadow"
                                             >
                                                 <div className="flex items-start gap-4">
-                                                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold overflow-hidden">
+                                                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold overflow-hidden shrink-0">
                                                         {speaker.photo ? (
                                                             <img src={speaker.photo} alt={speaker.name} className="w-full h-full object-cover" />
                                                         ) : (
@@ -1572,6 +1594,31 @@ export default function EventDetailPage() {
                                                             <p className="text-xs text-primary mt-1 truncate">Topic: {speaker.topic}</p>
                                                         )}
                                                     </div>
+                                                    {event.status !== "completed" && (
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0">
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem asChild>
+                                                                    <Link href={`/dashboard/speakers?edit=${speaker.id}`}>
+                                                                        <UserPlus className="mr-2 h-4 w-4" />
+                                                                        View / Edit Speaker
+                                                                    </Link>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    onClick={() => handleRemoveSpeaker(speaker.id, speaker.name)}
+                                                                    className="text-destructive focus:text-destructive"
+                                                                >
+                                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                                    Remove from Event
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}

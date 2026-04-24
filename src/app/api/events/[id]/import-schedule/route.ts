@@ -167,6 +167,41 @@ export const POST = withErrorHandler(
         }
       }
 
+      // If including speakers, also link them to the target event (EventSpeaker)
+      // so they appear in the event's speaker list and in the Edit Session dialog.
+      if (includeSpeakers) {
+        const speakerIdsFromSessions = new Set<string>();
+        for (const s of sourceEvent.eventSessions) {
+          if (s.speakerId) speakerIdsFromSessions.add(s.speakerId);
+          for (const ss of s.sessionSpeakers) speakerIdsFromSessions.add(ss.speakerId);
+        }
+
+        if (speakerIdsFromSessions.size > 0) {
+          const alreadyLinked = await tx.eventSpeaker.findMany({
+            where: {
+              eventId: targetEventId,
+              speakerId: { in: Array.from(speakerIdsFromSessions) },
+            },
+            select: { speakerId: true },
+          });
+          const alreadyLinkedIds = new Set(alreadyLinked.map((x) => x.speakerId));
+          const missing = Array.from(speakerIdsFromSessions).filter(
+            (sid) => !alreadyLinkedIds.has(sid)
+          );
+          if (missing.length > 0) {
+            await tx.eventSpeaker.createMany({
+              data: missing.map((sid, i) => ({
+                eventId: targetEventId,
+                speakerId: sid,
+                sessionOrder: i,
+                isPublished: true,
+              })),
+              skipDuplicates: true,
+            });
+          }
+        }
+      }
+
       // Build source hallId → target hallId map (create halls as needed if includeHalls)
       const sourceHallIdToTargetHallId = new Map<string, string>();
       for (const sourceHall of sourceEvent.halls) {
