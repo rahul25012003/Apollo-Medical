@@ -82,7 +82,13 @@ export const GET = withErrorHandler(
           orderBy: { displayOrder: "asc" },
         },
         _count: {
-          select: { registrations: true, certificates: true },
+          select: {
+            // Only DELEGATE (and legacy null) registrations count toward slots.
+            registrations: {
+              where: { OR: [{ participantRole: "DELEGATE" }, { participantRole: null }] },
+            },
+            certificates: true,
+          },
         },
       },
     });
@@ -254,7 +260,11 @@ export const PUT = withErrorHandler(
         where: { id },
         include: {
           _count: {
-            select: { registrations: true },
+            select: {
+              registrations: {
+                where: { OR: [{ participantRole: "DELEGATE" }, { participantRole: null }] },
+              },
+            },
           },
           pricingCategories: {
             orderBy: { displayOrder: "asc" },
