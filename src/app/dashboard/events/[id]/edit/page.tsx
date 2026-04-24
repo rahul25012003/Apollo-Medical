@@ -2271,6 +2271,21 @@ export default function EditEventPage() {
                                         else unscheduled.push(s);
                                     });
 
+                                    // Sort each day's sessions by startTime ascending.
+                                    // Sessions without a start time go to the end; ties broken by sessionOrder.
+                                    const sortByTime = (a: typeof sessions[0], b: typeof sessions[0]) => {
+                                        if (!a.startTime && !b.startTime) return (a.sessionOrder || 0) - (b.sessionOrder || 0);
+                                        if (!a.startTime) return 1;
+                                        if (!b.startTime) return -1;
+                                        const aPadded = a.startTime.padStart(5, "0");
+                                        const bPadded = b.startTime.padStart(5, "0");
+                                        if (aPadded < bPadded) return -1;
+                                        if (aPadded > bPadded) return 1;
+                                        return (a.sessionOrder || 0) - (b.sessionOrder || 0);
+                                    };
+                                    Object.keys(sessionsByDay).forEach(key => sessionsByDay[key].sort(sortByTime));
+                                    unscheduled.sort(sortByTime);
+
                                     const activeDay = activeScheduleDay || eventDays[0]?.date || "";
                                     const setActiveDay = setActiveScheduleDay;
 

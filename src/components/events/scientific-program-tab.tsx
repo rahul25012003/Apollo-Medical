@@ -293,13 +293,17 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
             if (!grouped[dateKey]) grouped[dateKey] = [];
             grouped[dateKey].push(session);
         });
-        // Sort within each day
+        // Sort within each day: by startTime ascending (9:00 → 10:30 → 14:00),
+        // sessions without a start time go to the end, ties broken by sessionOrder
         Object.keys(grouped).forEach((key) => {
             grouped[key].sort((a, b) => {
-                if (a.startTime && b.startTime) {
-                    if (a.startTime < b.startTime) return -1;
-                    if (a.startTime > b.startTime) return 1;
-                }
+                if (!a.startTime && !b.startTime) return a.sessionOrder - b.sessionOrder;
+                if (!a.startTime) return 1;
+                if (!b.startTime) return -1;
+                const aPadded = a.startTime.padStart(5, "0");
+                const bPadded = b.startTime.padStart(5, "0");
+                if (aPadded < bPadded) return -1;
+                if (aPadded > bPadded) return 1;
                 return a.sessionOrder - b.sessionOrder;
             });
         });
