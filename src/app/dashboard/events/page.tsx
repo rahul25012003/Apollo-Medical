@@ -58,6 +58,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { validateEventForPublish, calculateEventStatus } from "@/lib/event-validations";
+import { getEffectiveEventStatus } from "@/lib/event-utils";
 import { EVENT_TYPES, EVENT_CATEGORIES, EVENT_STATUSES } from "@/lib/event-constants";
 import { eventsService, Event } from "@/services/events";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
@@ -153,7 +154,7 @@ export default function EventsPage() {
                             city: event.city || "Virtual",
                             registrations: delegateCount,
                             capacity: event.capacity,
-                            status: event.status,
+                            status: getEffectiveEventStatus({ status: event.status, startDate: event.startDate, endDate: event.endDate }),
                             type: event.type,
                             category: event.category,
                             revenue: delegateCount * event.price,

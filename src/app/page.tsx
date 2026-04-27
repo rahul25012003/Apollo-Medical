@@ -52,7 +52,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { getEventImage } from "@/lib/event-utils";
+import { getEventImage, getEffectiveEventStatus, isEventEnded } from "@/lib/event-utils";
 import { EVENT_CATEGORIES } from "@/lib/event-constants";
 import { eventsService, Event } from "@/services/events";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
@@ -115,6 +115,8 @@ interface DisplayEvent {
     title: string;
     shortDescription: string | null;
     date: string;
+    startDate: string;
+    endDate: string | null;
     time: string;
     location: string;
     type: string;
@@ -246,7 +248,13 @@ export default function PublicHomePage() {
 
     // Carousel state
     const [currentSlide, setCurrentSlide] = useState(0);
-    const featuredEvents = upcomingEvents.filter(e => e.status === "UPCOMING" || e.status === "ACTIVE").slice(0, 3);
+    const featuredEvents = upcomingEvents
+        .filter(e => !isEventEnded({ startDate: e.startDate, endDate: e.endDate }))
+        .filter(e => {
+            const eff = getEffectiveEventStatus({ status: e.status, startDate: e.startDate, endDate: e.endDate });
+            return eff === "UPCOMING" || eff === "ACTIVE";
+        })
+        .slice(0, 3);
 
     // Form states
     const [phone, setPhone] = useState("");
@@ -278,6 +286,8 @@ export default function PublicHomePage() {
                             month: "short",
                             year: "numeric",
                         }),
+                        startDate: event.startDate,
+                        endDate: event.endDate || null,
                         time: event.startTime || "09:00 AM",
                         location: [event.location, event.city].filter(Boolean).join(", ") || "Virtual",
                         type: event.type,
@@ -362,10 +372,12 @@ export default function PublicHomePage() {
         setCurrentSlide((prev) => (prev - 1 + featuredEvents.length) % featuredEvents.length);
     }, [featuredEvents.length]);
 
-    // Filter events - include both UPCOMING and ACTIVE status
+    // Filter events - include both UPCOMING and ACTIVE (computed from dates)
     const filteredEvents = useMemo(() => {
         return upcomingEvents.filter((event) => {
-            const isValidStatus = event.status === "UPCOMING" || event.status === "ACTIVE";
+            if (isEventEnded({ startDate: event.startDate, endDate: event.endDate })) return false;
+            const eff = getEffectiveEventStatus({ status: event.status, startDate: event.startDate, endDate: event.endDate });
+            const isValidStatus = eff === "UPCOMING" || eff === "ACTIVE";
             if (activeCategory === "All") return isValidStatus;
             return event.category === activeCategory && isValidStatus;
         });

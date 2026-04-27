@@ -49,7 +49,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { eventsService, Event } from "@/services/events";
 import { EventCard, EventCardData } from "@/components/events/EventCard";
-import { getEventImage } from "@/lib/event-utils";
+import { getEventImage, getEffectiveEventStatus } from "@/lib/event-utils";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
 
 // Icon mapping for dynamic icons
@@ -1144,11 +1144,29 @@ export default function TenantHomePage() {
                         </div>
                       );
                     }
+                    // Registration is OPEN.
+                    // Within 7 days of deadline → urgency banner (amber, shows date + days left).
+                    // Otherwise → calm green "Registration Open" chip.
+                    const daysLeft = deadline ? Math.ceil((deadline.getTime() - now.getTime()) / 86400000) : null;
+                    const isClosingSoon = daysLeft !== null && daysLeft <= 7 && daysLeft >= 0;
+
+                    if (isClosingSoon && deadline) {
+                      const deadlineStr = deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+                      return (
+                        <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-base text-white shadow-lg" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.45)" }}>
+                          <span className="w-3 h-3 rounded-full flex-shrink-0 animate-flash bg-white" />
+                          <span className="animate-flash text-base font-extrabold">
+                            ⏰ Closes {deadlineStr} · {daysLeft} day{daysLeft === 1 ? "" : "s"} left
+                          </span>
+                        </div>
+                      );
+                    }
+
                     return (
-                      <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-base text-white shadow-lg" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.45)" }}>
-                        <span className="w-3 h-3 rounded-full flex-shrink-0 animate-flash bg-white" />
-                        <span className="animate-flash text-base font-extrabold">
-                          Registrations open {fmtRegWindow(nextEvent.registrationOpensDate, nextEvent.registrationDeadline, nextEvent.startDate, nextEvent.endDate)}
+                      <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-base text-white shadow-lg" style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 4px 20px rgba(16,185,129,0.45)" }}>
+                        <span className="w-3 h-3 rounded-full flex-shrink-0 bg-white animate-flash" />
+                        <span className="text-base font-extrabold">
+                          Registration Open
                         </span>
                       </div>
                     );
@@ -1281,7 +1299,7 @@ export default function TenantHomePage() {
           type: e.type || "Conference",
           registrations: (e as any)._count?.registrations || 0,
           capacity: e.capacity || 100,
-          status: e.status || "UPCOMING",
+          status: getEffectiveEventStatus({ status: e.status, startDate: e.startDate, endDate: e.endDate }),
           price: e.price || 0,
           earlyBirdPrice: e.earlyBirdPrice || null,
           cmeCredits: e.cmeCredits || null,

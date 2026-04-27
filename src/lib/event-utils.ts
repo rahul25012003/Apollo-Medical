@@ -40,3 +40,38 @@ export function getEventImage(
 export function getDefaultEventImage(eventType: string): string {
     return eventTypeImages[eventType] || DEFAULT_EVENT_IMAGE;
 }
+
+/**
+ * Compute an event's effective status from its dates.
+ * Overrides the stored DB status when the event has actually started/ended,
+ * but preserves manual states like DRAFT and CANCELLED.
+ *
+ * Returns one of: "DRAFT", "CANCELLED", "UPCOMING", "ACTIVE", "COMPLETED"
+ */
+export function getEffectiveEventStatus(event: {
+    status?: string | null;
+    startDate?: string | Date | null;
+    endDate?: string | Date | null;
+}): string {
+    const stored = (event.status || "").toUpperCase();
+    // Manual states win — admin explicitly set these
+    if (stored === "DRAFT" || stored === "CANCELLED") return stored;
+
+    if (!event.startDate) return stored || "UPCOMING";
+
+    const now = new Date();
+    const start = new Date(event.startDate);
+    const end = event.endDate ? new Date(event.endDate) : new Date(start);
+    const endOfDay = new Date(end.getTime() + 86400000);
+
+    if (now > endOfDay) return "COMPLETED";
+    if (now >= start) return "ACTIVE";
+    return "UPCOMING";
+}
+
+/** True if the event has finished (end date + 1 day passed). */
+export function isEventEnded(event: { startDate?: string | Date | null; endDate?: string | Date | null }): boolean {
+    if (!event.startDate) return false;
+    const end = event.endDate ? new Date(event.endDate) : new Date(event.startDate);
+    return new Date() > new Date(end.getTime() + 86400000);
+}

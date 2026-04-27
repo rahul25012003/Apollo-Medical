@@ -53,7 +53,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
       where: {
         ...tenantFilter,
         startDate: { gte: now },
-        status: { in: ["UPCOMING", "ACTIVE"] },
+        status: { notIn: ["DRAFT", "CANCELLED"] },
         isPublished: true,
       },
       orderBy: { startDate: "asc" },

@@ -78,7 +78,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
-import { getEventImage } from "@/lib/event-utils";
+import { getEventImage, getEffectiveEventStatus } from "@/lib/event-utils";
 import { validateEventForPublish, calculateEventStatus } from "@/lib/event-validations";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { eventsService, Event, EventSpeaker, EventSponsor, EventSession } from "@/services/events";
@@ -344,7 +344,7 @@ export default function EventDetailPage() {
                         mapLink: e.mapLink,
                         registrations: e._count?.registrations || 0,
                         capacity: e.capacity,
-                        status: e.status.toLowerCase(),
+                        status: getEffectiveEventStatus({ status: e.status, startDate: e.startDate, endDate: e.endDate }).toLowerCase(),
                         type: e.type,
                         category: e.category,
                         bannerImage: e.bannerImage,

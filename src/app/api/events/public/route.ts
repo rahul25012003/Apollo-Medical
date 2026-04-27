@@ -28,10 +28,18 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     "startDate"
   );
 
-  // Base filter: only published events
+  // Base filter: only published, non-cancelled events that haven't ended yet.
+  // We filter by date instead of stored status so events whose endDate has passed
+  // are excluded automatically without needing a manual status update.
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
   const where: Prisma.EventWhereInput = {
     isPublished: true,
-    status: { in: ["UPCOMING", "ACTIVE"] },
+    status: { notIn: ["DRAFT", "CANCELLED"] },
+    OR: [
+      { endDate: { gte: todayStart } },
+      { AND: [{ endDate: null }, { startDate: { gte: todayStart } }] },
+    ],
   };
 
   // Optional filters

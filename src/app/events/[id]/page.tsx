@@ -37,6 +37,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { eventsService, Event, EventSpeaker, EventSponsor, EventSession } from "@/services/events";
+import { getEffectiveEventStatus } from "@/lib/event-utils";
 
 // Display types
 interface DisplaySessionSpeaker {
@@ -554,7 +555,14 @@ export default function EventDetailPage() {
                         {/* Event Header */}
                         <div className="animate-fadeIn">
                             <div className="flex flex-wrap gap-2 mb-4">
-                                <Badge className="status-upcoming">{event.status}</Badge>
+                                {(() => {
+                                    const eff = getEffectiveEventStatus({ status: event.status, startDate: event.startDate, endDate: event.endDate });
+                                    const cls = eff === "COMPLETED" ? "bg-slate-200 text-slate-700"
+                                        : eff === "ACTIVE" ? "bg-emerald-100 text-emerald-800"
+                                        : eff === "CANCELLED" ? "bg-red-100 text-red-700"
+                                        : "status-upcoming";
+                                    return <Badge className={cls}>{eff}</Badge>;
+                                })()}
                                 <Badge variant="outline">{event.type}</Badge>
                                 {(event.cmeCredits ?? 0) > 0 && (
                                     <Badge variant="outline" className="gap-1 status-active">
