@@ -21,6 +21,7 @@ import {
     X,
     FileText,
     Filter,
+    Edit,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,6 +68,7 @@ import { certificatesService } from "@/services/certificates";
 import { eventsService, Event } from "@/services/events";
 import { registrationsService } from "@/services/registrations";
 import { CertificateTemplate, CertificateData, EventType } from "@/components/certificates/certificate-template";
+import { CertificatesTab } from "@/components/events/certificates-tab";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
@@ -118,8 +120,8 @@ export default function CertificatesPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-    const [isTemplatePreviewOpen, setIsTemplatePreviewOpen] = useState(false);
-    const [selectedTemplateType, setSelectedTemplateType] = useState<EventType | null>(null);
+    const [configureEventId, setConfigureEventId] = useState<string | null>(null);
+    const [isConfigureOpen, setIsConfigureOpen] = useState(false);
     const [selectedCertificates, setSelectedCertificates] = useState<string[]>([]);
     const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
     const [actionInProgress, setActionInProgress] = useState<string | null>(null);
@@ -479,31 +481,9 @@ export default function CertificatesPage() {
         };
     };
 
-    // Generate sample template data for preview
-    const getSampleTemplateData = (eventType: EventType): CertificateData => {
-        const templateInfo = templatePreviews.find(t => t.type === eventType) || templatePreviews[0];
-        return {
-            recipientName: "Dr. John Smith",
-            eventTitle: `Sample ${templateInfo.name} Event 2025`,
-            eventType: eventType,
-            eventDate: new Date().toISOString(),
-            eventEndDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-            eventLocation: "Convention Center, New York",
-            certificateCode: "CERT-SAMPLE-001",
-            cmeCredits: eventType === "CME" ? 8 : undefined,
-            organizer: "Medical Conference Organization",
-            issuedAt: new Date().toISOString(),
-            signatories: [
-                { name: "Dr. Jane Doe", title: "Conference Director" },
-                { name: "Dr. Robert Wilson", title: "Scientific Chair" },
-            ],
-        };
-    };
-
-    // Handle template card click
-    const handleTemplateClick = (eventType: EventType) => {
-        setSelectedTemplateType(eventType);
-        setIsTemplatePreviewOpen(true);
+    const handleConfigureEvent = (eventId: string) => {
+        setConfigureEventId(eventId);
+        setIsConfigureOpen(true);
     };
 
     if (loading) {
@@ -582,52 +562,91 @@ export default function CertificatesPage() {
                     </Card>
                 </div>
 
-                {/* Certificate Templates */}
+                {/* Event Certificate Templates */}
                 <Card className="card-premium border-primary/10 overflow-hidden">
-                    <div className="h-1 bg-gradient-to-r from-slate-600 via-slate-500 to-slate-400" />
-                    <CardHeader>
+                    <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-teal-400" />
+                    <CardHeader className="flex flex-row items-center justify-between pb-3">
                         <CardTitle className="text-base flex items-center gap-2">
-                            <FileText className="h-5 w-5" />
-                            Certificate Templates by Event Type
+                            <FileText className="h-5 w-5 text-teal-600" />
+                            Event Certificate Templates
                         </CardTitle>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsCustomOpen(true)}
+                            className="gap-1.5 text-xs"
+                        >
+                            <Plus className="h-3.5 w-3.5" />
+                            Issue Custom
+                        </Button>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
-                            {templatePreviews.map((template) => (
-                                <div
-                                    key={template.type}
-                                    onClick={() => handleTemplateClick(template.type)}
-                                    className="p-3 sm:p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer group overflow-hidden"
-                                >
-                                    <div className="h-12 sm:h-16 w-full rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform" style={{ background: template.color }}>
-                                        <Award className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-                                    </div>
-                                    <h4 className="font-medium text-xs sm:text-sm">{template.name}</h4>
-                                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 line-clamp-2">
-                                        {template.description}
-                                    </p>
-                                    <p className="text-[10px] text-primary mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        Click to preview
-                                    </p>
-                                </div>
-                            ))}
-                            {/* Custom Certificate Card */}
-                            <div
-                                onClick={() => setIsCustomOpen(true)}
-                                className="p-3 sm:p-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 hover:border-slate-400 dark:hover:border-slate-500 hover:shadow-lg transition-all cursor-pointer group overflow-hidden"
-                            >
-                                <div className="h-12 sm:h-16 w-full rounded-lg flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform" style={{ background: "linear-gradient(135deg, #18181b, #3f3f46)" }}>
-                                    <Plus className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-                                </div>
-                                <h4 className="font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200">Custom</h4>
-                                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 line-clamp-2">
-                                    Issue to specific delegate
-                                </p>
-                                <p className="text-[10px] text-slate-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity font-semibold">
-                                    Click to create
-                                </p>
+                    <CardContent className="px-0 pb-0">
+                        {events.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-10 text-center px-6">
+                                <Award className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                                <p className="text-sm text-muted-foreground">No events found. Create an event first to configure certificate templates.</p>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="divide-y">
+                                {[...events]
+                                    .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+                                    .map((event) => {
+                                        const typeColors: Record<string, string> = {
+                                            WORKSHOP: "bg-emerald-100 text-emerald-700",
+                                            CME: "bg-red-100 text-red-700",
+                                            CONFERENCE: "bg-blue-100 text-blue-700",
+                                            SEMINAR: "bg-orange-100 text-orange-700",
+                                            WEBINAR: "bg-purple-100 text-purple-700",
+                                            SYMPOSIUM: "bg-teal-100 text-teal-700",
+                                        };
+                                        const typeColor = typeColors[event.type] || "bg-slate-100 text-slate-700";
+                                        let dateStr = "TBD";
+                                        try {
+                                            if (event.startDate) {
+                                                dateStr = format(new Date(event.startDate), "d MMM yyyy");
+                                            }
+                                        } catch { /* invalid date — show TBD */ }
+                                        return (
+                                            <div key={event.id} className="flex items-center gap-3 px-4 sm:px-6 py-3 hover:bg-muted/30 transition-colors group">
+                                                {/* Icon */}
+                                                <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-teal-500/20 to-teal-600/10 flex items-center justify-center shrink-0">
+                                                    <Award className="h-4 w-4 text-teal-600" />
+                                                </div>
+
+                                                {/* Event info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <p className="font-medium text-sm truncate">{event.title}</p>
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${typeColor}`}>
+                                                            {event.type}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">{dateStr}</p>
+                                                </div>
+
+                                                {/* Action */}
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleConfigureEvent(event.id)}
+                                                    className="shrink-0 gap-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <Edit className="h-3.5 w-3.5" />
+                                                    Configure
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleConfigureEvent(event.id)}
+                                                    className="shrink-0 gap-1.5 text-xs bg-teal-600 hover:bg-teal-700 text-white"
+                                                >
+                                                    <Award className="h-3.5 w-3.5" />
+                                                    Certificates
+                                                </Button>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -817,31 +836,30 @@ export default function CertificatesPage() {
                     </DialogContent>
                 </Dialog>
 
-                {/* Template Preview Dialog */}
-                <Dialog open={isTemplatePreviewOpen} onOpenChange={setIsTemplatePreviewOpen}>
-                    <DialogContent className="w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-auto">
-                        {selectedTemplateType && (
-                            <>
-                                <DialogHeader>
-                                    <DialogTitle>
-                                        {templatePreviews.find(t => t.type === selectedTemplateType)?.name} Certificate Template
-                                    </DialogTitle>
-                                    <DialogDescription>
-                                        {templatePreviews.find(t => t.type === selectedTemplateType)?.description}
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="py-4 overflow-auto">
-                                    <div className="transform scale-50 origin-top-left" style={{ width: "200%" }}>
-                                        <CertificateTemplate data={getSampleTemplateData(selectedTemplateType)} />
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <Button variant="outline" onClick={() => setIsTemplatePreviewOpen(false)}>
-                                        Close
-                                    </Button>
-                                </DialogFooter>
-                            </>
-                        )}
+                {/* Configure Certificate Templates Dialog */}
+                <Dialog open={isConfigureOpen} onOpenChange={setIsConfigureOpen}>
+                    <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Award className="h-5 w-5 text-teal-600" />
+                                {configureEventId
+                                    ? events.find(e => e.id === configureEventId)?.title || "Configure Certificate Templates"
+                                    : "Configure Certificate Templates"}
+                            </DialogTitle>
+                            <DialogDescription>
+                                Upload your certificate design per attendee category, set name position, and send to delegates.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-2">
+                            {configureEventId && (
+                                <CertificatesTab eventId={configureEventId} />
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsConfigureOpen(false)}>
+                                Close
+                            </Button>
+                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
 

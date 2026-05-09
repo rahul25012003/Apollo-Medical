@@ -91,6 +91,7 @@ import { AccessControlDashboard } from "@/components/events/access-control-dashb
 import { ScientificProgramTab } from "@/components/events/scientific-program-tab";
 import { VenuesTab } from "@/components/events/venues-tab";
 import { EventConfigTab } from "@/components/events/event-config-tab";
+import { CertificatesTab } from "@/components/events/certificates-tab";
 
 // Display session type
 interface DisplaySessionSpeaker {
@@ -1155,6 +1156,10 @@ export default function EventDetailPage() {
                             <Settings className="h-3.5 w-3.5" />
                             Config
                         </TabsTrigger>
+                        <TabsTrigger value="certificates" className="gap-1.5">
+                            <Award className="h-3.5 w-3.5" />
+                            Certificates
+                        </TabsTrigger>
                     </TabsList>
 
                     {/* Overview Tab */}
@@ -1827,6 +1832,11 @@ export default function EventDetailPage() {
                     {/* Config Tab */}
                     <TabsContent value="config" className="space-y-6">
                         <EventConfigTab eventId={event.id} />
+                    </TabsContent>
+
+                    {/* Certificates Tab */}
+                    <TabsContent value="certificates" className="space-y-6">
+                        <CertificatesTab eventId={event.id} />
                     </TabsContent>
                 </Tabs>
             </div>

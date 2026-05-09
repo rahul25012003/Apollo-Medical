@@ -146,15 +146,22 @@ export async function getActiveChannel(
 // Send Email
 // ============================================================================
 
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+}
+
 interface SendEmailParams {
   to: string;
   subject: string;
   html: string;
   text?: string;
   tenantId?: string | null;
+  attachments?: EmailAttachment[];
 }
 
-export async function sendEmail({ to, subject, html, text, tenantId }: SendEmailParams): Promise<boolean> {
+export async function sendEmail({ to, subject, html, text, tenantId, attachments }: SendEmailParams): Promise<boolean> {
   const channel = await getActiveChannel("EMAIL", tenantId);
 
   if (!channel) {
@@ -166,7 +173,7 @@ export async function sendEmail({ to, subject, html, text, tenantId }: SendEmail
 
   try {
     if (channel.provider === "gmail_smtp" || channel.provider === "custom_smtp") {
-      return await sendSmtpEmail(config as unknown as EmailSmtpConfig, to, subject, html, text);
+      return await sendSmtpEmail(config as unknown as EmailSmtpConfig, to, subject, html, text, attachments);
     }
     if (channel.provider === "sendgrid") {
       return await sendSendGridEmail(config as unknown as EmailSendGridConfig, to, subject, html, text);
@@ -187,7 +194,8 @@ async function sendSmtpEmail(
   to: string,
   subject: string,
   html: string,
-  text?: string
+  text?: string,
+  attachments?: EmailAttachment[]
 ): Promise<boolean> {
   const transporter = nodemailer.createTransport({
     host: config.smtpHost,
@@ -205,6 +213,11 @@ async function sendSmtpEmail(
     subject,
     html,
     text: text || html.replace(/<[^>]*>/g, ""),
+    attachments: attachments?.map((a) => ({
+      filename: a.filename,
+      content: a.content,
+      contentType: a.contentType,
+    })),
   });
 
   return true;
