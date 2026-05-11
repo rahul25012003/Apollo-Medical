@@ -88,6 +88,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
   const [indivName, setIndivName] = useState("");
   const [indivCategory, setIndivCategory] = useState("");
   const [indivSending, setIndivSending] = useState(false);
+  const [indivPreviewing, setIndivPreviewing] = useState(false);
 
   // ── Load config ──
   const fetchConfig = useCallback(async () => {
@@ -283,6 +284,24 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
       }
     } catch { toast.error("Send failed"); }
     finally { setIndivSending(false); }
+  };
+
+  // ── Option 2: Preview individual certificate ──
+  const handleIndivPreview = async () => {
+    if (!indivSelected || !indivCategory || !indivName.trim()) { toast.error("Select participant, template and name first"); return; }
+    const saved = await handleSaveAll(true);
+    if (!saved) return;
+    setIndivPreviewing(true);
+    try {
+      const res = await fetch(`/api/events/${eventId}/certificates/preview`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: indivCategory, sampleName: indivName.trim() }),
+      });
+      if (!res.ok) { const err = await res.json(); toast.error(err.error || "Preview failed"); return; }
+      window.open(URL.createObjectURL(await res.blob()), "_blank");
+    } catch { toast.error("Preview failed"); }
+    finally { setIndivPreviewing(false); }
   };
 
   const readyCategories = categories.filter((c) => templates[c.name]?.templateImage);
@@ -520,109 +539,119 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
         </CardContent>
       </Card>
 
-      {/* ══════════════════════════════════════════
+      {/* ══════════════════════════════════════
           OPTION 1: Review & Send Dialog
-      ══════════════════════════════════════════ */}
+      ══════════════════════════════════════ */}
       <Dialog open={reviewOpen} onOpenChange={(o) => { if (!reviewSending) setReviewOpen(o); }}>
-        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-teal-600" />
-              Review &amp; Send — {reviewCategory === "__no_category__" ? "No Category" : reviewCategory}
+              Review &amp; Send — <span className="text-teal-700">{reviewCategory === "__no_category__" ? "No Category" : reviewCategory}</span>
             </DialogTitle>
             <DialogDescription>
-              Edit any participant&apos;s name before sending. Names edited here will appear on their certificate only — the registration record is not changed.
+              ✏ Click any name to edit it — only the certificate changes, not the registration.
+              Tick the checkbox to include a person. Already-sent ones can be re-sent with a corrected name.
             </DialogDescription>
           </DialogHeader>
 
-          {loadingParticipants ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : reviewParticipants.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">No confirmed registrants in this role</div>
-          ) : (
-            <div className="space-y-3">
-              {/* Select all / deselect */}
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {selected.size} of {reviewParticipants.length} selected
-                </span>
-                <div className="flex gap-2">
-                  <button onClick={() => setSelected(new Set(reviewParticipants.map((p) => p.id)))}
-                    className="text-xs text-teal-600 hover:underline">Select all</button>
-                  <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:underline">Deselect all</button>
+          <div className="flex-1 overflow-y-auto space-y-3 py-2">
+            {loadingParticipants ? (
+              <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : reviewParticipants.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">No confirmed registrants in this role</div>
+            ) : (
+              <>
+                {/* Quick stats + select controls */}
+                <div className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="font-semibold text-teal-700">{selected.size}</span>
+                    <span className="text-muted-foreground">selected of {reviewParticipants.length}</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-green-700 text-xs">{reviewParticipants.filter(p => p.alreadySent).length} already sent</span>
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => setSelected(new Set(reviewParticipants.map(p => p.id)))}
+                      className="text-xs text-teal-600 hover:underline font-medium">Select all</button>
+                    <button onClick={() => {
+                      const notSent = reviewParticipants.filter(p => !p.alreadySent).map(p => p.id);
+                      setSelected(new Set(notSent));
+                    }} className="text-xs text-muted-foreground hover:underline">Unsent only</button>
+                    <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:underline">None</button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Participant table */}
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="w-10 p-2 text-left"></th>
-                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground">Name on Certificate</th>
-                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground hidden sm:table-cell">Email</th>
-                      <th className="p-2 text-left text-xs font-semibold text-muted-foreground">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {reviewParticipants.map((p) => (
-                      <tr key={p.id} className={`${selected.has(p.id) ? "bg-teal-50/40" : ""} hover:bg-muted/20`}>
-                        <td className="p-2">
-                          <input type="checkbox" checked={selected.has(p.id)}
-                            onChange={(e) => {
-                              const s = new Set(selected);
-                              e.target.checked ? s.add(p.id) : s.delete(p.id);
-                              setSelected(s);
-                            }}
-                            className="accent-teal-600" />
-                        </td>
-                        <td className="p-2">
+                {/* Participant rows */}
+                <div className="border rounded-lg overflow-hidden divide-y">
+                  {reviewParticipants.map((p) => {
+                    const isEdited = nameOverrides[p.id] && nameOverrides[p.id] !== p.name;
+                    return (
+                      <div key={p.id} className={`flex items-start gap-3 px-3 py-2.5 transition-colors ${selected.has(p.id) ? "bg-teal-50/50" : "hover:bg-muted/20"}`}>
+                        {/* Checkbox */}
+                        <input type="checkbox" checked={selected.has(p.id)}
+                          onChange={(e) => {
+                            const s = new Set(selected);
+                            e.target.checked ? s.add(p.id) : s.delete(p.id);
+                            setSelected(s);
+                          }}
+                          className="mt-2.5 accent-teal-600 shrink-0" />
+
+                        {/* Name (editable) + email */}
+                        <div className="flex-1 min-w-0">
                           <Input
                             value={nameOverrides[p.id] ?? p.name}
-                            onChange={(e) => setNameOverrides((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                            className="h-7 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-input px-1"
-                            placeholder={p.name}
+                            onChange={(e) => setNameOverrides(prev => ({ ...prev, [p.id]: e.target.value }))}
+                            className={`h-8 text-sm font-medium border-0 px-0 bg-transparent focus:bg-white focus:border focus:border-teal-300 focus:px-2 transition-all rounded ${isEdited ? "text-amber-700" : ""}`}
                           />
-                          {nameOverrides[p.id] && nameOverrides[p.id] !== p.name && (
-                            <p className="text-[10px] text-amber-600 px-1">Edited (original: {p.name})</p>
+                          {isEdited && (
+                            <p className="text-[10px] text-amber-600 flex items-center gap-1">
+                              <Edit2 className="h-2.5 w-2.5" /> Original: {p.name}
+                              <button onClick={() => setNameOverrides(prev => { const c = {...prev}; delete c[p.id]; return c; })}
+                                className="text-muted-foreground hover:text-foreground ml-1 underline">Reset</button>
+                            </p>
                           )}
-                        </td>
-                        <td className="p-2 text-xs text-muted-foreground hidden sm:table-cell">{p.email}</td>
-                        <td className="p-2">
+                          <p className="text-xs text-muted-foreground">{p.email}</p>
+                        </div>
+
+                        {/* Status badge */}
+                        <div className="shrink-0 pt-1">
                           {p.alreadySent
-                            ? <Badge className="text-[10px] bg-green-100 text-green-700 border-green-200">Sent ✓</Badge>
+                            ? <Badge className="text-[10px] bg-green-100 text-green-700 border-green-200 gap-1">
+                                <CheckCircle2 className="h-2.5 w-2.5" /> Sent
+                                {selected.has(p.id) && <span className="text-amber-600 ml-0.5">· Resend</span>}
+                              </Badge>
                             : <Badge variant="secondary" className="text-[10px]">Not sent</Badge>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
 
           {reviewResult && (
-            <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${reviewResult.failed === 0 ? "bg-green-50 border border-green-200 text-green-800" : "bg-amber-50 border border-amber-200 text-amber-800"}`}>
+            <div className={`p-3 rounded-lg text-sm flex items-center gap-2 shrink-0 ${reviewResult.failed === 0 ? "bg-green-50 border border-green-200 text-green-800" : "bg-amber-50 border border-amber-200 text-amber-800"}`}>
               {reviewResult.failed === 0 ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
-              <span><strong>{reviewResult.sent}</strong> sent, <strong>{reviewResult.failed}</strong> failed</span>
+              <span><strong>{reviewResult.sent}</strong> certificate{reviewResult.sent !== 1 ? "s" : ""} sent{reviewResult.failed > 0 ? `, ${reviewResult.failed} failed` : " successfully ✓"}</span>
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 shrink-0 pt-2 border-t">
             <Button variant="outline" onClick={() => setReviewOpen(false)} disabled={reviewSending}>Close</Button>
             <Button onClick={handleReviewSend} disabled={reviewSending || selected.size === 0 || loadingParticipants}
               className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
               {reviewSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Send to {selected.size} participant{selected.size !== 1 ? "s" : ""}
+              {reviewSending ? "Sending…" : `Send to ${selected.size} participant${selected.size !== 1 ? "s" : ""}`}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ══════════════════════════════════════════
+      {/* ══════════════════════════════════════
           OPTION 2: Send to Individual Dialog
-      ══════════════════════════════════════════ */}
-      <Dialog open={indivOpen} onOpenChange={(o) => { if (!indivSending) setIndivOpen(o); }}>
+      ══════════════════════════════════════ */}
+      <Dialog open={indivOpen} onOpenChange={(o) => { if (!indivSending && !indivPreviewing) setIndivOpen(o); }}>
         <DialogContent className="w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -630,83 +659,118 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
               Send to Individual
             </DialogTitle>
             <DialogDescription>
-              Search any confirmed registrant, edit their name if needed, and send their certificate.
+              Search a participant, edit their name if needed, preview the certificate, then send.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Search */}
+
+            {/* Step 1: Search */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Search participant</Label>
+              <div className="flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold shrink-0">1</span>
+                <Label className="text-sm font-semibold">Search &amp; select participant</Label>
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Type name or email…" value={indivSearch}
+                <Input placeholder="Type name or email to search…" value={indivSearch}
                   onChange={(e) => handleIndivSearch(e.target.value)}
                   className="pl-9" />
                 {indivSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
               </div>
-              {indivResults.length > 0 && (
-                <div className="border rounded-lg bg-background shadow-lg overflow-hidden">
+              {indivResults.length > 0 && !indivSelected && (
+                <div className="border rounded-lg bg-background shadow-md overflow-hidden">
                   {indivResults.map((p) => (
                     <button key={p.id} onClick={() => handleIndivSelect(p)}
-                      className="w-full text-left px-4 py-2.5 hover:bg-muted/50 transition-colors border-b last:border-0">
-                      <p className="text-sm font-medium">{p.name}</p>
-                      <p className="text-xs text-muted-foreground">{p.email} · {p.category || "No category"}</p>
+                      className="w-full text-left px-4 py-3 hover:bg-teal-50 transition-colors border-b last:border-0 group">
+                      <p className="text-sm font-semibold group-hover:text-teal-700">{p.name}</p>
+                      <p className="text-xs text-muted-foreground">{p.email}
+                        {p.category && <span className="ml-2 px-1.5 py-0.5 bg-muted rounded text-[10px]">{p.category}</span>}
+                        {p.alreadySent && <span className="ml-2 text-green-600 text-[10px]">✓ cert sent</span>}
+                      </p>
                     </button>
                   ))}
                 </div>
               )}
+              {indivSelected && (
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-teal-50 border border-teal-200">
+                  <div>
+                    <p className="text-sm font-semibold text-teal-800">{indivSelected.name}</p>
+                    <p className="text-xs text-teal-600">{indivSelected.email}</p>
+                  </div>
+                  <button onClick={() => { setIndivSelected(null); setIndivSearch(""); setIndivName(""); setIndivCategory(""); }}
+                    className="text-muted-foreground hover:text-foreground p-1">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Selected participant */}
             {indivSelected && (
               <>
-                <div className="p-3 rounded-lg bg-teal-50 border border-teal-200">
-                  <p className="text-xs text-teal-600 font-semibold mb-1">Selected</p>
-                  <p className="font-medium text-sm">{indivSelected.name}</p>
-                  <p className="text-xs text-muted-foreground">{indivSelected.email}</p>
-                  {indivSelected.alreadySent && (
-                    <Badge className="mt-1 text-[10px] bg-green-100 text-green-700 border-green-200">Already received a certificate</Badge>
-                  )}
-                </div>
-
-                {/* Name override */}
+                {/* Step 2: Edit name */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold flex items-center gap-1.5">
-                    <Edit2 className="h-3.5 w-3.5" /> Name on Certificate
-                  </Label>
+                  <div className="flex items-center gap-2">
+                    <span className="h-5 w-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold shrink-0">2</span>
+                    <Label className="text-sm font-semibold">Name to print on certificate</Label>
+                  </div>
                   <Input value={indivName} onChange={(e) => setIndivName(e.target.value)}
-                    placeholder="Edit name if needed…" />
-                  {indivName !== indivSelected.name && indivName.trim() && (
-                    <p className="text-[10px] text-amber-600">Will print as: <strong>{indivName}</strong></p>
+                    placeholder="Edit if needed (e.g. add Dr. / Prof.)" className="text-sm" />
+                  {indivName.trim() && indivName !== indivSelected.name && (
+                    <p className="text-[10px] text-amber-600 flex items-center gap-1">
+                      <Edit2 className="h-2.5 w-2.5" /> Changed from original: &ldquo;{indivSelected.name}&rdquo;
+                    </p>
+                  )}
+                  {indivSelected.alreadySent && (
+                    <p className="text-[10px] text-green-600 flex items-center gap-1">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> This person already received a certificate. Sending again will resend.
+                    </p>
                   )}
                 </div>
 
-                {/* Template selector */}
+                {/* Step 3: Template */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">Certificate Template</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="h-5 w-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-bold shrink-0">3</span>
+                    <Label className="text-sm font-semibold">Certificate template</Label>
+                  </div>
                   <select value={indivCategory} onChange={(e) => setIndivCategory(e.target.value)}
                     className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                    <option value="">— Select template —</option>
+                    <option value="">— Select which template to use —</option>
                     {categories.filter((c) => templates[c.name]?.templateImage).map((c) => (
                       <option key={c.name} value={c.name}>
-                        {c.name === "__no_category__" ? "No Category" : c.name} template
+                        {c.name === "__no_category__" ? "No Category" : c.name}
                       </option>
                     ))}
                   </select>
-                  {!indivCategory && <p className="text-[10px] text-muted-foreground">Select which certificate design to use</p>}
+                  {/* Template thumbnail */}
+                  {indivCategory && templates[indivCategory]?.templateImage && (
+                    <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={templates[indivCategory].templateImage} alt="template"
+                        className="h-14 w-24 object-contain rounded border bg-white" />
+                      <p className="text-xs text-muted-foreground">This design will be used for the certificate</p>
+                    </div>
+                  )}
                 </div>
               </>
             )}
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIndivOpen(false)} disabled={indivSending}>Cancel</Button>
+          <DialogFooter className="gap-2 border-t pt-3">
+            <Button variant="outline" onClick={() => setIndivOpen(false)} disabled={indivSending || indivPreviewing}>Cancel</Button>
+            {indivSelected && indivCategory && indivName.trim() && (
+              <Button variant="outline" onClick={handleIndivPreview} disabled={indivPreviewing || indivSending}
+                className="gap-1.5">
+                {indivPreviewing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+                Preview PDF
+              </Button>
+            )}
             <Button onClick={handleIndivSend}
-              disabled={indivSending || !indivSelected || !indivCategory || !indivName.trim()}
+              disabled={indivSending || indivPreviewing || !indivSelected || !indivCategory || !indivName.trim()}
               className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
               {indivSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Send Certificate
+              {indivSending ? "Sending…" : "Send Certificate"}
             </Button>
           </DialogFooter>
         </DialogContent>
