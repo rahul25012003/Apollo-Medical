@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { Errors } from "@/lib/api-utils";
 import { generateCertificatePDF, type CertificateTemplateConfig } from "@/lib/certificate-pdf";
-import { sendEmail, certificateIssuedHtml } from "@/lib/notifications";
+import { sendEmail, certificateIssuedHtml, getActiveChannel } from "@/lib/notifications";
 import { randomUUID } from "crypto";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -25,6 +25,15 @@ export async function POST(req: NextRequest, context: RouteContext) {
     select: { id: true, title: true, tenantId: true, certificateConfig: true },
   });
   if (!event) return Errors.notFound("Event");
+
+  // Check email channel is configured before processing anything
+  const emailChannel = await getActiveChannel("EMAIL", event.tenantId);
+  if (!emailChannel) {
+    return NextResponse.json({
+      success: false,
+      error: "No email channel configured. Go to Dashboard → Settings → Notifications and set up your SMTP / Gmail credentials first.",
+    }, { status: 400 });
+  }
 
   const config = (event.certificateConfig as Record<string, unknown> | null) ?? {};
   const templates =

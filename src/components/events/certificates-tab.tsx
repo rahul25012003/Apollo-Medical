@@ -197,6 +197,10 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
         body: JSON.stringify({ categories: filterCategories }),
       });
       const data = await res.json();
+      if (!data.success && data.error) {
+        toast.error(data.error);
+        return;
+      }
       if (data.success) {
         setSendResult({
           sent: data.sent,
