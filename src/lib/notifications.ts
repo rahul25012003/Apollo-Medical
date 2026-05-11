@@ -176,10 +176,10 @@ export async function sendEmail({ to, subject, html, text, tenantId, attachments
       return await sendSmtpEmail(config as unknown as EmailSmtpConfig, to, subject, html, text, attachments);
     }
     if (channel.provider === "sendgrid") {
-      return await sendSendGridEmail(config as unknown as EmailSendGridConfig, to, subject, html, text);
+      return await sendSendGridEmail(config as unknown as EmailSendGridConfig, to, subject, html, text, attachments);
     }
     if (channel.provider === "mailgun") {
-      return await sendMailgunEmail(config as unknown as EmailMailgunConfig, to, subject, html, text);
+      return await sendMailgunEmail(config as unknown as EmailMailgunConfig, to, subject, html, text, attachments);
     }
     console.error("Unknown email provider:", channel.provider);
     return false;
@@ -228,7 +228,8 @@ async function sendSendGridEmail(
   to: string,
   subject: string,
   html: string,
-  text?: string
+  text?: string,
+  attachments?: EmailAttachment[]
 ): Promise<boolean> {
   const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
@@ -244,6 +245,12 @@ async function sendSendGridEmail(
         { type: "text/plain", value: text || html.replace(/<[^>]*>/g, "") },
         { type: "text/html", value: html },
       ],
+      attachments: attachments?.map((a) => ({
+        content: a.content.toString("base64"),
+        filename: a.filename,
+        type: a.contentType,
+        disposition: "attachment",
+      })),
     }),
   });
   return res.ok;
@@ -254,14 +261,21 @@ async function sendMailgunEmail(
   to: string,
   subject: string,
   html: string,
-  text?: string
+  text?: string,
+  attachments?: EmailAttachment[]
 ): Promise<boolean> {
-  const form = new URLSearchParams();
-  form.set("from", config.fromName ? `${config.fromName} <${config.fromEmail}>` : config.fromEmail);
-  form.set("to", to);
-  form.set("subject", subject);
-  form.set("html", html);
-  if (text) form.set("text", text);
+  // Mailgun requires multipart/form-data when sending attachments
+  const form = new FormData();
+  form.append("from", config.fromName ? `${config.fromName} <${config.fromEmail}>` : config.fromEmail);
+  form.append("to", to);
+  form.append("subject", subject);
+  form.append("html", html);
+  if (text) form.append("text", text);
+  if (attachments?.length) {
+    for (const a of attachments) {
+      form.append("attachment", new Blob([a.content.buffer as ArrayBuffer], { type: a.contentType }), a.filename);
+    }
+  }
 
   const res = await fetch(`https://api.mailgun.net/v3/${config.domain}/messages`, {
     method: "POST",
