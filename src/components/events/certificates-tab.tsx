@@ -20,6 +20,14 @@ import {
   Trash2,
   Info,
 } from "lucide-react";
+const CERT_FONTS = [
+  { label: "Script — like Alex Brush",  value: "Times-Italic"      },
+  { label: "Bold Script",               value: "Times-BoldItalic"  },
+  { label: "Bold Serif",                value: "Times-Bold"        },
+  { label: "Regular Serif",             value: "Times-Roman"       },
+  { label: "Bold Sans",                 value: "Helvetica-Bold"    },
+  { label: "Regular Sans",              value: "Helvetica"         },
+];
 import { toast } from "sonner";
 
 interface CategoryTemplate {
@@ -27,6 +35,7 @@ interface CategoryTemplate {
   nameY: number;
   fontSize: number;
   fontColor: string;
+  fontFamily: string;
 }
 
 interface Category {
@@ -70,7 +79,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
           const merged: Record<string, CategoryTemplate> = { ...prev };
           cats.forEach((cat: Category) => {
             if (!merged[cat.name]) {
-              merged[cat.name] = fetched[cat.name] ?? { nameY: 50, fontSize: 36, fontColor: "#000000" };
+              merged[cat.name] = fetched[cat.name] ?? { nameY: 50, fontSize: 36, fontColor: "#000000", fontFamily: "Times-Italic" };
             } else if (fetched[cat.name]) {
               merged[cat.name] = { ...merged[cat.name], ...fetched[cat.name] };
             }
@@ -106,7 +115,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
     setCategories((prev) => [...prev, { name, count: 0, manual: true }]);
     setTemplates((prev) => ({
       ...prev,
-      [name]: { nameY: 50, fontSize: 36, fontColor: "#000000" },
+      [name]: { nameY: 50, fontSize: 36, fontColor: "#000000", fontFamily: "Times-Italic" },
     }));
     setNewCategoryName("");
     setAddingCategory(false);
@@ -345,7 +354,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
 
       <div className="grid gap-4">
         {categories.map((cat) => {
-          const tpl = templates[cat.name] ?? { nameY: 50, fontSize: 36, fontColor: "#000000" };
+          const tpl = templates[cat.name] ?? { nameY: 50, fontSize: 36, fontColor: "#000000", fontFamily: "Times-Italic" };
           const hasTemplate = !!tpl.templateImage;
           const isManual = cat.manual || cat.count === 0;
           const displayName = cat.name === "__no_category__" ? "No Category (unassigned)" : cat.name;
@@ -468,7 +477,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
                     )}
 
                     {/* Name position + font settings */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
                       <div className="space-y-1">
                         <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
                           Name position (% from top)
@@ -490,6 +499,20 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
                           onChange={(e) => updateTemplate(cat.name, "fontSize", parseInt(e.target.value) || 36)}
                           className="h-8 text-sm" />
                         <p className="text-[10px] text-muted-foreground/60">Recommended: 32–48 pt</p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Font style</Label>
+                        <select
+                          value={tpl.fontFamily || "Times-Italic"}
+                          onChange={(e) => updateTemplate(cat.name, "fontFamily", e.target.value)}
+                          className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                        >
+                          {CERT_FONTS.map((f) => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                          ))}
+                        </select>
+                        <p className="text-[10px] text-muted-foreground/60">Match your template&apos;s name style</p>
                       </div>
 
                       <div className="space-y-1">

@@ -11,9 +11,10 @@ interface Props {
   nameTopPt: number;
   fontSize: number;
   fontColor: string;
+  fontFamily: string;
 }
 
-export function CertificatePDFDoc({ imageSrc, name, nameTopPt, fontSize, fontColor }: Props) {
+export function CertificatePDFDoc({ imageSrc, name, nameTopPt, fontSize, fontColor, fontFamily }: Props) {
   return (
     <Document>
       <Page size={[W, H]} style={{ padding: 0, margin: 0, backgroundColor: "#ffffff" }}>
@@ -34,7 +35,7 @@ export function CertificatePDFDoc({ imageSrc, name, nameTopPt, fontSize, fontCol
         >
           <Text
             style={{
-              fontFamily: "Times-Italic",
+              fontFamily,
               fontSize,
               color: fontColor,
             }}

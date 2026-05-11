@@ -7,7 +7,18 @@ export interface CertificateTemplateConfig {
   nameY: number;       // 0-100 % from top
   fontSize: number;    // pt, e.g. 33
   fontColor: string;   // hex, e.g. "#000000"
+  fontFamily?: string; // PDF built-in font name
 }
+
+// Fonts available for certificate name overlay
+export const CERT_FONTS: { label: string; value: string; preview: string }[] = [
+  { label: "Script (like Alex Brush)",   value: "Times-Italic",      preview: "italic"       },
+  { label: "Bold Script",                value: "Times-BoldItalic",   preview: "bold italic"  },
+  { label: "Bold Serif",                 value: "Times-Bold",         preview: "bold"         },
+  { label: "Regular Serif",              value: "Times-Roman",        preview: "normal"       },
+  { label: "Bold Sans",                  value: "Helvetica-Bold",     preview: "bold"         },
+  { label: "Regular Sans",              value: "Helvetica",           preview: "normal"       },
+];
 
 const PAGE_H = 595.28; // A4 landscape height in PDF points
 
@@ -44,6 +55,7 @@ export async function generateCertificatePDF({
     nameTopPt,
     fontSize: config.fontSize,
     fontColor: config.fontColor,
+    fontFamily: config.fontFamily || "Times-Italic",
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
