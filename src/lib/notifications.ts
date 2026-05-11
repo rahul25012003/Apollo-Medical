@@ -480,6 +480,24 @@ export function otpSmsText(code: string, purpose: string, appName: string = "ICM
   return `${code} is your ${appName} OTP for ${purpose.toLowerCase().replace("_", " ")}. Valid for 10 minutes.`;
 }
 
+export function certificateIssuedHtml(params: {
+  name: string;
+  eventTitle: string;
+}): string {
+  const { name, eventTitle } = params;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #0d9488; margin-bottom: 4px;">Your Certificate</h2>
+      <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 16px 0; border: 1px solid #bbf7d0;">
+        <p style="margin: 0 0 8px;"><strong>Dear ${name},</strong></p>
+        <p style="margin: 0 0 16px;">Please find attached your certificate of participation for <strong>${eventTitle}</strong>.</p>
+        <p style="margin: 0; color: #555; font-size: 14px;">Download and save the attached PDF certificate.</p>
+      </div>
+      <p style="color: #999; font-size: 12px; margin-top: 24px;">This is an automated email. Please do not reply.</p>
+    </div>
+  `;
+}
+
 // Registration received — sent to registrant immediately
 export function registrationReceivedHtml(params: {
   name: string;

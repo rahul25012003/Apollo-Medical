@@ -94,6 +94,8 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
   const handleAddCategory = () => {
     const name = newCategoryName.trim();
     if (!name) return;
+    if (name.length > 50) { toast.error("Category name must be 50 characters or less"); return; }
+    if (!/^[a-zA-Z0-9 \-_]+$/.test(name)) { toast.error("Only letters, numbers, spaces, hyphens and underscores allowed"); return; }
     if (categories.find((c) => c.name.toLowerCase() === name.toLowerCase())) {
       toast.error("This category already exists");
       return;
@@ -135,8 +137,8 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
     }
   };
 
-  const handleSaveAll = async () => {
-    setSaving(true);
+  const handleSaveAll = async (silent = false): Promise<boolean> => {
+    if (!silent) setSaving(true);
     try {
       const res = await fetch(`/api/events/${eventId}/certificates/config`, {
         method: "POST",
@@ -145,21 +147,25 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("Settings saved");
+        if (!silent) toast.success("Settings saved");
+        return true;
       } else {
         toast.error(data.error || "Save failed");
+        return false;
       }
     } catch {
       toast.error("Save failed");
+      return false;
     } finally {
-      setSaving(false);
+      if (!silent) setSaving(false);
     }
   };
 
   const handlePreview = async (category: string) => {
     const tpl = templates[category];
     if (!tpl?.templateImage) { toast.error("Upload a template image first"); return; }
-    await handleSaveAll();
+    const saved = await handleSaveAll(true); // silent — don't flash "Settings saved" toast during preview
+    if (!saved) return;
     try {
       const res = await fetch(`/api/events/${eventId}/certificates/preview`, {
         method: "POST",
@@ -178,7 +184,8 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
     setSending(true);
     setSendResult(null);
     try {
-      await handleSaveAll();
+      const saved = await handleSaveAll(true); // silent save before send
+      if (!saved) { setSending(false); return; }
       const res = await fetch(`/api/events/${eventId}/certificates/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -235,7 +242,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
           <span className="font-medium text-foreground">{totalRegistrations}</span> registrants
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={handleSaveAll} disabled={saving}>
+          <Button variant="outline" size="sm" onClick={() => handleSaveAll()} disabled={saving}>
             {saving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
             Save All Settings
           </Button>

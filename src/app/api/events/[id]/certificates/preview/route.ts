@@ -37,11 +37,12 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
   try {
     const pdfBuffer = await generateCertificatePDF({ config: tpl, name: sampleName });
+    const safeCategory = category.replace(/[^a-zA-Z0-9_-]/g, "_");
     return new NextResponse(pdfBuffer as unknown as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="preview-${category}.pdf"`,
+        "Content-Disposition": `inline; filename="preview-${safeCategory}.pdf"`,
       },
     });
   } catch (err) {

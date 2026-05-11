@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { Errors } from "@/lib/api-utils";
 import { generateCertificatePDF, type CertificateTemplateConfig } from "@/lib/certificate-pdf";
-import { sendEmail } from "@/lib/notifications";
+import { sendEmail, certificateIssuedHtml } from "@/lib/notifications";
 import { randomUUID } from "crypto";
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+const BATCH_SIZE = 5; // process 5 in parallel — keeps memory low and avoids SMTP rate limits
 
 // POST /api/events/[id]/certificates/send
 // Body: { categories?: string[] }  — omit = all categories with templates
@@ -42,34 +44,31 @@ export async function POST(req: NextRequest, context: RouteContext) {
   let skipped = 0;
   const failures: { name: string; email: string; reason: string }[] = [];
 
-  for (const reg of registrations) {
-    const category = reg.category ?? "default";
-    const tpl = templates[category] ?? templates["default"];
+  const processOne = async (reg: typeof registrations[number]) => {
+    const category = reg.category ?? "";
+    const tpl = templates[category]; // no silent "default" fallback — skip if no template
 
     if (!tpl?.templateImage) {
       skipped++;
-      continue;
+      return;
     }
 
     try {
       const pdfBuffer = await generateCertificatePDF({ config: tpl, name: reg.name });
 
+      // Safe filename: strip special chars, fall back to registration ID slice
+      const safeName = reg.name.replace(/[^a-zA-Z0-9 ]/g, "").trim() || reg.id.slice(-8);
+      const filename = `Certificate-${safeName}.pdf`;
+
       const emailSent = await sendEmail({
         to: reg.email,
         subject: `Your Certificate — ${event.title}`,
-        html: certificateEmailHtml({ name: reg.name, eventTitle: event.title }),
+        html: certificateIssuedHtml({ name: reg.name, eventTitle: event.title }),
         tenantId: event.tenantId,
-        attachments: [
-          {
-            filename: `Certificate-${reg.name.replace(/[^a-zA-Z0-9 ]/g, "")}.pdf`,
-            content: pdfBuffer,
-            contentType: "application/pdf",
-          },
-        ],
+        attachments: [{ filename, content: pdfBuffer, contentType: "application/pdf" }],
       });
 
       if (emailSent) {
-        // Track issuance
         const existing = await prisma.certificate.findFirst({
           where: { registrationId: reg.id, certificateType: "ATTENDANCE", sessionId: null },
         });
@@ -98,28 +97,17 @@ export async function POST(req: NextRequest, context: RouteContext) {
         failures.push({ name: reg.name, email: reg.email, reason: "Email delivery failed" });
       }
     } catch (err) {
+      const reason = err instanceof Error ? err.message : "Unknown error";
+      console.error(`[CERT] Failed to send certificate to ${reg.email}:`, reason);
       failed++;
-      failures.push({
-        name: reg.name,
-        email: reg.email,
-        reason: err instanceof Error ? err.message : "Unknown error",
-      });
+      failures.push({ name: reg.name, email: reg.email, reason });
     }
+  };
+
+  // Process in batches of BATCH_SIZE to balance speed vs. SMTP rate limits
+  for (let i = 0; i < registrations.length; i += BATCH_SIZE) {
+    await Promise.all(registrations.slice(i, i + BATCH_SIZE).map(processOne));
   }
 
   return NextResponse.json({ success: true, sent, failed, skipped, total: registrations.length, failures });
-}
-
-function certificateEmailHtml({ name, eventTitle }: { name: string; eventTitle: string }): string {
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
-      <h2 style="color: #0d9488; margin-bottom: 4px;">Your Certificate</h2>
-      <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 16px 0; border: 1px solid #bbf7d0;">
-        <p style="margin: 0 0 8px;"><strong>Dear ${name},</strong></p>
-        <p style="margin: 0 0 16px;">Please find attached your certificate of participation for <strong>${eventTitle}</strong>.</p>
-        <p style="margin: 0; color: #555; font-size: 14px;">Download and save the attached PDF certificate.</p>
-      </div>
-      <p style="color: #999; font-size: 12px; margin-top: 24px;">This is an automated email. Please do not reply.</p>
-    </div>
-  `;
 }
