@@ -18,7 +18,11 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
   const { id: eventId } = await context.params;
   const body = await req.json().catch(() => ({}));
-  const { categories: filterCategories } = body as { categories?: string[] };
+  const { categories: filterCategories, nameOverrides = {}, registrationIds } = body as {
+    categories?: string[];
+    nameOverrides?: Record<string, string>;
+    registrationIds?: string[];
+  };
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -44,6 +48,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
       eventId,
       status: { in: ["CONFIRMED", "ATTENDED"] },
       ...(filterCategories?.length ? { category: { in: filterCategories } } : {}),
+      ...(registrationIds?.length ? { id: { in: registrationIds } } : {}),
     },
     select: { id: true, name: true, email: true, category: true },
   });
@@ -67,16 +72,17 @@ export async function POST(req: NextRequest, context: RouteContext) {
     }
 
     try {
-      const pdfBuffer = await generateCertificatePDF({ config: tpl, name: reg.name });
+      const nameToUse = nameOverrides[reg.id]?.trim() || reg.name;
+      const pdfBuffer = await generateCertificatePDF({ config: tpl, name: nameToUse });
 
       // Safe filename: strip special chars, fall back to registration ID slice
-      const safeName = reg.name.replace(/[^a-zA-Z0-9 ]/g, "").trim() || reg.id.slice(-8);
+      const safeName = nameToUse.replace(/[^a-zA-Z0-9 ]/g, "").trim() || reg.id.slice(-8);
       const filename = `Certificate-${safeName}.pdf`;
 
       const emailSent = await sendEmail({
         to: reg.email,
         subject: `Your Certificate — ${event.title}`,
-        html: certificateIssuedHtml({ name: reg.name, eventTitle: event.title }),
+        html: certificateIssuedHtml({ name: nameToUse, eventTitle: event.title }),
         tenantId: event.tenantId,
         attachments: [{ filename, content: pdfBuffer, contentType: "application/pdf" }],
       });
