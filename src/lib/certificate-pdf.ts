@@ -3,14 +3,14 @@ import { existsSync, readFileSync } from "fs";
 import React from "react";
 
 export interface CertificateTemplateConfig {
-  templateImage: string;  // public URL like /uploads/certificates/abc.jpg
-  nameY: number;          // 0-100 percentage from top of page
-  fontSize: number;       // font size in pt, e.g. 33
-  fontColor: string;      // hex color, e.g. "#5a3825"
+  templateImage: string;
+  nameY: number;       // 0-100 % from top
+  fontSize: number;    // pt, e.g. 33
+  fontColor: string;   // hex, e.g. "#5a3825"
+  scriptFont?: boolean; // true = Alex Brush (default), false = Helvetica-BoldOblique
 }
 
-// A4 landscape height in PDF points
-const PAGE_HEIGHT_PT = 595.28;
+const PAGE_H = 595.28; // A4 landscape height in PDF points
 
 export async function generateCertificatePDF({
   config,
@@ -22,19 +22,19 @@ export async function generateCertificatePDF({
   const imageAbsPath = path.join(process.cwd(), "public", config.templateImage);
 
   if (!existsSync(imageAbsPath)) {
-    throw new Error(`Template image not found: ${config.templateImage}. Please re-upload the template.`);
+    throw new Error(
+      `Template image not found on server (${config.templateImage}). Please re-upload the template image in the Certificates tab.`
+    );
   }
 
-  // Read as base64 data URI — works cross-platform without file:// URL issues
   const imageBuffer = readFileSync(imageAbsPath);
   const ext = path.extname(imageAbsPath).toLowerCase().replace(".", "");
   const mimeType = ext === "png" ? "image/png" : "image/jpeg";
   const imageSrc = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
 
-  // Convert nameY % to absolute PDF points
-  const nameTopPt = (config.nameY / 100) * PAGE_HEIGHT_PT;
+  const nameTopPt = (config.nameY / 100) * PAGE_H;
+  const useScriptFont = config.scriptFont !== false; // default true
 
-  // Import the JSX component and renderToBuffer at runtime (server-only, avoids client bundle)
   const [{ CertificatePDFDoc }, { renderToBuffer }] = await Promise.all([
     import("./certificate-pdf-doc"),
     import("@react-pdf/renderer"),
@@ -46,6 +46,7 @@ export async function generateCertificatePDF({
     nameTopPt,
     fontSize: config.fontSize,
     fontColor: config.fontColor,
+    useScriptFont,
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

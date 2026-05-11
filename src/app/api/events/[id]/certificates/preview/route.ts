@@ -46,9 +46,10 @@ export async function POST(req: NextRequest, context: RouteContext) {
       },
     });
   } catch (err) {
-    console.error("Certificate preview error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Certificate preview error:", msg);
     return NextResponse.json(
-      { error: "Failed to generate preview PDF" },
+      { error: `PDF generation failed: ${msg}` },
       { status: 500 }
     );
   }
