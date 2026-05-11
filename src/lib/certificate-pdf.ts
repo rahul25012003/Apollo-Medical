@@ -5,9 +5,12 @@ import React from "react";
 export interface CertificateTemplateConfig {
   templateImage: string;  // public URL like /uploads/certificates/abc.jpg
   nameY: number;          // 0-100 percentage from top of page
-  fontSize: number;       // font size in pt, e.g. 36
-  fontColor: string;      // hex color, e.g. "#000000"
+  fontSize: number;       // font size in pt, e.g. 33
+  fontColor: string;      // hex color, e.g. "#5a3825"
 }
+
+// A4 landscape height in PDF points
+const PAGE_HEIGHT_PT = 595.28;
 
 export async function generateCertificatePDF({
   config,
@@ -19,64 +22,33 @@ export async function generateCertificatePDF({
   const imageAbsPath = path.join(process.cwd(), "public", config.templateImage);
 
   if (!existsSync(imageAbsPath)) {
-    throw new Error(`Template image not found: ${config.templateImage}. Upload it first.`);
+    throw new Error(`Template image not found: ${config.templateImage}. Please re-upload the template.`);
   }
 
-  // Read image as base64 data URI — works on all platforms, no file:// URL issues
+  // Read as base64 data URI — works cross-platform without file:// URL issues
   const imageBuffer = readFileSync(imageAbsPath);
   const ext = path.extname(imageAbsPath).toLowerCase().replace(".", "");
   const mimeType = ext === "png" ? "image/png" : "image/jpeg";
   const imageSrc = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
 
-  // A4 landscape: 841.89 x 595.28 pt — nameY is % from top
-  const nameTopPt = (config.nameY / 100) * 595.28;
+  // Convert nameY % to absolute PDF points
+  const nameTopPt = (config.nameY / 100) * PAGE_HEIGHT_PT;
 
-  const ReactPDF = await import("@react-pdf/renderer");
-  const { Document, Page, Image, Text, View, renderToBuffer } = ReactPDF;
+  // Import the JSX component and renderToBuffer at runtime (server-only, avoids client bundle)
+  const [{ CertificatePDFDoc }, { renderToBuffer }] = await Promise.all([
+    import("./certificate-pdf-doc"),
+    import("@react-pdf/renderer"),
+  ]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const doc = React.createElement(
-    Document as React.ComponentType<React.PropsWithChildren<object>>,
-    null,
-    React.createElement(
-      Page as React.ComponentType<React.PropsWithChildren<{ size: any; orientation: any; style: object }>>,// eslint-disable-line @typescript-eslint/no-explicit-any
-      { size: "A4", orientation: "landscape", style: { padding: 0, margin: 0 } },
-      // Background: full certificate template image
-      React.createElement(
-        Image as React.ComponentType<{ src: string; style: object }>,
-        {
-          src: imageSrc,
-          style: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%" },
-        }
-      ),
-      // Name overlay — centered horizontally, positioned by nameY %
-      React.createElement(
-        View as React.ComponentType<React.PropsWithChildren<{ style: object }>>,
-        {
-          style: {
-            position: "absolute",
-            top: nameTopPt,
-            left: 0,
-            right: 0,
-            alignItems: "center",
-          },
-        },
-        React.createElement(
-          Text as React.ComponentType<React.PropsWithChildren<{ style: object }>>,
-          {
-            style: {
-              fontSize: config.fontSize,
-              color: config.fontColor,
-              fontFamily: "Helvetica-Bold",
-            },
-          },
-          name
-        )
-      )
-    )
-  );
+  const element = React.createElement(CertificatePDFDoc, {
+    imageSrc,
+    name,
+    nameTopPt,
+    fontSize: config.fontSize,
+    fontColor: config.fontColor,
+  });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const buffer = await renderToBuffer(doc as any);
+  const buffer = await (renderToBuffer as any)(element);
   return Buffer.from(buffer);
 }

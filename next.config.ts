@@ -12,11 +12,13 @@ const nextConfig: NextConfig = {
       "./node_modules/@react-pdf/**/*",
       "./node_modules/pdfkit/**/*",
       "./node_modules/fontkit/**/*",
+      "./src/lib/certificate-pdf-doc.tsx",
     ],
     "/api/events/\\[id\\]/certificates/send": [
       "./node_modules/@react-pdf/**/*",
       "./node_modules/pdfkit/**/*",
       "./node_modules/fontkit/**/*",
+      "./src/lib/certificate-pdf-doc.tsx",
     ],
   },
   // Image optimization with external images
