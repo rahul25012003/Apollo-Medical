@@ -50,6 +50,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
   } | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [addingCategory, setAddingCategory] = useState(false);
+  const [previewNames, setPreviewNames] = useState<Record<string, string>>({});
 
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -164,13 +165,14 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
   const handlePreview = async (category: string) => {
     const tpl = templates[category];
     if (!tpl?.templateImage) { toast.error("Upload a template image first"); return; }
-    const saved = await handleSaveAll(true); // silent — don't flash "Settings saved" toast during preview
+    const saved = await handleSaveAll(true);
     if (!saved) return;
+    const sampleName = previewNames[category]?.trim() || "Dr. Sample Name";
     try {
       const res = await fetch(`/api/events/${eventId}/certificates/preview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, sampleName: "Dr. Sample Name" }),
+        body: JSON.stringify({ category, sampleName }),
       });
       if (!res.ok) { const err = await res.json(); toast.error(err.error || "Preview failed"); return; }
       const blob = await res.blob();
@@ -376,10 +378,6 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
                             <Upload className="h-3 w-3" /> Replace
                           </Button>
                         )}
-                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                          onClick={() => handlePreview(cat.name)} disabled={!hasTemplate}>
-                          <Eye className="h-3 w-3" /> Preview PDF
-                        </Button>
                         <Button size="sm" className="h-7 text-xs gap-1 bg-teal-600 hover:bg-teal-700 text-white"
                           onClick={() => handleSendAll([cat.name])} disabled={sending || !hasTemplate}>
                           <Send className="h-3 w-3" />
@@ -393,6 +391,31 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
                         )}
                       </div>
                     </div>
+
+                    {/* Preview name input */}
+                    {hasTemplate && (
+                      <div className="flex items-center gap-2 pt-1 pb-1">
+                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide shrink-0">
+                          Preview name
+                        </Label>
+                        <Input
+                          placeholder="Type a name to preview e.g. Dr. Shruthi Srivastava"
+                          value={previewNames[cat.name] ?? ""}
+                          onChange={(e) =>
+                            setPreviewNames((prev) => ({ ...prev, [cat.name]: e.target.value }))
+                          }
+                          className="h-7 text-xs flex-1"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1 shrink-0"
+                          onClick={() => handlePreview(cat.name)}
+                        >
+                          <Eye className="h-3 w-3" /> Preview PDF
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Name position + font settings */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
