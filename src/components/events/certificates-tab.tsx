@@ -317,7 +317,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
                 <p key={i} className="text-xs">
                   <span className="font-medium">{s.name}</span> — category:{" "}
                   <span className="font-mono bg-current/10 px-1 rounded">
-                    {s.category || "(none)"}
+                    {s.category === "__no_category__" || !s.category ? "No Category" : s.category}
                   </span>
                 </p>
               ))}
@@ -344,6 +344,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
           const tpl = templates[cat.name] ?? { nameY: 50, fontSize: 36, fontColor: "#000000" };
           const hasTemplate = !!tpl.templateImage;
           const isManual = cat.manual || cat.count === 0;
+          const displayName = cat.name === "__no_category__" ? "No Category (unassigned)" : cat.name;
 
           return (
             <Card key={cat.name} className={`overflow-hidden transition-all ${hasTemplate ? "border-green-200" : "border-orange-200"}`}>
@@ -400,7 +401,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
                     {/* Role header */}
                     <div className="flex items-start justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm">{cat.name}</span>
+                        <span className="font-semibold text-sm">{displayName}</span>
                         <Badge variant="secondary" className="text-[10px] px-1.5">
                           {cat.count === 0 ? "No registrations yet" : `${cat.count} registrant${cat.count > 1 ? "s" : ""}`}
                         </Badge>

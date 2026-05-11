@@ -45,9 +45,11 @@ export async function POST(req: NextRequest, context: RouteContext) {
   const failures: { name: string; email: string; reason: string }[] = [];
   const skippedDetails: { name: string; email: string; category: string }[] = [];
 
+  const NO_CATEGORY_KEY = "__no_category__";
+
   const processOne = async (reg: typeof registrations[number]) => {
-    const category = reg.category ?? "";
-    const tpl = templates[category]; // no silent "default" fallback — skip if no template
+    const category = reg.category ?? NO_CATEGORY_KEY;
+    const tpl = templates[category];
 
     if (!tpl?.templateImage) {
       skipped++;

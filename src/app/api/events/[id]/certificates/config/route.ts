@@ -35,9 +35,13 @@ export const GET = withErrorHandler(async (
     select: { name: true },
   });
 
+  const NO_CATEGORY_KEY = "__no_category__";
+
   const fromRegistrations = rawCategories
-    .filter((r) => r.category)
-    .map((r) => ({ name: r.category as string, count: r._count._all }));
+    .map((r) => ({
+      name: r.category ?? NO_CATEGORY_KEY,
+      count: r._count._all,
+    }));
 
   // Merge: registration categories + pricing categories (no duplicates)
   const seen = new Set(fromRegistrations.map((c) => c.name));
