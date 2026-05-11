@@ -1,6 +1,5 @@
 import path from "path";
-import { pathToFileURL } from "url";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import React from "react";
 
 export interface CertificateTemplateConfig {
@@ -20,16 +19,18 @@ export async function generateCertificatePDF({
   const imageAbsPath = path.join(process.cwd(), "public", config.templateImage);
 
   if (!existsSync(imageAbsPath)) {
-    throw new Error(`Template image not found on server: ${config.templateImage}`);
+    throw new Error(`Template image not found: ${config.templateImage}. Upload it first.`);
   }
 
-  // Convert OS path to file:// URL so @react-pdf/renderer loads it on both Windows and Linux
-  const imageSrc = pathToFileURL(imageAbsPath).href;
+  // Read image as base64 data URI — works on all platforms, no file:// URL issues
+  const imageBuffer = readFileSync(imageAbsPath);
+  const ext = path.extname(imageAbsPath).toLowerCase().replace(".", "");
+  const mimeType = ext === "png" ? "image/png" : "image/jpeg";
+  const imageSrc = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
 
   // A4 landscape: 841.89 x 595.28 pt — nameY is % from top
   const nameTopPt = (config.nameY / 100) * 595.28;
 
-  // Use dynamic import (ESM-compatible)
   const ReactPDF = await import("@react-pdf/renderer");
   const { Document, Page, Image, Text, View, renderToBuffer } = ReactPDF;
 
@@ -38,9 +39,9 @@ export async function generateCertificatePDF({
     Document as React.ComponentType<React.PropsWithChildren<object>>,
     null,
     React.createElement(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Page as React.ComponentType<React.PropsWithChildren<{ size: any; orientation: any; style: object }>>,
+      Page as React.ComponentType<React.PropsWithChildren<{ size: any; orientation: any; style: object }>>,// eslint-disable-line @typescript-eslint/no-explicit-any
       { size: "A4", orientation: "landscape", style: { padding: 0, margin: 0 } },
+      // Background: full certificate template image
       React.createElement(
         Image as React.ComponentType<{ src: string; style: object }>,
         {
@@ -48,6 +49,7 @@ export async function generateCertificatePDF({
           style: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%" },
         }
       ),
+      // Name overlay — centered horizontally, positioned by nameY %
       React.createElement(
         View as React.ComponentType<React.PropsWithChildren<{ style: object }>>,
         {

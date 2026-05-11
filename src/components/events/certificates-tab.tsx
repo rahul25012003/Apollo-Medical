@@ -167,9 +167,10 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
   const handlePreview = async (category: string) => {
     const tpl = templates[category];
     if (!tpl?.templateImage) { toast.error("Upload a template image first"); return; }
+    const sampleName = previewNames[category]?.trim();
+    if (!sampleName) { toast.error("Enter a name in the preview field first"); return; }
     const saved = await handleSaveAll(true);
     if (!saved) return;
-    const sampleName = previewNames[category]?.trim() || "Dr. Sample Name";
     try {
       const res = await fetch(`/api/events/${eventId}/certificates/preview`, {
         method: "POST",
@@ -443,7 +444,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
                           Preview name
                         </Label>
                         <Input
-                          placeholder="Type a name to preview e.g. Dr. Shruthi Srivastava"
+                          placeholder="Type a name first e.g. Dr. Shruthi Srivastava (required)"
                           value={previewNames[cat.name] ?? ""}
                           onChange={(e) =>
                             setPreviewNames((prev) => ({ ...prev, [cat.name]: e.target.value }))
