@@ -6,8 +6,7 @@ export interface CertificateTemplateConfig {
   templateImage: string;
   nameY: number;       // 0-100 % from top
   fontSize: number;    // pt, e.g. 33
-  fontColor: string;   // hex, e.g. "#5a3825"
-  scriptFont?: boolean; // true = Alex Brush (default), false = Helvetica-BoldOblique
+  fontColor: string;   // hex, e.g. "#000000"
 }
 
 const PAGE_H = 595.28; // A4 landscape height in PDF points
@@ -23,7 +22,7 @@ export async function generateCertificatePDF({
 
   if (!existsSync(imageAbsPath)) {
     throw new Error(
-      `Template image not found on server (${config.templateImage}). Please re-upload the template image in the Certificates tab.`
+      `Template image not found (${config.templateImage}). Please re-upload the template image.`
     );
   }
 
@@ -33,7 +32,6 @@ export async function generateCertificatePDF({
   const imageSrc = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
 
   const nameTopPt = (config.nameY / 100) * PAGE_H;
-  const useScriptFont = config.scriptFont !== false; // default true
 
   const [{ CertificatePDFDoc }, { renderToBuffer }] = await Promise.all([
     import("./certificate-pdf-doc"),
@@ -46,7 +44,6 @@ export async function generateCertificatePDF({
     nameTopPt,
     fontSize: config.fontSize,
     fontColor: config.fontColor,
-    useScriptFont,
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
