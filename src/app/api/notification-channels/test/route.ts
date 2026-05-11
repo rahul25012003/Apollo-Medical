@@ -35,12 +35,32 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   try {
     if (channel.channel === "EMAIL") {
-      success = await sendEmail({
-        to: testTo,
-        subject: "ICMS Test Email",
-        html: `<div style="font-family: Arial; padding: 20px;"><h2 style="color: #0d9488;">Test Email</h2><p>This is a test email from ICMS notification system.</p><p style="color: #666;">Channel: ${channel.name}<br/>Provider: ${channel.provider}</p></div>`,
-        tenantId: channel.tenantId,
-      });
+      // Use nodemailer directly so we get the real SMTP error, not a silent false
+      const config = channel.config as Record<string, string>;
+      if (channel.provider === "gmail_smtp" || channel.provider === "custom_smtp") {
+        const nodemailer = (await import("nodemailer")).default;
+        const transporter = nodemailer.createTransport({
+          host: config.smtpHost,
+          port: Number(config.smtpPort),
+          secure: Number(config.smtpPort) === 465,
+          auth: { user: config.email, pass: config.password },
+        });
+        await transporter.verify(); // throws with real error if credentials wrong
+        await transporter.sendMail({
+          from: config.fromName ? `"${config.fromName}" <${config.email}>` : config.email,
+          to: testTo,
+          subject: "ICMS Test Email",
+          html: `<div style="font-family:Arial;padding:20px;"><h2 style="color:#0d9488;">Test Email ✓</h2><p>SMTP is working correctly.</p><p style="color:#666;">Channel: ${channel.name} · Provider: ${channel.provider}</p></div>`,
+        });
+        success = true;
+      } else {
+        success = await sendEmail({
+          to: testTo,
+          subject: "ICMS Test Email",
+          html: `<div style="font-family: Arial; padding: 20px;"><h2 style="color: #0d9488;">Test Email</h2><p>This is a test email from ICMS notification system.</p></div>`,
+          tenantId: channel.tenantId,
+        });
+      }
     } else if (channel.channel === "SMS") {
       // SMS test — use the user's phone if available, else skip
       success = await sendSms({
