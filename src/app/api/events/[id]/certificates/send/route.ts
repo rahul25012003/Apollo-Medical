@@ -43,6 +43,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
   let failed = 0;
   let skipped = 0;
   const failures: { name: string; email: string; reason: string }[] = [];
+  const skippedDetails: { name: string; email: string; category: string }[] = [];
 
   const processOne = async (reg: typeof registrations[number]) => {
     const category = reg.category ?? "";
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
     if (!tpl?.templateImage) {
       skipped++;
+      skippedDetails.push({ name: reg.name, email: reg.email, category: reg.category ?? "" });
       return;
     }
 
@@ -109,5 +111,5 @@ export async function POST(req: NextRequest, context: RouteContext) {
     await Promise.all(registrations.slice(i, i + BATCH_SIZE).map(processOne));
   }
 
-  return NextResponse.json({ success: true, sent, failed, skipped, total: registrations.length, failures });
+  return NextResponse.json({ success: true, sent, failed, skipped, total: registrations.length, failures, skippedDetails });
 }

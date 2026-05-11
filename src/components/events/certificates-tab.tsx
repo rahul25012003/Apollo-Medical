@@ -47,6 +47,8 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{
     sent: number; failed: number; skipped: number; total: number;
+    failures: { name: string; email: string; reason: string }[];
+    skippedDetails: { name: string; email: string; category: string }[];
   } | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [addingCategory, setAddingCategory] = useState(false);
@@ -195,7 +197,14 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
       });
       const data = await res.json();
       if (data.success) {
-        setSendResult({ sent: data.sent, failed: data.failed, skipped: data.skipped, total: data.total });
+        setSendResult({
+          sent: data.sent,
+          failed: data.failed,
+          skipped: data.skipped,
+          total: data.total,
+          failures: data.failures ?? [],
+          skippedDetails: data.skippedDetails ?? [],
+        });
         if (data.sent > 0) toast.success(`${data.sent} certificate${data.sent > 1 ? "s" : ""} sent successfully`);
         else toast.warning("No certificates sent — check templates are uploaded and registrations exist");
       } else {
@@ -262,22 +271,57 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
 
       {/* ── Send result banner ── */}
       {sendResult && (
-        <div className={`p-3 rounded-lg flex items-start gap-3 text-sm ${
-          sendResult.failed === 0
-            ? "bg-green-50 border border-green-200 text-green-800"
-            : "bg-amber-50 border border-amber-200 text-amber-800"
+        <div className={`rounded-lg border text-sm overflow-hidden ${
+          sendResult.sent > 0 && sendResult.failed === 0
+            ? "border-green-200 bg-green-50 text-green-800"
+            : sendResult.sent === 0
+            ? "border-red-200 bg-red-50 text-red-800"
+            : "border-amber-200 bg-amber-50 text-amber-800"
         }`}>
-          {sendResult.failed === 0
-            ? <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
-            : <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />}
-          <div>
-            <p className="font-semibold">
-              {sendResult.sent > 0 ? `${sendResult.sent} certificate${sendResult.sent > 1 ? "s" : ""} sent!` : "No certificates sent"}
-            </p>
-            <p className="text-xs mt-0.5">
-              {sendResult.sent} sent · {sendResult.failed} failed · {sendResult.skipped} skipped (no template) · {sendResult.total} total registrants
-            </p>
+          <div className="flex items-start gap-3 p-3">
+            {sendResult.sent > 0 && sendResult.failed === 0
+              ? <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+              : <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold">
+                {sendResult.sent > 0
+                  ? `${sendResult.sent} certificate${sendResult.sent > 1 ? "s" : ""} sent successfully`
+                  : "No certificates sent"}
+              </p>
+              <p className="text-xs mt-0.5 opacity-80">
+                {sendResult.sent} sent · {sendResult.failed} failed · {sendResult.skipped} skipped · {sendResult.total} total
+              </p>
+            </div>
           </div>
+
+          {/* Failure details */}
+          {sendResult.failures.length > 0 && (
+            <div className="border-t border-current/20 px-3 py-2 space-y-1">
+              <p className="text-xs font-semibold">Failed — reason:</p>
+              {sendResult.failures.map((f, i) => (
+                <p key={i} className="text-xs">
+                  <span className="font-medium">{f.name}</span> ({f.email}) — {f.reason}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {/* Skipped details */}
+          {sendResult.skippedDetails.length > 0 && (
+            <div className="border-t border-current/20 px-3 py-2 space-y-1">
+              <p className="text-xs font-semibold">
+                Skipped — no template uploaded for their category:
+              </p>
+              {sendResult.skippedDetails.map((s, i) => (
+                <p key={i} className="text-xs">
+                  <span className="font-medium">{s.name}</span> — category:{" "}
+                  <span className="font-mono bg-current/10 px-1 rounded">
+                    {s.category || "(none)"}
+                  </span>
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

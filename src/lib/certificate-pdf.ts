@@ -1,4 +1,6 @@
 import path from "path";
+import { pathToFileURL } from "url";
+import { existsSync } from "fs";
 import React from "react";
 
 export interface CertificateTemplateConfig {
@@ -16,6 +18,13 @@ export async function generateCertificatePDF({
   name: string;
 }): Promise<Buffer> {
   const imageAbsPath = path.join(process.cwd(), "public", config.templateImage);
+
+  if (!existsSync(imageAbsPath)) {
+    throw new Error(`Template image not found on server: ${config.templateImage}`);
+  }
+
+  // Convert OS path to file:// URL so @react-pdf/renderer loads it on both Windows and Linux
+  const imageSrc = pathToFileURL(imageAbsPath).href;
 
   // A4 landscape: 841.89 x 595.28 pt — nameY is % from top
   const nameTopPt = (config.nameY / 100) * 595.28;
@@ -35,7 +44,7 @@ export async function generateCertificatePDF({
       React.createElement(
         Image as React.ComponentType<{ src: string; style: object }>,
         {
-          src: imageAbsPath,
+          src: imageSrc,
           style: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%" },
         }
       ),
