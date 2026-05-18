@@ -2047,7 +2047,7 @@ export default function TenantHomePage() {
 
             {(galleryImages.length > 0 || galleryVideos.length > 0) && (
               <div className="text-center mt-12">
-                <Link href={tUrl("/gallery")}>
+                <Link href={`/t/${tenantSlug}/gallery`}>
                   <Button
                     variant="outline"
                     size="lg"

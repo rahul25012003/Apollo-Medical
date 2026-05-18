@@ -161,11 +161,17 @@ export async function middleware(request: NextRequest) {
   const tenantSlug = await getTenantSlugByDomain(hostname);
 
   if (tenantSlug) {
-    // On custom domains, redirect /t/slug to / so URLs stay clean (no slug visible)
+    // On custom domains, redirect /t/slug root to / so URLs stay clean
+    // But allow sub-paths like /t/slug/gallery to pass through unchanged
     if (pathname.startsWith("/t/")) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return withCorsHeaders(NextResponse.redirect(url), request);
+      const rootPaths = [`/t/${tenantSlug}`, `/t/${tenantSlug}/`];
+      if (rootPaths.includes(pathname)) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/";
+        return withCorsHeaders(NextResponse.redirect(url), request);
+      }
+      // Sub-paths (/t/slug/gallery etc.) — serve them directly
+      return withCorsHeaders(NextResponse.next(), request);
     }
 
     // App-level routes that should NOT be rewritten to /t/[slug]
