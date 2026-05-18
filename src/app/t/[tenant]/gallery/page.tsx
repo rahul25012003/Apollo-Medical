@@ -176,6 +176,8 @@ export default function TenantGalleryPage() {
                                     <img
                                         src={typeof img === "string" ? img : (img as any).src || (img as any).url || img}
                                         alt={(img as any)?.alt || `Gallery ${idx + 1}`}
+                                        loading="lazy"
+                                        decoding="async"
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                     />
                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
@@ -263,6 +265,8 @@ export default function TenantGalleryPage() {
                                             <img
                                                 src={photo.src}
                                                 alt={photo.alt || `${eg.title} - Photo ${photoIdx + 1}`}
+                                                loading="lazy"
+                                                decoding="async"
                                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                             />
                                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">

@@ -8,7 +8,10 @@ const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
   variable: "--font-jakarta",
+  display: "swap",
 });
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://careneuromodulationaiims.in";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -17,8 +20,39 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ICMS — Conference Management System",
-  description: "Conference Management System",
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "CareNeuromodulation AIIMS — Medical Conference & CME Events",
+    template: "%s | CareNeuromodulation AIIMS",
+  },
+  description:
+    "Official portal for CareNeuromodulation AIIMS medical conferences, CME workshops, and seminars. Register, download certificates, and stay updated on upcoming events.",
+  keywords: [
+    "AIIMS conference", "neuromodulation", "CME credits", "medical workshop",
+    "rTMS", "neurology conference", "medical seminar", "careneuromodulation",
+    "AIIMS Delhi", "medical event registration",
+  ],
+  authors: [{ name: "CareNeuromodulation AIIMS" }],
+  creator: "CareNeuromodulation AIIMS",
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    url: BASE_URL,
+    siteName: "CareNeuromodulation AIIMS",
+    title: "CareNeuromodulation AIIMS — Medical Conferences & CME Events",
+    description:
+      "Register for medical conferences, CME workshops, and seminars. Earn CME credits and download certificates.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CareNeuromodulation AIIMS — Medical Conferences & CME",
+    description: "Register for medical conferences, CME workshops, and seminars.",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

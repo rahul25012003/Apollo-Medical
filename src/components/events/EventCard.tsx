@@ -142,7 +142,7 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
         <div className="absolute inset-0">
           {event.image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={event.image} alt={event.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            <img src={event.image} alt={event.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           ) : (
             <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}88)` }} />
           )}
@@ -280,7 +280,7 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
       <div className="relative h-48 overflow-hidden bg-slate-100 dark:bg-slate-800">
         {event.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={event.image} alt={event.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+          <img src={event.image} alt={event.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}cc)` }}>
             <Calendar className="h-20 w-20 text-white/40" />

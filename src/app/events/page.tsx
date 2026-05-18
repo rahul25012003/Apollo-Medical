@@ -98,9 +98,9 @@ export default function PublicEventsPage() {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
-  // Tick countdown every second
+  // Tick countdown every minute (second precision not needed on listing page)
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
+    const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
   }, []);
 

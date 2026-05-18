@@ -975,6 +975,8 @@ export default function EventDetailPage() {
                                                 <img
                                                     src={photo.src}
                                                     alt={photo.alt || `Photo ${idx + 1}`}
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                 />
                                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
