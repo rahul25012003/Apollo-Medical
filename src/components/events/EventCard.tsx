@@ -18,6 +18,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  CONFERENCE: "Conference", WORKSHOP: "Workshop", CME: "CME",
+  SEMINAR: "Seminar", WEBINAR: "Webinar", SYMPOSIUM: "Symposium",
+};
+const typeLabel = (t: string) => EVENT_TYPE_LABELS[t?.toUpperCase()] ?? t;
+
 export interface EventCardData {
   id: string;
   title: string;
@@ -162,7 +168,7 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
                 <span className="w-1.5 h-1.5 rounded-full bg-white" style={{ animation: isOpen ? "pulse 1.5s ease-in-out infinite" : undefined }} />
                 {reg.label}
               </span>
-              <span className="px-3 py-1.5 rounded-full text-xs font-bold text-white bg-white/15 backdrop-blur-sm">{event.type}</span>
+              <span className="px-3 py-1.5 rounded-full text-xs font-bold text-white bg-white/15 backdrop-blur-sm">{typeLabel(event.type)}</span>
               {(event.cmeCredits ?? 0) > 0 && (
                 <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/90 text-white backdrop-blur-sm">
                   <Award className="h-3 w-3" />{event.cmeCredits} CME
@@ -302,7 +308,7 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
         {/* Type + CME pills bottom-left */}
         <div className="absolute bottom-3 left-3 flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur text-xs font-bold text-slate-900 dark:text-white">
-            {event.type}
+            {typeLabel(event.type)}
           </span>
           {(event.cmeCredits ?? 0) > 0 && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur text-xs font-bold text-white">

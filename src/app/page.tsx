@@ -57,6 +57,16 @@ import { EVENT_CATEGORIES } from "@/lib/event-constants";
 import { eventsService, Event } from "@/services/events";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
 
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  CONFERENCE: "Conference",
+  WORKSHOP: "Workshop",
+  CME: "CME",
+  SEMINAR: "Seminar",
+  WEBINAR: "Webinar",
+  SYMPOSIUM: "Symposium",
+};
+const typeLabel = (t: string) => EVENT_TYPE_LABELS[t?.toUpperCase()] ?? t;
+
 // Gallery images data
 const galleryImages = [
     {
@@ -748,7 +758,7 @@ export default function PublicHomePage() {
                                                 {/* Badges */}
                                                 <div className="absolute top-5 left-5 flex gap-2 z-10">
                                                     <Badge className="bg-white/95 backdrop-blur-sm text-primary border-0 px-3 py-1 rounded-full shadow-lg">
-                                                        {event.type}
+                                                        {typeLabel(event.type)}
                                                     </Badge>
                                                     {event.featured && (
                                                         <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 px-3 py-1 rounded-full shadow-lg">
@@ -934,7 +944,7 @@ export default function PublicHomePage() {
                                             {/* Floating Badges */}
                                             <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-10">
                                                 <Badge className="bg-white/90 backdrop-blur-sm text-primary border-0 shadow-sm rounded-full px-3 text-xs font-medium">
-                                                    {event.type}
+                                                    {typeLabel(event.type)}
                                                 </Badge>
                                                 {(event.cmeCredits ?? 0) > 0 && (
                                                     <Badge className="bg-primary/90 text-white border-0 shadow-sm backdrop-blur-sm rounded-full px-3 text-xs">
