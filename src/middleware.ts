@@ -52,7 +52,7 @@ async function getTenantSlugByDomain(domain: string): Promise<string | null> {
 const protectedRoutes = ["/dashboard", "/api/users", "/api/events", "/api/registrations", "/api/speakers", "/api/sponsors", "/api/certificates", "/api/upload", "/api/dashboard", "/api/communications", "/api/reports"];
 
 // Routes that are public
-const publicRoutes = ["/", "/auth", "/events", "/api/auth", "/api/events/public", "/api/certificates/verify", "/api/registrations/public", "/api/health"];
+const publicRoutes = ["/", "/auth", "/events", "/api/auth", "/api/events/public", "/api/events/gallery-photos", "/api/certificates/verify", "/api/registrations/public", "/api/health"];
 
 // Routes that require specific roles (admin/staff only — ATTENDEE cannot access)
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER", "CERTIFICATE_MANAGER"];

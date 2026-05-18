@@ -29,6 +29,11 @@ import {
     HelpCircle,
     Mic2,
     DoorOpen,
+    Camera,
+    ZoomIn as ZoomInIcon,
+    X as XIcon,
+    ChevronLeft as ChevronLeftIcon,
+    ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,6 +84,14 @@ interface DisplayEngagement {
     content: unknown;
 }
 
+interface EventPhoto {
+    id: string;
+    src: string;
+    alt: string;
+    caption?: string;
+    uploadedAt: string;
+}
+
 interface DisplayEvent {
     id: string;
     title: string;
@@ -111,6 +124,7 @@ interface DisplayEvent {
     isRegistrationOpen: boolean;
     registrationDeadline: string | null;
     registrationOpensDate: string | null;
+    photos: EventPhoto[];
 }
 
 const SESSION_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -165,6 +179,7 @@ export default function EventDetailPage() {
     const [event, setEvent] = useState<DisplayEvent | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [galleryLightboxIdx, setGalleryLightboxIdx] = useState<number | null>(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [tenantSlug, setTenantSlug] = useState<string | null>(null);
     const [tenantName, setTenantName] = useState<string | null>(null);
@@ -334,6 +349,7 @@ export default function EventDetailPage() {
                         isRegistrationOpen: apiEvent.isRegistrationOpen !== false,
                         registrationDeadline: apiEvent.registrationDeadline || null,
                         registrationOpensDate: apiEvent.registrationOpensDate || null,
+                        photos: (apiEvent.photos as EventPhoto[] | null) || [],
                     };
 
                     setEvent(displayEvent);
@@ -630,7 +646,12 @@ export default function EventDetailPage() {
 
                         {/* Tabs */}
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-fadeIn stagger-1">
-                            <TabsList className={cn("grid w-full h-10 sm:h-12", event.engagements.length > 0 ? "grid-cols-3 sm:grid-cols-5" : "grid-cols-2 sm:grid-cols-4")}>
+                            <TabsList className={cn(
+                                "grid w-full h-10 sm:h-12",
+                                event.photos.length > 0 && event.engagements.length > 0 ? "grid-cols-4 sm:grid-cols-6"
+                                : event.photos.length > 0 || event.engagements.length > 0 ? "grid-cols-3 sm:grid-cols-5"
+                                : "grid-cols-2 sm:grid-cols-4"
+                            )}>
                                 <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
                                 <TabsTrigger value="schedule" className="text-xs sm:text-sm gap-1">
                                     <Mic2 className="h-3.5 w-3.5 hidden sm:block" />
@@ -646,6 +667,13 @@ export default function EventDetailPage() {
                                 )}
                                 <TabsTrigger value="speakers" className="text-xs sm:text-sm">Speakers</TabsTrigger>
                                 <TabsTrigger value="sponsors" className="text-xs sm:text-sm">Sponsors</TabsTrigger>
+                                {event.photos.length > 0 && (
+                                    <TabsTrigger value="gallery" className="text-xs sm:text-sm gap-1">
+                                        <Camera className="h-3.5 w-3.5 hidden sm:block" />
+                                        <span className="hidden sm:inline">Gallery</span>
+                                        <span className="sm:hidden">Gallery</span>
+                                    </TabsTrigger>
+                                )}
                             </TabsList>
 
                             <TabsContent value="overview" className="space-y-6 mt-6">
@@ -933,6 +961,64 @@ export default function EventDetailPage() {
                                     );
                                 })}
                             </TabsContent>
+
+                            {/* Gallery Tab */}
+                            {event.photos.length > 0 && (
+                                <TabsContent value="gallery" className="space-y-6 mt-6">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        {event.photos.map((photo, idx) => (
+                                            <div
+                                                key={photo.id}
+                                                className="group relative aspect-square rounded-xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all"
+                                                onClick={() => setGalleryLightboxIdx(idx)}
+                                            >
+                                                <img
+                                                    src={photo.src}
+                                                    alt={photo.alt || `Photo ${idx + 1}`}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                                                    <ZoomInIcon className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </div>
+                                                {photo.caption && (
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-2 py-1 line-clamp-1">
+                                                        {photo.caption}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Gallery Lightbox */}
+                                    {galleryLightboxIdx !== null && (
+                                        <div
+                                            className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
+                                            onClick={() => setGalleryLightboxIdx(null)}
+                                        >
+                                            <button className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white z-10" onClick={() => setGalleryLightboxIdx(null)}>
+                                                <XIcon className="h-6 w-6" />
+                                            </button>
+                                            {galleryLightboxIdx > 0 && (
+                                                <button className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white z-10" onClick={(e) => { e.stopPropagation(); setGalleryLightboxIdx((p) => (p as number) - 1); }}>
+                                                    <ChevronLeftIcon className="h-7 w-7" />
+                                                </button>
+                                            )}
+                                            {galleryLightboxIdx < event.photos.length - 1 && (
+                                                <button className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white z-10" onClick={(e) => { e.stopPropagation(); setGalleryLightboxIdx((p) => (p as number) + 1); }}>
+                                                    <ChevronRightIcon className="h-7 w-7" />
+                                                </button>
+                                            )}
+                                            <div className="max-w-5xl max-h-[85vh] w-full mx-8 flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                                                <img src={event.photos[galleryLightboxIdx].src} alt={event.photos[galleryLightboxIdx].alt || ""} className="max-h-[75vh] max-w-full object-contain rounded-lg" />
+                                                {event.photos[galleryLightboxIdx].caption && (
+                                                    <p className="text-white/80 text-sm text-center px-4">{event.photos[galleryLightboxIdx].caption}</p>
+                                                )}
+                                                <p className="text-white/50 text-xs">{galleryLightboxIdx + 1} / {event.photos.length}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </TabsContent>
+                            )}
                         </Tabs>
                     </div>
 

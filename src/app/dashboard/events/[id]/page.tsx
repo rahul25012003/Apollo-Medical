@@ -75,6 +75,7 @@ import {
     MessageSquare,
     Shield,
     ScanLine,
+    Camera,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
@@ -92,6 +93,7 @@ import { ScientificProgramTab } from "@/components/events/scientific-program-tab
 import { VenuesTab } from "@/components/events/venues-tab";
 import { EventConfigTab } from "@/components/events/event-config-tab";
 import { CertificatesTab } from "@/components/events/certificates-tab";
+import { PhotosTab } from "@/components/events/photos-tab";
 
 // Display session type
 interface DisplaySessionSpeaker {
@@ -1160,6 +1162,10 @@ export default function EventDetailPage() {
                             <Award className="h-3.5 w-3.5" />
                             Certificates
                         </TabsTrigger>
+                        <TabsTrigger value="photos" className="gap-1.5">
+                            <Camera className="h-3.5 w-3.5" />
+                            Photos
+                        </TabsTrigger>
                     </TabsList>
 
                     {/* Overview Tab */}
@@ -1837,6 +1843,11 @@ export default function EventDetailPage() {
                     {/* Certificates Tab */}
                     <TabsContent value="certificates" className="space-y-6">
                         <CertificatesTab eventId={event.id} />
+                    </TabsContent>
+
+                    {/* Photos Tab */}
+                    <TabsContent value="photos" className="space-y-6">
+                        <PhotosTab eventId={event.id} eventTitle={event.title} />
                     </TabsContent>
                 </Tabs>
             </div>

@@ -457,6 +457,7 @@ model Event {
   // Media
   bannerImage          String?
   thumbnailImage       String?
+  photos               Json?       // Array of [{id, src, alt, caption, uploadedAt}]
 
   // Certificate Signatories
   signatory1Name       String?
