@@ -31,6 +31,7 @@ import {
     DoorOpen,
     Download,
     Sparkles,
+    Camera,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,6 +60,7 @@ import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { validateEventForPublish, calculateEventStatus } from "@/lib/event-validations";
 import { EVENT_TYPES, EVENT_CATEGORIES, EVENT_STATUSES } from "@/lib/event-constants";
 import { eventsService } from "@/services/events";
+import { PhotosTab } from "@/components/events/photos-tab";
 import { speakersService, Speaker } from "@/services/speakers";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
 import { uploadFile } from "@/services";
@@ -1490,6 +1492,10 @@ export default function EditEventPage() {
                             <span className="hidden sm:inline">Scientific Program</span>
                             <span className="sm:hidden">Program</span>
                         </TabsTrigger>
+                        <TabsTrigger value="photos" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+                            <Camera className="h-3.5 w-3.5" />
+                            Photos
+                        </TabsTrigger>
                         <TabsTrigger value="engagement" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
                             <Megaphone className="h-4 w-4 hidden md:block" />
                             <span className="hidden sm:inline">Engagement</span>
@@ -2689,6 +2695,11 @@ export default function EditEventPage() {
                     </TabsContent>
 
                     {/* Sponsors Tab - Hidden until explicitly needed. Data/API preserved. */}
+
+                    {/* Photos Tab */}
+                    <TabsContent value="photos" className="space-y-6 mt-6">
+                        {params.id ? <PhotosTab eventId={params.id as string} eventTitle={formData.title} /> : null}
+                    </TabsContent>
 
                     {/* Settings Tab */}
                     <TabsContent value="settings" className="space-y-4 sm:space-y-6 mt-6">
