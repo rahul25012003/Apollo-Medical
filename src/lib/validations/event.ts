@@ -69,6 +69,7 @@ export const createEventSchema = z.object({
   // Status & Meta
   status: eventStatusEnum.default("DRAFT"),
   type: eventTypeEnum.default("CONFERENCE"),
+  typeTags: z.array(z.string()).default([]),
   category: z.string().optional(),
   tags: z.array(z.string()).default([]),
 

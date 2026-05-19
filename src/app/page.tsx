@@ -301,6 +301,7 @@ export default function PublicHomePage() {
                         time: event.startTime || "09:00 AM",
                         location: [event.location, event.city].filter(Boolean).join(", ") || "Virtual",
                         type: event.type,
+                        typeTags: event.typeTags || [],
                         category: event.category,
                         registrations: event._count?.registrations || 0,
                         capacity: event.capacity,

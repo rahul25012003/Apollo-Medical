@@ -33,6 +33,7 @@ export interface Event {
   currency: string;
   status: "DRAFT" | "UPCOMING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   type: "CONFERENCE" | "WORKSHOP" | "SEMINAR" | "WEBINAR" | "CME" | "SYMPOSIUM";
+  typeTags: string[];
   category: string | null;
   tags: string[];
   cmeCredits: number | null;

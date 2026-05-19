@@ -437,6 +437,7 @@ model Event {
   // Status & Meta
   status               EventStatus @default(DRAFT)
   type                 EventType   @default(CONFERENCE)
+  typeTags             String[]    // Additional type badges e.g. ["CME", "WORKSHOP"]
   category             String?
   tags                 String[]
 

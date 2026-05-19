@@ -160,6 +160,7 @@ export default function PublicEventsPage() {
             endTime: event.endTime,
             location: [event.location, event.city].filter(Boolean).join(", ") || (event.isVirtual ? "Virtual Event" : "TBA"),
             type: event.type,
+            typeTags: event.typeTags || [],
             registrations: event._count?.registrations || 0,
             capacity: event.capacity,
             status: event.status,
