@@ -1553,28 +1553,6 @@ export default function EditEventPage() {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
-                                                {/* Additional type badges */}
-                                                <p className="text-xs text-muted-foreground mt-1">Also show as (for combined events):</p>
-                                                <div className="flex flex-wrap gap-2 mt-1">
-                                                    {EVENT_TYPES.filter(t => t.value !== formData.type).map(t => {
-                                                        const checked = formData.typeTags.includes(t.value);
-                                                        return (
-                                                            <button
-                                                                key={t.value}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const next = checked
-                                                                        ? formData.typeTags.filter(x => x !== t.value)
-                                                                        : [...formData.typeTags, t.value];
-                                                                    setFormData(prev => ({ ...prev, typeTags: next }));
-                                                                }}
-                                                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${checked ? "bg-primary text-primary-foreground border-primary" : "bg-background border-muted-foreground/30 text-muted-foreground hover:border-primary/50"}`}
-                                                            >
-                                                                {t.label}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
                                             </div>
                                         </div>
 

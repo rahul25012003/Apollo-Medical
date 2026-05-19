@@ -170,9 +170,6 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
                 {reg.label}
               </span>
               <span className="px-3 py-1.5 rounded-full text-xs font-bold text-white bg-white/15 backdrop-blur-sm">{typeLabel(event.type)}</span>
-              {(event.typeTags || []).filter(t => t.toUpperCase() !== event.type.toUpperCase()).map(tag => (
-                <span key={tag} className="px-3 py-1.5 rounded-full text-xs font-bold text-white bg-white/15 backdrop-blur-sm">{typeLabel(tag)}</span>
-              ))}
               {(event.cmeCredits ?? 0) > 0 && (
                 <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/90 text-white backdrop-blur-sm">
                   <Award className="h-3 w-3" />{event.cmeCredits} CME
@@ -314,11 +311,6 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
           <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur text-xs font-bold text-slate-900 dark:text-white">
             {typeLabel(event.type)}
           </span>
-          {(event.typeTags || []).filter(t => t.toUpperCase() !== event.type.toUpperCase()).map(tag => (
-            <span key={tag} className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur text-xs font-bold text-slate-900 dark:text-white">
-              {typeLabel(tag)}
-            </span>
-          ))}
           {(event.cmeCredits ?? 0) > 0 && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur text-xs font-bold text-white">
               <Award className="h-3 w-3" />{event.cmeCredits} CME
