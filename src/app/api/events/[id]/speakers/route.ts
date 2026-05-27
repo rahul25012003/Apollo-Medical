@@ -310,19 +310,10 @@ export const DELETE = withErrorHandler(
       return Errors.badRequest("Speaker ID is required");
     }
 
-    // Check if assignment exists
+    // Check if assignment exists (may not exist if speaker was imported via sessions only)
     const existing = await prisma.eventSpeaker.findUnique({
-      where: {
-        eventId_speakerId: {
-          eventId,
-          speakerId,
-        },
-      },
+      where: { eventId_speakerId: { eventId, speakerId } },
     });
-
-    if (!existing) {
-      return Errors.notFound("Speaker assignment");
-    }
 
     // Cascade cleanup — remove the speaker from every session of this event too,
     // so they disappear from the Scientific Program in one action.
@@ -338,32 +329,23 @@ export const DELETE = withErrorHandler(
       let sessionSpeakersRemoved = 0;
       if (sessionIds.length > 0) {
         const delSS = await tx.sessionSpeaker.deleteMany({
-          where: {
-            sessionId: { in: sessionIds },
-            speakerId,
-          },
+          where: { sessionId: { in: sessionIds }, speakerId },
         });
         sessionSpeakersRemoved = delSS.count;
 
         // Clear legacy speakerId on any session where it points to this speaker
         await tx.eventSession.updateMany({
-          where: {
-            eventId,
-            speakerId,
-          },
+          where: { eventId, speakerId },
           data: { speakerId: null },
         });
       }
 
-      // Remove the event-level speaker link
-      await tx.eventSpeaker.delete({
-        where: {
-          eventId_speakerId: {
-            eventId,
-            speakerId,
-          },
-        },
-      });
+      // Remove the event-level speaker link only if it exists
+      if (existing) {
+        await tx.eventSpeaker.delete({
+          where: { eventId_speakerId: { eventId, speakerId } },
+        });
+      }
 
       return { sessionSpeakersRemoved };
     });
