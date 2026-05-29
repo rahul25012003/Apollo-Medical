@@ -15,9 +15,15 @@ export default async function TenantLayout({
   const { tenant: tenantSlug } = await params;
 
   // Fetch tenant config from database
-  const tenant = await prisma.tenant.findUnique({
-    where: { slug: tenantSlug },
-  });
+  let tenant = null;
+  try {
+    tenant = await prisma.tenant.findUnique({
+      where: { slug: tenantSlug },
+    });
+  } catch (e) {
+    console.error("[TenantLayout] DB error:", e);
+    notFound();
+  }
 
   if (!tenant || !tenant.isActive) {
     notFound();
