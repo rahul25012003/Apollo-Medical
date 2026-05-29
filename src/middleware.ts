@@ -39,9 +39,12 @@ async function getTenantSlugByDomain(domain: string): Promise<string | null> {
       // On error, use stale cache
     }
   }
+  // DEFAULT_TENANT_SLUG: forces a specific tenant on ALL environments (use for single-tenant demos)
+  const defaultSlug = process.env.DEFAULT_TENANT_SLUG;
+  if (defaultSlug) return defaultSlug;
+
   const isLocalhost = domain === "localhost" || domain === "127.0.0.1";
   if (isLocalhost) {
-    // Allow overriding the tenant slug locally via NEXT_PUBLIC_DEV_TENANT_SLUG env var
     const devSlug = process.env.NEXT_PUBLIC_DEV_TENANT_SLUG;
     return devSlug || null;
   }

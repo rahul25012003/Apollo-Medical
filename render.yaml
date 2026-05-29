@@ -1,56 +1,22 @@
-# Render Blueprint - ICMS (Integrated Conference Management System)
-# https://render.com/docs/blueprint-spec
-
 services:
-  # Next.js Web Service
   - type: web
-    name: icms
+    name: apollo-medical-portal
     runtime: node
-    plan: free # free, starter, standard, pro (upgrade later for always-on)
-    buildCommand: npm ci --include=dev && npx prisma generate && npx prisma db push && npx prisma db seed && npm run build
-    startCommand: npm run start
+    region: singapore
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DEFAULT_TENANT_SLUG
+        value: apollo-medical
       - key: DATABASE_URL
-        fromDatabase:
-          name: icms-db
-          property: connectionString
-      - key: AUTH_SECRET
-        generateValue: true
-      - key: AUTH_URL
-        sync: false # Set manually after deployment
-      - key: APP_URL
-        sync: false # Set manually after deployment
-      - key: APP_NAME
-        value: ICMS
-      # SMTP Configuration (set in Render dashboard)
-      - key: SMTP_HOST
         sync: false
-      - key: SMTP_PORT
+      - key: NEXTAUTH_SECRET
         sync: false
-      - key: SMTP_USER
+      - key: NEXTAUTH_URL
         sync: false
-      - key: SMTP_PASSWORD
+      - key: NEXT_PUBLIC_BASE_URL
         sync: false
-      - key: SMTP_FROM
-        sync: false
-      # Optional: Cloud Storage (set in Render dashboard if needed)
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: AWS_REGION
-        sync: false
-      - key: AWS_S3_BUCKET
-        sync: false
-    healthCheckPath: /api/health
-    autoDeploy: true
-
-databases:
-  # PostgreSQL Database
-  - name: icms-db
-    plan: free # free tier: 1GB, 97 days expiry (upgrade later)
-    databaseName: icms
-    user: icms_user
-    ipAllowList: [] # Allow connections from Render services only

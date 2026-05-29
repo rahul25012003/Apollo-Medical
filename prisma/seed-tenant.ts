@@ -44,6 +44,7 @@ async function main() {
       notifyRegistrations: true,
       notifyPayments: true,
     },
+    heroBgImage: '/images/apollo/hero-bg.jpg',
     heroTitle: 'Excellence in Healthcare, Education & Innovation',
     heroSubtitle:
       "Join Apollo Hospitals' premier medical conferences, CME accredited programs, and hands-on workshops led by India's finest physicians and researchers.",
