@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const { stdout, stderr } = await execAsync(
-      "npx prisma db push --skip-generate --accept-data-loss",
+      "npx prisma db push --accept-data-loss",
       { cwd: process.cwd(), timeout: 60000 }
     );
     return NextResponse.json({
