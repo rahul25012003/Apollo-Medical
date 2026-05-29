@@ -10,28 +10,37 @@ export function SplashScreen() {
   const doneRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Only show splash for carens tenant pages
+  // Detect which tenant page this is
   const [showSplash, setShowSplash] = useState(false);
+  const [tenantKey, setTenantKey] = useState<"carens" | "apollo" | null>(null);
   const checkedRef = useRef(false);
   useEffect(() => {
     if (checkedRef.current) return;
     checkedRef.current = true;
     const p = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
-    // Show AIIMS splash ONLY on carens tenant pages:
-    // - /t/carens (localhost)
-    // - ?tenant=carens (login/events pages)
-    // - Production root / ONLY if domain contains "carens" or "aiims"
     const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     const hostname = window.location.hostname.toLowerCase();
+
+    // carens / AIIMS pages
     const isCarensDomain = hostname.includes("carens") || hostname.includes("aiims") || hostname.includes("careneuromodulation");
     const isCarensPage = p.startsWith("/t/carens")
       || params.get("tenant") === "carens"
       || (!isLocalhost && isCarensDomain && (p === "/" || p.startsWith("/events") || p.startsWith("/auth") || p.startsWith("/gallery")));
+
+    // Apollo Hospitals pages
+    const isApolloDomain = hostname.includes("apollo");
+    const isApolloPage = p.startsWith("/t/apollo-medical")
+      || params.get("tenant") === "apollo-medical"
+      || (!isLocalhost && isApolloDomain && (p === "/" || p.startsWith("/events") || p.startsWith("/auth") || p.startsWith("/gallery")));
+
     if (isCarensPage) {
+      setTenantKey("carens");
+      setShowSplash(true);
+    } else if (isApolloPage) {
+      setTenantKey("apollo");
       setShowSplash(true);
     } else {
-      // Not a carens page — skip splash
       setVisible(false);
     }
   }, []);
@@ -122,6 +131,42 @@ export function SplashScreen() {
 
   if (!visible || !showSplash) return null;
 
+  // Per-tenant brand tokens
+  const isApollo = tenantKey === "apollo";
+  const brand = isApollo
+    ? {
+        primary: "#2582A1",
+        secondary: "#FDB931",
+        tertiary: "#1a5f87",
+        orb1: "rgba(37,130,161,0.10)",
+        orb2: "rgba(253,185,49,0.08)",
+        orb3: "rgba(26,95,135,0.05)",
+        gridStroke: "#2582A1",
+        glow: "rgba(37,130,161,0.14)",
+        shadowColor: "rgba(37,130,161,0.2)",
+        ring: "conic-gradient(from 0deg, #2582A1, #FDB931, #1a5f87, #2582A1)",
+        bar: "linear-gradient(90deg, #2582A1, #FDB931)",
+        barGlow: "rgba(37,130,161,0.4)",
+        name: "Apollo Hospitals",
+        subtitle: "Medical Conference Portal",
+      }
+    : {
+        primary: "#0d9488",
+        secondary: "#06b6d4",
+        tertiary: "#6366f1",
+        orb1: "rgba(13,148,136,0.08)",
+        orb2: "rgba(6,182,212,0.06)",
+        orb3: "rgba(99,102,241,0.04)",
+        gridStroke: "#0d9488",
+        glow: "rgba(13,148,136,0.12)",
+        shadowColor: "rgba(13,148,136,0.2)",
+        ring: "conic-gradient(from 0deg, #0d9488, #06b6d4, #6366f1, #0d9488)",
+        bar: "linear-gradient(90deg, #0d9488, #06b6d4)",
+        barGlow: "rgba(13,148,136,0.4)",
+        name: "CareNS",
+        subtitle: "Conference Management System",
+      };
+
   return (
     <div
       style={{
@@ -147,7 +192,7 @@ export function SplashScreen() {
             width: "50%",
             height: "50%",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(13,148,136,0.08) 0%, transparent 70%)",
+            background: `radial-gradient(circle, ${brand.orb1} 0%, transparent 70%)`,
             animation: "sp-orb1 8s ease-in-out infinite",
           }}
         />
@@ -159,7 +204,7 @@ export function SplashScreen() {
             width: "45%",
             height: "45%",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(6,182,212,0.06) 0%, transparent 70%)",
+            background: `radial-gradient(circle, ${brand.orb2} 0%, transparent 70%)`,
             animation: "sp-orb2 10s ease-in-out infinite",
           }}
         />
@@ -171,7 +216,7 @@ export function SplashScreen() {
             width: "30%",
             height: "30%",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(99,102,241,0.04) 0%, transparent 70%)",
+            background: `radial-gradient(circle, ${brand.orb3} 0%, transparent 70%)`,
             animation: "sp-orb3 12s ease-in-out infinite",
           }}
         />
@@ -179,7 +224,7 @@ export function SplashScreen() {
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.03 }}>
           <defs>
             <pattern id="sp-grid" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#0d9488" strokeWidth="0.5" />
+              <path d="M 60 0 L 0 0 0 60" fill="none" stroke={brand.gridStroke} strokeWidth="0.5" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#sp-grid)" />
@@ -205,7 +250,7 @@ export function SplashScreen() {
               position: "absolute",
               inset: "-20px",
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(13,148,136,0.12) 0%, transparent 60%)",
+              background: `radial-gradient(circle, ${brand.glow} 0%, transparent 60%)`,
               animation: "sp-glow 3s ease-in-out infinite",
             }}
           />
@@ -216,7 +261,7 @@ export function SplashScreen() {
               inset: "-6px",
               borderRadius: "50%",
               padding: "2px",
-              background: "conic-gradient(from 0deg, #0d9488, #06b6d4, #6366f1, #0d9488)",
+              background: brand.ring,
               animation: "sp-spin 4s linear infinite",
             }}
           >
@@ -230,7 +275,7 @@ export function SplashScreen() {
               height: "130px",
               borderRadius: "50%",
               background: "#ffffff",
-              boxShadow: "0 20px 60px -15px rgba(13,148,136,0.2), 0 0 0 1px rgba(13,148,136,0.05)",
+              boxShadow: `0 20px 60px -15px ${brand.shadowColor}, 0 0 0 1px ${brand.orb1}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -238,11 +283,52 @@ export function SplashScreen() {
               padding: "16px",
             }}
           >
-            <img
-              src="/aiims-logo.jpg"
-              alt="AIIMS"
-              style={{ width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "multiply" }}
-            />
+            {isApollo ? (
+              /* Apollo: styled text logo until /apollo-logo.png is uploaded */
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                  height: "100%",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "2rem",
+                    fontWeight: 900,
+                    background: `linear-gradient(135deg, ${brand.primary}, ${brand.secondary})`,
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    lineHeight: 1,
+                    letterSpacing: "-0.04em",
+                  }}
+                >
+                  AH
+                </span>
+                <span
+                  style={{
+                    fontSize: "0.45rem",
+                    fontWeight: 700,
+                    color: brand.primary,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    marginTop: "4px",
+                  }}
+                >
+                  Hospitals
+                </span>
+              </div>
+            ) : (
+              <img
+                src="/aiims-logo.jpg"
+                alt="AIIMS"
+                style={{ width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "multiply" }}
+              />
+            )}
           </div>
         </div>
 
@@ -266,7 +352,7 @@ export function SplashScreen() {
                 letterSpacing: "-0.03em",
               }}
             >
-              CareNS
+              {brand.name}
             </h2>
             <p
               style={{
@@ -278,7 +364,7 @@ export function SplashScreen() {
                 textTransform: "uppercase",
               }}
             >
-              Conference Management System
+              {brand.subtitle}
             </p>
           </div>
 
@@ -297,7 +383,7 @@ export function SplashScreen() {
                 width: "100%",
                 height: "3px",
                 borderRadius: "3px",
-                background: "rgba(13,148,136,0.1)",
+                background: `${brand.orb1}`,
                 overflow: "hidden",
               }}
             >
@@ -306,9 +392,9 @@ export function SplashScreen() {
                   width: `${progress}%`,
                   height: "100%",
                   borderRadius: "3px",
-                  background: "linear-gradient(90deg, #0d9488, #06b6d4)",
+                  background: brand.bar,
                   transition: "width 0.3s ease",
-                  boxShadow: "0 0 8px rgba(13,148,136,0.4)",
+                  boxShadow: `0 0 8px ${brand.barGlow}`,
                 }}
               />
             </div>
