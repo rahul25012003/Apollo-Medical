@@ -8,8 +8,16 @@ const nextConfig: NextConfig = {
   ...(isStandalone ? { output: "standalone" } : {}),
   // Skip TS/ESLint re-check during build (already verified clean)
   typescript: { ignoreBuildErrors: true },
-  // Keep react-pdf out of webpack bundle (it has native deps)
-  serverExternalPackages: ["@prisma/adapter-pg", "@react-pdf/renderer"],
+  // Keep these out of webpack bundle entirely — they have native/binary deps
+  serverExternalPackages: [
+    "@prisma/adapter-pg",
+    "@react-pdf/renderer",
+    "pdfkit",
+    "fontkit",
+    "linebreak",
+    "unicode-properties",
+    "restructure",
+  ],
   // outputFileTracingIncludes only matters for standalone mode
   ...(isStandalone ? {
     outputFileTracingIncludes: {
