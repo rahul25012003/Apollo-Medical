@@ -12,7 +12,7 @@
 !.yarn/versions
 .claude
 CLAUDE.md
-package-lock.json
+# package-lock.json is committed for reproducible CI/CD builds
 deploy-bundle.tar.gz
 
 # testing
