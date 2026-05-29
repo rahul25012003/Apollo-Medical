@@ -26,11 +26,23 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
   const config = (event.certificateConfig as Record<string, unknown> | null) ?? {};
   const templates = (config.templates as Record<string, unknown> | undefined) ?? {};
-  const tpl = templates[category] as CertificateTemplateConfig | undefined;
+  const tpl = templates[category] as (CertificateTemplateConfig & { builtinTemplateId?: string }) | undefined;
+
+  // If built-in template selected — return a redirect to the preview page
+  if (tpl?.builtinTemplateId && !tpl?.templateImage) {
+    return NextResponse.json(
+      {
+        builtinTemplateId: tpl.builtinTemplateId,
+        sampleName,
+        message: "Use built-in template preview",
+      },
+      { status: 200 }
+    );
+  }
 
   if (!tpl?.templateImage) {
     return NextResponse.json(
-      { error: "No template configured for this category" },
+      { error: "No template image configured. Upload a PNG template or select a built-in template." },
       { status: 400 }
     );
   }
