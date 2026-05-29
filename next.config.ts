@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Production optimizations
-  output: "standalone",
+  // Use standalone only when explicitly requested (VPS/Docker).
+  // Render and Vercel use standard Next.js output — no standalone needed.
+  ...(process.env.NEXT_STANDALONE === "true" ? { output: "standalone" as const } : {}),
   poweredByHeader: false,
   // Force-include packages that standalone trace misses
   serverExternalPackages: ["@prisma/adapter-pg", "@react-pdf/renderer"],
