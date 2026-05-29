@@ -63,7 +63,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: tenant.name,
+    title: { absolute: tenant.name },
     description: tenant.tagline || `${tenant.name} - Conference Portal`,
     icons: tenant.favicon
       ? [{ rel: "icon", url: tenant.favicon }]

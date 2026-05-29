@@ -19,14 +19,17 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
+// Tenant pages use their own generateMetadata — this is only shown for non-tenant pages
+const isCareNS = BASE_URL.includes("careneuromodulation") || BASE_URL.includes("aiims") || BASE_URL.includes("carens");
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: "CareNeuromodulation AIIMS — Medical Conference & CME Events",
-    template: "%s | CareNeuromodulation AIIMS",
+    default: isCareNS ? "CareNeuromodulation AIIMS — Medical Conference & CME Events" : "Medical Conference Portal",
+    template: "%s",
   },
-  description:
-    "Official portal for CareNeuromodulation AIIMS medical conferences, CME workshops, and seminars. Register, download certificates, and stay updated on upcoming events.",
+  description: isCareNS
+    ? "Official portal for CareNeuromodulation AIIMS medical conferences, CME workshops, and seminars."
+    : "Medical Conference & CME Events Portal",
   keywords: [
     "AIIMS conference", "neuromodulation", "CME credits", "medical workshop",
     "rTMS", "neurology conference", "medical seminar", "careneuromodulation",
