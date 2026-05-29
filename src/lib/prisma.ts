@@ -1,20 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL!;
-  // Neon requires SSL with rejectUnauthorized:false when using the pg driver
-  const isNeon = connectionString?.includes(".neon.tech");
-  const pool = new Pool({
-    connectionString,
-    ...(isNeon ? { ssl: { rejectUnauthorized: false } } : {}),
-  });
-  const adapter = new PrismaPg(pool);
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
   return new PrismaClient({
     adapter,
     log:
