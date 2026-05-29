@@ -1,10 +1,13 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import { config } from "dotenv";
 import bcrypt from "bcryptjs";
 
 config();
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const cs = process.env.DATABASE_URL!;
+const pool = new Pool({ connectionString: cs, ...(cs?.includes('.neon.tech') ? { ssl: { rejectUnauthorized: false } } : {}) });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
