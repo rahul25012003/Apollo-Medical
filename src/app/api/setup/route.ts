@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
     const hash = await bcrypt.default.hash("Admin@123", 12);
     const admin = await prisma.user.upsert({
       where: { email: "admin@apollo-medical.com" },
-      update: { tenantId: tenant.id },
+      update: { tenantId: tenant.id, password: hash, isActive: true },
       create: {
         email: "admin@apollo-medical.com",
         password: hash,
