@@ -182,11 +182,11 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith("/api") ||
       pathname.startsWith("/_next");
 
-    // Inject tenant param into /auth/login so the login page knows which tenant
+    // Inject tenant param into /auth/login — use redirect so client JS can read ?tenant=
     if (pathname.startsWith("/auth") && !request.nextUrl.searchParams.has("tenant")) {
       const url = request.nextUrl.clone();
       url.searchParams.set("tenant", tenantSlug);
-      return withCorsHeaders(NextResponse.rewrite(url), request);
+      return withCorsHeaders(NextResponse.redirect(url), request);
     }
 
     if (!isAppRoute) {
