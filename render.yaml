@@ -14,11 +14,11 @@ services:
         value: apollo-medical
       - key: NODE_OPTIONS
         value: "--max-old-space-size=460"
+      - key: NEXTAUTH_URL
+        value: https://apollo-medical-portal.onrender.com
+      - key: NEXT_PUBLIC_BASE_URL
+        value: https://apollo-medical-portal.onrender.com
       - key: DATABASE_URL
         sync: false
       - key: NEXTAUTH_SECRET
-        sync: false
-      - key: NEXTAUTH_URL
-        sync: false
-      - key: NEXT_PUBLIC_BASE_URL
         sync: false
