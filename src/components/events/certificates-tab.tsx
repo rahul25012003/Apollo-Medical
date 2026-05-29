@@ -12,7 +12,12 @@ import {
 import {
   Award, Upload, Eye, Send, Loader2, CheckCircle2, AlertCircle,
   ImageIcon, X, Plus, Trash2, Info, Users, UserCheck, Edit2, Search,
+  LayoutTemplate, Image as ImageIconLucide,
 } from "lucide-react";
+import {
+  BUILTIN_TEMPLATES, BuiltinTemplateId, BuiltinCertificateDisplay,
+} from "@/components/certificates/builtin-templates";
+import type { CertificateData } from "@/components/certificates/certificate-template";
 import { toast } from "sonner";
 
 const CERT_FONTS = [
@@ -26,6 +31,7 @@ const CERT_FONTS = [
 
 interface CategoryTemplate {
   templateImage?: string;
+  builtinTemplateId?: string;  // ID of a pre-designed builtin template
   nameY: number;
   fontSize: number;
   fontColor: string;
@@ -89,6 +95,24 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
   const [indivCategory, setIndivCategory] = useState("");
   const [indivSending, setIndivSending] = useState(false);
   const [indivPreviewing, setIndivPreviewing] = useState(false);
+
+  // ── Builtin template preview modal ──
+  const [builtinPreviewOpen, setBuiltinPreviewOpen] = useState(false);
+  const [builtinPreviewCategory, setBuiltinPreviewCategory] = useState<string | null>(null);
+  const [builtinPreviewSampleName, setBuiltinPreviewSampleName] = useState("Dr. Sample Name");
+  // sample event data for preview rendering
+  const sampleCertData: CertificateData = {
+    recipientName: builtinPreviewSampleName || "Dr. Sample Name",
+    eventTitle: "Apollo Annual Medical Conference 2025",
+    eventType: "CONFERENCE",
+    eventDate: new Date().toISOString(),
+    certificateCode: "CERT-PREVIEW",
+    organizer: "Apollo Hospitals",
+    cmeCredits: 6,
+    certificateType: "ATTENDANCE",
+    issuedAt: new Date().toISOString(),
+    verifyUrl: typeof window !== "undefined" ? window.location.origin + "/verify/CERT-PREVIEW" : "/verify/CERT-PREVIEW",
+  };
 
   // ── Load config ──
   const fetchConfig = useCallback(async () => {
@@ -169,7 +193,13 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
 
   const handlePreview = async (category: string) => {
     const tpl = templates[category];
-    if (!tpl?.templateImage) { toast.error("Upload a template image first"); return; }
+    // If builtin template: open in-UI preview modal
+    if (tpl?.builtinTemplateId && !tpl.templateImage) {
+      setBuiltinPreviewCategory(category);
+      setBuiltinPreviewOpen(true);
+      return;
+    }
+    if (!tpl?.templateImage) { toast.error("Choose a template for this role first"); return; }
     const sampleName = previewNames[category]?.trim();
     if (!sampleName) { toast.error("Enter a name in the preview field first"); return; }
     const saved = await handleSaveAll(true);
@@ -188,7 +218,7 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
   // ── Option 1: Open review dialog for a role ──
   const openReview = async (category: string) => {
     const tpl = templates[category];
-    if (!tpl?.templateImage) { toast.error("Upload a template image for this role first"); return; }
+    if (!tpl?.templateImage && !tpl?.builtinTemplateId) { toast.error("Choose a template for this role first"); return; }
     setReviewCategory(category);
     setNameOverrides({});
     setSelected(new Set());
@@ -304,7 +334,10 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
     finally { setIndivPreviewing(false); }
   };
 
-  const readyCategories = categories.filter((c) => templates[c.name]?.templateImage);
+  const isTemplateReady = (catName: string) =>
+    !!(templates[catName]?.templateImage || templates[catName]?.builtinTemplateId);
+
+  const readyCategories = categories.filter((c) => isTemplateReady(c.name));
 
   if (loading) return (
     <div className="flex items-center justify-center py-16">
@@ -321,10 +354,10 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
           <Info className="h-4 w-4" /> How to send certificates
         </p>
         <ol className="text-xs text-teal-700 space-y-1 list-decimal list-inside">
-          <li>Upload your certificate PNG (exported from PowerPoint with name area blank) for each role</li>
-          <li>Set the name position slider + font style → Preview PDF to verify</li>
-          <li><strong>Option A</strong> — Click <strong>Review &amp; Send</strong> on a role: review all participants, edit names if needed, send to all or selected ones</li>
-          <li><strong>Option B</strong> — Click <strong>Send to Individual</strong>: search any participant, edit their name, send just to them</li>
+          <li><strong>Option A — Built-in template</strong>: Pick one of 4 pre-designed beautiful templates below for each role → Preview it → Send</li>
+          <li><strong>Option B — Custom upload</strong>: Upload your certificate PNG (PowerPoint export, name area blank), set name position + font → Preview PDF to verify</li>
+          <li>Click <strong>Review &amp; Send</strong> on a role to review all participants, edit names if needed, and send</li>
+          <li>Or click <strong>Send to Individual</strong> to search and send to one specific person</li>
         </ol>
       </div>
 
@@ -383,134 +416,213 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
       <div className="grid gap-4">
         {categories.map((cat) => {
           const tpl = templates[cat.name] ?? { nameY: 50, fontSize: 36, fontColor: "#000000", fontFamily: "Times-Italic" };
-          const hasTemplate = !!tpl.templateImage;
+          const hasUpload = !!tpl.templateImage;
+          const hasBuiltin = !!tpl.builtinTemplateId;
+          const hasTemplate = hasUpload || hasBuiltin;
           const isManual = cat.manual || cat.count === 0;
           const displayName = cat.name === "__no_category__" ? "No Category (unassigned)" : cat.name;
+          const selectedBuiltin = BUILTIN_TEMPLATES.find((t) => t.id === tpl.builtinTemplateId);
 
           return (
             <Card key={cat.name} className={`overflow-hidden transition-all ${hasTemplate ? "border-green-200" : "border-orange-200"}`}>
               <div className={`h-1 ${hasTemplate ? "bg-green-400" : "bg-orange-300"}`} />
-              <CardContent className="p-0">
-                <div className="flex flex-col sm:flex-row">
-                  {/* Image upload */}
-                  <div className="relative w-full sm:w-44 shrink-0 bg-muted/20 border-b sm:border-b-0 sm:border-r flex items-center justify-center min-h-[130px]">
-                    {hasTemplate ? (
-                      <>
+              <CardContent className="p-4 space-y-4">
+
+                {/* Header row */}
+                <div className="flex items-start justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm">{displayName}</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5">
+                      {cat.count === 0 ? "No registrations yet" : `${cat.count} registrant${cat.count > 1 ? "s" : ""}`}
+                    </Badge>
+                    {hasTemplate
+                      ? <Badge className="text-[10px] px-1.5 bg-green-100 text-green-700 border-green-200 gap-1"><CheckCircle2 className="h-2.5 w-2.5" /> Ready</Badge>
+                      : <Badge className="text-[10px] px-1.5 bg-orange-100 text-orange-700 border-orange-200 gap-1"><AlertCircle className="h-2.5 w-2.5" /> Template needed</Badge>}
+                  </div>
+                  {isManual && (
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                      onClick={() => handleRemoveCategory(cat.name)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+
+                {/* ── Template Picker ── */}
+                <div className="space-y-2">
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Certificate Template</Label>
+
+                  {/* Built-in template gallery */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {BUILTIN_TEMPLATES.map((tmpl) => {
+                      const isSelected = tpl.builtinTemplateId === tmpl.id && !hasUpload;
+                      return (
+                        <button
+                          key={tmpl.id}
+                          type="button"
+                          onClick={() => {
+                            updateTemplate(cat.name, "builtinTemplateId", tmpl.id);
+                            updateTemplate(cat.name, "templateImage", undefined);
+                          }}
+                          className={`relative group rounded-lg border-2 overflow-hidden transition-all text-left ${
+                            isSelected
+                              ? "border-teal-500 shadow-md ring-2 ring-teal-500/30"
+                              : "border-border hover:border-teal-300"
+                          }`}
+                        >
+                          {/* Mini visual thumbnail */}
+                          <div
+                            className="h-14 flex items-center justify-center relative overflow-hidden"
+                            style={{ background: tmpl.previewBg }}
+                          >
+                            <span className="text-white text-[9px] font-bold tracking-wider opacity-70 uppercase">
+                              {tmpl.id === "classic" && "✦ Classic ✦"}
+                              {tmpl.id === "modern" && "MODERN"}
+                              {tmpl.id === "premium" && "◆ PREMIUM"}
+                              {tmpl.id === "apollo" && "APOLLO"}
+                            </span>
+                            {isSelected && (
+                              <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-teal-500 flex items-center justify-center">
+                                <CheckCircle2 className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="px-2 py-1.5 bg-white">
+                            <p className="text-[10px] font-semibold text-foreground truncate">{tmpl.name}</p>
+                            <p className="text-[9px] text-muted-foreground leading-tight mt-0.5 line-clamp-1">{tmpl.description}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Upload custom — shown below the gallery */}
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wide shrink-0">or Upload Custom PNG</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {hasUpload ? (
+                      <div className="flex items-center gap-2 flex-1">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={tpl.templateImage} alt={displayName} className="w-full h-full object-contain max-h-[130px] p-1" />
+                        <img src={tpl.templateImage} alt={displayName} className="h-10 w-16 object-contain border rounded" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-green-700">Custom PNG uploaded</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{tpl.templateImage?.split("/").pop()}</p>
+                        </div>
                         <button onClick={() => updateTemplate(cat.name, "templateImage", undefined)}
-                          className="absolute top-1.5 right-1.5 rounded-full bg-black/50 text-white p-0.5 hover:bg-black/70">
+                          className="rounded-full bg-muted text-muted-foreground p-1 hover:bg-destructive/10 hover:text-destructive transition-colors shrink-0">
                           <X className="h-3 w-3" />
                         </button>
-                      </>
+                      </div>
                     ) : (
                       <button onClick={() => fileInputRefs.current[cat.name]?.click()}
-                        className="flex flex-col items-center gap-2 p-4 w-full h-full text-muted-foreground hover:text-teal-600 hover:bg-teal-50/50 transition-colors">
-                        <ImageIcon className="h-7 w-7" />
-                        <span className="text-xs font-semibold">Upload Template</span>
-                        <span className="text-[10px] text-muted-foreground/70">PNG or JPG</span>
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-teal-600 hover:border-teal-400 hover:bg-teal-50/50 transition-colors text-xs w-full">
+                        <ImageIconLucide className="h-3.5 w-3.5 shrink-0" />
+                        <span>Upload PNG / JPG template</span>
+                        {hasBuiltin && <span className="text-[9px] opacity-60 ml-auto">(replaces selected template)</span>}
                       </button>
                     )}
                     <input type="file" accept="image/png,image/jpeg,image/jpg" className="hidden"
                       ref={(el) => { fileInputRefs.current[cat.name] = el; }}
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(cat.name, f); e.target.value = ""; }} />
-                  </div>
-
-                  {/* Settings */}
-                  <div className="flex-1 p-4 space-y-3">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm">{displayName}</span>
-                        <Badge variant="secondary" className="text-[10px] px-1.5">
-                          {cat.count === 0 ? "No registrations yet" : `${cat.count} registrant${cat.count > 1 ? "s" : ""}`}
-                        </Badge>
-                        {hasTemplate
-                          ? <Badge className="text-[10px] px-1.5 bg-green-100 text-green-700 border-green-200 gap-1"><CheckCircle2 className="h-2.5 w-2.5" /> Ready</Badge>
-                          : <Badge className="text-[10px] px-1.5 bg-orange-100 text-orange-700 border-orange-200 gap-1"><AlertCircle className="h-2.5 w-2.5" /> Template needed</Badge>}
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {hasTemplate && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => fileInputRefs.current[cat.name]?.click()}>
-                            <Upload className="h-3 w-3" /> Replace
-                          </Button>
-                        )}
-                        {isManual && (
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
-                            onClick={() => handleRemoveCategory(cat.name)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Preview name + preview button */}
-                    {hasTemplate && (
-                      <div className="flex items-center gap-2">
-                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide shrink-0">Preview name</Label>
-                        <Input placeholder="Type a name (required to preview)" value={previewNames[cat.name] ?? ""}
-                          onChange={(e) => setPreviewNames((p) => ({ ...p, [cat.name]: e.target.value }))}
-                          className="h-7 text-xs flex-1" />
-                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1 shrink-0" onClick={() => handlePreview(cat.name)}>
-                          <Eye className="h-3 w-3" /> Preview
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Settings grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Name position (% top)</Label>
-                        <div className="flex items-center gap-2">
-                          <input type="range" min={0} max={100} step={1} value={tpl.nameY}
-                            onChange={(e) => updateTemplate(cat.name, "nameY", parseInt(e.target.value))}
-                            className="flex-1 h-1.5 accent-teal-600" />
-                          <span className="text-xs font-mono w-9 text-right">{tpl.nameY}%</span>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Font size (pt)</Label>
-                        <Input type="number" min={12} max={96} value={tpl.fontSize}
-                          onChange={(e) => updateTemplate(cat.name, "fontSize", parseInt(e.target.value) || 36)}
-                          className="h-8 text-sm" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Font style</Label>
-                        <select value={tpl.fontFamily || "Times-Italic"}
-                          onChange={(e) => updateTemplate(cat.name, "fontFamily", e.target.value)}
-                          className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
-                          {CERT_FONTS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-                        </select>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Name colour</Label>
-                        <div className="flex items-center gap-2">
-                          <input type="color" value={tpl.fontColor}
-                            onChange={(e) => updateTemplate(cat.name, "fontColor", e.target.value)}
-                            className="h-8 w-10 rounded border cursor-pointer p-0.5 shrink-0" />
-                          <Input value={tpl.fontColor}
-                            onChange={(e) => updateTemplate(cat.name, "fontColor", e.target.value)}
-                            className="h-8 text-sm font-mono" maxLength={7} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Option 1: Review & Send button */}
-                    <div className="pt-1">
-                      <Button
-                        onClick={() => openReview(cat.name)}
-                        disabled={!hasTemplate || cat.count === 0}
-                        className="gap-2 bg-teal-600 hover:bg-teal-700 text-white h-8 text-xs"
-                        size="sm"
-                      >
-                        <Users className="h-3.5 w-3.5" />
-                        Review &amp; Send ({cat.count})
-                      </Button>
-                      {!hasTemplate && <span className="ml-2 text-[10px] text-muted-foreground">Upload template first</span>}
-                      {hasTemplate && cat.count === 0 && <span className="ml-2 text-[10px] text-muted-foreground">No confirmed registrants yet</span>}
-                    </div>
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) {
+                          handleImageUpload(cat.name, f);
+                          updateTemplate(cat.name, "builtinTemplateId", undefined);
+                        }
+                        e.target.value = "";
+                      }} />
                   </div>
                 </div>
+
+                {/* Selected template info + preview */}
+                {hasTemplate && (
+                  <div className="flex items-center gap-2 flex-wrap pt-1 border-t">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      {hasBuiltin && !hasUpload && (
+                        <>
+                          <LayoutTemplate className="h-3.5 w-3.5 text-teal-500" />
+                          <span>Using <strong className="text-foreground">{selectedBuiltin?.name}</strong> built-in template</span>
+                        </>
+                      )}
+                      {hasUpload && (
+                        <>
+                          <Upload className="h-3.5 w-3.5 text-blue-500" />
+                          <span>Using <strong className="text-foreground">custom uploaded</strong> template</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Preview name */}
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <Input placeholder="Preview name…" value={previewNames[cat.name] ?? ""}
+                        onChange={(e) => setPreviewNames((p) => ({ ...p, [cat.name]: e.target.value }))}
+                        className="h-7 text-xs w-36" />
+                      <Button size="sm" variant="outline" className="h-7 text-xs gap-1 shrink-0"
+                        onClick={() => handlePreview(cat.name)}>
+                        <Eye className="h-3 w-3" /> Preview
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Settings grid — only for custom upload (position/font control) */}
+                {hasUpload && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1 border-t">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Name position (% top)</Label>
+                      <div className="flex items-center gap-2">
+                        <input type="range" min={0} max={100} step={1} value={tpl.nameY}
+                          onChange={(e) => updateTemplate(cat.name, "nameY", parseInt(e.target.value))}
+                          className="flex-1 h-1.5 accent-teal-600" />
+                        <span className="text-xs font-mono w-9 text-right">{tpl.nameY}%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Font size (pt)</Label>
+                      <Input type="number" min={12} max={96} value={tpl.fontSize}
+                        onChange={(e) => updateTemplate(cat.name, "fontSize", parseInt(e.target.value) || 36)}
+                        className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Font style</Label>
+                      <select value={tpl.fontFamily || "Times-Italic"}
+                        onChange={(e) => updateTemplate(cat.name, "fontFamily", e.target.value)}
+                        className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
+                        {CERT_FONTS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Name colour</Label>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={tpl.fontColor}
+                          onChange={(e) => updateTemplate(cat.name, "fontColor", e.target.value)}
+                          className="h-8 w-10 rounded border cursor-pointer p-0.5 shrink-0" />
+                        <Input value={tpl.fontColor}
+                          onChange={(e) => updateTemplate(cat.name, "fontColor", e.target.value)}
+                          className="h-8 text-sm font-mono" maxLength={7} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Review & Send button */}
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    onClick={() => openReview(cat.name)}
+                    disabled={!hasTemplate || cat.count === 0}
+                    className="gap-2 bg-teal-600 hover:bg-teal-700 text-white h-8 text-xs"
+                    size="sm"
+                  >
+                    <Users className="h-3.5 w-3.5" />
+                    Review &amp; Send ({cat.count})
+                  </Button>
+                  {!hasTemplate && <span className="text-[10px] text-muted-foreground">Choose a template first</span>}
+                  {hasTemplate && cat.count === 0 && <span className="text-[10px] text-muted-foreground">No confirmed registrants yet</span>}
+                </div>
+
               </CardContent>
             </Card>
           );
@@ -644,6 +756,42 @@ export function CertificatesTab({ eventId }: CertificatesTabProps) {
               {reviewSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               {reviewSending ? "Sending…" : `Send to ${selected.size} participant${selected.size !== 1 ? "s" : ""}`}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ══════════════════════════════════════
+          BUILT-IN TEMPLATE PREVIEW MODAL
+      ══════════════════════════════════════ */}
+      <Dialog open={builtinPreviewOpen} onOpenChange={setBuiltinPreviewOpen}>
+        <DialogContent className="w-[98vw] max-w-[320mm] p-0 overflow-hidden">
+          <DialogHeader className="px-4 pt-4 pb-2">
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <LayoutTemplate className="h-4 w-4 text-teal-600" />
+              Template Preview
+              {builtinPreviewCategory && (
+                <span className="text-muted-foreground font-normal">— {builtinPreviewCategory === "__no_category__" ? "No Category" : builtinPreviewCategory}</span>
+              )}
+            </DialogTitle>
+            <div className="flex items-center gap-2 mt-1">
+              <Label className="text-xs shrink-0">Sample name:</Label>
+              <Input value={builtinPreviewSampleName}
+                onChange={(e) => setBuiltinPreviewSampleName(e.target.value)}
+                className="h-7 text-xs flex-1" placeholder="Dr. Sample Name" />
+            </div>
+          </DialogHeader>
+          <div className="overflow-auto bg-gray-100 p-4">
+            {builtinPreviewCategory && templates[builtinPreviewCategory]?.builtinTemplateId && (
+              <div style={{ transform: "scale(0.7)", transformOrigin: "top left", width: "297mm", height: "210mm" }}>
+                <BuiltinCertificateDisplay
+                  templateId={templates[builtinPreviewCategory].builtinTemplateId as BuiltinTemplateId}
+                  data={{ ...sampleCertData, recipientName: builtinPreviewSampleName || "Dr. Sample Name" }}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter className="px-4 py-3 border-t">
+            <Button variant="outline" size="sm" onClick={() => setBuiltinPreviewOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

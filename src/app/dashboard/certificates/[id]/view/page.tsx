@@ -11,6 +11,7 @@ import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { Button } from "@/components/ui/button";
 import { certificatesService } from "@/services/certificates";
 import { CertificateTemplate, CertificateData, EventType } from "@/components/certificates/certificate-template";
+import { BuiltinCertificateDisplay, BuiltinTemplateId } from "@/components/certificates/builtin-templates";
 import { CertificateShare } from "@/components/certificates/certificate-share";
 
 interface CertificateDetails {
@@ -49,6 +50,7 @@ export default function CertificateViewPage() {
     const certificateId = params.id as string;
 
     const [certificate, setCertificate] = useState<CertificateDetails | null>(null);
+    const [builtinTemplateId, setBuiltinTemplateId] = useState<BuiltinTemplateId | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +60,25 @@ export default function CertificateViewPage() {
                 setLoading(true);
                 const response = await certificatesService.getById(certificateId);
                 if (response.success && response.data) {
-                    setCertificate(response.data as unknown as CertificateDetails);
+                    const cert = response.data as unknown as CertificateDetails;
+                    setCertificate(cert);
+                    // Fetch event cert config to find builtin template
+                    try {
+                        const cfgRes = await fetch(`/api/events/${cert.event.id}/certificates/config`);
+                        if (cfgRes.ok) {
+                            const cfgData = await cfgRes.json();
+                            const templates = cfgData.data?.templates ?? {};
+                            // Find registration's category (check all categories for one with builtinTemplateId)
+                            const regCategory = (cert as any).registration?.category ?? null;
+                            const catKey = regCategory
+                                ? (templates[regCategory] ? regCategory : "__no_category__")
+                                : "__no_category__";
+                            const tplConfig = templates[catKey] ?? templates[Object.keys(templates)[0]];
+                            if (tplConfig?.builtinTemplateId && !tplConfig?.templateImage) {
+                                setBuiltinTemplateId(tplConfig.builtinTemplateId as BuiltinTemplateId);
+                            }
+                        }
+                    } catch { /* non-fatal */ }
                 } else {
                     setError("Certificate not found");
                 }
@@ -222,14 +242,18 @@ export default function CertificateViewPage() {
             <div className="min-h-screen bg-gray-100 py-8 no-print">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="bg-white rounded-lg shadow-lg overflow-auto">
-                        <CertificateTemplate data={certificateData} />
+                        {builtinTemplateId
+                            ? <BuiltinCertificateDisplay templateId={builtinTemplateId} data={certificateData} />
+                            : <CertificateTemplate data={certificateData} />}
                     </div>
                 </div>
             </div>
 
             {/* Print-only version */}
             <div id="certificate-print-area" className="hidden print:block">
-                <CertificateTemplate data={certificateData} />
+                {builtinTemplateId
+                    ? <BuiltinCertificateDisplay templateId={builtinTemplateId} data={certificateData} />
+                    : <CertificateTemplate data={certificateData} />}
             </div>
         </>
     );
