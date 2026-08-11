@@ -57,8 +57,13 @@ build() {
     npx prisma generate
 
     # Build Next.js (standalone mode)
+    # next.config.ts only sets output:"standalone" when NEXT_STANDALONE=true
     log "Building Next.js (standalone output)..."
-    npm run build
+    NEXT_STANDALONE=true npm run build
+
+    if [ ! -d ".next/standalone" ]; then
+        err "Build did not produce .next/standalone — NEXT_STANDALONE=true was not picked up by next.config.ts"
+    fi
 
     # Create deployment package
     log "Packaging deployment bundle..."
