@@ -225,6 +225,7 @@ export default function CreateEventPage() {
         contactPhone: "",
         website: "",
         bannerImage: "",
+        brochureUrl: "",
     });
 
     const updateFormData = (field: string, value: string | boolean) => {
@@ -247,6 +248,26 @@ export default function CreateEventPage() {
             toast.error("Error uploading banner image");
         } finally {
             setBannerUploading(false);
+        }
+    };
+
+    const [brochureUploading, setBrochureUploading] = useState(false);
+    const handleBrochureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setBrochureUploading(true);
+            const res = await uploadFile(file, "events/brochures");
+            if (res.success && res.data) {
+                updateFormData("brochureUrl", res.data.url);
+                toast.success("Flyer uploaded successfully");
+            } else {
+                toast.error("Failed to upload flyer");
+            }
+        } catch {
+            toast.error("Error uploading flyer");
+        } finally {
+            setBrochureUploading(false);
         }
     };
 
@@ -547,6 +568,7 @@ export default function CreateEventPage() {
                 website: formData.website || undefined,
                 includes: includes,
                 bannerImage: formData.bannerImage || undefined,
+                brochureUrl: formData.brochureUrl || undefined,
                 isPublished: publish,
                 isFeatured: formData.isFeatured,
                 signatory1Name: formData.signatory1Name || undefined,
@@ -1236,6 +1258,71 @@ export default function CreateEventPage() {
                                                 >
                                                     <Trash2 className="h-3 w-3" />
                                                     Remove
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Event Flyer / Brochure */}
+                                <Card className="card-hover">
+                                    <CardHeader>
+                                        <CardTitle className="text-sm flex items-center gap-2">
+                                            <FileText className="h-4 w-4" />
+                                            Event Flyer / Brochure
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="brochureUpload" className="text-xs">Upload a PDF or image</Label>
+                                            <Input
+                                                id="brochureUpload"
+                                                type="file"
+                                                accept="application/pdf,image/jpeg,image/png"
+                                                onChange={handleBrochureUpload}
+                                                disabled={brochureUploading}
+                                                className="cursor-pointer"
+                                            />
+                                            {brochureUploading && <p className="text-xs text-muted-foreground">Uploading...</p>}
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-px flex-1 bg-border" />
+                                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">or</span>
+                                            <div className="h-px flex-1 bg-border" />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="brochureLink" className="text-xs">Paste a link</Label>
+                                            <Input
+                                                id="brochureLink"
+                                                type="text"
+                                                placeholder="/flyers/my-flyer.pdf or https://..."
+                                                value={formData.brochureUrl}
+                                                onChange={(e) => updateFormData("brochureUrl", e.target.value)}
+                                            />
+                                            <p className="text-[11px] text-muted-foreground leading-snug">
+                                                Uploaded files are cleared whenever the site is redeployed. For a flyer that must
+                                                stay online permanently, use a link instead.
+                                            </p>
+                                        </div>
+
+                                        {formData.brochureUrl && (
+                                            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                                                    <a href={formData.brochureUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate">
+                                                        View Flyer
+                                                    </a>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => updateFormData("brochureUrl", "")}
+                                                    className="gap-1 text-destructive flex-shrink-0"
+                                                >
+                                                    <Trash2 className="h-3 w-3" /> Remove
                                                 </Button>
                                             </div>
                                         )}

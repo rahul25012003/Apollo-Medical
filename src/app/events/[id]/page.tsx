@@ -30,6 +30,8 @@ import {
     Mic2,
     DoorOpen,
     Camera,
+    FileText,
+    Download,
     ZoomIn as ZoomInIcon,
     X as XIcon,
     ChevronLeft as ChevronLeftIcon,
@@ -125,6 +127,7 @@ interface DisplayEvent {
     registrationDeadline: string | null;
     registrationOpensDate: string | null;
     photos: EventPhoto[];
+    brochureUrl: string | null;
 }
 
 const SESSION_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -142,6 +145,16 @@ const ENGAGEMENT_ICON: Record<string, typeof Megaphone> = {
     FEEDBACK: MessageSquare,
     ANNOUNCEMENT: Megaphone,
     QUIZ: Award,
+};
+
+// Tab strip column counts, keyed by how many tabs are actually visible.
+// Written as literal class strings so Tailwind's JIT picks them up.
+const TAB_GRID_COLS: Record<number, string> = {
+    2: "grid-cols-2",
+    3: "grid-cols-3",
+    4: "grid-cols-2 sm:grid-cols-4",
+    5: "grid-cols-3 sm:grid-cols-5",
+    6: "grid-cols-4 sm:grid-cols-6",
 };
 
 const tierConfig = {
@@ -350,6 +363,7 @@ export default function EventDetailPage() {
                         registrationDeadline: apiEvent.registrationDeadline || null,
                         registrationOpensDate: apiEvent.registrationOpensDate || null,
                         photos: (apiEvent.photos as EventPhoto[] | null) || [],
+                        brochureUrl: apiEvent.brochureUrl || null,
                     };
 
                     setEvent(displayEvent);
@@ -648,9 +662,12 @@ export default function EventDetailPage() {
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-fadeIn stagger-1">
                             <TabsList className={cn(
                                 "grid w-full h-10 sm:h-12",
-                                event.photos.length > 0 && event.engagements.length > 0 ? "grid-cols-4 sm:grid-cols-6"
-                                : event.photos.length > 0 || event.engagements.length > 0 ? "grid-cols-3 sm:grid-cols-5"
-                                : "grid-cols-2 sm:grid-cols-4"
+                                TAB_GRID_COLS[
+                                    3 // overview + scientific program + speakers are always shown
+                                    + (event.engagements.length > 0 ? 1 : 0)
+                                    + (event.sponsors.length > 0 ? 1 : 0)
+                                    + (event.photos.length > 0 ? 1 : 0)
+                                ] ?? "grid-cols-3 sm:grid-cols-6"
                             )}>
                                 <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
                                 <TabsTrigger value="schedule" className="text-xs sm:text-sm gap-1">
@@ -666,7 +683,9 @@ export default function EventDetailPage() {
                                     </TabsTrigger>
                                 )}
                                 <TabsTrigger value="speakers" className="text-xs sm:text-sm">Speakers</TabsTrigger>
-                                <TabsTrigger value="sponsors" className="text-xs sm:text-sm">Sponsors</TabsTrigger>
+                                {event.sponsors.length > 0 && (
+                                    <TabsTrigger value="sponsors" className="text-xs sm:text-sm">Sponsors</TabsTrigger>
+                                )}
                                 {event.photos.length > 0 && (
                                     <TabsTrigger value="gallery" className="text-xs sm:text-sm gap-1">
                                         <Camera className="h-3.5 w-3.5 hidden sm:block" />
@@ -677,6 +696,69 @@ export default function EventDetailPage() {
                             </TabsList>
 
                             <TabsContent value="overview" className="space-y-6 mt-6">
+                                {/* Event Flyer / Brochure — shown for any event that has one uploaded */}
+                                {event.brochureUrl && (() => {
+                                    const flyerUrl = event.brochureUrl;
+                                    const isImage = /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(flyerUrl) || flyerUrl.startsWith("data:image/");
+                                    return (
+                                        <Card className="overflow-hidden">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <FileText className="h-5 w-5 text-primary" />
+                                                    Event Flyer
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                {isImage ? (
+                                                    <a
+                                                        href={flyerUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group relative block rounded-xl overflow-hidden border bg-muted/30"
+                                                    >
+                                                        <img
+                                                            src={flyerUrl}
+                                                            alt={`${event.title} flyer`}
+                                                            loading="lazy"
+                                                            decoding="async"
+                                                            className="w-full h-auto object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+                                                            <ZoomInIcon className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                                                        </div>
+                                                    </a>
+                                                ) : (
+                                                    // PDFs render inline on desktop; mobile browsers fall back to the buttons below
+                                                    <div className="hidden sm:block rounded-xl overflow-hidden border bg-muted/30">
+                                                        <object data={flyerUrl} type="application/pdf" className="w-full h-[640px]">
+                                                            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                                                                <FileText className="h-10 w-10 text-muted-foreground/50" />
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    Preview isn&apos;t supported in this browser — use the buttons below.
+                                                                </p>
+                                                            </div>
+                                                        </object>
+                                                    </div>
+                                                )}
+                                                <div className="flex flex-col sm:flex-row gap-2">
+                                                    <Button asChild className="gap-2">
+                                                        <a href={flyerUrl} target="_blank" rel="noopener noreferrer">
+                                                            <ExternalLink className="h-4 w-4" />
+                                                            View Flyer
+                                                        </a>
+                                                    </Button>
+                                                    <Button asChild variant="outline" className="gap-2">
+                                                        <a href={flyerUrl} download>
+                                                            <Download className="h-4 w-4" />
+                                                            Download
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })()}
+
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>About This Event</CardTitle>
@@ -910,6 +992,7 @@ export default function EventDetailPage() {
                                 </div>
                             </TabsContent>
 
+                            {event.sponsors.length > 0 && (
                             <TabsContent value="sponsors" className="space-y-6 mt-6">
                                 {(["platinum", "gold", "silver", "bronze"] as const).map((tier) => {
                                     const tierSponsors = event.sponsors.filter((s) => s.tier === tier);
@@ -961,6 +1044,7 @@ export default function EventDetailPage() {
                                     );
                                 })}
                             </TabsContent>
+                            )}
 
                             {/* Gallery Tab */}
                             {event.photos.length > 0 && (

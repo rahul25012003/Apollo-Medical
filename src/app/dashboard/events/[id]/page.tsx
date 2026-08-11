@@ -56,6 +56,7 @@ import {
     MoreHorizontal,
     TrendingUp,
     UserPlus,
+    Plus,
     ExternalLink,
     CheckCircle2,
     AlertCircle,
@@ -134,6 +135,27 @@ interface DisplayEngagement {
     description: string | null;
     content: unknown;
     isActive: boolean;
+}
+
+interface QuizParticipant {
+    id: string;
+    registrationId: string;
+    score: number | null;
+    position: number | null;
+    isWinner: boolean;
+    isFinalist: boolean;
+    registration: { id: string; name: string; email: string };
+}
+
+interface QuizData {
+    id: string;
+    title: string;
+    description: string | null;
+    status: "UPCOMING" | "ONGOING" | "COMPLETED";
+    eventId: string;
+    createdAt: string;
+    _count: { participants: number; certificates: number };
+    participants: QuizParticipant[];
 }
 
 const SESSION_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -293,6 +315,13 @@ export default function EventDetailPage() {
         description: "",
         website: "",
     });
+
+    // Quiz state
+    const [quizzes, setQuizzes] = useState<QuizData[]>([]);
+    const [quizzesLoading, setQuizzesLoading] = useState(false);
+    const [createQuizOpen, setCreateQuizOpen] = useState(false);
+    const [quizForm, setQuizForm] = useState({ title: "", description: "" });
+    const [savingQuiz, setSavingQuiz] = useState(false);
 
     // Publish validation state
     const [validationErrorsOpen, setValidationErrorsOpen] = useState(false);
@@ -498,6 +527,19 @@ export default function EventDetailPage() {
         }
     }, [eventId]);
 
+    // Fetch quizzes
+    const fetchQuizzes = async () => {
+        if (!eventId) return;
+        setQuizzesLoading(true);
+        try {
+            const res = await fetch(`/api/events/${eventId}/quizzes`);
+            const data = await res.json();
+            if (data.success) setQuizzes(data.data || []);
+        } catch { /* silent */ } finally {
+            setQuizzesLoading(false);
+        }
+    };
+
     // Fetch registrations when event is loaded
     useEffect(() => {
         async function fetchRegistrations() {
@@ -514,6 +556,12 @@ export default function EventDetailPage() {
 
         fetchRegistrations();
     }, [event]);
+
+    // Load quizzes when event is loaded
+    useEffect(() => {
+        if (eventId) fetchQuizzes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [eventId]);
 
     // Update form amount when event price is loaded
     useEffect(() => {
@@ -1142,6 +1190,10 @@ export default function EventDetailPage() {
                             <Mic2 className="h-3.5 w-3.5" />
                             Scientific Program
                         </TabsTrigger>
+                        <TabsTrigger value="quizzes" className="gap-1.5">
+                            <Award className="h-3.5 w-3.5" />
+                            Quizzes
+                        </TabsTrigger>
                         <TabsTrigger value="engagement" className="gap-1.5">
                             <Megaphone className="h-3.5 w-3.5" />
                             Engagement
@@ -1165,6 +1217,10 @@ export default function EventDetailPage() {
                         <TabsTrigger value="photos" className="gap-1.5">
                             <Camera className="h-3.5 w-3.5" />
                             Photos
+                        </TabsTrigger>
+                        <TabsTrigger value="sponsors" className="gap-1.5">
+                            <Building2 className="h-3.5 w-3.5" />
+                            Sponsors
                         </TabsTrigger>
                     </TabsList>
 
@@ -1721,7 +1777,66 @@ export default function EventDetailPage() {
                         </Card>
                     </TabsContent>
 
-                    {/* Sponsors Tab - Hidden until explicitly needed. Data/API preserved. */}
+                    {/* Sponsors Tab */}
+                    <TabsContent value="sponsors" className="space-y-6">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Building2 className="h-5 w-5 text-blue-600" />
+                                        Event Sponsors
+                                    </CardTitle>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        {event.sponsors.length} sponsor{event.sponsors.length !== 1 ? "s" : ""} supporting this event
+                                    </p>
+                                </div>
+                                <Button onClick={() => setAddSponsorOpen(true)} size="sm" className="gap-2">
+                                    <Plus className="h-4 w-4" />
+                                    Add Sponsor
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                {event.sponsors.length === 0 ? (
+                                    <div className="text-center py-12 text-muted-foreground">
+                                        <Building2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                                        <p className="font-medium">No sponsors yet</p>
+                                        <p className="text-sm mt-1">Add sponsors to showcase their support for this event</p>
+                                        <Button variant="outline" className="mt-4 gap-2" onClick={() => setAddSponsorOpen(true)}>
+                                            <Plus className="h-4 w-4" />
+                                            Add First Sponsor
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {(["platinum", "gold", "silver", "bronze"] as const).map(tier => {
+                                            const tierSponsors = event.sponsors.filter(s => s.tier === tier);
+                                            if (tierSponsors.length === 0) return null;
+                                            const cfg = tierConfig[tier];
+                                            return tierSponsors.map(sponsor => (
+                                                <div key={sponsor.id} className={`rounded-xl border-2 bg-gradient-to-br p-4 ${cfg.cardBorder} ${cfg.cardBg}`}>
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="flex-1 min-w-0">
+                                                            {sponsor.logo ? (
+                                                                <img src={sponsor.logo} alt={sponsor.name} className="h-10 object-contain mb-2" />
+                                                            ) : (
+                                                                <div className="w-10 h-10 rounded-lg bg-white/60 flex items-center justify-center mb-2 border border-white/80">
+                                                                    <Building2 className="h-5 w-5 text-gray-400" />
+                                                                </div>
+                                                            )}
+                                                            <p className="font-semibold text-sm truncate">{sponsor.name}</p>
+                                                        </div>
+                                                        <Badge className={`text-xs border shrink-0 ${cfg.className}`}>
+                                                            {cfg.label}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
                     {/* Venues & Halls Tab */}
                     <TabsContent value="venues" className="space-y-6">
@@ -1753,6 +1868,149 @@ export default function EventDetailPage() {
                             eventId={event.id}
                             categories={event.pricingCategories.map((pc) => pc.name)}
                         />
+                    </TabsContent>
+
+                    {/* Quizzes Tab */}
+                    <TabsContent value="quizzes" className="space-y-6">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Award className="h-5 w-5 text-amber-600" />
+                                        Quizzes
+                                    </CardTitle>
+                                    <CardDescription>{quizzes.length} quiz{quizzes.length !== 1 ? "zes" : ""} for this event</CardDescription>
+                                </div>
+                                <Button onClick={() => setCreateQuizOpen(true)} size="sm" className="gap-2">
+                                    <Plus className="h-4 w-4" />
+                                    New Quiz
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                {quizzesLoading ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                                    </div>
+                                ) : quizzes.length === 0 ? (
+                                    <div className="text-center py-12 text-muted-foreground">
+                                        <Award className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                                        <p className="font-medium">No quizzes yet</p>
+                                        <p className="text-sm mt-1">Create quizzes to engage attendees and award certificates</p>
+                                        <Button variant="outline" className="mt-4 gap-2" onClick={() => setCreateQuizOpen(true)}>
+                                            <Plus className="h-4 w-4" />
+                                            Create First Quiz
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {quizzes.map(quiz => {
+                                            const statusColors: Record<string, string> = {
+                                                UPCOMING: "bg-blue-100 text-blue-700 border-blue-200",
+                                                ONGOING: "bg-green-100 text-green-700 border-green-200",
+                                                COMPLETED: "bg-gray-100 text-gray-600 border-gray-200",
+                                            };
+                                            return (
+                                                <div key={quiz.id} className="rounded-xl border bg-card p-4 hover:shadow-md transition-shadow">
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <h3 className="font-semibold">{quiz.title}</h3>
+                                                                <Badge className={`text-xs border ${statusColors[quiz.status]}`}>
+                                                                    {quiz.status}
+                                                                </Badge>
+                                                            </div>
+                                                            {quiz.description && (
+                                                                <p className="text-sm text-muted-foreground mt-1">{quiz.description}</p>
+                                                            )}
+                                                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                                                <span className="flex items-center gap-1">
+                                                                    <Users className="h-3 w-3" />
+                                                                    {quiz._count.participants} participant{quiz._count.participants !== 1 ? "s" : ""}
+                                                                </span>
+                                                                <span className="flex items-center gap-1">
+                                                                    <Award className="h-3 w-3" />
+                                                                    {quiz._count.certificates} certificate{quiz._count.certificates !== 1 ? "s" : ""}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            {quiz.status !== "COMPLETED" && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="text-xs"
+                                                                    onClick={async () => {
+                                                                        const nextStatus = quiz.status === "UPCOMING" ? "ONGOING" : "COMPLETED";
+                                                                        await fetch(`/api/events/${eventId}/quizzes`, {
+                                                                            method: "PUT",
+                                                                            headers: { "Content-Type": "application/json" },
+                                                                            body: JSON.stringify({ quizId: quiz.id, status: nextStatus }),
+                                                                        });
+                                                                        fetchQuizzes();
+                                                                    }}
+                                                                >
+                                                                    {quiz.status === "UPCOMING" ? "Start" : "Complete"}
+                                                                </Button>
+                                                            )}
+                                                            {quiz.status === "COMPLETED" && quiz._count.participants > 0 && quiz._count.certificates === 0 && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="text-xs gap-1 text-amber-600 border-amber-300 hover:bg-amber-50"
+                                                                    onClick={async () => {
+                                                                        await fetch(`/api/events/${eventId}/quizzes`, {
+                                                                            method: "POST",
+                                                                            headers: { "Content-Type": "application/json" },
+                                                                            body: JSON.stringify({ action: "generate_certificates", quizId: quiz.id }),
+                                                                        });
+                                                                        fetchQuizzes();
+                                                                    }}
+                                                                >
+                                                                    <Award className="h-3 w-3" />
+                                                                    Gen. Certs
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                onClick={async () => {
+                                                                    if (!confirm(`Delete quiz "${quiz.title}"?`)) return;
+                                                                    await fetch(`/api/events/${eventId}/quizzes?quizId=${quiz.id}`, { method: "DELETE" });
+                                                                    fetchQuizzes();
+                                                                }}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                    {quiz.participants.length > 0 && (
+                                                        <div className="mt-4 border-t pt-3">
+                                                            <p className="text-xs font-medium text-muted-foreground mb-2">Top Participants</p>
+                                                            <div className="space-y-1">
+                                                                {quiz.participants.slice(0, 5).map(p => (
+                                                                    <div key={p.id} className="flex items-center justify-between text-xs">
+                                                                        <div className="flex items-center gap-2">
+                                                                            {p.isWinner && <span className="text-amber-500">🏆</span>}
+                                                                            {p.isFinalist && !p.isWinner && <span className="text-blue-500">⭐</span>}
+                                                                            <span className="truncate max-w-[180px]">{p.registration.name}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+                                                                            {p.position && <span>#{p.position}</span>}
+                                                                            {p.score !== null && <span>{p.score} pts</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
                     </TabsContent>
 
                     {/* Engagement Tab */}
@@ -1851,6 +2109,67 @@ export default function EventDetailPage() {
                     </TabsContent>
                 </Tabs>
             </div>
+
+            {/* Create Quiz Dialog */}
+            <Dialog open={createQuizOpen} onOpenChange={(open) => {
+                if (!savingQuiz) {
+                    setCreateQuizOpen(open);
+                    if (!open) setQuizForm({ title: "", description: "" });
+                }
+            }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Create Quiz</DialogTitle>
+                        <DialogDescription>Add a quiz competition for this event</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Title *</Label>
+                            <Input
+                                placeholder="e.g. Medical Knowledge Quiz"
+                                value={quizForm.title}
+                                onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Textarea
+                                placeholder="Brief description of the quiz..."
+                                value={quizForm.description}
+                                onChange={(e) => setQuizForm({ ...quizForm, description: e.target.value })}
+                                rows={3}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setCreateQuizOpen(false)} disabled={savingQuiz}>Cancel</Button>
+                        <Button
+                            disabled={!quizForm.title || savingQuiz}
+                            onClick={async () => {
+                                setSavingQuiz(true);
+                                try {
+                                    const res = await fetch(`/api/events/${eventId}/quizzes`, {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ title: quizForm.title, description: quizForm.description || undefined }),
+                                    });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                        setCreateQuizOpen(false);
+                                        setQuizForm({ title: "", description: "" });
+                                        fetchQuizzes();
+                                    }
+                                } catch { /* ignore */ } finally {
+                                    setSavingQuiz(false);
+                                }
+                            }}
+                        >
+                            {savingQuiz ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Create Quiz
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Add Registration Dialog */}
             <Dialog open={addRegOpen} onOpenChange={(open) => {

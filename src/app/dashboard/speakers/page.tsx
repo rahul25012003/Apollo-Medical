@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { resizeImageToDataUrl } from "@/lib/image-utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { speakersService, Speaker } from "@/services/speakers";
 import { useConfirmDialog, useAlertDialog } from "@/components/ui/confirm-dialog";
@@ -102,12 +103,40 @@ export default function SpeakersPage() {
         biography: "",
         linkedin: "",
         website: "",
+        photo: "",
         isActive: true,
     };
     const [form, setForm] = useState(DEFAULT_FORM);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
+    const [photoUploading, setPhotoUploading] = useState(false);
+
+    // Resize + compress the photo in the browser, then store it on the speaker record as a
+    // data URI. Server uploads land on an ephemeral disk that is wiped on every deploy, so
+    // keeping the image in the database is what makes photos survive in production.
+    const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = ""; // allow re-picking the same file
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            setFormError("Please choose an image file (JPG, PNG or WebP)");
+            return;
+        }
+
+        setPhotoUploading(true);
+        setFormError(null);
+        try {
+            const dataUrl = await resizeImageToDataUrl(file, 400, 0.82);
+            setForm((prev) => ({ ...prev, photo: dataUrl }));
+        } catch (err) {
+            console.error("Photo processing failed:", err);
+            setFormError("Could not read that image. Please try a different file.");
+        } finally {
+            setPhotoUploading(false);
+        }
+    };
 
     // Fetch speakers — reusable so we can call after create/update
     const fetchSpeakers = React.useCallback(async () => {
@@ -179,6 +208,7 @@ export default function SpeakersPage() {
             biography: speaker.biography || "",
             linkedin: speaker.linkedin || "",
             website: speaker.website || "",
+            photo: speaker.photo || "",
             isActive: speaker.isActive,
         });
         setFormError(null);
@@ -204,6 +234,8 @@ export default function SpeakersPage() {
                 biography: form.biography.trim() || undefined,
                 linkedin: form.linkedin.trim() || undefined,
                 website: form.website.trim() || undefined,
+                // Send "" (not undefined) when cleared, so an existing photo is actually removed
+                photo: editingId ? form.photo : (form.photo || undefined),
                 isActive: form.isActive,
             };
             const res = editingId
@@ -450,6 +482,58 @@ export default function SpeakersPage() {
                                 </div>
                             )}
                             <div className="grid gap-4 py-4">
+                                <div className="section-divider-gradient my-2" />
+
+                                {/* Photo — shown beside the speaker's name on the public event page */}
+                                <div className="flex items-center gap-4">
+                                    <Avatar className="h-20 w-20 ring-2 ring-border">
+                                        <AvatarImage src={form.photo || undefined} className="object-cover" />
+                                        <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                                            {form.name ? getInitials(form.name) : <User className="h-7 w-7" />}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0 space-y-2">
+                                        <Label htmlFor="speakerPhoto" className="text-xs sm:text-sm">Speaker Photo</Label>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-1"
+                                                disabled={saving || photoUploading}
+                                                onClick={() => document.getElementById("speakerPhoto")?.click()}
+                                            >
+                                                <Upload className="h-3 w-3" />
+                                                {photoUploading ? "Processing..." : form.photo ? "Change Photo" : "Upload Photo"}
+                                            </Button>
+                                            {form.photo && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-1 text-destructive"
+                                                    disabled={saving || photoUploading}
+                                                    onClick={() => setForm(f => ({ ...f, photo: "" }))}
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                    Remove
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <input
+                                            id="speakerPhoto"
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            className="hidden"
+                                            onChange={handlePhotoSelect}
+                                            disabled={saving || photoUploading}
+                                        />
+                                        <p className="text-[11px] text-muted-foreground leading-snug">
+                                            Square headshots look best. Automatically resized before saving.
+                                        </p>
+                                    </div>
+                                </div>
+
                                 <div className="section-divider-gradient my-2" />
 
                                 {/* Basic Info */}

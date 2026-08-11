@@ -75,6 +75,8 @@ function SendMessageTab() {
   const [result, setResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [loadingEvents, setLoadingEvents] = useState(true);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("none");
 
   useEffect(() => {
     async function fetchEvents() {
@@ -89,8 +91,29 @@ function SendMessageTab() {
         setLoadingEvents(false);
       }
     }
+    async function fetchTemplates() {
+      try {
+        const res = await communicationsService.getTemplates();
+        if (res.success && res.data) {
+          setTemplates(res.data);
+        }
+      } catch {
+        // silently fail
+      }
+    }
     fetchEvents();
+    fetchTemplates();
   }, []);
+
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    if (templateId === "none") return;
+    const tpl = templates.find((t) => t.id === templateId);
+    if (tpl) {
+      setSubject(tpl.subject);
+      setBody(tpl.body);
+    }
+  };
 
   const handleSend = async () => {
     if (!selectedEventId || !subject || !body) return;
@@ -142,6 +165,30 @@ function SendMessageTab() {
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
+          {/* Template Selector */}
+          {templates.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5" />
+                Load from Template
+              </Label>
+              <Select value={selectedTemplateId} onValueChange={handleTemplateSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a template to pre-fill subject & body..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— No template —</SelectItem>
+                  {templates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Selecting a template pre-fills the subject and body. You can still edit them before sending.</p>
+            </div>
+          )}
+
           {/* Event Selector */}
           <div className="space-y-2">
             <Label>Select Event</Label>

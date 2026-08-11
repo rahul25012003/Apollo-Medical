@@ -243,6 +243,10 @@ export default function UsersPage() {
     const { confirm, ConfirmDialog } = useConfirmDialog();
     const { alert, AlertDialog } = useAlertDialog();
 
+    // Create user form state
+    const [newUser, setNewUser] = useState({ name: "", email: "", password: "", phone: "", role: "ATTENDEE" });
+    const [creatingUser, setCreatingUser] = useState(false);
+
     const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
@@ -362,6 +366,33 @@ export default function UsersPage() {
         setIsRoleViewOpen(true);
     };
 
+    const handleCreateUser = async () => {
+        if (!newUser.name || !newUser.email || !newUser.password) return;
+        setCreatingUser(true);
+        try {
+            const res = await usersService.create({
+                name: newUser.name,
+                email: newUser.email,
+                password: newUser.password,
+                phone: newUser.phone || undefined,
+                role: newUser.role,
+                isActive: true,
+            });
+            if (res.success) {
+                setIsCreateOpen(false);
+                setNewUser({ name: "", email: "", password: "", phone: "", role: "ATTENDEE" });
+                await fetchUsers();
+                alert({ title: "User created", description: `${newUser.name} has been added successfully.`, variant: "success" });
+            } else {
+                alert({ title: "Error", description: (res as any).error?.message || "Failed to create user", variant: "error" });
+            }
+        } catch {
+            alert({ title: "Error", description: "An unexpected error occurred", variant: "error" });
+        } finally {
+            setCreatingUser(false);
+        }
+    };
+
     // Compute role user counts from actual data
     const roleCounts: Record<string, number> = {};
     users.forEach((u) => {
@@ -474,22 +505,41 @@ export default function UsersPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Full Name *</Label>
-                                        <Input placeholder="Dr. John Smith" />
+                                        <Input
+                                            placeholder="Dr. John Smith"
+                                            value={newUser.name}
+                                            onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Email Address *</Label>
-                                        <Input type="email" placeholder="john.smith@icms.com" />
+                                        <Input
+                                            type="email"
+                                            placeholder="john.smith@hospital.com"
+                                            value={newUser.email}
+                                            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label>Phone Number</Label>
-                                        <Input type="tel" placeholder="+91 98765 43210" />
+                                        <Label>Password *</Label>
+                                        <Input
+                                            type="password"
+                                            placeholder="Min. 6 characters"
+                                            value={newUser.password}
+                                            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                                        />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Department</Label>
-                                        <Input placeholder="Events" />
+                                        <Label>Phone Number</Label>
+                                        <Input
+                                            type="tel"
+                                            placeholder="+91 98765 43210"
+                                            value={newUser.phone}
+                                            onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                                        />
                                     </div>
                                 </div>
 
@@ -497,12 +547,12 @@ export default function UsersPage() {
 
                                 <div className="space-y-2">
                                     <Label>Role *</Label>
-                                    <Select>
+                                    <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select a role" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {SYSTEM_ROLES.map((role) => (
+                                            {SYSTEM_ROLES.filter((r) => r.id !== "SUPER_ADMIN").map((role) => (
                                                 <SelectItem key={role.id} value={role.id}>
                                                     <div className="flex items-center gap-2">
                                                         <Shield className="h-4 w-4" />
@@ -516,34 +566,18 @@ export default function UsersPage() {
                                         Role determines the default permissions for this user
                                     </p>
                                 </div>
-
-                                <div className="section-divider-gradient my-2" />
-
-                                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                                    <div className="space-y-0.5">
-                                        <Label>Send Welcome Email</Label>
-                                        <p className="text-xs text-muted-foreground">
-                                            User will receive login credentials via email
-                                        </p>
-                                    </div>
-                                    <Switch defaultChecked />
-                                </div>
-
-                                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                                    <div className="space-y-0.5">
-                                        <Label>Activate Account</Label>
-                                        <p className="text-xs text-muted-foreground">
-                                            Allow user to login immediately
-                                        </p>
-                                    </div>
-                                    <Switch defaultChecked />
-                                </div>
                             </div>
                             <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                                <Button variant="outline" onClick={() => { setIsCreateOpen(false); setNewUser({ name: "", email: "", password: "", phone: "", role: "ATTENDEE" }); }}>
                                     Cancel
                                 </Button>
-                                <Button className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25" onClick={() => setIsCreateOpen(false)}>Create User</Button>
+                                <Button
+                                    className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/25"
+                                    onClick={handleCreateUser}
+                                    disabled={!newUser.name || !newUser.email || !newUser.password || creatingUser}
+                                >
+                                    {creatingUser ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Create User"}
+                                </Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>

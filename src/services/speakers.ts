@@ -53,7 +53,7 @@ export interface CreateSpeakerData {
   department?: string;
   institution?: string;
   biography?: string;
-  photo?: string;
+  photo?: string | null;
   linkedin?: string;
   twitter?: string;
   website?: string;

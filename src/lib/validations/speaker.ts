@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+// A photo can arrive as an absolute URL, a relative upload path (/uploads/...),
+// or an inline data URI (how photos are stored so they survive redeploys).
+const photoSchema = z
+  .string()
+  .refine(
+    (v) =>
+      v === "" ||
+      v.startsWith("/") ||
+      v.startsWith("data:image/") ||
+      /^https?:\/\//i.test(v),
+    "Photo must be an image URL, an uploaded file path, or an inline image"
+  );
+
 export const createSpeakerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")).or(z.literal(null)),
@@ -12,7 +25,7 @@ export const createSpeakerSchema = z.object({
   biography: z.string().optional(),
 
   // Media
-  photo: z.string().url().optional().or(z.literal("")),
+  photo: photoSchema.optional().nullable(),
 
   // Social Links
   linkedin: z.string().url().optional().or(z.literal("")),

@@ -116,6 +116,8 @@ export const PUT = withErrorHandler(
       data: {
         ...data,
         email: data.email ? data.email.toLowerCase() : undefined,
+        // An empty photo means "remove it" — store null rather than an empty string
+        photo: data.photo === undefined ? undefined : (data.photo || null),
       },
     });
 

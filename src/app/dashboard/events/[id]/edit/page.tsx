@@ -1077,6 +1077,7 @@ export default function EditEventPage() {
                     startTime: session.startTime || null,
                     endTime: session.endTime || null,
                     venue: session.venue || null,
+                    hallId: session.hallId || null,
                     sessionOrder: session.sessionOrder,
                     sessionSpeakers: resolvedSpeakers.length > 0 ? resolvedSpeakers : undefined,
                     status: session.status,
@@ -1501,6 +1502,10 @@ export default function EditEventPage() {
                             <span className="hidden sm:inline">Engagement</span>
                             <span className="sm:hidden">Engage</span>
                         </TabsTrigger>
+                        <TabsTrigger value="sponsors" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+                            <Building2 className="h-4 w-4 hidden md:block" />
+                            Sponsors
+                        </TabsTrigger>
                     </TabsList>
 
                     {/* Basic Info Tab */}
@@ -1882,11 +1887,12 @@ export default function EditEventPage() {
                                     <CardHeader>
                                         <CardTitle className="text-sm flex items-center gap-2">
                                             <FileText className="h-4 w-4" />
-                                            Event Brochure (PDF)
+                                            Event Flyer / Brochure
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         <div className="space-y-2">
+                                            <Label htmlFor="brochureUpload" className="text-xs">Upload a PDF or image</Label>
                                             <Input
                                                 id="brochureUpload"
                                                 type="file"
@@ -1897,12 +1903,34 @@ export default function EditEventPage() {
                                             />
                                             {brochureUploading && <p className="text-xs text-muted-foreground">Uploading...</p>}
                                         </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-px flex-1 bg-border" />
+                                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">or</span>
+                                            <div className="h-px flex-1 bg-border" />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="brochureLink" className="text-xs">Paste a link</Label>
+                                            <Input
+                                                id="brochureLink"
+                                                type="text"
+                                                placeholder="/flyers/my-flyer.pdf or https://..."
+                                                value={formData.brochureUrl}
+                                                onChange={(e) => handleChange("brochureUrl", e.target.value)}
+                                            />
+                                            <p className="text-[11px] text-muted-foreground leading-snug">
+                                                Uploaded files are cleared whenever the site is redeployed. For a flyer that must
+                                                stay online permanently, use a link instead.
+                                            </p>
+                                        </div>
+
                                         {formData.brochureUrl && (
                                             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
                                                 <div className="flex items-center gap-2 min-w-0">
                                                     <FileText className="h-4 w-4 text-primary flex-shrink-0" />
                                                     <a href={formData.brochureUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate">
-                                                        View Brochure
+                                                        View Flyer
                                                     </a>
                                                 </div>
                                                 <Button type="button" variant="outline" size="sm" onClick={() => handleChange("brochureUrl", "")} className="gap-1 text-destructive flex-shrink-0">
@@ -2694,7 +2722,165 @@ export default function EditEventPage() {
                         </Card>
                     </TabsContent>
 
-                    {/* Sponsors Tab - Hidden until explicitly needed. Data/API preserved. */}
+                    {/* Sponsors Tab */}
+                    <TabsContent value="sponsors" className="space-y-6 mt-6">
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                                        <div className="icon-container icon-container-teal h-8 w-8 sm:h-10 sm:w-10">
+                                            <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                                        </div>
+                                        Event Sponsors
+                                    </CardTitle>
+                                    <Button type="button" variant="outline" size="sm" onClick={addEventSponsor} className="gap-2">
+                                        <Plus className="h-4 w-4" /> Add Sponsor
+                                    </Button>
+                                </div>
+                                <CardDescription>
+                                    Add sponsors and assign their tier. Changes are saved when you click &quot;Save Event&quot; below.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {eventSponsors.length === 0 ? (
+                                    <div className="text-center py-12 border-2 border-dashed rounded-xl">
+                                        <Building2 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                                        <p className="text-muted-foreground font-medium">No sponsors yet</p>
+                                        <p className="text-sm text-muted-foreground/70 mb-4">Add sponsors to display them on your event page</p>
+                                        <Button type="button" variant="outline" size="sm" onClick={addEventSponsor}>
+                                            <Plus className="h-4 w-4 mr-2" /> Add First Sponsor
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {eventSponsors.map((sponsor) => (
+                                            <div key={sponsor.id} className="p-4 rounded-xl border bg-muted/20 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={cn(
+                                                            "px-2 py-0.5 rounded text-xs font-semibold",
+                                                            sponsor.tier === "PLATINUM" && "bg-slate-200 text-slate-800",
+                                                            sponsor.tier === "GOLD"     && "bg-amber-100 text-amber-800",
+                                                            sponsor.tier === "SILVER"   && "bg-gray-100 text-gray-700",
+                                                            sponsor.tier === "BRONZE"   && "bg-orange-100 text-orange-800",
+                                                        )}>
+                                                            {sponsor.tier}
+                                                        </div>
+                                                        {sponsor.isSaved && (
+                                                            <span className="text-xs text-emerald-600 flex items-center gap-1">
+                                                                <CheckCircle2 className="h-3 w-3" /> Saved
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-red-50"
+                                                        onClick={() => removeEventSponsor(sponsor)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {/* Type selector */}
+                                                    <div className="space-y-1.5">
+                                                        <Label className="text-xs">Source</Label>
+                                                        <Select
+                                                            value={sponsor.isExistingSponsor ? "existing" : "new"}
+                                                            onValueChange={(v) => updateEventSponsor(sponsor.id, "isExistingSponsor", v === "existing")}
+                                                        >
+                                                            <SelectTrigger className="h-9">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="existing">Select from library</SelectItem>
+                                                                <SelectItem value="new">Create new sponsor</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    {/* Tier */}
+                                                    <div className="space-y-1.5">
+                                                        <Label className="text-xs">Sponsorship Tier *</Label>
+                                                        <Select
+                                                            value={sponsor.tier}
+                                                            onValueChange={(v) => updateEventSponsor(sponsor.id, "tier", v)}
+                                                        >
+                                                            <SelectTrigger className="h-9">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {sponsorTiers.map((tier) => (
+                                                                    <SelectItem key={tier} value={tier}>{tier}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </div>
+
+                                                {/* Existing sponsor picker */}
+                                                {sponsor.isExistingSponsor ? (
+                                                    <div className="space-y-1.5">
+                                                        <Label className="text-xs">Sponsor *</Label>
+                                                        <Select
+                                                            value={sponsor.sponsorId || ""}
+                                                            onValueChange={(v) => {
+                                                                const found = existingSponsors.find((s) => s.id === v);
+                                                                updateEventSponsor(sponsor.id, "sponsorId", v);
+                                                                if (found) updateEventSponsor(sponsor.id, "sponsorName", found.name);
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="h-9">
+                                                                <SelectValue placeholder="Choose sponsor..." />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {existingSponsors.map((s) => (
+                                                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                ) : (
+                                                    /* New sponsor fields */
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                        <div className="space-y-1.5">
+                                                            <Label className="text-xs">Company Name *</Label>
+                                                            <Input
+                                                                className="h-9"
+                                                                value={sponsor.newSponsorName}
+                                                                onChange={(e) => updateEventSponsor(sponsor.id, "newSponsorName", e.target.value)}
+                                                                placeholder="e.g., Pfizer India"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <Label className="text-xs">Email</Label>
+                                                            <Input
+                                                                className="h-9"
+                                                                value={sponsor.newSponsorEmail}
+                                                                onChange={(e) => updateEventSponsor(sponsor.id, "newSponsorEmail", e.target.value)}
+                                                                placeholder="contact@company.com"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1.5 sm:col-span-2">
+                                                            <Label className="text-xs">Website</Label>
+                                                            <Input
+                                                                className="h-9"
+                                                                value={sponsor.newSponsorWebsite}
+                                                                onChange={(e) => updateEventSponsor(sponsor.id, "newSponsorWebsite", e.target.value)}
+                                                                placeholder="https://company.com"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
                     {/* Photos Tab */}
                     <TabsContent value="photos" className="space-y-6 mt-6">

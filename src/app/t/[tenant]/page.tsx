@@ -198,6 +198,8 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
               key={index}
               data-scroll-reveal
               data-scroll-delay={String(index + 1)}
+            >
+            <div
               className={cn(
                 "rounded-2xl border-2 transition-all duration-300 overflow-hidden",
                 isOpen ? "bg-white shadow-lg border-emerald-200" : "bg-white shadow-sm border-slate-100 hover:border-slate-200 hover:shadow-md"
@@ -225,6 +227,7 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
                   </p>
                 </div>
               </div>
+            </div>
             </div>
             );
           })}
@@ -963,31 +966,25 @@ export default function TenantHomePage() {
         <section
           id="hero"
           className="relative min-h-screen flex items-center overflow-hidden pb-8 md:pb-12"
-          style={{ backgroundColor: hero.bgImage ? "#0a0f1e" : "#0f172a" }}
+          style={{ backgroundColor: "#0a0f1e" }}
         >
           {/* Background image — use img tag for full quality (no compression) */}
-          {hero.bgImage && (
-            <img
-              src={hero.bgImage}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              loading="eager"
-            />
-          )}
+          <img
+            src={hero.bgImage || "/images/apollo/hero-bg.jpg"}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="eager"
+          />
 
-          {!hero.bgImage && <DecorativeBackground />}
-
-          {/* Cinematic overlay for background image */}
-          {hero.bgImage && (
-            <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(10,15,30,0.3) 0%, rgba(10,15,30,0.4) 40%, rgba(10,15,30,0.55) 75%, rgba(10,15,30,0.7) 100%)" }} />
-          )}
+          {/* Cinematic overlay */}
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(10,15,30,0.3) 0%, rgba(10,15,30,0.4) 40%, rgba(10,15,30,0.55) 75%, rgba(10,15,30,0.7) 100%)" }} />
 
           {/* Floating particles */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-[2]">
             {[3,5,8,12,18,25,35,45,55,65,75,85,92].map((left, i) => (
               <span
                 key={i}
-                className={cn("hero-particle", !hero.bgImage && "hero-particle--light")}
+                className="hero-particle"
                 style={{
                   left: `${left}%`,
                   bottom: `-${4 + (i % 3) * 4}px`,
