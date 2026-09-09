@@ -11,6 +11,7 @@ import {
 } from "@/lib/api-utils";
 import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
 import { sendEmail, registrationApprovedHtml, registrationCancelledHtml } from "@/lib/notifications";
+import { issueAttendeeBadgeAndCertificate } from "@/lib/ifpc-automation";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -157,6 +158,10 @@ export const PUT = withErrorHandler(
       existingRegistration.status !== "CONFIRMED";
 
     if (isNewlyConfirmed) {
+      // Issue registration ID/badge/certificate now. (No-op for every tenant
+      // except apollo-medical — see ifpc-automation.ts.)
+      issueAttendeeBadgeAndCertificate(id).catch((err) => console.error("Badge/certificate automation error:", err));
+
       try {
         const { userId, isNew } = await findOrCreateUserAccount({
           email: existingRegistration.email,

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
 import {
     Dialog,
     DialogContent,
@@ -98,6 +99,20 @@ const SESSION_TYPE_CONFIG: Record<
         icon: "\uD83D\uDC65",
         label: "Panel Discussion",
     },
+    SEMINAR: {
+        bg: "bg-cyan-50",
+        border: "border-cyan-200",
+        badge: "bg-cyan-100 text-cyan-700",
+        icon: "\uD83E\uDDD8",
+        label: "Seminar",
+    },
+    COMPETITION: {
+        bg: "bg-rose-50",
+        border: "border-rose-200",
+        badge: "bg-rose-100 text-rose-700",
+        icon: "\uD83C\uDFC6",
+        label: "Competition",
+    },
     BREAK: {
         bg: "bg-amber-50/50",
         border: "border-amber-200/50",
@@ -114,7 +129,7 @@ const SESSION_TYPE_CONFIG: Record<
     },
 };
 
-const SESSION_TYPES = ["KEYNOTE", "PLENARY", "WORKSHOP", "PANEL", "BREAK", "OTHER"] as const;
+const SESSION_TYPES = ["KEYNOTE", "PLENARY", "WORKSHOP", "SEMINAR", "COMPETITION", "PANEL", "BREAK", "OTHER"] as const;
 const SESSION_STATUSES = ["scheduled", "ongoing", "completed", "cancelled"] as const;
 
 const STATUS_DOT: Record<string, string> = {
@@ -169,6 +184,8 @@ interface SessionFormData {
     venue: string;
     speakerIds: string[];
     status: string;
+    /** Seat capacity for Workshop/Seminar/Competition listings ("Express Interest"). Empty = no capacity tracking. */
+    capacity: string;
 }
 
 const DEFAULT_FORM: SessionFormData = {
@@ -182,7 +199,10 @@ const DEFAULT_FORM: SessionFormData = {
     venue: "",
     speakerIds: [],
     status: "scheduled",
+    capacity: "",
 };
+
+const CAPACITY_ELIGIBLE_TYPES = ["WORKSHOP", "SEMINAR", "COMPETITION"];
 
 export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
     // Data state
@@ -414,6 +434,7 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
             venue: session.venue ?? "",
             speakerIds,
             status: session.status,
+            capacity: session.capacity != null ? String(session.capacity) : "",
         });
         setDialogOpen(true);
     };
@@ -441,6 +462,7 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
             sessionSpeakers,
             status: form.status,
             speakerId: form.speakerIds[0] ?? null,
+            capacity: form.capacity.trim() ? Number(form.capacity) : null,
         };
 
         try {
@@ -811,6 +833,13 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
                                                         </div>
                                                     )}
 
+                                                    {/* Live seat counter — Express Interest ("I'd like to attend") */}
+                                                    {session.capacity != null && (
+                                                        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                                                            <ExpressInterestButton sessionId={session.id} />
+                                                        </div>
+                                                    )}
+
                                                     {/* Expanded description */}
                                                     {isExpanded && session.description && (
                                                         <div className="mt-3 pt-3 border-t border-border/50">
@@ -957,6 +986,26 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
                                 </Select>
                             </div>
                         </div>
+
+                        {/* Seat capacity — Workshop / Seminar / Competition only ("Express Interest" + live seat counter) */}
+                        {CAPACITY_ELIGIBLE_TYPES.includes(form.sessionType) && (
+                            <div className="space-y-2">
+                                <Label htmlFor="session-capacity">Seat Capacity (optional)</Label>
+                                <Input
+                                    id="session-capacity"
+                                    type="number"
+                                    min={1}
+                                    value={form.capacity}
+                                    onChange={(e) =>
+                                        setForm((f) => ({ ...f, capacity: e.target.value }))
+                                    }
+                                    placeholder="e.g. 20"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Shows an &quot;I&apos;d like to attend&quot; button and a live seat counter on the public listing. Leave blank for no limit.
+                                </p>
+                            </div>
+                        )}
 
                         {/* Date & Times */}
                         <div className="grid grid-cols-3 gap-4">

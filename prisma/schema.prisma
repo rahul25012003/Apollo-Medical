@@ -98,6 +98,21 @@ enum PaymentMode {
   QR_CODE           // Manual QR code payment with proof upload
 }
 
+enum AbstractSubmissionType {
+  UNSTRUCTURED
+  ORAL_POSTER
+  SYMPOSIUM_WORKSHOP
+}
+
+enum AbstractStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED_ORAL
+  ACCEPTED_POSTER
+  REJECTED
+  WITHDRAWN
+}
+
 // ============================================================================
 // TENANT MODEL (Multi-tenancy)
 // ============================================================================
@@ -503,6 +518,7 @@ model Event {
   foodZones            FoodZone[]
   foodLogs             FoodLog[]
   messageLogs          MessageLog[]
+  abstracts            Abstract[]
 
   @@index([status])
   @@index([startDate])
@@ -592,6 +608,10 @@ model Registration {
   // null = self-registration (public), set = registered by admin/staff
   registeredById   String?
 
+  // Human-readable registration ID (e.g. "IFPC26-00123"), generated on confirmation.
+  // Nullable — only populated where the automation is enabled (see ifpc-automation.ts).
+  registrationCode String?            @unique
+
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
@@ -603,6 +623,7 @@ model Registration {
   quizParticipants QuizParticipant[]
   scanLogs         ScanLog[]
   foodLogs         FoodLog[]
+  abstracts        Abstract[]
 
   @@unique([email, eventId])
   @@index([eventId])
@@ -671,7 +692,7 @@ model EventSpeaker {
 
   // Status
   status          String   @default("pending") // pending, confirmed, cancelled
-  isPublished     Boolean  @default(false)
+  isPublished     Boolean  @default(true)
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -727,6 +748,10 @@ model EventSession {
   // Legacy Speaker Link (deprecated — use sessionSpeakers instead)
   speakerId          String?
 
+  // Seat capacity for sessionType WORKSHOP / SEMINAR / COMPETITION listings that
+  // take delegate sign-ups ("Express Interest"). Null = no capacity tracking.
+  capacity           Int?
+
   // Status
   status          String   @default("scheduled") // scheduled, ongoing, completed, cancelled
   isPublished     Boolean  @default(true)
@@ -741,11 +766,76 @@ model EventSession {
   sessionSpeakers  SessionSpeaker[]
   certificates     Certificate[]
   engagements      EventEngagement[]
+  interests        SessionInterest[]
 
   @@index([eventId])
   @@index([speakerId])
   @@index([hallId])
   @@map("event_sessions")
+}
+
+// ============================================================================
+// SESSION INTEREST MODEL ("Express Interest" + live seat counter for
+// Workshop / Seminar / Competition listings)
+// ============================================================================
+
+model SessionInterest {
+  id        String   @id @default(cuid())
+  sessionId String
+  name      String
+  email     String
+  phone     String?
+  createdAt DateTime @default(now())
+
+  session   EventSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, email])
+  @@index([sessionId])
+  @@map("session_interests")
+}
+
+// ============================================================================
+// ABSTRACT MODEL (Abstract submission + review; acceptance determines
+// presenting-author status for Presentation Certificates)
+// ============================================================================
+
+model Abstract {
+  id                    String                 @id @default(cuid())
+  eventId               String
+
+  title                 String
+  authors               String                 // "Author A, Author B, ..."
+  affiliations          String?
+  topic                 String                 // one of the published thematic topics
+  submissionType        AbstractSubmissionType @default(ORAL_POSTER)
+  abstractText          String                 @db.Text
+  fileUrl               String?                // supporting file for symposia/workshop submissions
+
+  presentingAuthorName  String
+  presentingAuthorEmail String
+  presentingAuthorPhone String?
+
+  // Linked once the presenting author's registration exists/matches by email
+  registrationId        String?
+  registration          Registration?          @relation(fields: [registrationId], references: [id], onDelete: SetNull)
+
+  status                AbstractStatus         @default(SUBMITTED)
+  presentationMode      String?                // "oral" | "poster", set on acceptance
+  posterBoardNumber     String?
+  reviewNotes           String?                @db.Text
+
+  submittedAt           DateTime               @default(now())
+  reviewedAt            DateTime?
+
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  event                 Event                  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([registrationId])
+  @@index([presentingAuthorEmail])
+  @@map("abstracts")
 }
 
 // ============================================================================

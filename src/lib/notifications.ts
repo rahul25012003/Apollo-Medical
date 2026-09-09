@@ -625,3 +625,89 @@ export function registrationCancelledHtml(params: {
     </div>
   `;
 }
+
+// Delegate badge + registration ID ready — links to the printable badge page
+export function badgeReadyHtml(params: {
+  name: string;
+  eventTitle: string;
+  registrationCode: string;
+  badgeUrl: string;
+}): string {
+  const { name, eventTitle, registrationCode, badgeUrl } = params;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #0d9488; margin-bottom: 4px;">Your Registration ID & Badge</h2>
+      <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 16px 0;">
+        <p style="margin: 0 0 8px;"><strong>Hello ${name},</strong></p>
+        <p style="margin: 0 0 16px;">Your registration for <strong>${eventTitle}</strong> is confirmed.</p>
+        <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+          <tr><td style="padding: 6px 0; color: #666;">Registration ID</td><td style="padding: 6px 0; text-align: right; font-family: monospace; font-weight: bold;">${registrationCode}</td></tr>
+        </table>
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="${badgeUrl}" style="display: inline-block; background: #0d9488; color: white; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-weight: 600;">View &amp; Print Your Badge</a>
+        </div>
+      </div>
+      <p style="color: #999; font-size: 12px;">This is an automated email.</p>
+    </div>
+  `;
+}
+
+// Abstract submission received — sent to the presenting author immediately
+export function abstractSubmittedHtml(params: {
+  name: string;
+  eventTitle: string;
+  title: string;
+  submissionType: string;
+  topic: string;
+}): string {
+  const { name, eventTitle, title, submissionType, topic } = params;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #0d9488; margin-bottom: 4px;">Abstract Received</h2>
+      <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 16px 0;">
+        <p style="margin: 0 0 8px;"><strong>Dear ${name},</strong></p>
+        <p style="margin: 0 0 16px;">Your abstract has been received for <strong>${eventTitle}</strong>.</p>
+        <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+          <tr><td style="padding: 6px 0; color: #666;">Title</td><td style="padding: 6px 0; text-align: right;">${title}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Topic</td><td style="padding: 6px 0; text-align: right;">${topic}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Submission Type</td><td style="padding: 6px 0; text-align: right; text-transform: capitalize;">${submissionType.replace(/_/g, " ").toLowerCase()}</td></tr>
+        </table>
+        <p style="margin: 16px 0 0; color: #d97706; font-weight: 600; font-size: 14px;">It will now be reviewed by the Scientific Committee. All presenters must also register for the conference.</p>
+      </div>
+      <p style="color: #999; font-size: 12px;">This is an automated email.</p>
+    </div>
+  `;
+}
+
+// Abstract status update — sent when the committee accepts/rejects an abstract
+export function abstractStatusUpdatedHtml(params: {
+  name: string;
+  eventTitle: string;
+  title: string;
+  status: string;
+  presentationMode?: string | null;
+  posterBoardNumber?: string | null;
+  reviewNotes?: string | null;
+}): string {
+  const { name, eventTitle, title, status, presentationMode, posterBoardNumber, reviewNotes } = params;
+  const accepted = status === "ACCEPTED_ORAL" || status === "ACCEPTED_POSTER";
+  const statusColor = accepted ? "#10b981" : "#dc2626";
+  const statusText = accepted ? "Accepted" : status === "REJECTED" ? "Not Accepted" : status;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: ${statusColor}; margin-bottom: 4px;">Abstract ${statusText}</h2>
+      <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 16px 0;">
+        <p style="margin: 0 0 8px;"><strong>Dear ${name},</strong></p>
+        <p style="margin: 0 0 16px;">Your abstract &ldquo;<strong>${title}</strong>&rdquo; submitted for <strong>${eventTitle}</strong> has been <strong style="color: ${statusColor};">${statusText.toLowerCase()}</strong>.</p>
+        ${accepted ? `
+          <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+            <tr><td style="padding: 6px 0; color: #666;">Presentation Mode</td><td style="padding: 6px 0; text-align: right; text-transform: capitalize;">${presentationMode || (status === "ACCEPTED_ORAL" ? "oral" : "poster")}</td></tr>
+            ${posterBoardNumber ? `<tr><td style="padding: 6px 0; color: #666;">Poster Board No.</td><td style="padding: 6px 0; text-align: right;">${posterBoardNumber}</td></tr>` : ""}
+          </table>
+          <p style="margin: 16px 0 0; font-size: 14px; color: #555;">All presenters must be registered for the conference for their presentation to be included in the programme. A Presentation Certificate will be issued after your session.</p>
+        ` : reviewNotes ? `<p style="margin: 0; font-size: 14px; color: #666;">${reviewNotes}</p>` : ""}
+      </div>
+      <p style="color: #999; font-size: 12px;">This is an automated email.</p>
+    </div>
+  `;
+}

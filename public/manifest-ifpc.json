@@ -1,0 +1,15 @@
+{
+  "name": "International Forensic Psychiatry Conference 2026",
+  "short_name": "IFPC 2026",
+  "description": "Bridging the Gap — IFPC 2026, 2–5 November 2026, NIMHANS Convention Centre, Bengaluru.",
+  "start_url": "/t/apollo-medical",
+  "scope": "/t/apollo-medical",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#1e3a5f",
+  "icons": [
+    { "src": "/ifpc/nimhans-logo.png", "sizes": "375x364", "type": "image/png", "purpose": "any" },
+    { "src": "/ifpc/nimhans-logo.png", "sizes": "375x364", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { issueAttendeeBadgeAndCertificate } from "@/lib/ifpc-automation";
 
 // POST /api/payments/verify
 // Verifies a Razorpay payment signature
@@ -76,6 +77,10 @@ export async function POST(request: NextRequest) {
         status: "CONFIRMED",
       },
     });
+
+    // Issue registration ID/badge/certificate now that payment confirmed the registration.
+    // (No-op for every tenant except apollo-medical — see ifpc-automation.ts.)
+    issueAttendeeBadgeAndCertificate(registrationId).catch((err) => console.error("Badge/certificate automation error:", err));
 
     return NextResponse.json({
       success: true,

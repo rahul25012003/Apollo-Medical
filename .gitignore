@@ -50,3 +50,8 @@ prisma/migrations/.migration_lock.toml
 
 # uploads (local dev)
 /public/uploads
+
+# Client-supplied documents — not part of the build, and the deploy repo is public
+*.docx
+*.pdf
+scripts/generate_apollo_tenant_guide.py

@@ -62,6 +62,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { eventsService, Event } from "@/services/events";
 import { registrationsService, CreateRegistrationData } from "@/services/registrations";
 
@@ -155,6 +156,11 @@ export default function RegisterPage() {
     const eventId = params.id as string;
     const tenantSlugFromParam = searchParams.get("tenant");
     const [tenantSlug, setTenantSlug] = useState<string | null>(tenantSlugFromParam);
+    // The IFPC site links here without a ?tenant= param, which left "Back to
+    // Home" pointing at the platform root instead of the conference site.
+    // Fall back to the event's own tenant; scoped to IFPC so no other
+    // tenant's existing navigation changes.
+    const [eventTenantSlug, setEventTenantSlug] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState<Step>("details");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [registrationId, setRegistrationId] = useState<string | null>(null);
@@ -183,9 +189,10 @@ export default function RegisterPage() {
             try {
                 let res: Response | null = null;
 
-                // Try 1: query param
-                if (tenantSlugFromParam) {
-                    res = await fetch(`/api/tenants/${tenantSlugFromParam}`);
+                // Try 1: query param, else the event's own tenant
+                const slugToFetch = tenantSlugFromParam || eventTenantSlug;
+                if (slugToFetch) {
+                    res = await fetch(`/api/tenants/${slugToFetch}`);
                 }
 
                 // Try 2: hostname (production)
@@ -198,7 +205,7 @@ export default function RegisterPage() {
                     const data = await res.json();
                     if (data.success && data.data) {
                         const t = data.data;
-                        const slug = t.slug || tenantSlugFromParam;
+                        const slug = t.slug || slugToFetch;
                         setTenantBranding({
                             name: t.branding?.name || t.name || "",
                             logo: t.branding?.logo || t.logo || null,
@@ -212,7 +219,7 @@ export default function RegisterPage() {
             } catch { /* silently fail */ }
         }
         fetchTenant();
-    }, [tenantSlugFromParam]);
+    }, [tenantSlugFromParam, eventTenantSlug]);
 
     // Check if page was opened as preview from dashboard
     useEffect(() => {
@@ -231,6 +238,9 @@ export default function RegisterPage() {
                 const response = await eventsService.getPublicById(eventId);
                 if (response.success && response.data) {
                     const event = response.data;
+                    if (!tenantSlugFromParam && event.tenant?.slug === IFPC_TENANT_SLUG) {
+                        setEventTenantSlug(event.tenant.slug);
+                    }
                     const startDate = new Date(event.startDate);
                     const earlyBirdDate = event.earlyBirdDeadline ? new Date(event.earlyBirdDeadline) : null;
                     const isEarlyBird = earlyBirdDate ? new Date() < earlyBirdDate : false;

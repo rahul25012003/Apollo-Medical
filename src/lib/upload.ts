@@ -13,7 +13,7 @@ import { randomUUID } from "crypto";
 export const UPLOAD_CONFIG = {
   maxFileSize: 10 * 1024 * 1024, // 10MB
   allowedImageTypes: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/svg+xml", "image/tiff", "image/avif", "image/heic", "image/heif"],
-  allowedDocumentTypes: ["application/pdf"],
+  allowedDocumentTypes: ["application/pdf", "application/vnd.openxmlformats-officedocument.presentationml.presentation"],
   uploadDir: "public/uploads",
 };
 
@@ -115,7 +115,7 @@ async function uploadToCloudinary(
 
 // Whitelist of allowed file extensions
 const ALLOWED_EXTENSIONS = [
-  "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "avif", "heic", "heif", "pdf",
+  "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "avif", "heic", "heif", "pdf", "pptx",
 ];
 
 /**

@@ -33,6 +33,9 @@ const createSessionSchema = z.object({
   sessionOrder: z.number().int().nonnegative().default(0),
   speakerId: z.string().optional().nullable(),
   sessionSpeakers: z.array(sessionSpeakerSchema).optional(),
+  // Seat capacity for Workshop/Seminar/Competition listings ("Express Interest").
+  // Leave unset for regular plenary/keynote sessions.
+  capacity: z.number().int().positive().optional().nullable(),
   status: z.string().default("scheduled"),
   isPublished: z.boolean().default(true),
 });
@@ -195,6 +198,7 @@ export const POST = withErrorHandler(
           hallId: data.hallId || null,
           sessionOrder: data.sessionOrder,
           speakerId: data.speakerId || null,
+          capacity: data.capacity ?? null,
           status: data.status,
           isPublished: data.isPublished,
         },
@@ -320,6 +324,7 @@ export const PUT = withErrorHandler(
     if (data.hallId !== undefined) updateFields.hallId = data.hallId || null;
     if (data.sessionOrder !== undefined) updateFields.sessionOrder = data.sessionOrder;
     if (data.speakerId !== undefined) updateFields.speakerId = data.speakerId || null;
+    if (data.capacity !== undefined) updateFields.capacity = data.capacity ?? null;
     if (data.status !== undefined) updateFields.status = data.status;
     if (data.isPublished !== undefined) updateFields.isPublished = data.isPublished;
 

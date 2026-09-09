@@ -11,6 +11,7 @@ import { auth } from "@/lib/auth";
 import { sendEmail, getActiveChannel, registrationConfirmationHtml, registrationReceivedHtml, adminNewRegistrationHtml } from "@/lib/notifications";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications-db";
+import { issueAttendeeBadgeAndCertificate } from "@/lib/ifpc-automation";
 
 const rateLimiter = createRateLimiter("registrations-public", { maxRequests: 10, windowSeconds: 60 });
 
@@ -252,6 +253,12 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         tenantId: event.tenantId,
       }).catch((err) => console.error("Admin notification email error:", err));
     }
+  }
+
+  // Free registrations are CONFIRMED immediately — issue registration ID/badge/certificate now.
+  // (No-ops for every tenant except apollo-medical — see ifpc-automation.ts.)
+  if (status === "CONFIRMED") {
+    issueAttendeeBadgeAndCertificate(registration.id).catch((err) => console.error("Badge/certificate automation error:", err));
   }
 
   // Create in-app notification for admins (non-blocking)

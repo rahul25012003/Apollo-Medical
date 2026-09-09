@@ -16,6 +16,7 @@ import { getEffectiveTenantId, tenantWhereClause } from "@/lib/tenant-scope";
 import { createNotification } from "@/lib/notifications-db";
 import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
 import { sendEmail, registrationReceivedHtml, registrationApprovedHtml } from "@/lib/notifications";
+import { issueAttendeeBadgeAndCertificate } from "@/lib/ifpc-automation";
 
 // GET /api/registrations - List all registrations (with filters)
 export const GET = withErrorHandler(async (request: NextRequest) => {
@@ -366,6 +367,12 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       }),
       tenantId: event.tenantId,
     }).catch((err) => console.error("Registration email error:", err));
+  }
+
+  // Issue registration ID/badge/certificate now. (No-op for every tenant
+  // except apollo-medical — see ifpc-automation.ts.)
+  if (status === "CONFIRMED") {
+    issueAttendeeBadgeAndCertificate(registration.id).catch((err) => console.error("Badge/certificate automation error:", err));
   }
 
   // Auto-create delegate account for free/auto-confirmed registrations

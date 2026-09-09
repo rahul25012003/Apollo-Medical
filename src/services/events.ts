@@ -61,23 +61,7 @@ export interface Event {
   };
   /** Breakdown of registrations by participantRole (e.g., DELEGATE, SPEAKER, ORGANIZER). null legacy rows bucket into DELEGATE. */
   registrationsByRole?: Record<string, number>;
-  eventSpeakers?: {
-    id: string;
-    speakerId: string;
-    speaker: {
-      id: string;
-      name: string;
-      designation: string | null;
-      institution: string | null;
-      photo: string | null;
-    };
-    topic: string | null;
-    sessionDescription: string | null;
-    sessionDate: string | null;
-    sessionTime: string | null;
-    sessionEndTime: string | null;
-    sessionVenue: string | null;
-  }[];
+  eventSpeakers?: EventSpeaker[];
   eventSponsors?: {
     id: string;
     sponsorId: string;
@@ -251,6 +235,7 @@ export interface EventSession {
   hallId: string | null;
   sessionOrder: number;
   speakerId: string | null;
+  capacity?: number | null;
   status: string;
   isPublished: boolean;
   speaker?: {
@@ -278,6 +263,7 @@ export interface CreateSessionData {
   hallId?: string | null;
   sessionOrder?: number;
   speakerId?: string | null;
+  capacity?: number | null;
   sessionSpeakers?: {
     speakerId: string;
     talkTitle?: string | null;

@@ -1,0 +1,201 @@
+/*
+ * IFPC 2026 (apollo-medical) redesign — every rule here is scoped under
+ * .ifpc-v2 so it can never affect any other tenant's markup, no matter
+ * where this stylesheet is bundled. Do not add unscoped/global selectors.
+ */
+
+.ifpc-v2 {
+  --v2-violet-start: #4B2FE5;
+  --v2-violet-end: #7C5CFF;
+  --v2-navy: #12112B;
+  --v2-lime: #CCFF33;
+  --v2-cyan: #29C5E8;
+  --v2-offwhite: #F7F7FA;
+  --v2-ink: #111111;
+  --v2-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ifpc-v2 {
+  font-family: var(--font-ifpc-v2), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ---- Eyebrow label ---- */
+.ifpc-v2 .v2-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* ---- Pill buttons ---- */
+.ifpc-v2 .v2-pill-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--v2-lime);
+  color: #0a0a0a;
+  font-weight: 700;
+  transition: transform 0.35s var(--v2-ease), box-shadow 0.35s var(--v2-ease), filter 0.35s var(--v2-ease);
+  box-shadow: 0 8px 24px -8px rgba(204, 255, 51, 0.55);
+}
+.ifpc-v2 .v2-pill-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.04);
+  box-shadow: 0 14px 32px -8px rgba(204, 255, 51, 0.65);
+}
+
+.ifpc-v2 .v2-pill-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--v2-ink);
+  font-weight: 600;
+  border: 1.5px solid rgba(17, 17, 17, 0.14);
+  transition: transform 0.35s var(--v2-ease), box-shadow 0.35s var(--v2-ease), border-color 0.35s var(--v2-ease);
+}
+.ifpc-v2 .v2-pill-secondary:hover {
+  transform: translateY(-2px);
+  border-color: rgba(17, 17, 17, 0.3);
+  box-shadow: 0 10px 24px -10px rgba(17, 17, 17, 0.25);
+}
+
+/* Secondary pill on a dark/violet section */
+.ifpc-v2 .v2-pill-secondary-onDark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  transition: transform 0.35s var(--v2-ease), background 0.35s var(--v2-ease), border-color 0.35s var(--v2-ease);
+}
+.ifpc-v2 .v2-pill-secondary-onDark:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.ifpc-v2 .v2-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border-radius: 999px;
+  background: var(--v2-ink);
+  color: #fff;
+  transition: transform 0.35s var(--v2-ease), background 0.35s var(--v2-ease);
+}
+.ifpc-v2 .v2-icon-btn:hover {
+  transform: translateY(-2px) rotate(8deg);
+  background: var(--v2-violet-start);
+}
+
+/* ---- Cards ---- */
+.ifpc-v2 .v2-card {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 20px 45px -22px rgba(18, 17, 43, 0.25);
+  transition: transform 0.4s var(--v2-ease), box-shadow 0.4s var(--v2-ease);
+}
+.ifpc-v2 .v2-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 28px 55px -20px rgba(18, 17, 43, 0.3);
+}
+.ifpc-v2 .v2-card-tilt-l { transform: rotate(-3deg); }
+.ifpc-v2 .v2-card-tilt-l:hover { transform: rotate(-1deg) translateY(-4px); }
+.ifpc-v2 .v2-card-tilt-r { transform: rotate(3deg); }
+.ifpc-v2 .v2-card-tilt-r:hover { transform: rotate(1deg) translateY(-4px); }
+
+.ifpc-v2 .v2-badge-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  border-radius: 999px;
+  color: #fff;
+  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.35);
+}
+
+/* Plain solid-color fills, used instead of Tailwind's bg-[#hex] utilities:
+   those live in Tailwind's @layer utilities, which — per the CSS Cascade
+   Layers spec — always loses to unlayered CSS like this file, regardless of
+   selector specificity. These small named classes sidestep that reliably. */
+/* Each matches both a descendant of .ifpc-v2 and .ifpc-v2 itself, since these
+   classes get used on the scoping element as well as inside it. */
+.ifpc-v2 .v2-bg-navy, .ifpc-v2.v2-bg-navy { background: var(--v2-navy); }
+.ifpc-v2 .v2-bg-lime, .ifpc-v2.v2-bg-lime { background: var(--v2-lime); }
+.ifpc-v2 .v2-bg-ink, .ifpc-v2.v2-bg-ink { background: var(--v2-ink); }
+.ifpc-v2 .v2-bg-tint, .ifpc-v2.v2-bg-tint { background: #F1F1F6; }
+.ifpc-v2 .v2-social-icon {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  transition: background 0.3s var(--v2-ease), color 0.3s var(--v2-ease), transform 0.3s var(--v2-ease);
+}
+.ifpc-v2 .v2-social-icon:hover {
+  background: var(--v2-lime);
+  color: #0a0a0a;
+  transform: scale(1.1);
+}
+.ifpc-v2 .v2-btn-dark { background: var(--v2-navy); color: #fff; }
+.ifpc-v2 .v2-btn-dark:hover { background: #1c1a3d; }
+.ifpc-v2 .v2-btn-outline-dark {
+  background: transparent;
+  color: #0a0a0a;
+  border: 2px solid rgba(10, 10, 10, 0.3);
+}
+.ifpc-v2 .v2-btn-outline-dark:hover { background: rgba(10, 10, 10, 0.1); }
+
+/* ---- Form fields ---- */
+.ifpc-v2 .v2-field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--v2-ink);
+  margin-bottom: 6px;
+}
+.ifpc-v2 .v2-input,
+.ifpc-v2 .v2-textarea,
+.ifpc-v2 .v2-select-trigger {
+  background: #EFEFF3 !important;
+  border: none !important;
+  border-radius: 13px !important;
+  color: var(--v2-ink) !important;
+}
+.ifpc-v2 .v2-input::placeholder,
+.ifpc-v2 .v2-textarea::placeholder {
+  color: #9a9aa5 !important;
+}
+
+/* ---- Reveal-on-scroll ---- */
+.ifpc-v2 .v2-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  filter: blur(6px);
+  transition: opacity 0.5s var(--v2-ease), transform 0.5s var(--v2-ease), filter 0.5s var(--v2-ease);
+}
+.ifpc-v2 .v2-reveal.v2-in {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.ifpc-v2 .v2-headline span {
+  transition: color 0.6s var(--v2-ease), opacity 0.6s var(--v2-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-v2 .v2-reveal { opacity: 1; transform: none; filter: none; transition: none; }
+  .ifpc-v2 .v2-headline span { transition: none; }
+}

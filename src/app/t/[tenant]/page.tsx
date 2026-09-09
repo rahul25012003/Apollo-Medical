@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   GraduationCap,
   Calendar,
@@ -44,6 +45,8 @@ import {
   Activity,
   Menu,
   ArrowUp,
+  Megaphone,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -51,6 +54,26 @@ import { eventsService, Event } from "@/services/events";
 import { EventCard, EventCardData } from "@/components/events/EventCard";
 import { getEventImage, getEffectiveEventStatus } from "@/lib/event-utils";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
+import { HOME as IFPC_HOME, CTA_LINKS as IFPC_CTA } from "@/content/ifpc-2026";
+import { AboutExtendedSection } from "@/components/ifpc/sections/AboutExtendedSection";
+import { HighlightsSection } from "@/components/ifpc/sections/HighlightsSection";
+import { SpeakersSection } from "@/components/ifpc/sections/SpeakersSection";
+import { ScientificProgrammeSection } from "@/components/ifpc/sections/ScientificProgrammeSection";
+import { TopicsSection } from "@/components/ifpc/sections/TopicsSection";
+import { AbstractSubmissionSection } from "@/components/ifpc/sections/AbstractSubmissionSection";
+import { RegistrationSection } from "@/components/ifpc/sections/RegistrationSection";
+import { VenueTravelSection } from "@/components/ifpc/sections/VenueTravelSection";
+import { OrganisingCommitteeSection } from "@/components/ifpc/sections/OrganisingCommitteeSection";
+import { FeedbackSection } from "@/components/ifpc/sections/FeedbackSection";
+import { PwaRegister } from "@/components/ifpc/PwaRegister";
+import { Reveal, RevealHeadline } from "@/components/ifpc/design/Reveal";
+import { Swirl, Blob } from "@/components/ifpc/design/Decor";
+import "@/components/ifpc/design/tokens.css";
+
+// IFPC 2026 visual redesign ("v2"): reverted — the site renders with the
+// original design. The v2 components below are kept intact but unused; flip
+// this to true to bring the redesign back.
+const IFPC_V2_DESIGN = false;
 
 // Icon mapping for dynamic icons
 const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -164,6 +187,55 @@ function adaptiveGrid(count: number, maxCols: 2 | 3 | 4 = 3): string {
 
 
 
+function IfpcFAQSectionV2({ faqs }: { faqs: { question: string; answer: string }[] }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  if (faqs.length === 0) return null;
+
+  return (
+    <section id="faq" className="ifpc-v2 relative py-16 lg:py-24 bg-white">
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
+        <div className="text-center mb-12">
+          <p className="v2-eyebrow justify-center mb-4" style={{ color: "#4B2FE5" }}>FAQ</p>
+          <h2 className="text-[28px] lg:text-[40px] font-extrabold tracking-tight">Frequently Asked Questions</h2>
+        </div>
+
+        <div className="max-w-3xl mx-auto space-y-3">
+          {faqs.map((faq, index) => {
+            const isOpen = openIndex === index;
+            return (
+              <Reveal key={index} delayMs={(index % 6) * 40} className={cn("ifpc-v2 v2-card overflow-hidden", isOpen && "ring-2 ring-[#4B2FE5]")}>
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => setOpenIndex(isOpen ? null : index)}
+                  className="w-full flex items-center justify-between p-5 sm:p-6 text-left gap-4"
+                >
+                  <span className="font-bold">{faq.question}</span>
+                  <span className={cn("v2-icon-btn h-8 w-8", isOpen && "rotate-180")} style={isOpen ? { background: "#CCFF33", color: "#0a0a0a" } : { background: "#12112B" }}>
+                    <ChevronDown className="h-4 w-4" />
+                  </span>
+                </button>
+                <div className={cn("faq-content", isOpen && "faq-content--open")}>
+                  <div>
+                    <p className="px-5 sm:px-6 pb-5 sm:pb-6 opacity-70 leading-relaxed">{faq.answer}</p>
+                  </div>
+                </div>
+              </Reveal>
+            );
+          })}
+        </div>
+
+        <div className="text-center mt-12">
+          <p className="opacity-50 mb-3">Still have questions?</p>
+          <a href="#contact" className="v2-pill-secondary h-11 px-6 text-sm inline-flex">
+            <Mail className="h-4 w-4 mr-2" /> Get in Touch
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryColor: string }; faqs: { question: string; answer: string }[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -241,6 +313,259 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
               <Mail className="h-4 w-4 mr-2" /> Get in Touch
             </Button>
           </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// IFPC 2026 (apollo-medical) redesign — header/hero/contact/FAQ/footer.
+// Each is rendered ONLY when tenantSlug === "apollo-medical" (see the branch
+// at each call site below); every other tenant keeps rendering the original,
+// completely unmodified JSX right next to it. These reuse the exact same
+// state/handlers/data as the originals — no new business logic.
+// ============================================================================
+
+interface IfpcNavProps {
+  tenantSlug: string;
+  branding: { name: string; logo?: string };
+  sections: {
+    hero?: boolean; events?: boolean; gallery?: boolean; ongoingResearch?: boolean;
+    testimonials?: boolean; about?: boolean; contact?: boolean; faq?: boolean;
+  };
+  hasEvents: boolean;
+  hasGallery: boolean;
+  hasRealTestimonials: boolean;
+  researchItemsCount: number;
+  faqsCount: number;
+  mobileMenuOpen: boolean;
+  setMobileMenuOpen: (v: boolean) => void;
+  tUrl: (path: string) => string;
+}
+
+type NavLink = { href: string; label: string };
+
+// Split into a "primary" row (always inline) and a "More" dropdown so the
+// full set fits one row with no scrolling even with every optional item
+// enabled — see the coordinator's fit requirement. Labels are unchanged
+// from the original desktop nav, just regrouped.
+function ifpcNavGroups(p: IfpcNavProps): { primary: NavLink[]; more: NavLink[] } {
+  const primary: NavLink[] = [
+    p.sections.hero && { href: "#hero", label: "Home" },
+    p.sections.about && { href: "#about", label: "About" },
+    { href: "#programme", label: "Programme" },
+    { href: "#speakers", label: "Speakers" },
+    { href: "#registration", label: "Registration" },
+    p.sections.contact && { href: "#contact", label: "Contact" },
+  ].filter(Boolean) as NavLink[];
+
+  const more: NavLink[] = [
+    p.sections.events && p.hasEvents && { href: "#events", label: "Events" },
+    p.sections.gallery && p.hasGallery && { href: "#gallery", label: "Gallery" },
+    (p.sections.ongoingResearch !== false) && p.researchItemsCount > 0 && { href: "#research", label: "Research" },
+    p.sections.testimonials && p.hasRealTestimonials && { href: "#testimonials", label: "Testimonials" },
+    { href: "#highlights", label: "Highlights" },
+    { href: "#topics", label: "Topics" },
+    { href: "#abstract", label: "Abstract" },
+    { href: "#venue", label: "Venue" },
+    { href: "#organising-committee", label: "Committee" },
+    (p.sections.faq !== false) && p.faqsCount > 0 && { href: "#faq", label: "FAQ" },
+    { href: "#feedback", label: "Feedback" },
+  ].filter(Boolean) as NavLink[];
+
+  return { primary, more };
+}
+
+function IfpcHeaderV2(p: IfpcNavProps) {
+  const { primary, more } = ifpcNavGroups(p);
+  const allLinks = [...primary, ...more];
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  return (
+    <header className="ifpc-v2 sticky top-0 z-50 shadow-[0_2px_20px_-4px_rgba(18,17,43,0.35)]" style={{ background: "#12112B" }}>
+      <div className="w-full pl-4 pr-0 sm:pl-6">
+        <div className="flex h-16 sm:h-[68px] items-center justify-between gap-2">
+          <Link href={`/t/${p.tenantSlug}`} className="flex items-center gap-2 flex-shrink-0">
+            <div className="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#CCFF33" }}>
+              <GraduationCap className="h-4 w-4" style={{ color: "#12112B" }} />
+            </div>
+            <span className="font-extrabold text-sm tracking-tight hidden xl:block max-w-[160px] truncate" style={{ color: "#ffffff" }}>{p.branding.name}</span>
+          </Link>
+
+          <nav className="hidden xl:flex items-center gap-4 2xl:gap-6 flex-1 justify-center min-w-0 px-4">
+            {primary.map((l) => (
+              <a key={l.href} href={l.href} className="text-[12px] xl:text-[13px] font-semibold tracking-tight text-white/70 hover:text-white transition-colors whitespace-nowrap">{l.label}</a>
+            ))}
+            {more.length > 0 && (
+              <DropdownMenu open={moreOpen} onOpenChange={setMoreOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1 text-[12px] xl:text-[13px] font-semibold tracking-tight text-white/70 hover:text-white transition-colors whitespace-nowrap">
+                    More <ChevronDown className={cn("h-3 w-3 transition-transform", moreOpen && "rotate-180")} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="ifpc-v2 rounded-2xl p-2 min-w-[180px]">
+                  {more.map((l) => (
+                    <DropdownMenuItem key={l.href} asChild className="rounded-xl text-sm font-semibold cursor-pointer">
+                      <a href={l.href}>{l.label}</a>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </nav>
+
+          <div className="flex items-center flex-shrink-0 h-full">
+            <button
+              className="xl:hidden p-2 mr-2 rounded-full text-white hover:bg-white/10 transition-colors"
+              onClick={() => p.setMobileMenuOpen(!p.mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {p.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            <Link href={p.tUrl("/auth/login")} className="h-full flex items-center gap-2 pl-5 pr-5 sm:pl-6 sm:pr-6 font-bold text-xs sm:text-sm hover:brightness-95 transition-[filter]" style={{ background: "#CCFF33", color: "#0a0a0a" }}>
+              Login
+              <span className="v2-icon-btn h-6 w-6 sm:h-7 sm:w-7" style={{ background: "#12112B", color: "#CCFF33" }}><ArrowRight className="h-3 w-3" /></span>
+            </Link>
+          </div>
+        </div>
+
+        {p.mobileMenuOpen && (
+          <div className="xl:hidden border-t border-white/10 pb-4 pr-4">
+            <nav className="flex flex-col gap-1 pt-2">
+              {allLinks.map((l) => (
+                <a key={l.href} href={l.href} onClick={() => p.setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-semibold text-white/70 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors">{l.label}</a>
+              ))}
+            </nav>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+
+/** Same registration-status logic as the shared hero (kept separate, not extracted, so the shared hero's code path for every other tenant is never touched). */
+function ifpcRegistrationStatus(nextEvent: { startDate: string; endDate?: string | null; registrationOpensDate?: string | null; registrationDeadline?: string | null }) {
+  const now = new Date();
+  const opens = nextEvent.registrationOpensDate ? new Date(nextEvent.registrationOpensDate) : null;
+  const deadline = nextEvent.registrationDeadline ? new Date(nextEvent.registrationDeadline) : null;
+  const endDate = nextEvent.endDate ? new Date(nextEvent.endDate) : new Date(nextEvent.startDate);
+  const endOfDay = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
+  const isEnded = now > endOfDay;
+  const isDeadlinePassed = deadline && now > deadline;
+  const isNotOpenYet = opens && now < opens;
+
+  if (isEnded) return null;
+  if (isDeadlinePassed) return { text: `Registration closed — Event: ${fmtEventRange(nextEvent.startDate, nextEvent.endDate)}`, color: "#12112B" };
+  if (isNotOpenYet) {
+    const opensStr = opens!.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+    const deadlineStr = deadline ? deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : null;
+    return { text: `Registrations will open from ${opensStr}${deadlineStr ? ` to ${deadlineStr}` : ""}`, color: "#4B2FE5" };
+  }
+  const daysLeft = deadline ? Math.ceil((deadline.getTime() - now.getTime()) / 86400000) : null;
+  const isClosingSoon = daysLeft !== null && daysLeft <= 7 && daysLeft >= 0;
+  if (isClosingSoon && deadline) {
+    const deadlineStr = deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+    return { text: `⏰ Closes ${deadlineStr} · ${daysLeft} day${daysLeft === 1 ? "" : "s"} left`, color: "#ea580c", flash: true };
+  }
+  return { text: "Registration Open", color: "#0a0a0a", bg: "#CCFF33" };
+}
+
+interface IfpcHeroProps {
+  branding: { name: string };
+  hero: { title?: string; subtitle?: string; bgImage?: string };
+  theme: { primaryColor: string; secondaryColor: string };
+  nextEvent: { id: string; title: string; startDate: string; endDate?: string | null; registrationOpensDate?: string | null; registrationDeadline?: string | null } | null;
+  hasEvents: boolean;
+  yearlyStats?: { events?: string | number; attendees?: string | number; speakers?: string | number } | null;
+}
+
+function IfpcHeroV2({ branding, hero, theme, nextEvent, yearlyStats }: IfpcHeroProps) {
+  const status = nextEvent?.startDate ? ifpcRegistrationStatus(nextEvent) : null;
+  const showCountdown = nextEvent?.startDate && new Date(nextEvent.startDate) > new Date();
+
+  return (
+    <section id="hero" className="ifpc-v2 relative overflow-hidden pt-10 pb-20 lg:pt-16 lg:pb-28">
+      {/* Convention Centre photo as full-bleed background. The entrance
+          (red canopy + blue signage) sits in the left ~25% of this wide
+          panorama, so object-position keeps that edge in frame instead of
+          centering (which would crop it out entirely). */}
+      <img
+        src={hero.bgImage || "/ifpc/convention-centre.jpg"}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ objectPosition: "22% center" }}
+        loading="eager"
+      />
+      {/* Navy duotone over the photo: kills the stock sky-blue sky and keeps
+          white text legible, while leaving the building visible. Navy family
+          only — no cyan/sky-blue, per the tenant's overall look. */}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(120deg, rgba(18,17,43,0.92) 0%, rgba(30,58,95,0.80) 38%, rgba(18,17,43,0.86) 74%, rgba(18,17,43,0.94) 100%)" }} />
+      <Blob className="top-0 left-0" color="#1e3a5f" />
+      <Blob className="bottom-0 right-0" color="#12112B" size={420} />
+
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
+        <div className="max-w-2xl text-center lg:text-left">
+          <div>
+            <p className="v2-eyebrow text-[#CCFF33] justify-center lg:justify-start mb-4">{branding.name}</p>
+            <h1 className="text-[36px] sm:text-[48px] lg:text-[56px] font-extrabold tracking-tight leading-[1.05] text-white">
+              {hero.title || branding.name}
+            </h1>
+            <p className="mt-5 text-base lg:text-lg text-white/75 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              {hero.subtitle || "Register for the upcoming CME and workshop programs."}
+            </p>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <a href="#registration" className="v2-pill-primary h-13 px-8 text-base">
+                Register Now <ArrowRight className="ml-2 h-4 w-4" />
+              </a>
+              <a href="#about" className="v2-pill-secondary-onDark h-13 px-8 text-base">
+                Learn More
+              </a>
+            </div>
+
+            {nextEvent && (
+              <div className="mt-8 flex flex-col items-center lg:items-start gap-4">
+                {status && (
+                  <span
+                    className={cn("inline-flex items-center gap-2 px-5 py-2 rounded-full font-bold text-sm", status.flash && "animate-flash")}
+                    style={{ background: status.bg ?? "rgba(255,255,255,0.12)", color: status.bg ? status.color : "#fff", border: status.bg ? "none" : "1px solid rgba(255,255,255,0.3)" }}
+                  >
+                    {status.text}
+                  </span>
+                )}
+                {showCountdown && (
+                  <>
+                    <p className="text-sm text-white/70">Next Event: <span className="font-bold text-white">{nextEvent.title}</span></p>
+                    <CountdownTimer targetDate={nextEvent.startDate} theme={theme} bgDark />
+                  </>
+                )}
+              </div>
+            )}
+
+            {yearlyStats && ((yearlyStats.events && String(yearlyStats.events) !== "0") || (yearlyStats.attendees && String(yearlyStats.attendees) !== "0") || (yearlyStats.speakers && String(yearlyStats.speakers) !== "0")) && (
+              <div className="flex items-center justify-center lg:justify-start gap-6 lg:gap-10 mt-10">
+                {yearlyStats.events && String(yearlyStats.events) !== "0" && (
+                  <div className="text-center lg:text-left">
+                    <p className="text-3xl font-extrabold text-white"><AnimatedCounter value={yearlyStats.events} /></p>
+                    <p className="text-xs mt-1 font-medium text-white/60">Events</p>
+                  </div>
+                )}
+                {yearlyStats.attendees && String(yearlyStats.attendees) !== "0" && (
+                  <div className="text-center lg:text-left">
+                    <p className="text-3xl font-extrabold text-white"><AnimatedCounter value={yearlyStats.attendees} /></p>
+                    <p className="text-xs mt-1 font-medium text-white/60">Attendees</p>
+                  </div>
+                )}
+                {yearlyStats.speakers && String(yearlyStats.speakers) !== "0" && (
+                  <div className="text-center lg:text-left">
+                    <p className="text-3xl font-extrabold text-white"><AnimatedCounter value={yearlyStats.speakers} /></p>
+                    <p className="text-xs mt-1 font-medium text-white/60">Speakers</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </section>
@@ -389,6 +714,9 @@ export default function TenantHomePage() {
   const [pricingCategories, setPricingCategories] = useState<any[]>([]);
   const [activeScheduleDay, setActiveScheduleDay] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  // IFPC 2026 (apollo-medical only) — announcements feed for the new "Bridging
+  // the Gap" home section added below. No effect on any other tenant.
+  const [ifpcAnnouncements, setIfpcAnnouncements] = useState<{ id: string; title: string; description: string | null; createdAt: string }[]>([]);
 
   // Back-to-top visibility
   useEffect(() => {
@@ -503,6 +831,23 @@ export default function TenantHomePage() {
     fetchData();
     fetchStats();
   }, [tenantSlug, tenant?.id]);
+
+  // IFPC 2026 (apollo-medical only) — active announcements for the new home section.
+  // Uses the public event-detail endpoint (already returns active engagements)
+  // since the admin engagements endpoint requires auth and this page is public.
+  useEffect(() => {
+    if (tenantSlug !== "apollo-medical" || !events[0]?.id) return;
+    eventsService.getPublicById(events[0].id).then((res) => {
+      const engagements = (res.data as unknown as { engagements?: { id: string; title: string; type: string; description: string | null; isActive: boolean; createdAt: string }[] })?.engagements;
+      if (res.success && Array.isArray(engagements)) {
+        setIfpcAnnouncements(
+          engagements
+            .filter((e) => e.type === "ANNOUNCEMENT" && e.isActive)
+            .map((e) => ({ id: e.id, title: e.title, description: e.description, createdAt: e.createdAt }))
+        );
+      }
+    }).catch(() => {});
+  }, [tenantSlug, events]);
 
   // Auto-rotate old carousel every 6 seconds (kept for backward compat if used elsewhere)
   useEffect(() => {
@@ -895,7 +1240,25 @@ export default function TenantHomePage() {
         section:first-child::before { display: none; }
       `}</style>
 
+      {/* PWA install + service worker — apollo-medical only */}
+      {tenantSlug === "apollo-medical" && <PwaRegister />}
+
       {/* Header */}
+      {IFPC_V2_DESIGN && tenantSlug === "apollo-medical" ? (
+        <IfpcHeaderV2
+          tenantSlug={tenantSlug}
+          branding={branding}
+          sections={sections}
+          hasEvents={hasEvents}
+          hasGallery={hasGallery}
+          hasRealTestimonials={hasRealTestimonials}
+          researchItemsCount={researchItems.length}
+          faqsCount={faqs.length}
+          mobileMenuOpen={mobileMenuOpen}
+          setMobileMenuOpen={setMobileMenuOpen}
+          tUrl={tUrl}
+        />
+      ) : (
       <header className={cn("sticky top-0 z-50 transition-all duration-500", scrolled ? "bg-white/90 backdrop-blur-2xl shadow-xl shadow-slate-900/5 border-b border-slate-200/50 py-0" : "bg-white/60 backdrop-blur-xl border-b border-transparent py-1")}>
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex h-16 lg:h-20 items-center justify-between">
@@ -909,21 +1272,41 @@ export default function TenantHomePage() {
               <span className="font-bold text-sm lg:text-lg tracking-tight hidden sm:block max-w-[140px] lg:max-w-[220px] truncate">{branding.name}</span>
             </Link>
 
-            <nav className="hidden lg:flex items-center gap-4 xl:gap-6 flex-1 justify-center">
+            {/* apollo-medical has far more nav items than other tenants (15 vs
+                ~8), so it needs a wider breakpoint before showing the full
+                horizontal nav — otherwise it overlaps the logo/login button
+                at typical laptop widths. Other tenants keep the original
+                threshold unchanged. */}
+            <nav className={cn("items-center gap-4 xl:gap-6 flex-1 justify-center", tenantSlug === "apollo-medical" ? "hidden 2xl:flex" : "hidden lg:flex")}>
               {sections.hero && <a href="#hero" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Home</a>}
               {sections.events && hasEvents && <a href="#events" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Events</a>}
               {sections.gallery && hasGallery && <a href="#gallery" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Gallery</a>}
               {(sections.ongoingResearch !== false) && researchItems.length > 0 && <a href="#research" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Research</a>}
               {sections.testimonials && hasRealTestimonials && <a href="#testimonials" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Testimonials</a>}
               {sections.about && <a href="#about" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">About</a>}
+              {tenantSlug === "apollo-medical" && (
+                <>
+                  <a href="#highlights" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Highlights</a>
+                  <a href="#speakers" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Speakers</a>
+                  <a href="#programme" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Programme</a>
+                  <a href="#topics" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Topics</a>
+                  <a href="#abstract" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Abstract</a>
+                  <a href="#registration" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Registration</a>
+                  <a href="#venue" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Venue</a>
+                  <a href="#organising-committee" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Committee</a>
+                </>
+              )}
               {sections.contact && <a href="#contact" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Contact</a>}
               {(sections.faq !== false) && faqs.length > 0 && <a href="#faq" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">FAQ</a>}
+              {tenantSlug === "apollo-medical" && (
+                <a href="#feedback" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Feedback</a>
+              )}
             </nav>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Mobile/tablet hamburger — show on screens < lg */}
+              {/* Mobile/tablet hamburger */}
               <button
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className={cn("p-2 rounded-lg hover:bg-gray-100 transition-colors", tenantSlug === "apollo-medical" ? "2xl:hidden" : "lg:hidden")}
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label="Toggle menu"
               >
@@ -942,7 +1325,7 @@ export default function TenantHomePage() {
 
           {/* Mobile nav dropdown */}
           {mobileMenuOpen && (
-            <div className="lg:hidden border-t bg-white/95 backdrop-blur-xl pb-4 px-4">
+            <div className={cn("border-t bg-white/95 backdrop-blur-xl pb-4 px-4", tenantSlug === "apollo-medical" ? "2xl:hidden" : "lg:hidden")}>
               <nav className="flex flex-col gap-1 pt-2">
                 {sections.hero && <a href="#hero" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Home</a>}
                 {sections.events && hasEvents && <a href="#events" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Events</a>}
@@ -950,19 +1333,44 @@ export default function TenantHomePage() {
                 {(sections.ongoingResearch !== false) && researchItems.length > 0 && <a href="#research" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Research</a>}
                 {sections.testimonials && hasRealTestimonials && <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Testimonials</a>}
                 {sections.about && <a href="#about" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">About</a>}
+                {tenantSlug === "apollo-medical" && (
+                  <>
+                    <a href="#highlights" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Highlights</a>
+                    <a href="#speakers" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Speakers</a>
+                    <a href="#programme" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Scientific Programme</a>
+                    <a href="#topics" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Topics</a>
+                    <a href="#abstract" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Abstract Submission</a>
+                    <a href="#registration" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Registration</a>
+                    <a href="#venue" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Venue &amp; Travel</a>
+                    <a href="#organising-committee" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Organising Committee</a>
+                  </>
+                )}
                 {sections.contact && <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Contact</a>}
                 {(sections.faq !== false) && faqs.length > 0 && <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">FAQ</a>}
+                {tenantSlug === "apollo-medical" && (
+                  <a href="#feedback" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Feedback</a>
+                )}
               </nav>
             </div>
           )}
         </div>
       </header>
+      )}
 
       {/* Background wrapper: hero only */}
       <div className="relative">
 
       {/* Hero Section */}
-      {sections.hero && (
+      {sections.hero && (IFPC_V2_DESIGN && tenantSlug === "apollo-medical" ? (
+        <IfpcHeroV2
+          branding={branding}
+          hero={hero}
+          theme={theme}
+          nextEvent={nextEvent}
+          hasEvents={hasEvents}
+          yearlyStats={yearlyStats}
+        />
+      ) : (
         <section
           id="hero"
           className="relative min-h-screen flex items-center overflow-hidden pb-8 md:pb-12"
@@ -1057,7 +1465,8 @@ export default function TenantHomePage() {
                   <div className="h-[2px] w-10 bg-gradient-to-l from-transparent to-emerald-400" />
                 </div>
 
-                {/* Indo French badge */}
+                {/* Indo French badge — unrelated to IFPC 2026, hidden for apollo-medical only */}
+                {tenantSlug !== "apollo-medical" && (
                 <div className="mt-3 flex flex-col items-center gap-1.5">
                   <span className="text-[11px] font-bold uppercase tracking-[0.25em] px-4 py-1 rounded-full bg-white/15 text-white/80 backdrop-blur-sm border border-white/10">
                     In association with
@@ -1078,6 +1487,7 @@ export default function TenantHomePage() {
                     <img src="https://flagcdn.com/24x18/in.png" srcSet="https://flagcdn.com/48x36/in.png 2x" width="24" height="18" alt="India" className="rounded-sm shadow-sm" />
                   </div>
                 </div>
+                )}
               </div>
 
               {/* Subtitle */}
@@ -1221,7 +1631,7 @@ export default function TenantHomePage() {
           {/* Gradient fade into next section */}
           <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none" style={{ zIndex: 5, background: "linear-gradient(to bottom, transparent, #0f172a)" }} />
         </section>
-      )}
+      ))}
 
       {/* Trust Signals - Scrolling sponsor logos */}
       {hasSponsors && (
@@ -2415,6 +2825,93 @@ export default function TenantHomePage() {
         </section>
       )}
 
+      {/* "Bridging the Gap" — IFPC 2026 (apollo-medical) only: announcements,
+          theme, host institutions, closing CTA. No other tenant is affected. */}
+      {tenantSlug === "apollo-medical" && (
+        <section className="ifpc-v2 relative overflow-hidden py-16 lg:py-24 bg-white">
+          <Blob className="-top-20 -right-20" color="#1e3a5f" />
+          <div className="container mx-auto px-4 lg:px-8 max-w-5xl relative z-10">
+            <div className="text-center mb-12">
+              <p className="v2-eyebrow justify-center mb-4" style={{ color: "#4B2FE5" }}>Conference Theme</p>
+              <h2 className="text-[28px] sm:text-[36px] lg:text-[44px] font-extrabold mb-4 tracking-tight leading-[1.1]">
+                <RevealHeadline text={IFPC_HOME.theme.title} activeColor="#111111" />
+              </h2>
+            </div>
+
+            {ifpcAnnouncements.length > 0 && (
+              <Reveal className="ifpc-v2 v2-card mb-12 p-5 lg:p-6" style={{ background: "#FFF7DB" }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="v2-badge-dot" style={{ background: "#4B2FE5" }}><Megaphone className="h-4 w-4" /></span>
+                  <h3 className="v2-eyebrow">Latest Announcements</h3>
+                </div>
+                <div className="space-y-3">
+                  {ifpcAnnouncements.map((a) => (
+                    <div key={a.id} className="rounded-xl bg-white/70 p-3.5">
+                      <p className="font-bold text-sm">{a.title}</p>
+                      {a.description && <p className="text-sm opacity-70 mt-1">{a.description}</p>}
+                    </div>
+                  ))}
+                </div>
+              </Reveal>
+            )}
+
+            <div className="space-y-4 max-w-3xl mx-auto mb-14">
+              {IFPC_HOME.theme.paragraphs.map((p, i) => (
+                <p key={i} className="opacity-70 leading-relaxed text-center lg:text-left">{p}</p>
+              ))}
+            </div>
+
+            <h3 className="text-xl lg:text-2xl font-bold text-center mb-8">{IFPC_HOME.hosts.title}</h3>
+            <div className="grid sm:grid-cols-2 gap-6 mb-16">
+              {IFPC_HOME.hosts.items.map((h, i) => (
+                <Reveal key={h.name} delayMs={i * 80} className={`ifpc-v2 v2-card p-6 flex flex-col items-center text-center ${i === 0 ? "v2-card-tilt-l" : "v2-card-tilt-r"}`}>
+                  <div className="h-20 w-20 rounded-full bg-white shadow-md flex items-center justify-center mb-4 p-2 overflow-hidden border-4" style={{ borderColor: i === 0 ? "#4B2FE5" : "#1e3a5f" }}>
+                    <img
+                      src={h.name === "RANZCP" ? "/ifpc/ranzcp-logo.png" : "/ifpc/nimhans-logo.png"}
+                      alt={h.name}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                  <h4 className="font-bold mb-2">{h.name}</h4>
+                  <p className="text-sm opacity-60">{h.description}</p>
+                </Reveal>
+              ))}
+            </div>
+
+            <Reveal className="ifpc-v2 relative overflow-hidden rounded-[28px] text-center py-14 px-6" style={{ background: "#CCFF33" }}>
+              <Swirl className="absolute -bottom-10 -left-10 opacity-40" stroke="#0a0a0a" />
+              <h3 className="text-[#0a0a0a] text-2xl lg:text-3xl font-extrabold mb-3 relative z-10">{IFPC_HOME.closing.title}</h3>
+              <p className="text-[#0a0a0a]/80 max-w-xl mx-auto mb-8 relative z-10">{IFPC_HOME.closing.text}</p>
+              <div className="flex flex-wrap items-center justify-center gap-3 relative z-10">
+                <a href="#registration">
+                  <Button size="lg" className="v2-btn-dark rounded-full h-12 px-8">{IFPC_CTA.registerNow.label}</Button>
+                </a>
+                <a href="#programme">
+                  <Button size="lg" variant="outline" className="v2-btn-outline-dark rounded-full h-12 px-8">{IFPC_CTA.viewProgramme.label}</Button>
+                </a>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      )}
+
+      {/* Everything below is IFPC 2026 (apollo-medical) only — merged from what
+          were separate pages into anchor-scrollable sections on this one page,
+          per your instruction. No other tenant renders any of this. */}
+      {tenantSlug === "apollo-medical" && (
+        <>
+          <AboutExtendedSection />
+          <div id="highlights"><HighlightsSection /></div>
+          <div id="speakers"><SpeakersSection /></div>
+          <div id="programme"><ScientificProgrammeSection /></div>
+          <div id="topics"><TopicsSection /></div>
+          <div id="abstract"><AbstractSubmissionSection /></div>
+          <div id="registration"><RegistrationSection /></div>
+          <div id="venue"><VenueTravelSection /></div>
+          <div id="organising-committee"><OrganisingCommitteeSection /></div>
+        </>
+      )}
+
       {/* Contact Section */}
       {sections.contact && (() => {
         const contactAddress = [contact.address, contact.city, contact.state, contact.country].filter(Boolean).join(", ");
@@ -2432,32 +2929,46 @@ export default function TenantHomePage() {
         // Grid column count adapts — center 1, expand for more
         const gridCols = adaptiveGrid(contactCards.length, 4);
 
+        const isV2 = IFPC_V2_DESIGN && tenantSlug === "apollo-medical";
         return (
         <section
           id="contact"
-          className="py-16 lg:py-24 relative overflow-hidden bg-white"
-          data-scroll-reveal
+          className={cn("relative overflow-hidden", isV2 ? "ifpc-v2 py-16 lg:py-24" : "py-16 lg:py-24 bg-white")}
+          style={isV2 ? { background: "#F1F1F6" } : undefined}
+          data-scroll-reveal={isV2 ? undefined : true}
         >
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             <div className="text-center mb-10 lg:mb-14">
-              <Badge
-                variant="outline"
-                className="mb-4 px-5 py-1.5 rounded-full"
-                style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc" }}
-              >
-                <Mail className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
-                Contact
-              </Badge>
-              <h2 className="text-2xl lg:text-4xl font-extrabold mb-4 tracking-tight">Get In Touch</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
+              {isV2 ? (
+                <p className="v2-eyebrow justify-center mb-4" style={{ color: "#4B2FE5" }}>Contact</p>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="mb-4 px-5 py-1.5 rounded-full"
+                  style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc" }}
+                >
+                  <Mail className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
+                  Contact
+                </Badge>
+              )}
+              <h2 className={cn("font-extrabold mb-4 tracking-tight", isV2 ? "text-[28px] lg:text-[40px]" : "text-2xl lg:text-4xl")}>Get In Touch</h2>
+              <p className={cn("max-w-2xl mx-auto", isV2 ? "opacity-60" : "text-muted-foreground")}>
                 Have questions? We&apos;d love to hear from you.
               </p>
             </div>
 
             <div className={cn("max-w-5xl mx-auto grid gap-6", gridCols)}>
-              {contactCards.map((card) => {
-                const content = (
+              {contactCards.map((card, ci) => {
+                const content = isV2 ? (
+                  <div key={card.label} className="ifpc-v2 v2-card relative text-center p-5 sm:p-8 h-full flex flex-col items-center justify-center">
+                    <span className="v2-badge-dot absolute -top-3 left-1/2 -translate-x-1/2" style={{ background: ["#4B2FE5", "#1e3a5f", "#CCFF33"][ci % 3], color: ci % 3 === 2 ? "#0a0a0a" : "#fff" }}>
+                      <card.icon className="h-4 w-4" />
+                    </span>
+                    <h3 className="font-bold mb-2 mt-2">{card.label}</h3>
+                    <p className="text-sm opacity-60 break-words">{card.value}</p>
+                  </div>
+                ) : (
                   <div key={card.label} className="group text-center p-5 sm:p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-slate-50 hover:bg-white border-2 border-slate-100 hover:border-slate-200 rounded-2xl h-full flex flex-col items-center justify-center relative overflow-hidden shadow-sm">
                     <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center flex-shrink-0 bg-white shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300 border border-slate-100">
                       <card.icon className="h-7 w-7 text-slate-700" />
@@ -2573,23 +3084,27 @@ export default function TenantHomePage() {
       })()}
 
       {/* FAQ Section */}
-      {(sections.faq !== false) && <FAQSection theme={theme} faqs={faqs} />}
+      {(sections.faq !== false) && (IFPC_V2_DESIGN && tenantSlug === "apollo-medical" ? <IfpcFAQSectionV2 faqs={faqs} /> : <FAQSection theme={theme} faqs={faqs} />)}
 
+      {/* Feedback — IFPC 2026 (apollo-medical) only */}
+      {tenantSlug === "apollo-medical" && (
+        <div id="feedback"><FeedbackSection tenantSlug={tenantSlug} /></div>
+      )}
 
       {/* Footer */}
-      <footer className="text-white relative overflow-hidden mb-16 md:mb-0">
+      <footer className={cn("text-white relative overflow-hidden mb-16 md:mb-0", IFPC_V2_DESIGN && tenantSlug === "apollo-medical" && "ifpc-v2")}>
         {/* Smooth wavy transition into footer */}
         <div className="relative h-14 md:h-20 bg-white">
           <svg className="absolute bottom-0 left-0 right-0 w-full h-full" viewBox="0 0 1440 100" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-            <path d="M0,70 C240,100 480,40 720,65 C960,90 1200,35 1440,60 L1440,100 L0,100 Z" fill="#334155" opacity="0.4" />
-            <path d="M0,80 C360,100 600,50 900,75 C1100,90 1300,55 1440,70 L1440,100 L0,100 Z" fill="#1e293b" />
+            <path d="M0,70 C240,100 480,40 720,65 C960,90 1200,35 1440,60 L1440,100 L0,100 Z" fill={tenantSlug === "apollo-medical" ? "#4B2FE5" : "#334155"} opacity="0.4" />
+            <path d="M0,80 C360,100 600,50 900,75 C1100,90 1300,55 1440,70 L1440,100 L0,100 Z" fill={tenantSlug === "apollo-medical" ? "#12112B" : "#1e293b"} />
           </svg>
         </div>
 
         {/* Main footer */}
         <div
           className="py-10 pb-0 relative overflow-hidden"
-          style={{ background: "linear-gradient(160deg, #1e293b 0%, #334155 50%, #1e293b 100%)" }}
+          style={{ background: tenantSlug === "apollo-medical" ? "#12112B" : "linear-gradient(160deg, #1e293b 0%, #334155 50%, #1e293b 100%)" }}
         >
           {/* Floating bubbles background */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -2610,8 +3125,8 @@ export default function TenantHomePage() {
             <div className="grid md:grid-cols-3 gap-10 lg:gap-16">
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
-                    <GraduationCap className="h-6 w-6 text-teal-400" />
+                  <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center border", tenantSlug === "apollo-medical" ? "border-transparent" : "bg-white/10 border-white/10")} style={tenantSlug === "apollo-medical" ? { background: "#CCFF33" } : undefined}>
+                    <GraduationCap className={cn("h-6 w-6", tenantSlug === "apollo-medical" ? "text-[#0a0a0a]" : "text-teal-400")} />
                   </div>
                   <div>
                     <p className="font-bold text-xl tracking-tight">{branding.name}</p>
@@ -2631,7 +3146,7 @@ export default function TenantHomePage() {
                       social.youtube && { href: social.youtube, label: "YouTube" },
                     ].filter(Boolean).map((link) => link && (
                       <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer"
-                        className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-300 hover:scale-110 text-white/70 hover:text-white"
+                        className={cn("w-9 h-9 flex items-center justify-center transition-all duration-300", IFPC_V2_DESIGN && tenantSlug === "apollo-medical" ? "rounded-md v2-social-icon" : "rounded-lg bg-white/10 hover:bg-white/20 hover:scale-110 text-white/70 hover:text-white")}
                         title={link.label}>
                         <Globe className="h-4 w-4" />
                       </a>
@@ -2647,8 +3162,17 @@ export default function TenantHomePage() {
                     sections.events && { href: "#events", label: "Events" },
                     sections.gallery && { href: "#gallery", label: "Gallery" },
                     sections.about && { href: "#about", label: "About" },
+                    tenantSlug === "apollo-medical" && { href: "#highlights", label: "Highlights" },
+                    tenantSlug === "apollo-medical" && { href: "#speakers", label: "Speakers" },
+                    tenantSlug === "apollo-medical" && { href: "#programme", label: "Scientific Programme" },
+                    tenantSlug === "apollo-medical" && { href: "#topics", label: "Topics" },
+                    tenantSlug === "apollo-medical" && { href: "#abstract", label: "Abstract Submission" },
+                    tenantSlug === "apollo-medical" && { href: "#registration", label: "Registration" },
+                    tenantSlug === "apollo-medical" && { href: "#venue", label: "Venue & Travel" },
+                    tenantSlug === "apollo-medical" && { href: "#organising-committee", label: "Organising Committee" },
                     sections.contact && { href: "#contact", label: "Contact" },
                     { href: "#faq", label: "FAQ" },
+                    tenantSlug === "apollo-medical" && { href: "#feedback", label: "Feedback" },
                   ].filter(Boolean).map((link) => link && (
                     <li key={link.label}>
                       <a href={link.href} className="hover:text-white transition-colors duration-200 flex items-center gap-2 text-sm">
@@ -2713,6 +3237,16 @@ export default function TenantHomePage() {
             </div>
           </div>
         </div>
+        {tenantSlug === "apollo-medical" && (
+          <a
+            href="#hero"
+            aria-label="Scroll to top"
+            className="v2-icon-btn absolute right-6 bottom-24 md:bottom-28 h-11 w-11 shadow-lg"
+            style={{ background: "#CCFF33", color: "#0a0a0a" }}
+          >
+            <ArrowUp className="h-4 w-4" />
+          </a>
+        )}
       </footer>
 
       {/* Lightbox */}

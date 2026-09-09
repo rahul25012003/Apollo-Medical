@@ -135,20 +135,20 @@ export function SplashScreen() {
   const isApollo = tenantKey === "apollo";
   const brand = isApollo
     ? {
-        primary: "#2582A1",
-        secondary: "#FDB931",
-        tertiary: "#1a5f87",
-        orb1: "rgba(37,130,161,0.10)",
-        orb2: "rgba(253,185,49,0.08)",
-        orb3: "rgba(26,95,135,0.05)",
-        gridStroke: "#2582A1",
-        glow: "rgba(37,130,161,0.14)",
-        shadowColor: "rgba(37,130,161,0.2)",
-        ring: "conic-gradient(from 0deg, #2582A1, #FDB931, #1a5f87, #2582A1)",
-        bar: "linear-gradient(90deg, #2582A1, #FDB931)",
-        barGlow: "rgba(37,130,161,0.4)",
-        name: "Apollo Hospitals",
-        subtitle: "Medical Conference Portal",
+        primary: "#1e3a5f",
+        secondary: "#c9a227",
+        tertiary: "#0d9488",
+        orb1: "rgba(30,58,95,0.10)",
+        orb2: "rgba(201,162,39,0.08)",
+        orb3: "rgba(13,148,136,0.05)",
+        gridStroke: "#1e3a5f",
+        glow: "rgba(30,58,95,0.14)",
+        shadowColor: "rgba(30,58,95,0.2)",
+        ring: "conic-gradient(from 0deg, #1e3a5f, #c9a227, #0d9488, #1e3a5f)",
+        bar: "linear-gradient(90deg, #1e3a5f, #c9a227)",
+        barGlow: "rgba(30,58,95,0.4)",
+        name: "IFPC 2026",
+        subtitle: "Bridging the Gap",
       }
     : {
         primary: "#0d9488",
@@ -284,44 +284,11 @@ export function SplashScreen() {
             }}
           >
             {isApollo ? (
-              /* Apollo: styled text logo until /apollo-logo.png is uploaded */
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "100%",
-                  height: "100%",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "2rem",
-                    fontWeight: 900,
-                    background: `linear-gradient(135deg, ${brand.primary}, ${brand.secondary})`,
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                    lineHeight: 1,
-                    letterSpacing: "-0.04em",
-                  }}
-                >
-                  AH
-                </span>
-                <span
-                  style={{
-                    fontSize: "0.45rem",
-                    fontWeight: 700,
-                    color: brand.primary,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    marginTop: "4px",
-                  }}
-                >
-                  Hospitals
-                </span>
-              </div>
+              <img
+                src="/ifpc/nimhans-logo.png"
+                alt="NIMHANS"
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              />
             ) : (
               <img
                 src="/aiims-logo.jpg"
