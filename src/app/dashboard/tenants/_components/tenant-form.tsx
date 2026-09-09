@@ -606,22 +606,22 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
             <AlertDialog />
 
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Link href={restrictedMode ? "/dashboard" : "/dashboard/tenants"}>
-                        <Button variant="ghost" size="icon" type="button">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                    <Link href={restrictedMode ? "/dashboard" : "/dashboard/tenants"} className="shrink-0">
+                        <Button variant="ghost" size="icon" type="button" className="h-9 w-9">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                     </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold">
+                    <div className="min-w-0">
+                        <h1 className="text-xl sm:text-2xl font-bold truncate">
                             {restrictedMode
                                 ? "Organization Settings"
                                 : isEditing
                                     ? `Edit: ${formData.name || "Tenant"}`
                                     : "Create Tenant"}
                         </h1>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-none">
                             {restrictedMode
                                 ? "Customize your organization's branding and content"
                                 : isEditing
@@ -630,22 +630,28 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start shrink-0">
                     {isEditing && slug && (
-                        <a href={formData.domain ? `https://${formData.domain}` : `/t/${slug}`} target="_blank" rel="noopener noreferrer">
-                            <Button variant="outline" type="button" className="gap-2">
+                        <a href={formData.domain ? `https://${formData.domain}` : `/t/${slug}`} target="_blank" rel="noopener noreferrer" className="flex-1 sm:flex-none">
+                            <Button variant="outline" type="button" className="gap-2 w-full sm:w-auto h-9 sm:h-10 text-xs sm:text-sm">
                                 <ExternalLink className="w-4 h-4" />
                                 Preview
                             </Button>
                         </a>
                     )}
-                    <Button type="submit" disabled={saving} className="gap-2 gradient-medical text-white hover:opacity-90">
+                    <Button
+                        type="submit"
+                        disabled={saving}
+                        className="gap-2 gradient-medical text-white hover:opacity-90 flex-1 sm:flex-none w-full sm:w-auto h-9 sm:h-10 text-xs sm:text-sm shadow-md"
+                    >
                         {saving ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                         ) : (
-                            <Check className="w-4 h-4" />
+                            <Check className="w-4 h-4 shrink-0" />
                         )}
-                        {saving ? "Saving..." : restrictedMode ? "Save Changes" : isEditing ? "Update Tenant" : "Create Tenant"}
+                        <span className="truncate">
+                            {saving ? "Saving..." : restrictedMode ? "Save Changes" : isEditing ? "Update Tenant" : "Create Tenant"}
+                        </span>
                     </Button>
                 </div>
             </div>
@@ -694,24 +700,24 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                     <p className="text-xs text-muted-foreground">Short name shown beside logo in dashboard sidebar. Leave empty to use full name.</p>
                                 </div>
                                 {!restrictedMode && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="slug">URL Slug *</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            id="slug"
-                                            placeholder="my-conference"
-                                            value={formData.slug}
-                                            onChange={(e) => {
-                                                setSlugManuallyEdited(true);
-                                                updateField("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
-                                            }}
-                                            required
-                                        />
+                                    <div className="space-y-2">
+                                        <Label htmlFor="slug">URL Slug *</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                id="slug"
+                                                placeholder="my-conference"
+                                                value={formData.slug}
+                                                onChange={(e) => {
+                                                    setSlugManuallyEdited(true);
+                                                    updateField("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+                                                }}
+                                                required
+                                            />
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            Used internally for tenant identification
+                                        </p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        Used internally for tenant identification
-                                    </p>
-                                </div>
                                 )}
                             </div>
                             <div className="space-y-2">
@@ -933,18 +939,18 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                 </div>
                             </div>
                             {!restrictedMode && (
-                            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                                <div className="space-y-0.5">
-                                    <Label>Active</Label>
-                                    <p className="text-xs text-muted-foreground">
-                                        Active tenants are visible to the public
-                                    </p>
+                                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                                    <div className="space-y-0.5">
+                                        <Label>Active</Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Active tenants are visible to the public
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        checked={formData.isActive ?? true}
+                                        onCheckedChange={(checked) => updateField("isActive", checked)}
+                                    />
                                 </div>
-                                <Switch
-                                    checked={formData.isActive ?? true}
-                                    onCheckedChange={(checked) => updateField("isActive", checked)}
-                                />
-                            </div>
                             )}
                         </CardContent>
                     </Card>
@@ -1189,68 +1195,68 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                     </Card>
 
                     {!restrictedMode && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Dashboard Modules</CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                                Control which modules are visible in the sidebar for this tenant&apos;s users.
-                                Disabling a module hides it from the menu but does not delete existing data.
-                            </p>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {[
-                                { key: "moduleSpeakers", label: "Speakers", desc: "Manage speakers for events. Disable if speakers are fixed." },
-                                { key: "moduleSponsors", label: "Sponsors", desc: "Manage sponsors and partnerships. Disable if sponsors are fixed." },
-                                { key: "moduleCertificates", label: "Certificates", desc: "Issue and manage certificates for attendees." },
-                                { key: "moduleRegistrations", label: "Registrations", desc: "Manage event registrations and attendees." },
-                            ].map((mod) => (
-                                <div
-                                    key={mod.key}
-                                    className="flex items-center justify-between p-4 rounded-lg bg-muted/50"
-                                >
-                                    <div className="space-y-0.5">
-                                        <Label>{mod.label}</Label>
-                                        <p className="text-xs text-muted-foreground">{mod.desc}</p>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Dashboard Modules</CardTitle>
+                                <p className="text-sm text-muted-foreground">
+                                    Control which modules are visible in the sidebar for this tenant&apos;s users.
+                                    Disabling a module hides it from the menu but does not delete existing data.
+                                </p>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {[
+                                    { key: "moduleSpeakers", label: "Speakers", desc: "Manage speakers for events. Disable if speakers are fixed." },
+                                    { key: "moduleSponsors", label: "Sponsors", desc: "Manage sponsors and partnerships. Disable if sponsors are fixed." },
+                                    { key: "moduleCertificates", label: "Certificates", desc: "Issue and manage certificates for attendees." },
+                                    { key: "moduleRegistrations", label: "Registrations", desc: "Manage event registrations and attendees." },
+                                ].map((mod) => (
+                                    <div
+                                        key={mod.key}
+                                        className="flex items-center justify-between p-4 rounded-lg bg-muted/50"
+                                    >
+                                        <div className="space-y-0.5">
+                                            <Label>{mod.label}</Label>
+                                            <p className="text-xs text-muted-foreground">{mod.desc}</p>
+                                        </div>
+                                        <Switch
+                                            checked={formData.sections?.[mod.key as keyof typeof formData.sections] ?? true}
+                                            onCheckedChange={(checked) => updateSection(mod.key, checked)}
+                                        />
                                     </div>
-                                    <Switch
-                                        checked={formData.sections?.[mod.key as keyof typeof formData.sections] ?? true}
-                                        onCheckedChange={(checked) => updateSection(mod.key, checked)}
-                                    />
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
+                                ))}
+                            </CardContent>
+                        </Card>
                     )}
 
                     {!restrictedMode && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Notification Settings</CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                                Control which notification types are available for this tenant&apos;s users.
-                            </p>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {[
-                                { key: "notifyRegistrations", label: "Registration Alerts", desc: "Allow users to receive new registration notifications." },
-                                { key: "notifyPayments", label: "Payment Notifications", desc: "Allow users to receive payment confirmation notifications." },
-                            ].map((notify) => (
-                                <div
-                                    key={notify.key}
-                                    className="flex items-center justify-between p-4 rounded-lg bg-muted/50"
-                                >
-                                    <div className="space-y-0.5">
-                                        <Label>{notify.label}</Label>
-                                        <p className="text-xs text-muted-foreground">{notify.desc}</p>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Notification Settings</CardTitle>
+                                <p className="text-sm text-muted-foreground">
+                                    Control which notification types are available for this tenant&apos;s users.
+                                </p>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {[
+                                    { key: "notifyRegistrations", label: "Registration Alerts", desc: "Allow users to receive new registration notifications." },
+                                    { key: "notifyPayments", label: "Payment Notifications", desc: "Allow users to receive payment confirmation notifications." },
+                                ].map((notify) => (
+                                    <div
+                                        key={notify.key}
+                                        className="flex items-center justify-between p-4 rounded-lg bg-muted/50"
+                                    >
+                                        <div className="space-y-0.5">
+                                            <Label>{notify.label}</Label>
+                                            <p className="text-xs text-muted-foreground">{notify.desc}</p>
+                                        </div>
+                                        <Switch
+                                            checked={formData.sections?.[notify.key as keyof typeof formData.sections] ?? true}
+                                            onCheckedChange={(checked) => updateSection(notify.key, checked)}
+                                        />
                                     </div>
-                                    <Switch
-                                        checked={formData.sections?.[notify.key as keyof typeof formData.sections] ?? true}
-                                        onCheckedChange={(checked) => updateSection(notify.key, checked)}
-                                    />
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
+                                ))}
+                            </CardContent>
+                        </Card>
                     )}
                 </TabsContent>
 

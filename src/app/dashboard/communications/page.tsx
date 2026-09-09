@@ -252,23 +252,23 @@ function SendMessageTab() {
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Email subject... (use {{eventTitle}} for event name)"
+              placeholder="Email subject... (use 'eventTitle' for event name)"
             />
           </div>
 
           {/* Body */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <Label>Message Body</Label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">
-                  Placeholders: {"{{name}}"}, {"{{email}}"}, {"{{eventTitle}}"}
+                  Placeholders: "name", "email", "eventTitle"
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowPreview(!showPreview)}
-                  className="text-xs"
+                  className="text-xs shrink-0"
                 >
                   <Eye className="w-3.5 h-3.5 mr-1" />
                   {showPreview ? "Hide" : "Show"} Preview
@@ -428,7 +428,7 @@ function TemplatesTab() {
     <div className="space-y-6">
       <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20">
                 <FileText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
@@ -438,7 +438,7 @@ function TemplatesTab() {
                 <p className="text-sm text-muted-foreground">{templates.length} templates</p>
               </div>
             </div>
-            <Button onClick={openCreate} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white">
+            <Button onClick={openCreate} className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               New Template
             </Button>
@@ -458,7 +458,7 @@ function TemplatesTab() {
                   key={template.id}
                   className="group flex items-center justify-between p-4 rounded-xl border bg-white/50 dark:bg-slate-800/50 hover:shadow-md transition-all duration-200"
                 >
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 mr-2">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-medium truncate">{template.name}</h4>
                       <Badge variant="outline" className="text-xs shrink-0">
@@ -467,7 +467,7 @@ function TemplatesTab() {
                     </div>
                     <p className="text-sm text-muted-foreground truncate">{template.subject}</p>
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="sm" onClick={() => openEdit(template)}>
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -610,7 +610,7 @@ function HistoryTab() {
     <div className="space-y-6">
       <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20">
                 <History className="w-5 h-5 text-amber-600 dark:text-amber-400" />
@@ -727,7 +727,7 @@ export default function CommunicationsPage() {
     <DashboardLayout title="Communications" subtitle="Send messages and manage notification templates">
       <div className="space-y-6">
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-600 via-cyan-600 to-blue-700 p-8 text-white">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-600 via-cyan-600 to-blue-700 p-5 sm:p-8 text-white">
           <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           <div className="relative">
@@ -745,18 +745,19 @@ export default function CommunicationsPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-sm">
-            <TabsTrigger value="send" className="gap-2">
-              <Send className="w-4 h-4" />
-              Send Message
+          <TabsList className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border shadow-sm w-full sm:w-auto">
+            <TabsTrigger value="send" className="gap-1.5 flex-1 sm:flex-none">
+              <Send className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline sm:inline">Send Message</span>
+              <span className="xs:hidden sm:hidden">Send</span>
             </TabsTrigger>
-            <TabsTrigger value="templates" className="gap-2">
-              <FileText className="w-4 h-4" />
-              Templates
+            <TabsTrigger value="templates" className="gap-1.5 flex-1 sm:flex-none">
+              <FileText className="w-4 h-4 shrink-0" />
+              <span>Templates</span>
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
-              <History className="w-4 h-4" />
-              History
+            <TabsTrigger value="history" className="gap-1.5 flex-1 sm:flex-none">
+              <History className="w-4 h-4 shrink-0" />
+              <span>History</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>

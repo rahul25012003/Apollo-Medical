@@ -862,8 +862,8 @@ export default function SpeakersPage() {
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between">
-                                                <div>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
                                                     <h3 className="font-semibold truncate">{speaker.name}</h3>
                                                     <p className="text-sm text-muted-foreground truncate">
                                                         {speaker.designation || "Speaker"}
@@ -917,8 +917,8 @@ export default function SpeakersPage() {
                                     </div>
 
                                     {speaker.institution && (
-                                        <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-                                            <Building2 className="h-3 w-3" />
+                                        <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground min-w-0">
+                                            <Building2 className="h-3 w-3 shrink-0" />
                                             <span className="truncate">{speaker.institution}</span>
                                         </div>
                                     )}
@@ -934,12 +934,12 @@ export default function SpeakersPage() {
                                                 </p>
                                             )}
                                             <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                                                <div className="flex items-center gap-1">
-                                                    <Calendar className="h-3 w-3" />
-                                                    {speaker.events[0].startDate}
+                                                <div className="flex items-center gap-1 min-w-0">
+                                                    <Calendar className="h-3 w-3 shrink-0" />
+                                                    <span className="truncate">{speaker.events[0].startDate}</span>
                                                 </div>
                                                 {speaker.eventCount > 1 && (
-                                                    <span className="text-primary">+{speaker.eventCount - 1} more</span>
+                                                    <span className="text-primary shrink-0">+{speaker.eventCount - 1} more</span>
                                                 )}
                                             </div>
                                         </div>

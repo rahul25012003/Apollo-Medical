@@ -60,7 +60,7 @@ function BarChart({ data, maxValue, color = "teal", height = 160 }: {
   };
 
   return (
-    <div className="flex items-end gap-[2px]" style={{ height }}>
+    <div className="flex items-end w-full gap-[2px]" style={{ height }}>
       {data.map((item, i) => {
         const pct = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
         return (
@@ -97,8 +97,8 @@ function DonutChart({ segments, size = 140, strokeWidth = 20 }: {
   let offset = 0;
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
+    <div className="relative inline-flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
         {total === 0 ? (
           <circle
             cx={size / 2}
@@ -254,7 +254,7 @@ function RegistrationAnalytics({ data }: { data: RegistrationReport | null }) {
   return (
     <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20">
               <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />
@@ -281,7 +281,7 @@ function RegistrationAnalytics({ data }: { data: RegistrationReport | null }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Daily Registrations Bar Chart */}
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-3">Last 30 Days</h4>
@@ -300,9 +300,9 @@ function RegistrationAnalytics({ data }: { data: RegistrationReport | null }) {
           </div>
 
           {/* Status Donut */}
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             <DonutChart segments={donutSegments} />
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-2 w-full">
               <h4 className="text-sm font-medium text-muted-foreground mb-3">By Status</h4>
               {donutSegments.map((s) => (
                 <LegendItem key={s.label} color={s.color} label={s.label} value={s.value} />
@@ -367,7 +367,7 @@ function RevenueAnalytics({ data }: { data: RevenueReport | null }) {
   return (
     <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20">
               <IndianRupee className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -395,14 +395,14 @@ function RevenueAnalytics({ data }: { data: RevenueReport | null }) {
       </CardHeader>
       <CardContent>
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard icon={IndianRupee} label="Total Revenue" value={`₹${data.totalRevenue.toLocaleString()}`} color="emerald" />
           <StatCard icon={CheckCircle2} label="Paid" value={`₹${data.totalPaid.toLocaleString()}`} color="teal" />
           <StatCard icon={Clock} label="Pending" value={`₹${data.totalPending.toLocaleString()}`} color="amber" />
           <StatCard icon={Users} label="Free Registrations" value={data.totalFree} color="violet" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Daily Revenue Chart */}
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-3">Revenue (Last 30 Days)</h4>
@@ -460,7 +460,7 @@ function AttendanceAnalytics({ data }: { data: AttendanceReport | null }) {
   return (
     <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20">
               <UserCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -487,7 +487,7 @@ function AttendanceAnalytics({ data }: { data: AttendanceReport | null }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Check-in Rate Donut */}
           <div className="flex flex-col items-center gap-4">
             <DonutChart segments={donutSegments} size={180} strokeWidth={24} />
@@ -557,7 +557,7 @@ function CertificateAnalytics({ data }: { data: CertificateReport | null }) {
   return (
     <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20">
               <Award className="w-5 h-5 text-violet-600 dark:text-violet-400" />
@@ -584,11 +584,11 @@ function CertificateAnalytics({ data }: { data: CertificateReport | null }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Status Donut */}
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             <DonutChart segments={statusSegments} />
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-2 w-full">
               <h4 className="text-sm font-medium text-muted-foreground mb-3">By Status</h4>
               {statusSegments.map((s) => (
                 <LegendItem key={s.label} color={s.color} label={s.label} value={s.value} />
@@ -693,7 +693,7 @@ export default function ReportsPage() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-8 text-white">
           <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">

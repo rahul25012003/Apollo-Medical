@@ -763,15 +763,15 @@ export default function UsersPage() {
                     <TabsContent value="users" className="mt-6">
                         <Card className="card-premium overflow-hidden">
                             <CardContent className="p-0">
-                                <div className="rounded-lg border-0">
-                                    <Table className="table-premium">
+                                <div className="rounded-lg border-0 overflow-x-auto">
+                                    <Table className="table-premium min-w-[600px]">
                                         <TableHeader>
                                             <TableRow className="bg-gradient-to-r from-muted/80 via-muted/50 to-muted/80 border-b">
                                                 <TableHead className="font-semibold">User</TableHead>
                                                 <TableHead className="hidden md:table-cell font-semibold">Role</TableHead>
-                                                <TableHead className="font-semibold">Status</TableHead>
-                                                <TableHead className="hidden sm:table-cell font-semibold">Last Active</TableHead>
-                                                <TableHead className="text-right font-semibold">Actions</TableHead>
+                                                <TableHead className="font-semibold w-[120px]">Status</TableHead>
+                                                <TableHead className="hidden sm:table-cell font-semibold w-[140px]">Last Active</TableHead>
+                                                <TableHead className="text-right font-semibold w-[80px]">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -822,16 +822,16 @@ export default function UsersPage() {
                                                         <Badge
                                                             variant="outline"
                                                             className={cn(
-                                                                "border-0",
+                                                                "border-0 inline-flex items-center gap-1.5 capitalize",
                                                                 user.status === "active"
                                                                     ? "status-active"
                                                                     : "bg-red-50 text-red-700"
                                                             )}
                                                         >
                                                             {user.status === "active" ? (
-                                                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                <CheckCircle2 className="h-3.5 w-3.5" />
                                                             ) : (
-                                                                <XCircle className="h-3 w-3 mr-1" />
+                                                                <XCircle className="h-3.5 w-3.5" />
                                                             )}
                                                             {user.status}
                                                         </Badge>

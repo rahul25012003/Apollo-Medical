@@ -530,7 +530,7 @@ export default function SettingsPage() {
                         ) : tenant ? (
                             <>
                                 {/* Tenant Contact */}
-                                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                                <div className="card-premium bg-background rounded-xl border border-border p-4 sm:p-6">
                                     <div className="flex items-center gap-3 mb-1">
                                         <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
                                             <Building2 className="w-5 h-5 text-teal-600" />
@@ -590,7 +590,7 @@ export default function SettingsPage() {
                                 </div>
 
                                 {/* Tenant Modules */}
-                                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                                <div className="card-premium bg-background rounded-xl border border-border p-4 sm:p-6">
                                     <div className="flex items-center gap-3 mb-1">
                                         <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
                                             <LayoutGrid className="w-5 h-5 text-teal-600" />
@@ -647,7 +647,7 @@ export default function SettingsPage() {
                                 </div>
 
                                 {/* Tenant Defaults */}
-                                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                                <div className="card-premium bg-background rounded-xl border border-border p-4 sm:p-6">
                                     <div className="flex items-center gap-3 mb-1">
                                         <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
                                             <DollarSign className="w-5 h-5 text-teal-600" />
@@ -702,7 +702,7 @@ export default function SettingsPage() {
                                 </div>
 
                                 {/* Tenant Notification Settings */}
-                                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                                <div className="card-premium bg-background rounded-xl border border-border p-4 sm:p-6">
                                     <div className="flex items-center gap-3 mb-1">
                                         <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
                                             <Bell className="w-5 h-5 text-teal-600" />
@@ -740,7 +740,7 @@ export default function SettingsPage() {
 
                                 {/* Save Tenant Settings */}
                                 <div className="flex justify-end">
-                                    <Button onClick={handleSaveTenantSettings} disabled={savingTenant} className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20">
+                                    <Button onClick={handleSaveTenantSettings} disabled={savingTenant} className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20 w-full sm:w-auto">
                                         {savingTenant && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         Save Tenant Settings
                                     </Button>
@@ -761,7 +761,7 @@ export default function SettingsPage() {
                 )}
 
                 {/* Profile Section */}
-                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                <div className="card-premium bg-background rounded-xl border border-border p-4 sm:p-6">
                     <div className="flex items-center gap-3 mb-1">
                         <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
                             <User className="w-5 h-5 text-teal-600" />
@@ -816,7 +816,7 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="mt-6 pt-6 border-t border-border flex justify-end">
-                        <Button onClick={handleSaveProfile} disabled={saving} className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20">
+                        <Button onClick={handleSaveProfile} disabled={saving} className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20 w-full sm:w-auto">
                             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Save Changes
                         </Button>
@@ -824,7 +824,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Security Section */}
-                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                <div className="card-premium bg-background rounded-xl border border-border p-4 sm:p-6">
                     <div className="flex items-center gap-3 mb-1">
                         <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
                             <Lock className="w-5 h-5 text-teal-600" />
@@ -860,7 +860,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Notifications Section */}
-                <div className="card-premium bg-background rounded-xl border border-border p-6">
+                <div className="card-premium bg-background rounded-xl border border-border p-4 sm:p-6">
                     <div className="flex items-center gap-3 mb-1">
                         <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
                             <Bell className="w-5 h-5 text-teal-600" />
@@ -917,21 +917,21 @@ export default function SettingsPage() {
 
                 {/* Notification Channels Section (Admin only) */}
                 {isAdmin && (
-                    <div className="card-premium bg-background rounded-xl border border-border p-6">
-                        <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10">
+                    <div className="card-premium bg-background rounded-xl border border-border p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-1">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/10 shrink-0">
                                     <Mail className="w-5 h-5 text-teal-600" />
                                 </div>
-                                <div>
-                                    <h2 className="font-semibold text-foreground">Notification Channels</h2>
-                                    <p className="text-sm text-muted-foreground">Configure Email, SMS & WhatsApp providers</p>
+                                <div className="min-w-0">
+                                    <h2 className="font-semibold text-foreground truncate">Notification Channels</h2>
+                                    <p className="text-sm text-muted-foreground truncate">Configure Email, SMS & WhatsApp providers</p>
                                 </div>
                             </div>
                             <Button
                                 size="sm"
                                 onClick={() => { setEditingNotifChannel(null); setNotifDialogOpen(true); }}
-                                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20"
+                                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20 w-full sm:w-auto shrink-0"
                             >
                                 <Plus className="w-4 h-4 mr-1" /> Add Channel
                             </Button>
@@ -961,19 +961,19 @@ export default function SettingsPage() {
                                             </div>
                                             <div className="divide-y">
                                                 {items.map((ch) => (
-                                                    <div key={ch.id} className="px-4 py-3 flex items-center gap-3">
+                                                    <div key={ch.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                                         <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2">
+                                                            <div className="flex flex-wrap items-center gap-2">
                                                                 <span className="text-sm font-medium truncate">{ch.name}</span>
-                                                                {ch.isDefault && <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200"><Star className="w-3 h-3 mr-0.5" />Default</Badge>}
-                                                                {!ch.isActive && <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">Disabled</Badge>}
+                                                                {ch.isDefault && <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200 shrink-0"><Star className="w-3 h-3 mr-0.5" />Default</Badge>}
+                                                                {!ch.isActive && <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200 shrink-0">Disabled</Badge>}
                                                             </div>
-                                                            <p className="text-xs text-muted-foreground">{NOTIF_PROVIDERS[ch.channel]?.find((p) => p.id === ch.provider)?.name || ch.provider}</p>
+                                                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{NOTIF_PROVIDERS[ch.channel]?.find((p) => p.id === ch.provider)?.name || ch.provider}</p>
                                                             {testResult?.id === ch.id && (
-                                                                <p className={`text-xs mt-0.5 ${testResult.ok ? "text-green-600" : "text-red-600"}`}>{testResult.msg}</p>
+                                                                <p className={`text-xs mt-0.5 break-words ${testResult.ok ? "text-green-600" : "text-red-600"}`}>{testResult.msg}</p>
                                                             )}
                                                         </div>
-                                                        <div className="flex items-center gap-0.5">
+                                                        <div className="flex items-center gap-1 sm:gap-0.5 justify-end w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 shrink-0">
                                                             <Button variant="ghost" size="icon" className="h-8 w-8" title="Test" disabled={testingChannel === ch.id || !ch.isActive} onClick={() => handleTestNotifChannel(ch.id)}>
                                                                 {testingChannel === ch.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <TestTube className="w-3.5 h-3.5" />}
                                                             </Button>
@@ -1016,7 +1016,7 @@ export default function SettingsPage() {
 
             {/* Change Password Dialog */}
             <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-                <DialogContent className="sm:max-w-[425px] border-border/50 shadow-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-[425px] border-border/50 shadow-2xl p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Change Password</DialogTitle>
                         <DialogDescription>
@@ -1078,18 +1078,19 @@ export default function SettingsPage() {
                             />
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
                         <Button
                             variant="outline"
                             onClick={() => setIsPasswordDialogOpen(false)}
                             disabled={changingPassword}
+                            className="w-full sm:w-auto"
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleChangePassword}
                             disabled={changingPassword || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
-                            className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white"
+                            className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white w-full sm:w-auto"
                         >
                             {changingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Change Password
@@ -1100,7 +1101,7 @@ export default function SettingsPage() {
 
             {/* Active Sessions Dialog */}
             <Dialog open={isSessionsDialogOpen} onOpenChange={setIsSessionsDialogOpen}>
-                <DialogContent className="sm:max-w-[600px] border-border/50 shadow-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-[600px] border-border/50 shadow-2xl p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Active Sessions</DialogTitle>
                         <DialogDescription>
@@ -1346,7 +1347,7 @@ function NotifChannelDialog({
 
     return (
         <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto border-border/50 shadow-2xl">
+            <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto border-border/50 shadow-2xl p-4 sm:p-6">
                 <DialogHeader>
                     <DialogTitle>{editing ? "Edit Notification Channel" : "Add Notification Channel"}</DialogTitle>
                     <DialogDescription>Choose a channel and provider, then enter the configuration details</DialogDescription>
@@ -1361,12 +1362,12 @@ function NotifChannelDialog({
                                 key={ch}
                                 onClick={() => !editing && handleChannelSwitch(ch)}
                                 disabled={!!editing}
-                                className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                                className={`flex flex-col items-center justify-center gap-1.5 py-2.5 sm:py-3 px-1 rounded-xl border-2 text-xs sm:text-sm font-medium transition-all ${
                                     channel === ch ? "border-teal-500 bg-gradient-to-b from-teal-50 to-cyan-50/50 text-teal-700 shadow-sm dark:from-teal-950 dark:to-cyan-950/50 dark:text-teal-400" : "border-border hover:border-muted-foreground/30 hover:bg-slate-50/50 dark:hover:bg-slate-900/50"
                                 } ${editing ? "opacity-70 cursor-not-allowed" : ""}`}
                             >
-                                {ch === "EMAIL" ? <Mail className="w-5 h-5" /> : ch === "SMS" ? <Phone className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
-                                {ch === "WHATSAPP" ? "WhatsApp" : ch.charAt(0) + ch.slice(1).toLowerCase()}
+                                {ch === "EMAIL" ? <Mail className="w-4 h-4 sm:w-5 sm:h-5" /> : ch === "SMS" ? <Phone className="w-4 h-4 sm:w-5 sm:h-5" /> : <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />}
+                                <span className="truncate">{ch === "WHATSAPP" ? "WhatsApp" : ch.charAt(0) + ch.slice(1).toLowerCase()}</span>
                             </button>
                         ))}
                     </div>
@@ -1428,9 +1429,9 @@ function NotifChannelDialog({
                     </div>
                 )}
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSave} disabled={dlgSaving} className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20">
+                <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+                    <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
+                    <Button onClick={handleSave} disabled={dlgSaving} className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg shadow-teal-500/20 w-full sm:w-auto">
                         {dlgSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         {editing ? "Update Configuration" : "Save Configuration"}
                     </Button>
