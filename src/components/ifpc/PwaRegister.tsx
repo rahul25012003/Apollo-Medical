@@ -67,9 +67,11 @@ export function PwaRegister() {
     document.head.appendChild(themeColor);
 
     // Real NIMHANS logo for iOS "Add to Home Screen" (iOS ignores the manifest icons)
+    // iOS ignores manifest icons and needs a square, opaque icon of its own
+    // (the raw logo file is 375x364 — not square, which iOS renders oddly).
     const appleIcon = document.createElement("link");
     appleIcon.rel = "apple-touch-icon";
-    appleIcon.href = "/ifpc/nimhans-logo.png";
+    appleIcon.href = "/ifpc/nimhans-icon-180.png";
     document.head.appendChild(appleIcon);
 
     if ("serviceWorker" in navigator) {
