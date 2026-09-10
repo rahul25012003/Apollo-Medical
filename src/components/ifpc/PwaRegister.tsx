@@ -19,9 +19,16 @@ export function PwaRegister() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
+    // Production serves this tenant at the site root (DEFAULT_TENANT_SLUG),
+    // while locally it lives under /t/apollo-medical. The manifest scope must
+    // contain the page you're actually on or the browser refuses to install,
+    // so pick the matching manifest/scope instead of hardcoding one.
+    const servedAtRoot = !window.location.pathname.startsWith("/t/");
+    const scope = servedAtRoot ? "/" : "/t/apollo-medical";
+
     const link = document.createElement("link");
     link.rel = "manifest";
-    link.href = "/manifest-ifpc.json";
+    link.href = servedAtRoot ? "/manifest-ifpc-root.json" : "/manifest-ifpc.json";
     document.head.appendChild(link);
 
     const themeColor = document.createElement("meta");
@@ -36,7 +43,7 @@ export function PwaRegister() {
     document.head.appendChild(appleIcon);
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw-ifpc.js", { scope: "/t/apollo-medical" }).catch(() => {});
+      navigator.serviceWorker.register("/sw-ifpc.js", { scope }).catch(() => {});
     }
 
     const onBeforeInstall = (e: Event) => {

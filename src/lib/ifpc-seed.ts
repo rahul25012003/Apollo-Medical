@@ -14,6 +14,16 @@ import type { PrismaClient } from "@prisma/client";
 
 const d = (s: string) => new Date(s);
 
+// Order the fee tiers so the cheapest/most common one sorts first: the shared
+// registration page pre-selects pricingCategories[0], and the site advertises
+// the Indian Delegate price, so that tier must be the one pre-selected.
+const FEE_TIER_ORDER: Record<string, number> = {
+  "Indian Delegate": 0,
+  "Indian Trainee Delegate": 1,
+  "International Delegate": 2,
+  "International Trainee Delegate": 3,
+};
+
 export async function seedIfpc2026(prisma: PrismaClient) {
   console.log("IFPC 2026 — content + event seed\n");
 
@@ -147,7 +157,18 @@ export async function seedIfpc2026(prisma: PrismaClient) {
   const SLUG = "ifpc-2026";
   const existingEvent = await prisma.event.findUnique({ where: { slug: SLUG } });
   if (existingEvent) {
-    console.log("IFPC 2026 event already exists — skipping event/pricing/session creation.");
+    console.log("IFPC 2026 event already exists — skipping event/session creation.");
+    // The registration page pre-selects the first pricing category, so the
+    // cheapest/most common tier must sort first — otherwise a delegate lands
+    // on the form with International Delegate (₹77,280) pre-selected while
+    // the site advertises the Indian Delegate price (₹12,620).
+    for (const [name, displayOrder] of Object.entries(FEE_TIER_ORDER)) {
+      const r = await prisma.eventPricing.updateMany({
+        where: { eventId: existingEvent.id, name },
+        data: { displayOrder },
+      });
+      if (r.count) console.log(`  fee tier order: ${name} -> ${displayOrder}`);
+    }
     console.log("\nDone.");
     return;
   }
@@ -203,10 +224,10 @@ export async function seedIfpc2026(prisma: PrismaClient) {
   // against the actual FX rate before relying on them for real charges.
   const EARLY_BIRD_DEADLINE = d("2026-09-15T23:59:00+05:30");
   await prisma.eventPricing.createMany({ data: [
-    { eventId: event.id, name: "International Delegate", description: "900 AUD (Early Bird, approx. ₹69,550) / 1000 AUD (Standard)", totalSlots: 100, price: 77280, earlyBirdPrice: 69550, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: 0 },
-    { eventId: event.id, name: "International Trainee Delegate", description: "500 AUD (Early Bird, approx. ₹39,000) / 600 AUD (Standard)", totalSlots: 40, price: 46370, earlyBirdPrice: 39000, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: 1 },
-    { eventId: event.id, name: "Indian Delegate", totalSlots: 500, price: 12620, earlyBirdPrice: 10620, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: 2 },
-    { eventId: event.id, name: "Indian Trainee Delegate", totalSlots: 160, price: 7900, earlyBirdPrice: 5900, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: 3 },
+    { eventId: event.id, name: "International Delegate", description: "900 AUD (Early Bird, approx. ₹69,550) / 1000 AUD (Standard)", totalSlots: 100, price: 77280, earlyBirdPrice: 69550, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: FEE_TIER_ORDER["International Delegate"] },
+    { eventId: event.id, name: "International Trainee Delegate", description: "500 AUD (Early Bird, approx. ₹39,000) / 600 AUD (Standard)", totalSlots: 40, price: 46370, earlyBirdPrice: 39000, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: FEE_TIER_ORDER["International Trainee Delegate"] },
+    { eventId: event.id, name: "Indian Delegate", totalSlots: 500, price: 12620, earlyBirdPrice: 10620, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: FEE_TIER_ORDER["Indian Delegate"] },
+    { eventId: event.id, name: "Indian Trainee Delegate", totalSlots: 160, price: 7900, earlyBirdPrice: 5900, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: FEE_TIER_ORDER["Indian Trainee Delegate"] },
   ]});
   console.log("Fee tiers (EventPricing) created.\n");
 
