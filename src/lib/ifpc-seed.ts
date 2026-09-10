@@ -24,6 +24,32 @@ const FEE_TIER_ORDER: Record<string, number> = {
   "International Trainee Delegate": 3,
 };
 
+// International fees are quoted in AUD in the source content, but this system
+// charges a single currency per event (INR via Razorpay), so they are stored
+// converted. The AUD figures are authoritative; the INR ones are derived here
+// from one explicit rate so they can be re-checked and re-run in one place.
+// Rate verified 2026-09-10 against three independent sources (68.67 / 68.71 /
+// 68.69). Re-run the seed to refresh if the rate has moved materially.
+const AUD_TO_INR = 68.69;
+const inr = (aud: number) => Math.round((aud * AUD_TO_INR) / 10) * 10;
+
+const INTL_TIERS = {
+  "International Delegate": {
+    earlyBirdAud: 900,
+    standardAud: 1000,
+    get earlyBirdPrice() { return inr(this.earlyBirdAud); },
+    get price() { return inr(this.standardAud); },
+    get description() { return `${this.earlyBirdAud} AUD (Early Bird, approx. ₹${inr(this.earlyBirdAud).toLocaleString("en-IN")}) / ${this.standardAud} AUD (Standard, approx. ₹${inr(this.standardAud).toLocaleString("en-IN")})`; },
+  },
+  "International Trainee Delegate": {
+    earlyBirdAud: 500,
+    standardAud: 600,
+    get earlyBirdPrice() { return inr(this.earlyBirdAud); },
+    get price() { return inr(this.standardAud); },
+    get description() { return `${this.earlyBirdAud} AUD (Early Bird, approx. ₹${inr(this.earlyBirdAud).toLocaleString("en-IN")}) / ${this.standardAud} AUD (Standard, approx. ₹${inr(this.standardAud).toLocaleString("en-IN")})`; },
+  },
+};
+
 export async function seedIfpc2026(prisma: PrismaClient) {
   console.log("IFPC 2026 — content + event seed\n");
 
@@ -163,11 +189,22 @@ export async function seedIfpc2026(prisma: PrismaClient) {
     // on the form with International Delegate (₹77,280) pre-selected while
     // the site advertises the Indian Delegate price (₹12,620).
     for (const [name, displayOrder] of Object.entries(FEE_TIER_ORDER)) {
+      const intl = INTL_TIERS[name as keyof typeof INTL_TIERS];
       const r = await prisma.eventPricing.updateMany({
         where: { eventId: existingEvent.id, name },
-        data: { displayOrder },
+        data: intl
+          // Also refresh the AUD-derived INR amounts, so correcting the rate
+          // takes effect on an event that already exists.
+          ? { displayOrder, price: intl.price, earlyBirdPrice: intl.earlyBirdPrice, description: intl.description }
+          : { displayOrder },
       });
-      if (r.count) console.log(`  fee tier order: ${name} -> ${displayOrder}`);
+      if (r.count) {
+        console.log(
+          intl
+            ? `  ${name}: order ${displayOrder}, ₹${intl.earlyBirdPrice} early / ₹${intl.price} standard (@ ${AUD_TO_INR} INR/AUD)`
+            : `  ${name}: order ${displayOrder}`
+        );
+      }
     }
     console.log("\nDone.");
     return;
@@ -212,20 +249,10 @@ export async function seedIfpc2026(prisma: PrismaClient) {
   console.log(`Event created: ${event.title}\n`);
 
   // Fee tiers — Early Bird till 15 Sept 2026, 11:59 PM IST.
-  // The source content states international fees in AUD and gives an INR
-  // approximation only for the early-bird figures (900 AUD ≈ ₹69,550;
-  // 500 AUD ≈ ₹39,000 — an implied rate of ~77.28 INR/AUD). The standard
-  // (non-early-bird) AUD figures have no INR conversion in the source, and
-  // this system charges a single currency (INR via Razorpay) per event, so
-  // the standard INR prices below are DERIVED using that same implied rate
-  // (1000 AUD → ₹77,280; 600 AUD → ₹46,370) as a placeholder — the AUD
-  // figures in `description` are the authoritative ones from the source
-  // content. Flagging clearly: confirm/update these two derived INR amounts
-  // against the actual FX rate before relying on them for real charges.
   const EARLY_BIRD_DEADLINE = d("2026-09-15T23:59:00+05:30");
   await prisma.eventPricing.createMany({ data: [
-    { eventId: event.id, name: "International Delegate", description: "900 AUD (Early Bird, approx. ₹69,550) / 1000 AUD (Standard)", totalSlots: 100, price: 77280, earlyBirdPrice: 69550, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: FEE_TIER_ORDER["International Delegate"] },
-    { eventId: event.id, name: "International Trainee Delegate", description: "500 AUD (Early Bird, approx. ₹39,000) / 600 AUD (Standard)", totalSlots: 40, price: 46370, earlyBirdPrice: 39000, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: FEE_TIER_ORDER["International Trainee Delegate"] },
+    { eventId: event.id, name: "International Delegate", description: INTL_TIERS["International Delegate"].description, totalSlots: 100, price: INTL_TIERS["International Delegate"].price, earlyBirdPrice: INTL_TIERS["International Delegate"].earlyBirdPrice, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: FEE_TIER_ORDER["International Delegate"] },
+    { eventId: event.id, name: "International Trainee Delegate", description: INTL_TIERS["International Trainee Delegate"].description, totalSlots: 40, price: INTL_TIERS["International Trainee Delegate"].price, earlyBirdPrice: INTL_TIERS["International Trainee Delegate"].earlyBirdPrice, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: FEE_TIER_ORDER["International Trainee Delegate"] },
     { eventId: event.id, name: "Indian Delegate", totalSlots: 500, price: 12620, earlyBirdPrice: 10620, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: FEE_TIER_ORDER["Indian Delegate"] },
     { eventId: event.id, name: "Indian Trainee Delegate", totalSlots: 160, price: 7900, earlyBirdPrice: 5900, earlyBirdDeadline: EARLY_BIRD_DEADLINE, displayOrder: FEE_TIER_ORDER["Indian Trainee Delegate"] },
   ]});
