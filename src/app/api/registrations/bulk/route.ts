@@ -11,6 +11,7 @@ import {
 import { sendEmail } from "@/lib/notifications";
 import { isTenantOwner } from "@/lib/tenant-scope";
 import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
+import { issueAttendeeBadgeAndCertificate } from "@/lib/ifpc-automation";
 
 // POST /api/registrations/bulk - Perform bulk actions on registrations
 export const POST = withErrorHandler(async (request: NextRequest) => {
@@ -71,6 +72,17 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       const baseUrl = request.headers.get("origin") || request.headers.get("host") || "";
       const loginUrl = `${baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`}/auth/login`;
       const toConfirm = existingRegistrations.filter(r => r.status !== "CONFIRMED");
+
+      // Issue registration ID/badge/certificate for each newly-confirmed
+      // registration. (No-op for every tenant except apollo-medical — see
+      // ifpc-automation.ts.) This was the one CONFIRMED-transition path
+      // missing this hook — the other four (public free registration,
+      // Razorpay verify, admin single-status PUT, admin create-as-confirmed)
+      // already call it.
+      for (const reg of toConfirm) {
+        issueAttendeeBadgeAndCertificate(reg.id).catch((err) => console.error("Badge/certificate automation error:", err));
+      }
+
       // Process in parallel and await so admin knows the result
       const accountResults = await Promise.allSettled(
         toConfirm.map(async (reg) => {

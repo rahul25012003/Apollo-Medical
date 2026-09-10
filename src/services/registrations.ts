@@ -91,6 +91,7 @@ export interface CreateRegistrationData {
   organization?: string;
   designation?: string;
   category?: string;
+  categoryId?: string;
   participantRole?: string;
   amount: number;
   notes?: string;

@@ -222,28 +222,11 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     }
   }
 
-  // Check capacity — only applies to DELEGATE registrations.
-  // Speakers, faculty, organizers etc. never consume a delegate spot.
-  let status = data.status || "PENDING";
+  // Capacity/waitlist and the duplicate-email check are decided atomically
+  // with the insert below — deciding them from this snapshot count would
+  // race with concurrent requests near the capacity boundary.
+  const requestedStatus = data.status || "PENDING";
   const isDelegate = !data.participantRole || data.participantRole === "DELEGATE";
-  const delegateCount = event._count.registrations;
-  if (isDelegate && event.capacity - delegateCount <= 0) {
-    status = "WAITLIST";
-  }
-
-  // Check for duplicate registration
-  const existingRegistration = await prisma.registration.findUnique({
-    where: {
-      email_eventId: {
-        email: data.email.toLowerCase(),
-        eventId: data.eventId,
-      },
-    },
-  });
-
-  if (existingRegistration) {
-    return Errors.conflict("You are already registered for this event");
-  }
 
   // SERVER-SIDE amount calculation - never trust client amount
   const now = new Date();
@@ -252,6 +235,21 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   // Admin can override amount explicitly
   if (isAdminRegistration && data.amount !== undefined) {
     amount = data.amount;
+  } else if (data.categoryId && event.pricingCategories.length > 0) {
+    // Reliable path: match by EventPricing id. Reject rather than silently
+    // falling back to a different (possibly cheaper) price if the id
+    // doesn't actually belong to this event's categories.
+    const matchedCategory = event.pricingCategories.find((pc) => pc.id === data.categoryId);
+    if (!matchedCategory) {
+      return Errors.badRequest("Selected pricing category not found for this event");
+    }
+    const isEarlyBird =
+      matchedCategory.earlyBirdPrice &&
+      matchedCategory.earlyBirdDeadline &&
+      now <= matchedCategory.earlyBirdDeadline;
+    amount = isEarlyBird
+      ? Number(matchedCategory.earlyBirdPrice)
+      : Number(matchedCategory.price);
   } else if (data.category && event.pricingCategories.length > 0) {
     const matchedCategory = event.pricingCategories.find(
       (pc) => pc.name === data.category
@@ -283,52 +281,89 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       : Number(event.price);
   }
 
-  // Determine payment status
-  let paymentStatus = data.paymentStatus || "PENDING";
-  if (amount === 0) {
-    paymentStatus = "FREE";
-    if (status !== "WAITLIST") status = "CONFIRMED";
-  }
-
   // If an admin/staff is creating this registration, track who did it
   const registeredById = session?.user?.id || null;
 
-  const registration = await prisma.registration.create({
-    data: {
-      name: data.name,
-      email: data.email.toLowerCase(),
-      phone: data.phone,
-      organization: data.organization,
-      designation: data.designation,
-      category: data.category,
-      participantRole: data.participantRole,
-      eventId: data.eventId,
-      status,
-      paymentStatus,
-      amount,
-      currency: event.currency,
-      notes: data.notes,
-      specialRequests: data.specialRequests,
-      userId: data.userId,
-      registeredById,
-    },
-    include: {
-      event: {
-        select: {
-          id: true,
-          title: true,
-          startDate: true,
-        },
+  // Duplicate check, capacity/waitlist decision, and the insert must be one
+  // atomic transaction — see the same fix in registrations/public/route.ts.
+  type TxOutcome =
+    | { ok: false }
+    | {
+        ok: true;
+        status: "PENDING" | "CONFIRMED" | "WAITLIST" | "ATTENDED" | "CANCELLED";
+        paymentStatus: "PENDING" | "PAID" | "REFUNDED" | "FAILED" | "FREE";
+        registration: Prisma.RegistrationGetPayload<{
+          include: {
+            event: { select: { id: true; title: true; startDate: true } };
+            registeredBy: { select: { id: true; name: true; email: true } };
+          };
+        }>;
+      };
+
+  let outcome: TxOutcome;
+  try {
+    outcome = await prisma.$transaction(
+      async (tx): Promise<TxOutcome> => {
+        const existingRegistration = await tx.registration.findUnique({
+          where: { email_eventId: { email: data.email.toLowerCase(), eventId: data.eventId } },
+        });
+        if (existingRegistration) return { ok: false };
+
+        let resolvedStatus = requestedStatus;
+        if (isDelegate) {
+          const delegateCount = await tx.registration.count({
+            where: { eventId: data.eventId, OR: [{ participantRole: "DELEGATE" }, { participantRole: null }] },
+          });
+          if (event.capacity - delegateCount <= 0) resolvedStatus = "WAITLIST";
+        }
+
+        let resolvedPaymentStatus = data.paymentStatus || "PENDING";
+        if (amount === 0) {
+          resolvedPaymentStatus = "FREE";
+          if (resolvedStatus !== "WAITLIST") resolvedStatus = "CONFIRMED";
+        }
+
+        const registration = await tx.registration.create({
+          data: {
+            name: data.name,
+            email: data.email.toLowerCase(),
+            phone: data.phone,
+            organization: data.organization,
+            designation: data.designation,
+            category: data.category,
+            participantRole: data.participantRole,
+            eventId: data.eventId,
+            status: resolvedStatus,
+            paymentStatus: resolvedPaymentStatus,
+            amount,
+            currency: event.currency,
+            notes: data.notes,
+            specialRequests: data.specialRequests,
+            userId: data.userId,
+            registeredById,
+          },
+          include: {
+            event: { select: { id: true, title: true, startDate: true } },
+            registeredBy: { select: { id: true, name: true, email: true } },
+          },
+        });
+
+        return { ok: true, status: resolvedStatus, paymentStatus: resolvedPaymentStatus, registration };
       },
-      registeredBy: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-    },
-  });
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    );
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && (e.code === "P2002" || e.code === "P2034")) {
+      outcome = { ok: false };
+    } else {
+      throw e;
+    }
+  }
+
+  if (!outcome.ok) {
+    return Errors.conflict("You are already registered for this event");
+  }
+  const { status, paymentStatus, registration } = outcome;
 
   // Create in-app notification for admins (non-blocking)
   createNotification({

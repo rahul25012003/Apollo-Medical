@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
 import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-utils";
@@ -58,24 +59,50 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
 
   const email = parsed.data.email.toLowerCase();
 
-  const existing = await prisma.sessionInterest.findUnique({
-    where: { sessionId_email: { sessionId, email } },
-  });
-  if (existing) {
-    const count = await prisma.sessionInterest.count({ where: { sessionId } });
-    return successResponse({ capacity: eventSession.capacity, count, alreadyRegistered: true }, "You're already on the list for this session");
-  }
+  // Serializable transaction: the duplicate check, capacity check, and
+  // insert must be atomic, or concurrent submissions near the last seat can
+  // all pass the count check before any of them commits, overselling
+  // capacity. Postgres aborts one side of a genuine conflict with a
+  // serialization failure, which we treat below as "someone else took it."
+  let outcome: "ok" | "duplicate" | "full";
+  try {
+    outcome = await prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.sessionInterest.findUnique({
+          where: { sessionId_email: { sessionId, email } },
+        });
+        if (existing) return "duplicate" as const;
 
-  if (eventSession.capacity != null) {
-    const count = await prisma.sessionInterest.count({ where: { sessionId } });
-    if (count >= eventSession.capacity) {
-      return Errors.conflict("This session is full");
+        if (eventSession.capacity != null) {
+          const count = await tx.sessionInterest.count({ where: { sessionId } });
+          if (count >= eventSession.capacity) return "full" as const;
+        }
+
+        await tx.sessionInterest.create({
+          data: { sessionId, name: parsed.data.name, email, phone: parsed.data.phone },
+        });
+        return "ok" as const;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    );
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      outcome = "duplicate";
+    } else if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2034") {
+      // Serialization conflict — the seat was taken by a concurrent request.
+      outcome = "full";
+    } else {
+      throw e;
     }
   }
 
-  await prisma.sessionInterest.create({
-    data: { sessionId, name: parsed.data.name, email, phone: parsed.data.phone },
-  });
+  if (outcome === "duplicate") {
+    const count = await prisma.sessionInterest.count({ where: { sessionId } });
+    return successResponse({ capacity: eventSession.capacity, count, alreadyRegistered: true }, "You're already on the list for this session");
+  }
+  if (outcome === "full") {
+    return Errors.conflict("This session is full");
+  }
 
   const count = await prisma.sessionInterest.count({ where: { sessionId } });
   return successResponse({ capacity: eventSession.capacity, count }, "Interest registered", 201);

@@ -27,7 +27,11 @@ export const createRegistrationSchema = z.object({
   phone: z.string().optional(),
   organization: z.string().optional(),
   designation: z.string().optional(),
-  category: z.string().optional(), // Faculty, Resident, Student, etc.
+  category: z.string().optional(), // Faculty, Resident, Student, etc. — human-readable, stored for display
+  // Optional EventPricing id — when provided, the server matches the price by
+  // id (reliable) instead of by the `category` name string (which survives a
+  // round-trip through the client and can silently mismatch on a rename).
+  categoryId: z.string().optional(),
   participantRole: z.string().optional(), // Dynamic roles from event config
 
   // Registration Details

@@ -509,6 +509,11 @@ export default function RegisterPage() {
                 organization: formData.institution || undefined,
                 designation: formData.designation || undefined,
                 category: getSelectedCategoryName() || undefined,
+                // Authoritative id for server-side price lookup — `category`
+                // above is only for display/storage. Sent only when pricing
+                // categories actually exist; otherwise selectedCategory is
+                // just the "general" placeholder, not a real EventPricing id.
+                categoryId: (eventData?.pricingCategories?.length ?? 0) > 0 ? selectedCategory : undefined,
                 participantRole: participantRole || undefined,
                 amount: totalPrice,
                 specialRequests: preferences.foodAllergies || undefined,
