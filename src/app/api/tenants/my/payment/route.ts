@@ -13,6 +13,7 @@ const paymentSettingsSchema = z.object({
   paymentMode: z.enum(["NONE", "RAZORPAY", "QR_CODE"]),
   razorpayKeyId: z.string().optional().nullable(),
   razorpayKeySecret: z.string().optional().nullable(),
+  razorpayWebhookSecret: z.string().optional().nullable(),
   paymentQrCode: z.string().optional().nullable(),
   paymentUpiId: z.string().optional().nullable(),
   paymentInstructions: z.string().optional().nullable(),
@@ -45,6 +46,7 @@ export const GET = withErrorHandler(async () => {
       paymentMode: true,
       razorpayKeyId: true,
       razorpayKeySecret: true,
+      razorpayWebhookSecret: true,
       paymentQrCode: true,
       paymentUpiId: true,
       paymentInstructions: true,
@@ -59,11 +61,14 @@ export const GET = withErrorHandler(async () => {
     return Errors.notFound("Tenant");
   }
 
-  // Mask Razorpay secret for non-super admins
+  // Mask secrets for non-super admins
   const data = {
     ...tenant,
     razorpayKeySecret: tenant.razorpayKeySecret
       ? "••••••••" + tenant.razorpayKeySecret.slice(-4)
+      : null,
+    razorpayWebhookSecret: tenant.razorpayWebhookSecret
+      ? "••••••••" + tenant.razorpayWebhookSecret.slice(-4)
       : null,
   };
 
@@ -107,9 +112,14 @@ export const PUT = withErrorHandler(async (request: NextRequest) => {
 
   if (data.paymentMode === "RAZORPAY") {
     if (data.razorpayKeyId !== undefined) updateData.razorpayKeyId = data.razorpayKeyId || null;
-    // Only update secret if it's not the masked value
+    // Only update secrets if they're not the masked value
     if (data.razorpayKeySecret && !data.razorpayKeySecret.startsWith("••••")) {
       updateData.razorpayKeySecret = data.razorpayKeySecret;
+    }
+    if (data.razorpayWebhookSecret && !data.razorpayWebhookSecret.startsWith("••••")) {
+      updateData.razorpayWebhookSecret = data.razorpayWebhookSecret;
+    } else if (data.razorpayWebhookSecret === "") {
+      updateData.razorpayWebhookSecret = null;
     }
     // Clear QR fields when switching to Razorpay
     updateData.paymentQrCode = null;
@@ -126,10 +136,12 @@ export const PUT = withErrorHandler(async (request: NextRequest) => {
     // Clear Razorpay fields when switching to QR
     updateData.razorpayKeyId = null;
     updateData.razorpayKeySecret = null;
+    updateData.razorpayWebhookSecret = null;
   } else {
     // NONE - clear all payment fields
     updateData.razorpayKeyId = null;
     updateData.razorpayKeySecret = null;
+    updateData.razorpayWebhookSecret = null;
     updateData.paymentQrCode = null;
     updateData.paymentUpiId = null;
     updateData.paymentInstructions = null;

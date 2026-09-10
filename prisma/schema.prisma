@@ -199,6 +199,7 @@ model Tenant {
   paymentMode       PaymentMode @default(NONE)
   razorpayKeyId     String?            // Razorpay Key ID
   razorpayKeySecret String?            // Razorpay Key Secret (encrypted)
+  razorpayWebhookSecret String?        // Secret configured for the Razorpay webhook (Settings > Webhooks in the Razorpay dashboard), separate from the API key secret
   paymentQrCode     String?            // QR code image URL for manual payments
   paymentUpiId      String?            // UPI ID displayed with QR code
   paymentInstructions String? @db.Text // Instructions shown during QR payment

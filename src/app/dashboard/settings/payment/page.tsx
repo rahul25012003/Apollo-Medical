@@ -32,6 +32,7 @@ interface PaymentSettings {
     paymentMode: PaymentMode;
     razorpayKeyId: string | null;
     razorpayKeySecret: string | null;
+    razorpayWebhookSecret: string | null;
     paymentQrCode: string | null;
     paymentUpiId: string | null;
     paymentInstructions: string | null;
@@ -46,6 +47,7 @@ export default function PaymentSettingsPage() {
         paymentMode: "NONE",
         razorpayKeyId: null,
         razorpayKeySecret: null,
+        razorpayWebhookSecret: null,
         paymentQrCode: null,
         paymentUpiId: null,
         paymentInstructions: null,
@@ -59,7 +61,13 @@ export default function PaymentSettingsPage() {
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showSecret, setShowSecret] = useState(false);
+    const [showWebhookSecret, setShowWebhookSecret] = useState(false);
     const [uploadingQr, setUploadingQr] = useState(false);
+    const [webhookUrl, setWebhookUrl] = useState("/api/payments/webhook");
+
+    useEffect(() => {
+        setWebhookUrl(`${window.location.origin}/api/payments/webhook`);
+    }, []);
 
     // Fetch current settings
     useEffect(() => {
@@ -72,6 +80,7 @@ export default function PaymentSettingsPage() {
                         paymentMode: data.data.paymentMode || "NONE",
                         razorpayKeyId: data.data.razorpayKeyId || null,
                         razorpayKeySecret: data.data.razorpayKeySecret || null,
+                        razorpayWebhookSecret: data.data.razorpayWebhookSecret || null,
                         paymentQrCode: data.data.paymentQrCode || null,
                         paymentUpiId: data.data.paymentUpiId || null,
                         paymentInstructions: data.data.paymentInstructions || null,
@@ -270,6 +279,43 @@ export default function PaymentSettingsPage() {
                                 <p className="text-xs text-muted-foreground">
                                     Your secret key is encrypted and stored securely.
                                 </p>
+                            </div>
+                            <div className="space-y-2 border-t pt-4">
+                                <Label htmlFor="razorpayWebhookSecret">Webhook Secret</Label>
+                                <div className="relative">
+                                    <Input
+                                        id="razorpayWebhookSecret"
+                                        type={showWebhookSecret ? "text" : "password"}
+                                        placeholder="Enter webhook secret"
+                                        value={settings.razorpayWebhookSecret || ""}
+                                        onChange={(e) => setSettings(prev => ({ ...prev, razorpayWebhookSecret: e.target.value }))}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    >
+                                        {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Makes payment confirmation reliable even if a delegate closes the tab right after paying —
+                                    without it, confirmation depends entirely on their browser calling back. In your Razorpay
+                                    dashboard, go to Settings → Webhooks → Add New Webhook, paste the URL below, subscribe to
+                                    the <span className="font-mono">payment.captured</span> event, then paste the secret
+                                    Razorpay gives you here.
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <Input readOnly value={webhookUrl} className="font-mono text-xs" onFocus={(e) => e.target.select()} />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => navigator.clipboard.writeText(webhookUrl)}
+                                    >
+                                        Copy
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
