@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { successResponse, Errors, withErrorHandler } from "@/lib/api-utils";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -10,8 +11,13 @@ type RouteContext = { params: Promise<{ id: string }> };
 export const GET = withErrorHandler(async (req: NextRequest, context?: RouteContext) => {
   const session = await auth();
   if (!session) return Errors.unauthorized();
+  if (!canAccess(session.user.role, "certificates")) return Errors.forbidden("You don't have permission to manage certificates");
 
   const { id: eventId } = await context!.params;
+
+  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { tenantId: true } });
+  if (!event) return Errors.notFound("Event");
+  if (!isTenantOwner(session, event.tenantId)) return Errors.forbidden("You don't have access to this event");
   const category = req.nextUrl.searchParams.get("category");
   const search = req.nextUrl.searchParams.get("search") ?? "";
 

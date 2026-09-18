@@ -10,6 +10,8 @@ export interface RegistrationReport {
   statusBreakdown: { status: string; count: number }[];
   roleBreakdown: { role: string; count: number }[];
   categoryBreakdown: { category: string; count: number }[];
+  foodBreakdown: { veg: number; nonVeg: number; unspecified: number };
+  accommodationBreakdown: { selected: { hotel: string; count: number }[]; unselected: number };
 }
 
 export interface RevenueReport {

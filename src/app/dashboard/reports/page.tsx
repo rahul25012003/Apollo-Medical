@@ -17,6 +17,8 @@ import {
   Zap,
   PieChart,
   FileDown,
+  Utensils,
+  Hotel,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -348,6 +350,50 @@ function RegistrationAnalytics({ data }: { data: RegistrationReport | null }) {
                 <p className="text-sm text-muted-foreground italic">No category data</p>
               )}
             </div>
+          </div>
+
+          {/* Food Preference Breakdown */}
+          <div>
+            <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
+              <Utensils className="w-3.5 h-3.5" /> Food Preference
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                <p className="text-xs text-muted-foreground">Vegetarian</p>
+                <p className="text-xl font-bold text-emerald-600">{data.foodBreakdown.veg}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                <p className="text-xs text-muted-foreground">Non-Vegetarian</p>
+                <p className="text-xl font-bold text-orange-600">{data.foodBreakdown.nonVeg}</p>
+              </div>
+            </div>
+            {data.foodBreakdown.unspecified > 0 && (
+              <p className="text-xs text-muted-foreground mt-2">
+                {data.foodBreakdown.unspecified} registration(s) with no preference recorded (registered before this was tracked, or via admin entry)
+              </p>
+            )}
+          </div>
+
+          {/* Accommodation Selections */}
+          <div>
+            <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
+              <Hotel className="w-3.5 h-3.5" /> Accommodation Selections
+            </h4>
+            {data.accommodationBreakdown.selected.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No delegates have selected accommodation yet</p>
+            ) : (
+              <div className="space-y-2">
+                {data.accommodationBreakdown.selected.map((h) => (
+                  <div key={h.hotel} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
+                    <span className="text-sm">{h.hotel}</span>
+                    <Badge variant="outline" className="font-mono">{h.count}</Badge>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground mt-2">
+                  {data.accommodationBreakdown.unselected} registration(s) haven&apos;t selected accommodation
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

@@ -32,6 +32,7 @@ import {
     UserCheck,
     Globe,
     Gift,
+    Heart,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -112,6 +113,8 @@ function RegistrationsContent() {
     const [isAddOpen, setIsAddOpen] = useState(actionParam === "add");
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
+    const [regInterests, setRegInterests] = useState<{ id: string; session: { id: string; title: string; sessionType: string; sessionDate: string | null; startTime: string | null } }[]>([]);
+    const [loadingInterests, setLoadingInterests] = useState(false);
     const [editFormData, setEditFormData] = useState({
         name: "",
         email: "",
@@ -182,6 +185,19 @@ function RegistrationsContent() {
             setTimeout(checkAndRestore, 100);
         }
     }, [registrations, events]);
+
+    // Fetch this delegate's workshop/session interests when the view dialog opens
+    useEffect(() => {
+        if (!isViewOpen || !selectedReg) {
+            setRegInterests([]);
+            return;
+        }
+        setLoadingInterests(true);
+        registrationsService.getInterests(selectedReg.id)
+            .then((res) => setRegInterests(res.success && res.data ? res.data : []))
+            .catch(() => setRegInterests([]))
+            .finally(() => setLoadingInterests(false));
+    }, [isViewOpen, selectedReg]);
 
     // Fetch events and registrations
     useEffect(() => {
@@ -1649,6 +1665,50 @@ function RegistrationsContent() {
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* Food Preference & Accommodation */}
+                                    {(selectedReg.foodPreference || selectedReg.accommodationChoice) && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {selectedReg.foodPreference && (
+                                                <div className="p-4 rounded-lg bg-muted/50">
+                                                    <p className="text-xs text-muted-foreground mb-1">Food Preference</p>
+                                                    <p className="font-medium">{selectedReg.foodPreference === "VEG" ? "Vegetarian" : "Non-Vegetarian"}</p>
+                                                </div>
+                                            )}
+                                            {selectedReg.accommodationChoice && (
+                                                <div className="p-4 rounded-lg bg-muted/50">
+                                                    <p className="text-xs text-muted-foreground mb-1">Accommodation Choice</p>
+                                                    <p className="font-medium">{selectedReg.accommodationChoice}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Workshop / Session Interests */}
+                                    {(loadingInterests || regInterests.length > 0) && (
+                                        <div className="p-4 rounded-lg bg-rose-50 border border-rose-200">
+                                            <p className="text-xs text-muted-foreground mb-2 font-medium flex items-center gap-1.5">
+                                                <Heart className="h-3.5 w-3.5" />
+                                                Workshop / Session Interests
+                                            </p>
+                                            {loadingInterests ? (
+                                                <p className="text-sm text-muted-foreground">Loading...</p>
+                                            ) : (
+                                                <div className="space-y-1.5">
+                                                    {regInterests.map((i) => (
+                                                        <div key={i.id} className="flex items-center justify-between text-sm bg-white/60 rounded px-2.5 py-1.5">
+                                                            <span className="font-medium">{i.session.title}</span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {i.session.sessionType}
+                                                                {i.session.sessionDate ? ` · ${new Date(i.session.sessionDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
+                                                                {i.session.startTime ? ` · ${i.session.startTime}` : ""}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Payment Proof Section */}
                                     {selectedReg.amount > 0 && (

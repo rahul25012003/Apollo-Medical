@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { successResponse, Errors, withErrorHandler } from "@/lib/api-utils";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -13,6 +14,7 @@ export const GET = withErrorHandler(async (
 ) => {
   const session = await auth();
   if (!session) return Errors.unauthorized();
+  if (!canAccess(session.user.role, "certificates")) return Errors.forbidden("You don't have permission to manage certificates");
 
   const { id: eventId } = await context!.params;
 
@@ -21,6 +23,7 @@ export const GET = withErrorHandler(async (
     select: { id: true, tenantId: true, certificateConfig: true },
   });
   if (!event) return Errors.notFound("Event");
+  if (!isTenantOwner(session, event.tenantId)) return Errors.forbidden("You don't have access to this event");
 
   // All registrations (any status) so admin can set templates before confirming anyone
   const rawCategories = await prisma.registration.groupBy({
@@ -74,6 +77,7 @@ export const POST = withErrorHandler(async (
 ) => {
   const session = await auth();
   if (!session) return Errors.unauthorized();
+  if (!canAccess(session.user.role, "certificates")) return Errors.forbidden("You don't have permission to manage certificates");
 
   const { id: eventId } = await context!.params;
   const body = await req.json();
@@ -81,9 +85,10 @@ export const POST = withErrorHandler(async (
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    select: { id: true, certificateConfig: true },
+    select: { id: true, tenantId: true, certificateConfig: true },
   });
   if (!event) return Errors.notFound("Event");
+  if (!isTenantOwner(session, event.tenantId)) return Errors.forbidden("You don't have access to this event");
 
   const existing = (event.certificateConfig as Record<string, unknown> | null) ?? {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

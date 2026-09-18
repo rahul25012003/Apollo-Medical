@@ -32,6 +32,7 @@ import {
     BarChart3,
     Mail,
     Eye,
+    Heart,
 } from "lucide-react";
 import { eventsService, Event } from "@/services/events";
 
@@ -94,6 +95,20 @@ const menuItems = [
         title: "My Sessions",
         href: "/dashboard/my-sessions",
         icon: Mic2,
+        roles: ["ATTENDEE"] as UserRole[],
+        group: "Main",
+    },
+    {
+        title: "My Interests",
+        href: "/dashboard/my-interests",
+        icon: Heart,
+        roles: ["ATTENDEE"] as UserRole[],
+        group: "Main",
+    },
+    {
+        title: "Accommodation",
+        href: "/dashboard/accommodation",
+        icon: Building2,
         roles: ["ATTENDEE"] as UserRole[],
         group: "Main",
     },

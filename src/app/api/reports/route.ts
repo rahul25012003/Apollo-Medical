@@ -52,6 +52,8 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
           status: true,
           participantRole: true,
           category: true,
+          foodPreference: true,
+          accommodationChoice: true,
           createdAt: true,
         },
       });
@@ -94,12 +96,40 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
       }
       const categoryBreakdown = Object.entries(byCategory).map(([category, count]) => ({ category, count }));
 
+      // Food preference (veg/non-veg) — for catering counts
+      let vegCount = 0;
+      let nonVegCount = 0;
+      let unspecifiedFoodCount = 0;
+      for (const reg of registrations) {
+        if (reg.foodPreference === "VEG") vegCount++;
+        else if (reg.foodPreference === "NON_VEG") nonVegCount++;
+        else unspecifiedFoodCount++;
+      }
+      const foodBreakdown = { veg: vegCount, nonVeg: nonVegCount, unspecified: unspecifiedFoodCount };
+
+      // Accommodation selections — count of delegates who picked each hotel
+      const byHotel: Record<string, number> = {};
+      let accommodationUnselected = 0;
+      for (const reg of registrations) {
+        if (reg.accommodationChoice) {
+          byHotel[reg.accommodationChoice] = (byHotel[reg.accommodationChoice] || 0) + 1;
+        } else {
+          accommodationUnselected++;
+        }
+      }
+      const accommodationBreakdown = {
+        selected: Object.entries(byHotel).map(([hotel, count]) => ({ hotel, count })).sort((a, b) => b.count - a.count),
+        unselected: accommodationUnselected,
+      };
+
       return successResponse({
         total: registrations.length,
         dailyRegistrations,
         statusBreakdown,
         roleBreakdown,
         categoryBreakdown,
+        foodBreakdown,
+        accommodationBreakdown,
       });
     }
 

@@ -482,18 +482,18 @@ function LoginPageInner() {
                                     {loginMode === "delegate" ? (
                                         <><Mail className="w-3 h-3" /> OTP Login</>
                                     ) : (
-                                        <><Shield className="w-3 h-3" /> Admin Login</>
+                                        <><Shield className="w-3 h-3" /> Password Login</>
                                     )}
                                 </div>
                             )}
 
                             <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-                                {loginMode === "delegate" ? "Welcome back" : "Admin Sign In"}
+                                {loginMode === "delegate" ? "Welcome back" : isTenantLogin ? "Sign In" : "Admin Sign In"}
                             </h1>
                             <p className="text-muted-foreground mt-2 text-sm">
                                 {loginMode === "delegate"
                                     ? "Enter your registered email to receive a secure login code."
-                                    : "Sign in with your admin credentials."}
+                                    : isTenantLogin ? "Sign in with your email and password." : "Sign in with your admin credentials."}
                             </p>
                         </div>
 
@@ -629,7 +629,7 @@ function LoginPageInner() {
                                             onClick={() => { setLoginMode("admin"); setError(null); resetOtpState(); }}
                                         >
                                             <Shield className="w-3.5 h-3.5" />
-                                            Admin Login
+                                            Sign in with Password
                                         </button>
                                     )}
                                 </div>

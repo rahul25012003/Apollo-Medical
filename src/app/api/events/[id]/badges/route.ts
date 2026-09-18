@@ -34,7 +34,7 @@ export const GET = withErrorHandler(
       return Errors.unauthorized();
     }
 
-    if (!canAccess(session.user.role, "events")) {
+    if (!canAccess(session.user.role, "events") && !canAccess(session.user.role, "registrations")) {
       return Errors.forbidden("You don't have permission to view badges");
     }
 
@@ -106,7 +106,7 @@ export const POST = withErrorHandler(
       return Errors.unauthorized();
     }
 
-    if (!canAccess(session.user.role, "events")) {
+    if (!canAccess(session.user.role, "events") && !canAccess(session.user.role, "registrations")) {
       return Errors.forbidden("You don't have permission to generate badges");
     }
 

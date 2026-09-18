@@ -33,6 +33,7 @@ export const createRegistrationSchema = z.object({
   // round-trip through the client and can silently mismatch on a rename).
   categoryId: z.string().optional(),
   participantRole: z.string().optional(), // Dynamic roles from event config
+  foodPreference: z.enum(["VEG", "NON_VEG"]).optional(),
 
   // Registration Details
   status: registrationStatusEnum.default("PENDING"),
@@ -56,6 +57,7 @@ export const updateRegistrationSchema = z.object({
   designation: z.string().optional(),
   category: z.string().optional(),
   participantRole: z.string().optional(), // Dynamic roles from event config
+  foodPreference: z.enum(["VEG", "NON_VEG"]).optional(),
 
   status: registrationStatusEnum.optional(),
   paymentStatus: paymentStatusEnum.optional(),

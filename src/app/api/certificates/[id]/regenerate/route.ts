@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import {
   successResponse,
   Errors,
@@ -46,6 +47,7 @@ export const POST = withErrorHandler(
         event: {
           select: {
             id: true,
+            tenantId: true,
             title: true,
             type: true,
             startDate: true,
@@ -67,6 +69,10 @@ export const POST = withErrorHandler(
       return Errors.notFound("Certificate");
     }
 
+    if (!isTenantOwner(session, existingCertificate.event.tenantId)) {
+      return Errors.forbidden("You don't have access to this certificate");
+    }
+
     // Use a transaction to delete old and create new certificate atomically
     const newCertificate = await prisma.$transaction(async (tx) => {
       // Delete the existing certificate
@@ -80,6 +86,10 @@ export const POST = withErrorHandler(
           certificateCode: generateCertificateCode(),
           registrationId: existingCertificate.registrationId,
           eventId: existingCertificate.eventId,
+          sessionId: existingCertificate.sessionId,
+          quizId: existingCertificate.quizId,
+          certificateType: existingCertificate.certificateType,
+          position: existingCertificate.position,
           recipientName: existingCertificate.recipientName,
           recipientEmail: existingCertificate.recipientEmail,
           title: existingCertificate.title,

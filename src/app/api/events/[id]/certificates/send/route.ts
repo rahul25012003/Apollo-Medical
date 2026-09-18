@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { Errors } from "@/lib/api-utils";
 import { generateCertificatePDF, type CertificateTemplateConfig } from "@/lib/certificate-pdf";
 import { sendEmail, certificateIssuedHtml, getActiveChannel } from "@/lib/notifications";
@@ -15,6 +16,7 @@ const BATCH_SIZE = 5; // process 5 in parallel — keeps memory low and avoids S
 export async function POST(req: NextRequest, context: RouteContext) {
   const session = await auth();
   if (!session) return Errors.unauthorized();
+  if (!canAccess(session.user.role, "certificates")) return Errors.forbidden("You don't have permission to manage certificates");
 
   const { id: eventId } = await context.params;
   const body = await req.json().catch(() => ({}));
@@ -29,6 +31,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     select: { id: true, title: true, tenantId: true, certificateConfig: true },
   });
   if (!event) return Errors.notFound("Event");
+  if (!isTenantOwner(session, event.tenantId)) return Errors.forbidden("You don't have access to this event");
 
   // Check email channel is configured before processing anything
   const emailChannel = await getActiveChannel("EMAIL", event.tenantId);

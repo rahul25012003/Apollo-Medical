@@ -19,6 +19,8 @@ import { randomUUID } from "crypto";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { generateCertificatePDF, type CertificateTemplateConfig } from "@/lib/certificate-pdf";
 import { sendEmail, certificateIssuedHtml, badgeReadyHtml } from "@/lib/notifications";
+import { findOrCreateUserAccount } from "@/lib/auto-account";
+import { generatePassword, hashPassword } from "@/lib/auth-utils";
 
 function randomCode(len: number): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
@@ -76,11 +78,31 @@ export async function issueAttendeeBadgeAndCertificate(registrationId: string): 
     }
     await prisma.registration.update({ where: { id: registrationId }, data: updateData });
 
+    // Ensure the delegate has a login account, and a real password (not just
+    // OTP) — every confirmation path routes through here, so this is the one
+    // place that needs to create it, regardless of how the registration was
+    // made (public, admin, bulk, Razorpay).
+    const { userId } = await findOrCreateUserAccount({
+      email: registration.email,
+      name: registration.name,
+      tenantId: registration.event.tenantId,
+    });
+    if (!registration.userId) {
+      await prisma.registration.update({ where: { id: registrationId }, data: { userId } });
+    }
+    let newPlainPassword: string | null = null;
+    const account = await prisma.user.findUnique({ where: { id: userId }, select: { password: true } });
+    if (!account?.password) {
+      newPlainPassword = generatePassword();
+      await prisma.user.update({ where: { id: userId }, data: { password: await hashPassword(newPlainPassword) } });
+    }
+
     // Badge/registration-ID ready — email the printable badge link (independent
     // of certificate template availability, so this always goes out on confirm).
     if (isNewBadge) {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
       const badgeUrl = `${baseUrl}/t/${IFPC_TENANT_SLUG}/registration/badge/${registrationId}`;
+      const loginUrl = `${baseUrl}/auth/login?tenant=${IFPC_TENANT_SLUG}`;
       sendEmail({
         to: registration.email,
         subject: `Your Registration ID & Badge — ${registration.event.title}`,
@@ -89,6 +111,9 @@ export async function issueAttendeeBadgeAndCertificate(registrationId: string): 
           eventTitle: registration.event.title,
           registrationCode: updateData.registrationCode || registration.registrationCode || registrationId.slice(-8).toUpperCase(),
           badgeUrl,
+          loginEmail: registration.email,
+          loginPassword: newPlainPassword || undefined,
+          loginUrl,
         }),
         tenantId: registration.event.tenantId,
       }).catch((err) => console.error("[ifpc-automation] badge email failed:", err));

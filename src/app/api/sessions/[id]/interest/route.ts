@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-utils";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
@@ -22,7 +23,7 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
 
   const eventSession = await prisma.eventSession.findUnique({
     where: { id: sessionId },
-    select: { id: true, capacity: true },
+    select: { id: true, capacity: true, event: { select: { tenantId: true } } },
   });
   if (!eventSession) return Errors.notFound("Session");
 
@@ -32,8 +33,21 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
   if (searchParams.get("list") === "1") {
     const session = await auth();
     if (!session || !canAccess(session.user.role, "events")) return Errors.forbidden("You don't have permission to view this list");
+    if (!isTenantOwner(session, eventSession.event.tenantId)) return Errors.forbidden("You don't have access to this session");
     const interests = await prisma.sessionInterest.findMany({ where: { sessionId }, orderBy: { createdAt: "asc" } });
     return successResponse({ capacity: eventSession.capacity, count, interests });
+  }
+
+  // ?mine=1 — the logged-in delegate checking their own status for this
+  // session (not the admin roster, so no "events" permission required).
+  if (searchParams.get("mine") === "1") {
+    const session = await auth();
+    if (!session) return Errors.unauthorized();
+    const mine = await prisma.sessionInterest.findUnique({
+      where: { sessionId_email: { sessionId, email: session.user.email.toLowerCase() } },
+      select: { id: true },
+    });
+    return successResponse({ capacity: eventSession.capacity, count, isInterested: !!mine });
   }
 
   return successResponse({ capacity: eventSession.capacity, count });

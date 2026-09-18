@@ -38,6 +38,19 @@ export function getOTPExpiry(minutes: number = 10): Date {
 }
 
 /**
+ * Generate a random, readable password for auto-created delegate accounts
+ * (no ambiguous chars — same alphabet convention as registration codes).
+ */
+export function generatePassword(length: number = 10): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const array = new Uint32Array(length);
+  crypto.getRandomValues(array);
+  let out = "";
+  for (let i = 0; i < length; i++) out += chars[array[i] % chars.length];
+  return out;
+}
+
+/**
  * Generate a unique certificate code
  */
 export function generateCertificateCode(): string {

@@ -59,6 +59,13 @@ export default function DelegateBadgePage() {
                 <p className="text-sm font-serif mt-0.5">&ldquo;{CONFERENCE.theme}&rdquo;</p>
               </div>
               <div className="p-6 text-center">
+                {reg.photo && (
+                  <img
+                    src={reg.photo}
+                    alt={reg.name}
+                    className="mx-auto w-20 h-20 rounded-full object-cover border-2 border-[hsl(var(--accent))] -mt-2 mb-3"
+                  />
+                )}
                 <div className="mx-auto w-40 h-40 p-2 bg-white border-4 border-[hsl(var(--accent))] rounded-xl">
                   <QRCodeSVG value={reg.qrCode} className="w-full h-full" />
                 </div>

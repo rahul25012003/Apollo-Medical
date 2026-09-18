@@ -332,6 +332,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
             designation: data.designation,
             category: data.category,
             participantRole: data.participantRole,
+            foodPreference: data.foodPreference,
             eventId: data.eventId,
             status: resolvedStatus,
             paymentStatus: resolvedPaymentStatus,

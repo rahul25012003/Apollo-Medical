@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { auth, canAccess } from "@/lib/auth";
+import { isTenantOwner } from "@/lib/tenant-scope";
 import { Errors } from "@/lib/api-utils";
 import { generateCertificatePDF, type CertificateTemplateConfig } from "@/lib/certificate-pdf";
 import { sendEmail, certificateIssuedHtml } from "@/lib/notifications";
@@ -13,6 +14,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(req: NextRequest, context: RouteContext) {
   const session = await auth();
   if (!session) return Errors.unauthorized();
+  if (!canAccess(session.user.role, "certificates")) return Errors.forbidden("You don't have permission to manage certificates");
 
   const { id: eventId } = await context.params;
   const body = await req.json();
@@ -38,6 +40,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
   ]);
 
   if (!event) return Errors.notFound("Event");
+  if (!isTenantOwner(session, event.tenantId)) return Errors.forbidden("You don't have access to this event");
   if (!registration) return Errors.notFound("Registration");
 
   const config = (event.certificateConfig as Record<string, unknown> | null) ?? {};

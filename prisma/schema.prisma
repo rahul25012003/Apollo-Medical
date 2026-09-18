@@ -577,6 +577,13 @@ model Registration {
   designation      String?
   category         String?            // Faculty, Resident, Student, etc.
   participantRole  String?            // DELEGATE, SPEAKER, ORGANIZER, VOLUNTEER, CHAIRPERSON
+  foodPreference   String?            // VEG, NON_VEG — captured at registration for catering counts
+
+  // Accommodation self-selection (delegate picks from the published hotel
+  // list in their dashboard). No live third-party booking integration exists
+  // for this event, so this records intent/choice, not a confirmed booking.
+  accommodationChoice     String?
+  accommodationSelectedAt DateTime?
 
   // Registration Details
   eventId          String

@@ -516,6 +516,7 @@ export default function RegisterPage() {
                 categoryId: (eventData?.pricingCategories?.length ?? 0) > 0 ? selectedCategory : undefined,
                 participantRole: participantRole || undefined,
                 amount: totalPrice,
+                foodPreference: preferences.dietaryPreference === "non-veg" ? "NON_VEG" : "VEG",
                 specialRequests: preferences.foodAllergies || undefined,
             };
 
@@ -1457,6 +1458,29 @@ export default function RegisterPage() {
                                         <p className="text-xs text-muted-foreground">
                                             Required for CME credit certificate
                                         </p>
+                                    </div>
+
+                                    <div className="h-px bg-border" />
+
+                                    {/* Food Preference */}
+                                    <div className="space-y-3">
+                                        <Label className="text-base font-semibold flex items-center gap-2">
+                                            <Utensils className="h-4 w-4 text-primary" /> Food Preference
+                                        </Label>
+                                        <RadioGroup
+                                            value={preferences.dietaryPreference}
+                                            onValueChange={(v) => handlePreferenceChange("dietaryPreference", v)}
+                                            className="flex gap-6"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <RadioGroupItem value="veg" id="food-veg" />
+                                                <Label htmlFor="food-veg" className="font-normal cursor-pointer">Vegetarian</Label>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <RadioGroupItem value="non-veg" id="food-nonveg" />
+                                                <Label htmlFor="food-nonveg" className="font-normal cursor-pointer">Non-Vegetarian</Label>
+                                            </div>
+                                        </RadioGroup>
                                     </div>
 
                                     <div className="h-px bg-border" />

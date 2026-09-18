@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Users, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,8 +29,15 @@ interface Props {
  * Competition listings. Renders on any EventSession that has a capacity set —
  * generic by session type, not hardcoded to specific IFPC content, so any
  * new workshop/seminar/competition an admin adds gets this automatically.
+ *
+ * Logged-in delegates get a one-click flow (no name/email form — their
+ * account already has that) and see whether they're already on the list.
+ * Signed-out visitors get the original name/email/phone dialog.
  */
 export function ExpressInterestButton({ sessionId, initialCount, initialCapacity }: Props) {
+  const { data: authSession } = useSession();
+  const isLoggedIn = !!authSession?.user;
+
   const [count, setCount] = useState(initialCount ?? 0);
   const [capacity, setCapacity] = useState<number | null | undefined>(initialCapacity);
   const [open, setOpen] = useState(false);
@@ -38,6 +46,8 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [isInterested, setIsInterested] = useState(false);
+  const [checkingMine, setCheckingMine] = useState(isLoggedIn);
 
   useEffect(() => {
     if (initialCount !== undefined && initialCapacity !== undefined) return;
@@ -52,10 +62,27 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
       .catch(() => {});
   }, [sessionId, initialCount, initialCapacity]);
 
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setCheckingMine(false);
+      return;
+    }
+    setCheckingMine(true);
+    fetch(`/api/sessions/${sessionId}/interest?mine=1`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setIsInterested(json.data.isInterested);
+      })
+      .catch(() => {})
+      .finally(() => setCheckingMine(false));
+  }, [sessionId, isLoggedIn]);
+
   const isFull = typeof capacity === "number" && count >= capacity;
 
-  async function submit() {
-    if (!name.trim() || !email.trim()) {
+  async function submit(nameOverride?: string, emailOverride?: string) {
+    const submitName = nameOverride ?? name;
+    const submitEmail = emailOverride ?? email;
+    if (!submitName.trim() || !submitEmail.trim()) {
       toast.error("Please enter your name and email");
       return;
     }
@@ -64,7 +91,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
       const res = await fetch(`/api/sessions/${sessionId}/interest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone: phone || undefined }),
+        body: JSON.stringify({ name: submitName, email: submitEmail, phone: phone || undefined }),
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
@@ -74,12 +101,39 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
       setCount(json.data.count);
       setCapacity(json.data.capacity);
       setDone(true);
+      setIsInterested(true);
       toast.success(json.data.alreadyRegistered ? "You're already on the list" : "Interest registered!");
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Logged-in delegate: one-click, no dialog — we already know who they are.
+  if (isLoggedIn) {
+    return (
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-3 py-1">
+          <Users className="h-3.5 w-3.5" />
+          {typeof capacity === "number" ? `${count}/${capacity} seats filled` : `${count} interested`}
+        </span>
+        {isInterested ? (
+          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-1.5">
+            <CheckCircle2 className="h-4 w-4" /> You&apos;re interested
+          </span>
+        ) : (
+          <Button
+            size="sm"
+            variant={isFull ? "outline" : "default"}
+            disabled={isFull || submitting || checkingMine}
+            onClick={() => submit(authSession!.user!.name || "", authSession!.user!.email || "")}
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : isFull ? "Session Full" : "I'd like to attend"}
+          </Button>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -124,7 +178,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={submit} disabled={submitting} className="w-full">
+                <Button onClick={() => submit()} disabled={submitting} className="w-full">
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm Interest"}
                 </Button>
               </DialogFooter>

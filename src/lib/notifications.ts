@@ -632,8 +632,22 @@ export function badgeReadyHtml(params: {
   eventTitle: string;
   registrationCode: string;
   badgeUrl: string;
+  loginEmail?: string;
+  loginPassword?: string;
+  loginUrl?: string;
 }): string {
-  const { name, eventTitle, registrationCode, badgeUrl } = params;
+  const { name, eventTitle, registrationCode, badgeUrl, loginEmail, loginPassword, loginUrl } = params;
+  const credentialsBlock = loginPassword
+    ? `
+        <div style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 8px; padding: 16px; margin: 16px 0;">
+          <p style="margin: 0 0 8px; font-weight: 600; color: #0f766e;">Your Delegate Login</p>
+          <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+            <tr><td style="padding: 4px 0; color: #666;">Email</td><td style="padding: 4px 0; text-align: right; font-family: monospace;">${loginEmail}</td></tr>
+            <tr><td style="padding: 4px 0; color: #666;">Password</td><td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold;">${loginPassword}</td></tr>
+          </table>
+          <p style="margin: 8px 0 0; font-size: 12px; color: #666;">Use this to sign in${loginUrl ? ` at <a href="${loginUrl}">${loginUrl}</a>` : ""}, or request a one-time email code instead — whichever you prefer.</p>
+        </div>`
+    : "";
   return `
     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
       <h2 style="color: #0d9488; margin-bottom: 4px;">Your Registration ID & Badge</h2>
@@ -643,6 +657,7 @@ export function badgeReadyHtml(params: {
         <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
           <tr><td style="padding: 6px 0; color: #666;">Registration ID</td><td style="padding: 6px 0; text-align: right; font-family: monospace; font-weight: bold;">${registrationCode}</td></tr>
         </table>
+        ${credentialsBlock}
         <div style="text-align: center; margin-top: 20px;">
           <a href="${badgeUrl}" style="display: inline-block; background: #0d9488; color: white; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-weight: 600;">View &amp; Print Your Badge</a>
         </div>

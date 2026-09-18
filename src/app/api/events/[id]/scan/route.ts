@@ -33,7 +33,7 @@ export const POST = withErrorHandler(
       return Errors.unauthorized();
     }
 
-    if (!canAccess(session.user.role, "events")) {
+    if (!canAccess(session.user.role, "events") && !canAccess(session.user.role, "registrations")) {
       return Errors.forbidden("You don't have permission to scan");
     }
 
@@ -139,6 +139,30 @@ export const POST = withErrorHandler(
       participantRole: registration.participantRole,
       checkedInAt: registration.checkedInAt,
     };
+
+    // A cancelled/non-confirmed registration's QR must never scan as valid,
+    // even though the QR code itself still resolves to a real row.
+    if (!["CONFIRMED", "ATTENDED"].includes(registration.status) && scanType !== "FOOD_DISTRIBUTION") {
+      await prisma.scanLog.create({
+        data: {
+          eventId,
+          registrationId: registration.id,
+          scanType,
+          zoneId: zoneId || null,
+          accessPointId: accessPointId || null,
+          direction: direction || null,
+          result: "DENIED",
+          scannedBy: session.user.id,
+        },
+      });
+
+      return successResponse({
+        result: "DENIED",
+        registration: registrationInfo,
+        message: `${registration.name}'s registration status is ${registration.status}. Not a valid delegate.`,
+        zone: null,
+      });
+    }
 
     // Handle CHECK_IN scan type
     if (scanType === "CHECK_IN") {
@@ -386,7 +410,7 @@ export const GET = withErrorHandler(
       return Errors.unauthorized();
     }
 
-    if (!canAccess(session.user.role, "events")) {
+    if (!canAccess(session.user.role, "events") && !canAccess(session.user.role, "registrations")) {
       return Errors.forbidden("You don't have permission to view scan logs");
     }
 

@@ -14,6 +14,9 @@ export interface Registration {
   designation: string | null;
   category: string | null;
   participantRole: string | null;
+  foodPreference?: "VEG" | "NON_VEG" | null;
+  accommodationChoice?: string | null;
+  accommodationSelectedAt?: string | null;
   eventId: string;
   status: "PENDING" | "CONFIRMED" | "WAITLIST" | "ATTENDED" | "CANCELLED";
   paymentStatus: "PENDING" | "PAID" | "REFUNDED" | "FAILED" | "FREE";
@@ -93,6 +96,7 @@ export interface CreateRegistrationData {
   category?: string;
   categoryId?: string;
   participantRole?: string;
+  foodPreference?: "VEG" | "NON_VEG";
   amount: number;
   notes?: string;
   specialRequests?: string;
@@ -137,6 +141,12 @@ export const registrationsService = {
    */
   getById: (id: string) =>
     api.get<Registration>(`/api/registrations/${id}`),
+
+  /**
+   * Get the sessions this registration's delegate has expressed interest in
+   */
+  getInterests: (id: string) =>
+    api.get<{ id: string; session: { id: string; title: string; sessionType: string; sessionDate: string | null; startTime: string | null } }[]>(`/api/registrations/${id}/interests`),
 
   /**
    * Create new registration (public - no auth required)
