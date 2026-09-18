@@ -33,6 +33,9 @@ import {
     Globe,
     Gift,
     Heart,
+    UploadCloud,
+    FileSpreadsheet,
+    AlertCircle,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -111,6 +114,11 @@ function RegistrationsContent() {
     const [selectedRegistrations, setSelectedRegistrations] = useState<string[]>([]);
     const [isViewOpen, setIsViewOpen] = useState(false);
     const [isAddOpen, setIsAddOpen] = useState(actionParam === "add");
+    const [isBulkOpen, setIsBulkOpen] = useState(false);
+    const [bulkEventId, setBulkEventId] = useState(eventIdParam || "");
+    const [bulkFile, setBulkFile] = useState<File | null>(null);
+    const [bulkSubmitting, setBulkSubmitting] = useState(false);
+    const [bulkResult, setBulkResult] = useState<{ total: number; created: number; skipped: number; failed: { row: number; email: string; reason: string }[] } | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
     const [regInterests, setRegInterests] = useState<{ id: string; session: { id: string; title: string; sessionType: string; sessionDate: string | null; startTime: string | null } }[]>([]);
@@ -568,6 +576,40 @@ function RegistrationsContent() {
         );
         if (regsRes.success && regsRes.data) {
             setRegistrations(Array.isArray(regsRes.data) ? regsRes.data : []);
+        }
+    };
+
+    const handleDownloadBulkTemplate = () => {
+        const headers = ["name", "email", "phone", "organization", "designation", "category", "participantRole", "foodPreference"];
+        const sample = ["Dr. Jane Doe", "jane.doe@example.com", "+91 90000 00000", "City Hospital", "Consultant", "Indian Delegate", "DELEGATE", "veg"];
+        const csv = [headers, sample].map((row) => row.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "registration-bulk-upload-template.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleBulkUpload = async () => {
+        if (!bulkEventId || !bulkFile) return;
+        setBulkSubmitting(true);
+        setBulkResult(null);
+        try {
+            const csvText = await bulkFile.text();
+            const res = await registrationsService.bulkUpload(bulkEventId, csvText);
+            if (res.success && res.data) {
+                setBulkResult(res.data);
+                if (res.data.created > 0) await refreshRegistrations();
+            } else {
+                const errorMsg = typeof res.error === "string" ? res.error : res.error?.message || "Bulk upload failed";
+                alert({ title: "Error", description: errorMsg, variant: "error" });
+            }
+        } catch {
+            alert({ title: "Error", description: "Bulk upload failed. Please check the file and try again.", variant: "error" });
+        } finally {
+            setBulkSubmitting(false);
         }
     };
 
@@ -1126,6 +1168,15 @@ function RegistrationsContent() {
                             <span className="hidden sm:inline">Add Registration</span>
                             <span className="sm:hidden">Add</span>
                         </Button>
+                        <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => { setBulkResult(null); setIsBulkOpen(true); }}
+                        >
+                            <UploadCloud className="w-4 h-4" />
+                            <span className="hidden sm:inline">Bulk Upload</span>
+                            <span className="sm:hidden">Bulk</span>
+                        </Button>
                     </div>
                     {/* Action Buttons */}
                     <div className="flex gap-2 justify-between items-center">
@@ -1347,6 +1398,97 @@ function RegistrationsContent() {
                                     </>
                                 ) : (
                                     "Add Registration"
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Bulk Upload Dialog */}
+                <Dialog open={isBulkOpen} onOpenChange={(v) => { setIsBulkOpen(v); if (!v) { setBulkFile(null); setBulkResult(null); } }}>
+                    <DialogContent className="w-[95vw] sm:max-w-lg backdrop-blur-xl bg-white/95">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <UploadCloud className="w-5 h-5 text-primary" />
+                                Bulk Upload Registrations
+                            </DialogTitle>
+                            <DialogDescription>
+                                Import already-registered candidates from a CSV. Each row gets the exact same
+                                unique registration ID, QR code, badge, and delegate login account as a
+                                manually-added registration.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4 py-2">
+                            <div className="space-y-2">
+                                <Label>Event *</Label>
+                                <Select value={bulkEventId} onValueChange={setBulkEventId}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select an event" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {events.map((ev) => (
+                                            <SelectItem key={ev.id} value={ev.id}>{ev.title}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleDownloadBulkTemplate}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-dashed text-sm text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
+                            >
+                                <FileSpreadsheet className="w-4 h-4" />
+                                Download CSV template
+                            </button>
+
+                            <div className="space-y-2">
+                                <Label>CSV File *</Label>
+                                <Input
+                                    type="file"
+                                    accept=".csv,text/csv"
+                                    onChange={(e) => setBulkFile(e.target.files?.[0] || null)}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Required columns: name, email. Optional: phone, organization, designation, category, participantRole, foodPreference (veg/non-veg). Rows without a status default to Confirmed. Up to 500 rows per upload.
+                                </p>
+                            </div>
+
+                            {bulkResult && (
+                                <div className="rounded-lg border p-3 space-y-2 bg-muted/30">
+                                    <div className="flex flex-wrap gap-2 text-sm">
+                                        <Badge className="bg-green-100 text-green-700 border-green-300">{bulkResult.created} created</Badge>
+                                        <Badge variant="outline">{bulkResult.skipped} already registered</Badge>
+                                        {bulkResult.failed.length > 0 && (
+                                            <Badge className="bg-red-100 text-red-700 border-red-300">{bulkResult.failed.length} failed</Badge>
+                                        )}
+                                    </div>
+                                    {bulkResult.failed.length > 0 && (
+                                        <div className="max-h-40 overflow-y-auto space-y-1">
+                                            {bulkResult.failed.map((f, i) => (
+                                                <div key={i} className="flex items-start gap-1.5 text-xs text-red-600">
+                                                    <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                                                    <span>Row {f.row}{f.email ? ` (${f.email})` : ""}: {f.reason}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsBulkOpen(false)}>Close</Button>
+                            <Button
+                                onClick={handleBulkUpload}
+                                disabled={!bulkEventId || !bulkFile || bulkSubmitting}
+                                className="gap-2"
+                            >
+                                {bulkSubmitting ? (
+                                    <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
+                                ) : (
+                                    <><UploadCloud className="h-4 w-4" /> Upload</>
                                 )}
                             </Button>
                         </DialogFooter>

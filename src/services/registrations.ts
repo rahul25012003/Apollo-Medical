@@ -161,6 +161,15 @@ export const registrationsService = {
     api.post<Registration>("/api/registrations", data),
 
   /**
+   * Bulk-import already-registered candidates from a CSV (admin only)
+   */
+  bulkUpload: (eventId: string, csv: string) =>
+    api.post<{ total: number; created: number; skipped: number; failed: { row: number; email: string; reason: string }[] }>(
+      "/api/registrations/bulk-upload",
+      { eventId, csv }
+    ),
+
+  /**
    * Update registration
    */
   update: (id: string, data: UpdateRegistrationData) =>
