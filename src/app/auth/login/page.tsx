@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import {
     Mail,
     Lock,
@@ -55,6 +56,10 @@ function LoginPageInner() {
     // On ICMS home (no tenant detected), will switch to admin after hostname check
     const [loginMode, setLoginMode] = React.useState<"delegate" | "admin">(tenantSlugFromParam ? "delegate" : "delegate");
     const [isTenantLogin, setIsTenantLogin] = React.useState(!!tenantSlugFromParam);
+    // Scoped strictly to apollo-medical — other tenants keep the original
+    // "Admin Login" wording; only this tenant's delegates now have a real
+    // password, so only here does the toggle need less admin-sounding text.
+    const isIfpcLogin = resolvedTenantSlug === IFPC_TENANT_SLUG;
 
     // After mount: detect if this is a tenant login from hostname (production)
     React.useEffect(() => {
@@ -482,18 +487,18 @@ function LoginPageInner() {
                                     {loginMode === "delegate" ? (
                                         <><Mail className="w-3 h-3" /> OTP Login</>
                                     ) : (
-                                        <><Shield className="w-3 h-3" /> Password Login</>
+                                        <><Shield className="w-3 h-3" /> {isIfpcLogin ? "Password Login" : "Admin Login"}</>
                                     )}
                                 </div>
                             )}
 
                             <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-                                {loginMode === "delegate" ? "Welcome back" : isTenantLogin ? "Sign In" : "Admin Sign In"}
+                                {loginMode === "delegate" ? "Welcome back" : isIfpcLogin ? "Sign In" : "Admin Sign In"}
                             </h1>
                             <p className="text-muted-foreground mt-2 text-sm">
                                 {loginMode === "delegate"
                                     ? "Enter your registered email to receive a secure login code."
-                                    : isTenantLogin ? "Sign in with your email and password." : "Sign in with your admin credentials."}
+                                    : isIfpcLogin ? "Sign in with your email and password." : "Sign in with your admin credentials."}
                             </p>
                         </div>
 
@@ -629,7 +634,7 @@ function LoginPageInner() {
                                             onClick={() => { setLoginMode("admin"); setError(null); resetOtpState(); }}
                                         >
                                             <Shield className="w-3.5 h-3.5" />
-                                            Sign in with Password
+                                            {isIfpcLogin ? "Sign in with Password" : "Admin Login"}
                                         </button>
                                     )}
                                 </div>

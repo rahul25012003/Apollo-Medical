@@ -161,6 +161,9 @@ export default function RegisterPage() {
     // Fall back to the event's own tenant; scoped to IFPC so no other
     // tenant's existing navigation changes.
     const [eventTenantSlug, setEventTenantSlug] = useState<string | null>(null);
+    // Scoped strictly to the apollo-medical/IFPC tenant — read from the
+    // event's own tenant (not the URL param, which other tenants also use).
+    const [isIfpcEvent, setIsIfpcEvent] = useState(false);
     const [currentStep, setCurrentStep] = useState<Step>("details");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [registrationId, setRegistrationId] = useState<string | null>(null);
@@ -241,6 +244,7 @@ export default function RegisterPage() {
                     if (!tenantSlugFromParam && event.tenant?.slug === IFPC_TENANT_SLUG) {
                         setEventTenantSlug(event.tenant.slug);
                     }
+                    setIsIfpcEvent(event.tenant?.slug === IFPC_TENANT_SLUG);
                     const startDate = new Date(event.startDate);
                     const earlyBirdDate = event.earlyBirdDeadline ? new Date(event.earlyBirdDeadline) : null;
                     const isEarlyBird = earlyBirdDate ? new Date() < earlyBirdDate : false;
@@ -516,7 +520,9 @@ export default function RegisterPage() {
                 categoryId: (eventData?.pricingCategories?.length ?? 0) > 0 ? selectedCategory : undefined,
                 participantRole: participantRole || undefined,
                 amount: totalPrice,
-                foodPreference: preferences.dietaryPreference === "non-veg" ? "NON_VEG" : "VEG",
+                foodPreference: isIfpcEvent
+                    ? (preferences.dietaryPreference === "non-veg" ? "NON_VEG" : "VEG")
+                    : undefined,
                 specialRequests: preferences.foodAllergies || undefined,
             };
 
@@ -1460,28 +1466,32 @@ export default function RegisterPage() {
                                         </p>
                                     </div>
 
-                                    <div className="h-px bg-border" />
+                                    {isIfpcEvent && (
+                                        <>
+                                            <div className="h-px bg-border" />
 
-                                    {/* Food Preference */}
-                                    <div className="space-y-3">
-                                        <Label className="text-base font-semibold flex items-center gap-2">
-                                            <Utensils className="h-4 w-4 text-primary" /> Food Preference
-                                        </Label>
-                                        <RadioGroup
-                                            value={preferences.dietaryPreference}
-                                            onValueChange={(v) => handlePreferenceChange("dietaryPreference", v)}
-                                            className="flex gap-6"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <RadioGroupItem value="veg" id="food-veg" />
-                                                <Label htmlFor="food-veg" className="font-normal cursor-pointer">Vegetarian</Label>
+                                            {/* Food Preference */}
+                                            <div className="space-y-3">
+                                                <Label className="text-base font-semibold flex items-center gap-2">
+                                                    <Utensils className="h-4 w-4 text-primary" /> Food Preference
+                                                </Label>
+                                                <RadioGroup
+                                                    value={preferences.dietaryPreference}
+                                                    onValueChange={(v) => handlePreferenceChange("dietaryPreference", v)}
+                                                    className="flex gap-6"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <RadioGroupItem value="veg" id="food-veg" />
+                                                        <Label htmlFor="food-veg" className="font-normal cursor-pointer">Vegetarian</Label>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <RadioGroupItem value="non-veg" id="food-nonveg" />
+                                                        <Label htmlFor="food-nonveg" className="font-normal cursor-pointer">Non-Vegetarian</Label>
+                                                    </div>
+                                                </RadioGroup>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <RadioGroupItem value="non-veg" id="food-nonveg" />
-                                                <Label htmlFor="food-nonveg" className="font-normal cursor-pointer">Non-Vegetarian</Label>
-                                            </div>
-                                        </RadioGroup>
-                                    </div>
+                                        </>
+                                    )}
 
                                     <div className="h-px bg-border" />
 
