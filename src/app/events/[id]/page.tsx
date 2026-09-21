@@ -47,6 +47,7 @@ import { eventsService, Event, EventSpeaker, EventSponsor, EventSession } from "
 import { getEffectiveEventStatus } from "@/lib/event-utils";
 import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
 import { FoodAccommodationCard } from "@/components/ifpc/FoodAccommodationCard";
+import { SpeakerInterestButton, useSpeakerInterests } from "@/components/ifpc/SpeakerInterest";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 
 // Display types
@@ -193,6 +194,7 @@ function fmtEventRange(start: string, end?: string | null) {
 export default function EventDetailPage() {
     const params = useParams();
     const eventId = params.id as string;
+    const speakerInterest = useSpeakerInterests(eventId);
     const [activeTab, setActiveTab] = useState("overview");
     const [event, setEvent] = useState<DisplayEvent | null>(null);
     const [loading, setLoading] = useState(true);
@@ -1000,6 +1002,9 @@ export default function EventDetailPage() {
                                                                 </Badge>
                                                             </div>
                                                         )}
+                                                        <div className="mt-2">
+                                                            <SpeakerInterestButton speakerId={speaker.id} state={speakerInterest} />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </CardContent>

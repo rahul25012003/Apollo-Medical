@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Utensils, Building2, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Utensils, Building2, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
+import { VENUE_TRAVEL } from "@/content/ifpc-2026";
 
 type Preference = "VEG" | "NON_VEG";
 
@@ -18,6 +20,9 @@ export function FoodAccommodationCard({ eventId }: { eventId: string }) {
     const [confirmed, setConfirmed] = useState<boolean | null>(null);
     const [preference, setPreference] = useState<Preference | null>(null);
     const [saving, setSaving] = useState<Preference | null>(null);
+    const [hotel, setHotel] = useState<string | null>(null);
+    const [pickedHotel, setPickedHotel] = useState("");
+    const [savingHotel, setSavingHotel] = useState(false);
 
     useEffect(() => {
         if (status !== "authenticated") return;
@@ -29,9 +34,13 @@ export function FoodAccommodationCard({ eventId }: { eventId: string }) {
                 );
                 setConfirmed(ok);
                 if (!ok) return;
-                return fetch("/api/users/me/food-preference")
-                    .then((r) => r.json())
-                    .then((pref) => { if (pref.success) setPreference(pref.data.preference); });
+                return Promise.all([
+                    fetch("/api/users/me/food-preference").then((r) => r.json()),
+                    fetch("/api/users/me/accommodation").then((r) => r.json()),
+                ]).then(([pref, acc]) => {
+                    if (pref.success) setPreference(pref.data.preference);
+                    if (acc.success) setHotel(acc.data.choice);
+                });
             })
             .catch(() => setConfirmed(false));
     }, [status, eventId]);
@@ -55,6 +64,30 @@ export function FoodAccommodationCard({ eventId }: { eventId: string }) {
             toast.error("Something went wrong. Please try again.");
         } finally {
             setSaving(null);
+        }
+    }
+
+    async function saveHotel() {
+        if (!pickedHotel) return;
+        setSavingHotel(true);
+        try {
+            const res = await fetch("/api/users/me/accommodation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ hotelName: pickedHotel }),
+            });
+            const json = await res.json();
+            if (!res.ok || !json.success) {
+                toast.error(json?.error?.message || "Could not save your accommodation");
+                return;
+            }
+            setHotel(json.data.choice);
+            setPickedHotel("");
+            toast.success(`Saved — you're marked as staying at ${json.data.choice}`);
+        } catch {
+            toast.error("Something went wrong. Please try again.");
+        } finally {
+            setSavingHotel(false);
         }
     }
 
@@ -96,9 +129,28 @@ export function FoodAccommodationCard({ eventId }: { eventId: string }) {
                             <Building2 className="w-4 h-4 text-muted-foreground" />
                             <p className="text-sm font-medium">Accommodation</p>
                         </div>
-                        <p className="text-xs text-muted-foreground mb-3">Browse nearby hotels and mark where you&apos;re staying.</p>
-                        <Link href="/dashboard/accommodation">
-                            <Button size="sm" variant="outline">View Hotels</Button>
+                        {hotel && (
+                            <p className="text-xs text-emerald-700 mb-2 flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Staying at <strong className="truncate">{hotel}</strong>
+                            </p>
+                        )}
+                        <div className="flex gap-2">
+                            <Select value={pickedHotel} onValueChange={setPickedHotel} disabled={confirmed !== true || savingHotel}>
+                                <SelectTrigger className="h-9 text-xs">
+                                    <SelectValue placeholder={hotel ? "Change hotel" : "Choose a hotel"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {VENUE_TRAVEL.accommodation.hotels.map((h) => (
+                                        <SelectItem key={h.name} value={h.name}>{h.name} · {h.distance}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button size="sm" onClick={saveHotel} disabled={!pickedHotel || savingHotel} className="shrink-0">
+                                {savingHotel ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}
+                            </Button>
+                        </div>
+                        <Link href="/dashboard/accommodation" className="text-xs text-primary hover:underline mt-2 inline-block">
+                            See prices &amp; distances
                         </Link>
                     </div>
                 </div>

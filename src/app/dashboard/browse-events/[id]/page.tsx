@@ -26,6 +26,7 @@ import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { format } from "date-fns";
 import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
 import { FoodAccommodationCard } from "@/components/ifpc/FoodAccommodationCard";
+import { SpeakerInterestButton, useSpeakerInterests } from "@/components/ifpc/SpeakerInterest";
 
 interface EventDetails {
     id: string;
@@ -97,6 +98,7 @@ export default function EventDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isRegistered, setIsRegistered] = useState(false);
+    const speakerInterest = useSpeakerInterests(typeof params.id === "string" ? params.id : undefined);
 
     useEffect(() => {
         async function fetchEvent() {
@@ -288,7 +290,7 @@ export default function EventDetailsPage() {
                                                     <User className="w-6 h-6 text-primary" />
                                                 )}
                                             </div>
-                                            <div>
+                                            <div className="min-w-0">
                                                 <p className="font-medium">{speaker.name}</p>
                                                 {speaker.designation && (
                                                     <p className="text-xs text-muted-foreground">{speaker.designation}</p>
@@ -296,6 +298,9 @@ export default function EventDetailsPage() {
                                                 {speaker.institution && (
                                                     <p className="text-xs text-muted-foreground">{speaker.institution}</p>
                                                 )}
+                                                <div className="mt-1.5">
+                                                    <SpeakerInterestButton speakerId={speaker.id} state={speakerInterest} />
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -403,8 +408,25 @@ export default function EventDetailsPage() {
                         )}
                     </div>
 
-                    {/* Sidebar - Registration Card */}
+                    {/* Sidebar - Registration Card. Already-registered delegates
+                        don't need the fee/seats/register box again — just a
+                        pointer to their registration and ID card. */}
                     <div className="lg:col-span-1">
+                        {isRegistered ? (
+                        <div className="bg-background rounded-xl border p-6 sticky top-6 text-center">
+                            <div className="w-12 h-12 rounded-full bg-green-50 border border-green-200 flex items-center justify-center mx-auto mb-3">
+                                <CheckCircle2 className="w-6 h-6 text-green-600" />
+                            </div>
+                            <p className="font-semibold text-lg">You&apos;re registered</p>
+                            <p className="text-sm text-muted-foreground mt-1 mb-4">Your registration details and ID card are in My Registrations.</p>
+                            <Link href="/dashboard/my-registrations" className="block">
+                                <Button className="w-full gap-2" variant="outline">
+                                    <Ticket className="w-4 h-4" />
+                                    View My ID Card
+                                </Button>
+                            </Link>
+                        </div>
+                        ) : (
                         <div className="bg-background rounded-xl border p-6 sticky top-6">
                             <div className="text-center mb-6">
                                 <p className="text-3xl font-bold text-primary">
@@ -449,12 +471,7 @@ export default function EventDetailsPage() {
                             )}
 
                             {/* Register Button */}
-                            {isRegistered ? (
-                                <Button className="w-full gap-2 bg-green-50 text-green-700 border-green-200 hover:bg-green-50" size="lg" variant="outline" disabled>
-                                    <CheckCircle2 className="w-5 h-5" />
-                                    Already Registered
-                                </Button>
-                            ) : isPastEvent ? (
+                            {isPastEvent ? (
                                 <Button className="w-full" size="lg" disabled>
                                     Event Ended
                                 </Button>
@@ -486,6 +503,7 @@ export default function EventDetailsPage() {
                                 Instant registration · Confirmation via email
                             </p>
                         </div>
+                        )}
                     </div>
                 </div>
             </div>

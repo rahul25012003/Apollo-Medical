@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import type { AccessControlStats } from "@/services/access-control";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,10 +45,12 @@ interface ScanEntry {
     id: string;
     time: string;
     attendeeName: string;
-    result: "SUCCESS" | "DENIED" | "ALREADY";
+    registrationCode: string | null;
+    category: string | null;
+    result: string;
     scanType: string;
     accessPointName: string;
-    direction: "IN" | "OUT";
+    direction: string | null;
 }
 
 interface AccessPoint {
@@ -104,17 +107,52 @@ const defaultStats: DashboardStats = {
     })),
 };
 
-function resultBadgeVariant(result: ScanEntry["result"]) {
-    switch (result) {
-        case "SUCCESS":
-            return "success";
-        case "DENIED":
-            return "destructive";
-        case "ALREADY":
-            return "warning";
-        default:
-            return "secondary" as const;
-    }
+function resultBadgeVariant(result: string) {
+    if (result === "SUCCESS") return "success";
+    if (result.startsWith("ALREADY")) return "warning";
+    if (["DENIED", "NOT_FOUND", "INVALID", "NOT_CHECKED_IN", "ZONE_FULL"].includes(result)) return "destructive";
+    return "secondary";
+}
+
+// "NOT_CHECKED_IN" -> "Not checked in"
+function resultLabel(result: string) {
+    const s = result.replace(/_/g, " ").toLowerCase();
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// The stats API returns the persisted field names; map them onto what this
+// dashboard renders.
+function toDashboardStats(d: AccessControlStats): DashboardStats {
+    return {
+        checkedInCount: d.totalCheckedIn ?? 0,
+        totalRegistered: d.totalRegistrations ?? 0,
+        foodDistributedToday: d.foodServedToday ?? 0,
+        activeAccessPoints: d.activeAccessPoints ?? 0,
+        totalAccessPoints: d.totalAccessPoints ?? d.accessPoints?.length ?? 0,
+        peakHour: d.peakHour ?? "--",
+        peakHourCount: d.peakHourCount ?? 0,
+        recentScans: (d.recentScans ?? []).map((s) => ({
+            id: s.id,
+            time: new Date(s.scannedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+            attendeeName: s.name,
+            registrationCode: s.registrationCode,
+            category: s.category,
+            result: s.result,
+            scanType: s.scanType,
+            accessPointName: s.accessPoint ?? "",
+            direction: s.direction,
+        })),
+        accessPoints: (d.accessPoints ?? []).map((ap) => ({
+            id: ap.id,
+            name: ap.name,
+            type: ap.type === "FOOD" ? "FOOD" : "ACCESS",
+            hallName: ap.hallName ?? "",
+            direction: ap.direction === "IN" || ap.direction === "OUT" ? ap.direction : "BOTH",
+            active: ap.isActive,
+        })),
+        foodZones: (d.foodZones ?? []).map((z) => ({ id: z.id, name: z.name, served: z.served, maxServings: z.maxServings ?? 0 })),
+        hourlyCheckins: d.hourlyCheckins?.length > 0 ? d.hourlyCheckins : defaultStats.hourlyCheckins,
+    };
 }
 
 function typeBadgeClass(type: AccessPoint["type"]) {
@@ -164,14 +202,7 @@ export function AccessControlDashboard({ eventId }: AccessControlDashboardProps)
             const res = await fetch(`/api/events/${eventId}/access-control/stats`);
             const data = await res.json();
             if (data.success && data.data) {
-                setStats({
-                    ...defaultStats,
-                    ...data.data,
-                    hourlyCheckins:
-                        data.data.hourlyCheckins?.length > 0
-                            ? data.data.hourlyCheckins
-                            : defaultStats.hourlyCheckins,
-                });
+                setStats(toDashboardStats(data.data));
             }
         } catch (err) {
             console.error("Failed to fetch access control stats:", err);
@@ -430,25 +461,27 @@ export function AccessControlDashboard({ eventId }: AccessControlDashboardProps)
                                                 <Clock className="h-3 w-3" />
                                                 {scan.time}
                                             </div>
-                                            <span className="font-medium text-sm truncate">
-                                                {scan.attendeeName}
-                                            </span>
+                                            <div className="min-w-0">
+                                                <p className="font-medium text-sm truncate">{scan.attendeeName}</p>
+                                                <p className="text-xs text-muted-foreground truncate">
+                                                    {[scan.registrationCode, scan.category].filter(Boolean).join(" · ") || "—"}
+                                                </p>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
                                             <Badge variant={resultBadgeVariant(scan.result) as "success" | "destructive" | "warning" | "secondary"}>
-                                                {scan.result}
+                                                {resultLabel(scan.result)}
                                             </Badge>
                                             <span className="text-xs text-muted-foreground hidden sm:inline">
-                                                {scan.scanType}
+                                                {scan.scanType === "CHECK_IN" && scan.direction === "OUT" ? "Check-out" : resultLabel(scan.scanType)}
                                             </span>
-                                            <span className="text-xs text-muted-foreground hidden md:inline">
-                                                {scan.accessPointName}
-                                            </span>
-                                            {scan.direction === "IN" ? (
-                                                <ArrowDownLeft className="h-3.5 w-3.5 text-green-500" />
-                                            ) : (
-                                                <ArrowUpRight className="h-3.5 w-3.5 text-orange-500" />
+                                            {scan.accessPointName && (
+                                                <span className="text-xs text-muted-foreground hidden md:inline">
+                                                    {scan.accessPointName}
+                                                </span>
                                             )}
+                                            {scan.direction === "IN" && <ArrowDownLeft className="h-3.5 w-3.5 text-green-500" />}
+                                            {scan.direction === "OUT" && <ArrowUpRight className="h-3.5 w-3.5 text-orange-500" />}
                                         </div>
                                     </div>
                                 ))}

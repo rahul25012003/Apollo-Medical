@@ -489,6 +489,10 @@ export const GET = withErrorHandler(
     const result = searchParams.get("result");
     if (result) {
       where.result = result as Prisma.EnumScanResultFilter;
+    } else {
+      // Repeat scans aren't logged anymore; hide the ones logged before that
+      // change so the feed doesn't show one person as several new entries.
+      where.result = { notIn: ["ALREADY_CHECKED_IN", "ALREADY_CHECKED_OUT", "ALREADY_SERVED"] };
     }
 
     const [scanLogs, total] = await Promise.all([

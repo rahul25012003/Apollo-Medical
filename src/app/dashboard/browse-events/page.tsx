@@ -365,7 +365,7 @@ export default function BrowseEventsPage() {
                                                 <Link href={`/dashboard/browse-events/${event.id}`}>
                                                     <Button variant="outline" size="sm">
                                                         <Eye className="w-4 h-4 mr-2" />
-                                                        View Details
+                                                        View Event
                                                     </Button>
                                                 </Link>
                                                 {registeredEventIds.has(event.id) ? (

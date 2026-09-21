@@ -76,25 +76,33 @@ export const GET = withErrorHandler(
         where: { eventId, isActive: true },
       }),
 
-      // Today's scan logs for hourly breakdown
+      // Today's successful check-ins (not check-outs) for the hourly/peak breakdown
       prisma.scanLog.findMany({
         where: {
           eventId,
           scannedAt: { gte: todayStart },
+          scanType: "CHECK_IN",
+          result: "SUCCESS",
+          OR: [{ direction: null }, { direction: { not: "OUT" } }],
         },
         select: {
           scannedAt: true,
         },
       }),
 
-      // Recent 20 scan logs
+      // Recent 20 scan logs. "ALREADY_*" rows are repeat scans that no longer
+      // get logged; older ones from before that change are left out so the
+      // feed never shows the same person as several new entries.
       prisma.scanLog.findMany({
-        where: { eventId },
+        where: {
+          eventId,
+          result: { notIn: ["ALREADY_CHECKED_IN", "ALREADY_CHECKED_OUT", "ALREADY_SERVED"] },
+        },
         orderBy: { scannedAt: "desc" },
         take: 20,
         include: {
           registration: {
-            select: { name: true },
+            select: { name: true, registrationCode: true, category: true, participantRole: true },
           },
           accessPoint: {
             select: { name: true },
@@ -106,6 +114,7 @@ export const GET = withErrorHandler(
       prisma.accessPoint.findMany({
         where: { eventId },
         include: {
+          hall: { select: { name: true } },
           _count: {
             select: {
               scanLogs: {
@@ -155,18 +164,23 @@ export const GET = withErrorHandler(
 
     // Find peak hour
     let peakHour = "N/A";
+    let peakHourCount = 0;
     if (Object.keys(hourCounts).length > 0) {
       const peakH = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
       const h = parseInt(peakH[0]);
       const ampm = h >= 12 ? "PM" : "AM";
       const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
       peakHour = `${displayHour}:00 ${ampm}`;
+      peakHourCount = peakH[1];
     }
 
     // Format recent scans
     const recentScans = recentScanLogs.map((log) => ({
       id: log.id,
       name: log.registration.name,
+      registrationCode: log.registration.registrationCode,
+      category: log.registration.category,
+      participantRole: log.registration.participantRole,
       result: log.result,
       scanType: log.scanType,
       accessPoint: log.accessPoint?.name || null,
@@ -179,6 +193,8 @@ export const GET = withErrorHandler(
       id: ap.id,
       name: ap.name,
       type: ap.type,
+      direction: ap.direction,
+      hallName: ap.hall?.name ?? null,
       isActive: ap.isActive,
       todayScans: ap._count.scanLogs,
     }));
@@ -197,7 +213,9 @@ export const GET = withErrorHandler(
       checkedInPercent,
       foodServedToday,
       activeAccessPoints: activeAccessPointsCount,
+      totalAccessPoints: accessPoints.length,
       peakHour,
+      peakHourCount,
       hourlyCheckins,
       recentScans,
       accessPoints: formattedAccessPoints,

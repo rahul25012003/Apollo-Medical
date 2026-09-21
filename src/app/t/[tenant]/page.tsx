@@ -1620,9 +1620,11 @@ export default function TenantHomePage() {
                   })()}
                   {nextEvent.startDate && new Date(nextEvent.startDate) > new Date() && (
                     <>
-                      <p className={cn("text-sm font-medium", "text-white/70")}>
-                        Next Event: <span className={cn("font-bold", "text-white")}>{nextEvent.title}</span>
-                      </p>
+                      {tenantSlug !== "apollo-medical" && (
+                        <p className={cn("text-sm font-medium", "text-white/70")}>
+                          Next Event: <span className={cn("font-bold", "text-white")}>{nextEvent.title}</span>
+                        </p>
+                      )}
                       <CountdownTimer targetDate={nextEvent.startDate} theme={theme} bgDark={!!hero.bgImage} hideSeconds={tenantSlug === "apollo-medical"} />
                     </>
                   )}

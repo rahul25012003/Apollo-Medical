@@ -27,11 +27,16 @@ export interface AccessControlStats {
   checkedInPercent: number;
   foodServedToday: number;
   activeAccessPoints: number;
+  totalAccessPoints: number;
   peakHour: string;
+  peakHourCount: number;
   hourlyCheckins: { hour: string; count: number }[];
   recentScans: {
     id: string;
     name: string;
+    registrationCode: string | null;
+    category: string | null;
+    participantRole: string | null;
     result: string;
     scanType: string;
     accessPoint: string | null;
@@ -42,6 +47,8 @@ export interface AccessControlStats {
     id: string;
     name: string;
     type: string;
+    direction: string;
+    hallName: string | null;
     isActive: boolean;
     todayScans: number;
   }[];

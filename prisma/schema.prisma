@@ -522,6 +522,7 @@ model Event {
   foodLogs             FoodLog[]
   messageLogs          MessageLog[]
   abstracts            Abstract[]
+  speakerInterests     SpeakerInterest[]
 
   @@index([status])
   @@index([startDate])
@@ -682,9 +683,28 @@ model Speaker {
   eventSpeakers    EventSpeaker[]
   eventSessions    EventSession[]
   sessionSpeakers  SessionSpeaker[]
+  interests        SpeakerInterest[]
 
   @@index([tenantId])
   @@map("speakers")
+}
+
+// A delegate marking "Interested" in a speaker at a specific event. Linked to
+// the delegate's registration by email, same as SessionInterest.
+model SpeakerInterest {
+  id        String   @id @default(cuid())
+  speakerId String
+  eventId   String
+  name      String
+  email     String
+  createdAt DateTime @default(now())
+
+  speaker   Speaker @relation(fields: [speakerId], references: [id], onDelete: Cascade)
+  event     Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([speakerId, eventId, email])
+  @@index([eventId])
+  @@map("speaker_interests")
 }
 
 model EventSpeaker {

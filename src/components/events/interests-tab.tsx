@@ -21,7 +21,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Search, Heart, Mail, Phone, UserX, Utensils, Building2, Mic2, Landmark } from "lucide-react";
+import { Search, Heart, Mail, Phone, UserX, Utensils, Building2, Mic2, Landmark, Users } from "lucide-react";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 
 interface Interest {
@@ -53,6 +53,15 @@ interface AccommodationRow {
     selectedAt: string | null;
 }
 
+interface SpeakerInterestRow {
+    id: string;
+    name: string;
+    email: string;
+    createdAt: string;
+    speaker: { id: string; name: string; designation: string | null };
+    registration: { id: string; name: string; participantRole: string | null; category: string | null } | null;
+}
+
 // Campus Tour is a seeded SEMINAR-type session, so it's split out by title
 // before the generic workshop/session buckets.
 const isCampusTour = (i: Interest) => i.session.title.toLowerCase().includes("campus tour");
@@ -78,6 +87,7 @@ export function InterestsTab({ eventId }: { eventId: string }) {
     const [interests, setInterests] = useState<Interest[]>([]);
     const [food, setFood] = useState<FoodRow[]>([]);
     const [accommodation, setAccommodation] = useState<AccommodationRow[]>([]);
+    const [speakerInterests, setSpeakerInterests] = useState<SpeakerInterestRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [sessionFilter, setSessionFilter] = useState("all");
@@ -88,14 +98,16 @@ export function InterestsTab({ eventId }: { eventId: string }) {
         Promise.all([
             api.get<Interest[]>(`/api/events/${eventId}/interests`),
             api.get<{ food: FoodRow[]; accommodation: AccommodationRow[] }>(`/api/events/${eventId}/preferences`),
+            api.get<{ interests: SpeakerInterestRow[] }>(`/api/events/${eventId}/speaker-interest`, { list: 1 }),
         ])
-            .then(([interestsRes, prefsRes]) => {
+            .then(([interestsRes, prefsRes, speakersRes]) => {
                 if (cancelled) return;
                 if (interestsRes.success && interestsRes.data) setInterests(interestsRes.data);
                 if (prefsRes.success && prefsRes.data) {
                     setFood(prefsRes.data.food);
                     setAccommodation(prefsRes.data.accommodation);
                 }
+                if (speakersRes.success && speakersRes.data) setSpeakerInterests(speakersRes.data.interests);
             })
             .finally(() => !cancelled && setLoading(false));
         return () => { cancelled = true; };
@@ -236,6 +248,9 @@ export function InterestsTab({ eventId }: { eventId: string }) {
                         <TabsTrigger value="campus-tour" className="gap-1.5">
                             <Landmark className="h-3.5 w-3.5" /> NIMHANS Campus Tour ({campusTourInterests.length})
                         </TabsTrigger>
+                        <TabsTrigger value="speakers" className="gap-1.5">
+                            <Users className="h-3.5 w-3.5" /> Speakers ({speakerInterests.length})
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="workshops" className="space-y-3 pt-2">
@@ -351,6 +366,70 @@ export function InterestsTab({ eventId }: { eventId: string }) {
 
                     <TabsContent value="campus-tour" className="space-y-3 pt-2">
                         {renderInterestTable(campusTourInterests)}
+                    </TabsContent>
+
+                    <TabsContent value="speakers" className="space-y-3 pt-2">
+                        {(() => {
+                            const speakers = Array.from(new Map(speakerInterests.map((s) => [s.speaker.id, s.speaker.name])), ([id, name]) => ({ id, name }));
+                            const q = search.trim().toLowerCase();
+                            const rows = speakerInterests.filter((s) =>
+                                (sessionFilter === "all" || s.speaker.id === sessionFilter) &&
+                                (!q || s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || s.speaker.name.toLowerCase().includes(q))
+                            );
+                            return (
+                                <>
+                                    <Select value={sessionFilter} onValueChange={setSessionFilter}>
+                                        <SelectTrigger className="w-full sm:w-64">
+                                            <SelectValue placeholder="All speakers" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All speakers</SelectItem>
+                                            {speakers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    {rows.length === 0 ? (
+                                        <div className="text-center py-12 text-muted-foreground">
+                                            <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                                            <p>{speakerInterests.length === 0 ? "No one has marked interest in a speaker yet." : "No results match your search."}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-lg border overflow-x-auto">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Delegate</TableHead>
+                                                        <TableHead>Speaker</TableHead>
+                                                        <TableHead>Contact</TableHead>
+                                                        <TableHead>Submitted</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {rows.map((s) => (
+                                                        <TableRow key={s.id}>
+                                                            <TableCell>
+                                                                {s.registration ? (
+                                                                    <DelegateCell name={s.registration.name} category={s.registration.category} participantRole={s.registration.participantRole} />
+                                                                ) : (
+                                                                    <DelegateCell name={s.name} notRegisteredLabel="Not registered" />
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <p className="text-sm font-medium">{s.speaker.name}</p>
+                                                                {s.speaker.designation && <p className="text-xs text-muted-foreground">{s.speaker.designation}</p>}
+                                                            </TableCell>
+                                                            <TableCell className="text-xs text-muted-foreground">{s.email}</TableCell>
+                                                            <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                                                {new Date(s.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </TabsContent>
                 </Tabs>
             </CardContent>
