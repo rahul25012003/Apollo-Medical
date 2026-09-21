@@ -7,7 +7,7 @@
 
 import { writeFile, mkdir, unlink } from "fs/promises";
 import { join, resolve, normalize } from "path";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
 
 // Upload configuration
 export const UPLOAD_CONFIG = {
@@ -90,27 +90,53 @@ async function uploadToS3(
 }
 
 /**
- * Upload a file to Cloudinary
- * Note: Implement when Cloudinary SDK is added
+ * Upload a file to Cloudinary via its raw HTTP API (signed upload) — no SDK
+ * dependency, same convention as the other provider integrations in
+ * notifications.ts (Mailgun/SendGrid/Twilio also call fetch() directly).
  */
 async function uploadToCloudinary(
   buffer: Buffer,
   fileName: string,
   folder: string
 ): Promise<string> {
-  // TODO: Implement Cloudinary upload when needed
-  // const cloudinary = require('cloudinary').v2;
-  // cloudinary.config({
-  //   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  //   api_key: process.env.CLOUDINARY_API_KEY,
-  //   api_secret: process.env.CLOUDINARY_API_SECRET,
-  // });
-  // const result = await cloudinary.uploader.upload_stream({ folder });
-  // return result.secure_url;
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error("Cloudinary is not configured (missing CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET)");
+  }
 
-  throw new Error(
-    "Cloudinary upload not implemented. Add Cloudinary SDK and configure."
-  );
+  const timestamp = Math.floor(Date.now() / 1000);
+  // publicId keeps our own generated fileName (minus extension) instead of
+  // letting Cloudinary invent one, so the returned URL stays predictable.
+  const publicId = fileName.replace(/\.[^.]+$/, "");
+
+  // Signature covers every param except file/cloud_name/api_key/resource_type/
+  // signature itself, sorted alphabetically as key=value pairs.
+  const paramsToSign = { folder, public_id: publicId, timestamp: String(timestamp) };
+  const signatureBase = Object.keys(paramsToSign)
+    .sort()
+    .map((k) => `${k}=${paramsToSign[k as keyof typeof paramsToSign]}`)
+    .join("&");
+  const signature = createHash("sha1").update(signatureBase + apiSecret).digest("hex");
+
+  const form = new FormData();
+  form.append("file", new Blob([new Uint8Array(buffer)]), fileName);
+  form.append("api_key", apiKey);
+  form.append("timestamp", String(timestamp));
+  form.append("folder", folder);
+  form.append("public_id", publicId);
+  form.append("signature", signature);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+    method: "POST",
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.error?.message || `Cloudinary upload failed (${res.status})`);
+  }
+  return data.secure_url as string;
 }
 
 // Whitelist of allowed file extensions
