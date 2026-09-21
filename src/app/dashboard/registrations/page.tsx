@@ -1774,6 +1774,29 @@ function RegistrationsContent() {
                                         </div>
                                     )}
 
+                                    {/* Attendance — Check-In / Check-Out */}
+                                    <div className="p-4 rounded-lg bg-muted/50">
+                                        <p className="text-xs text-muted-foreground mb-2">Attendance</p>
+                                        {selectedReg.attendanceStatus === "checked_out" ? (
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">Checked Out</Badge>
+                                                {selectedReg.checkedInAt && (
+                                                    <span className="text-xs text-muted-foreground">In: {new Date(selectedReg.checkedInAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                                                )}
+                                                {selectedReg.checkedOutAt && (
+                                                    <span className="text-xs text-muted-foreground">Out: {new Date(selectedReg.checkedOutAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                                                )}
+                                            </div>
+                                        ) : selectedReg.attendanceStatus === "checked_in" && selectedReg.checkedInAt ? (
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">Checked In</Badge>
+                                                <span className="text-xs text-muted-foreground">{new Date(selectedReg.checkedInAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                                            </div>
+                                        ) : (
+                                            <Badge variant="outline" className="bg-slate-100 text-slate-500 border-slate-200">Not Checked In</Badge>
+                                        )}
+                                    </div>
+
                                     {/* Payment Info */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="p-4 rounded-lg bg-muted/50">

@@ -24,6 +24,8 @@ enum ScanResult {
   SUCCESS
   DENIED
   ALREADY_CHECKED_IN
+  ALREADY_CHECKED_OUT
+  NOT_CHECKED_IN
   ALREADY_SERVED
   ZONE_FULL
   NOT_FOUND
@@ -602,8 +604,9 @@ model Registration {
   paidAt           DateTime?
 
   // Attendance
-  attendanceStatus String?            // checked_in, no_show, etc.
+  attendanceStatus String?            // checked_in, checked_out, no_show, etc.
   checkedInAt      DateTime?
+  checkedOutAt     DateTime?
   qrCode           String?
   badgeGenerated   Boolean            @default(false)
   photo            String?            // Attendee photo URL for ID card

@@ -27,6 +27,7 @@ export interface Registration {
   paidAt: string | null;
   attendanceStatus: string | null;
   checkedInAt: string | null;
+  checkedOutAt?: string | null;
   qrCode?: string | null;
   badgeGenerated?: boolean;
   registrationCode?: string | null;

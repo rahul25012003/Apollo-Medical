@@ -10,7 +10,7 @@ export interface ScanRequest {
 }
 
 export interface ScanResponse {
-  result: "SUCCESS" | "DENIED" | "ALREADY_CHECKED_IN" | "ALREADY_SERVED" | "ZONE_FULL" | "NOT_FOUND" | "INVALID";
+  result: "SUCCESS" | "DENIED" | "ALREADY_CHECKED_IN" | "ALREADY_CHECKED_OUT" | "NOT_CHECKED_IN" | "ALREADY_SERVED" | "ZONE_FULL" | "NOT_FOUND" | "INVALID";
   registration?: {
     id: string;
     name: string;
@@ -20,6 +20,7 @@ export interface ScanResponse {
     category: string | null;
     participantRole: string | null;
     checkedInAt: string | null;
+    checkedOutAt?: string | null;
   };
   message: string;
   zone?: { id: string; name: string } | null;

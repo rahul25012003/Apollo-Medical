@@ -97,6 +97,7 @@ export const POST = withErrorHandler(
         participantRole: true,
         attendanceStatus: true,
         checkedInAt: true,
+        checkedOutAt: true,
         status: true,
       },
     });
@@ -138,6 +139,7 @@ export const POST = withErrorHandler(
       category: registration.category,
       participantRole: registration.participantRole,
       checkedInAt: registration.checkedInAt,
+      checkedOutAt: registration.checkedOutAt,
     };
 
     // A cancelled/non-confirmed registration's QR must never scan as valid,
@@ -164,10 +166,35 @@ export const POST = withErrorHandler(
       });
     }
 
-    // Handle CHECK_IN scan type
+    // Handle CHECK_IN scan type — direction "OUT" checks the attendee out
+    // instead. A repeat scan that doesn't change state (re-scanning an
+    // already-checked-in badge, or checking out twice) is a duplicate: it's
+    // reported back to the scanner but not written to the scan log, so the
+    // "Recent Scans" feed doesn't accumulate a new entry for every re-scan.
     if (scanType === "CHECK_IN") {
-      if (registration.attendanceStatus === "checked_in") {
-        // Already checked in
+      const isCheckOut = direction === "OUT";
+
+      if (!isCheckOut) {
+        if (registration.attendanceStatus === "checked_in") {
+          return successResponse({
+            result: "ALREADY_CHECKED_IN",
+            registration: registrationInfo,
+            message: `${registration.name} is already checked in`,
+            zone: null,
+          });
+        }
+
+        const now = new Date();
+        await prisma.registration.update({
+          where: { id: registration.id },
+          data: {
+            attendanceStatus: "checked_in",
+            checkedInAt: now,
+            checkedOutAt: null,
+            status: "ATTENDED",
+          },
+        });
+
         await prisma.scanLog.create({
           data: {
             eventId,
@@ -175,27 +202,58 @@ export const POST = withErrorHandler(
             scanType: "CHECK_IN",
             accessPointId: accessPointId || null,
             direction: direction || null,
-            result: "ALREADY_CHECKED_IN",
+            result: "SUCCESS",
             scannedBy: session.user.id,
           },
         });
 
         return successResponse({
-          result: "ALREADY_CHECKED_IN",
-          registration: registrationInfo,
-          message: `${registration.name} is already checked in`,
+          result: "SUCCESS",
+          registration: { ...registrationInfo, checkedInAt: now, checkedOutAt: null },
+          message: `${registration.name} checked in successfully`,
           zone: null,
         });
       }
 
-      // Check in the attendee
+      // Checking OUT
+      if (registration.attendanceStatus === "checked_out") {
+        return successResponse({
+          result: "ALREADY_CHECKED_OUT",
+          registration: registrationInfo,
+          message: `${registration.name} is already checked out`,
+          zone: null,
+        });
+      }
+
+      if (registration.attendanceStatus !== "checked_in") {
+        // Not a simple repeat scan — a real attempt to check out someone
+        // who was never checked in — still worth an audit log entry.
+        await prisma.scanLog.create({
+          data: {
+            eventId,
+            registrationId: registration.id,
+            scanType: "CHECK_IN",
+            accessPointId: accessPointId || null,
+            direction: direction || null,
+            result: "NOT_CHECKED_IN",
+            scannedBy: session.user.id,
+          },
+        });
+
+        return successResponse({
+          result: "NOT_CHECKED_IN",
+          registration: registrationInfo,
+          message: `${registration.name} hasn't checked in yet`,
+          zone: null,
+        });
+      }
+
       const now = new Date();
       await prisma.registration.update({
         where: { id: registration.id },
         data: {
-          attendanceStatus: "checked_in",
-          checkedInAt: now,
-          status: "ATTENDED",
+          attendanceStatus: "checked_out",
+          checkedOutAt: now,
         },
       });
 
@@ -213,8 +271,8 @@ export const POST = withErrorHandler(
 
       return successResponse({
         result: "SUCCESS",
-        registration: { ...registrationInfo, checkedInAt: now },
-        message: `${registration.name} checked in successfully`,
+        registration: { ...registrationInfo, checkedOutAt: now },
+        message: `${registration.name} checked out successfully`,
         zone: null,
       });
     }
@@ -319,18 +377,7 @@ export const POST = withErrorHandler(
       });
 
       if (existingFoodLog) {
-        await prisma.scanLog.create({
-          data: {
-            eventId,
-            registrationId: registration.id,
-            scanType: "FOOD_DISTRIBUTION",
-            accessPointId: accessPointId || null,
-            direction: direction || null,
-            result: "ALREADY_SERVED",
-            scannedBy: session.user.id,
-          },
-        });
-
+        // Duplicate — not written to the scan log (see CHECK_IN above).
         return successResponse({
           result: "ALREADY_SERVED",
           registration: registrationInfo,

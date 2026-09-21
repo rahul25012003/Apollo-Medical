@@ -51,7 +51,7 @@ import { Utensils } from "lucide-react";
 
 type ScanMode = "CHECK_IN" | "ZONE_ACCESS" | "FOOD_DISTRIBUTION";
 type ScanDirection = "IN" | "OUT";
-type ScanResultType = "SUCCESS" | "DENIED" | "ALREADY_CHECKED_IN" | "ALREADY_SERVED" | "ZONE_FULL" | "NOT_FOUND" | "INVALID" | null;
+type ScanResultType = "SUCCESS" | "DENIED" | "ALREADY_CHECKED_IN" | "ALREADY_CHECKED_OUT" | "NOT_CHECKED_IN" | "ALREADY_SERVED" | "ZONE_FULL" | "NOT_FOUND" | "INVALID" | null;
 
 interface AccessPoint {
     id: string;
@@ -109,6 +109,8 @@ const RESULT_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string; 
     SUCCESS: { icon: ShieldCheck, color: "text-emerald-400", bg: "from-emerald-500/20 to-emerald-600/10", border: "border-emerald-500/50", label: "Access Granted", sound: "success" },
     DENIED: { icon: ShieldX, color: "text-red-400", bg: "from-red-500/20 to-red-600/10", border: "border-red-500/50", label: "Access Denied", sound: "error" },
     ALREADY_CHECKED_IN: { icon: AlertTriangle, color: "text-amber-400", bg: "from-amber-500/20 to-amber-600/10", border: "border-amber-500/50", label: "Already Checked In", sound: "warning" },
+    ALREADY_CHECKED_OUT: { icon: AlertTriangle, color: "text-amber-400", bg: "from-amber-500/20 to-amber-600/10", border: "border-amber-500/50", label: "Already Checked Out", sound: "warning" },
+    NOT_CHECKED_IN: { icon: ShieldX, color: "text-red-400", bg: "from-red-500/20 to-red-600/10", border: "border-red-500/50", label: "Not Checked In Yet", sound: "error" },
     ALREADY_SERVED: { icon: AlertTriangle, color: "text-amber-400", bg: "from-amber-500/20 to-amber-600/10", border: "border-amber-500/50", label: "Already Served", sound: "warning" },
     ZONE_FULL: { icon: ShieldX, color: "text-red-400", bg: "from-red-500/20 to-red-600/10", border: "border-red-500/50", label: "Zone Full", sound: "error" },
     NOT_FOUND: { icon: XCircle, color: "text-red-400", bg: "from-red-500/20 to-red-600/10", border: "border-red-500/50", label: "Not Found", sound: "error" },
@@ -257,9 +259,10 @@ export default function ScannerPage() {
                 const config = RESULT_CONFIG[result.result];
                 if (config) playSound(config.sound);
 
-                // Update stats on successful check-in
+                // Update the "currently checked in" count on successful check-in/out
                 if (result.result === "SUCCESS" && scanMode === "CHECK_IN") {
-                    setStats(prev => ({ ...prev, totalCheckedIn: prev.totalCheckedIn + 1 }));
+                    const delta = scanDirection === "OUT" ? -1 : 1;
+                    setStats(prev => ({ ...prev, totalCheckedIn: Math.max(0, prev.totalCheckedIn + delta) }));
                 }
 
                 // Refresh recent scans
@@ -284,7 +287,7 @@ export default function ScannerPage() {
         } finally {
             setProcessing(false);
         }
-    }, [processing, eventId, scanMode, selectedZoneId, playSound]);
+    }, [processing, eventId, scanMode, selectedZoneId, selectedAccessPointId, selectedFoodZoneId, scanDirection, playSound]);
 
     // Start camera
     const startCamera = useCallback(async () => {
@@ -546,8 +549,8 @@ export default function ScannerPage() {
                                 className={cn(
                                     "relative overflow-hidden rounded-2xl border-2 transition-all duration-500",
                                     lastResultType === "SUCCESS" ? "border-emerald-500/50" :
-                                    lastResultType === "DENIED" || lastResultType === "INVALID" || lastResultType === "NOT_FOUND" ? "border-red-500/50" :
-                                    lastResultType === "ALREADY_CHECKED_IN" ? "border-amber-500/50" :
+                                    lastResultType === "DENIED" || lastResultType === "INVALID" || lastResultType === "NOT_FOUND" || lastResultType === "NOT_CHECKED_IN" ? "border-red-500/50" :
+                                    lastResultType === "ALREADY_CHECKED_IN" || lastResultType === "ALREADY_CHECKED_OUT" ? "border-amber-500/50" :
                                     "border-white/10"
                                 )}
                             >
