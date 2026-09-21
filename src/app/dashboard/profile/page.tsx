@@ -13,6 +13,9 @@ import {
     Edit,
     Loader2,
     Shield,
+    Lock,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { usersService, User } from "@/services/users";
@@ -34,6 +37,15 @@ export default function ProfilePage() {
         lastName: "",
         phone: "",
     });
+
+    // Password change state
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+    });
+    const [showPasswords, setShowPasswords] = useState(false);
+    const [changingPassword, setChangingPassword] = useState(false);
 
     // Fetch user profile on mount
     useEffect(() => {
@@ -77,6 +89,37 @@ export default function ProfilePage() {
             toast.error("Failed to update profile");
         } finally {
             setSaving(false);
+        }
+    };
+
+    // Handle password change
+    const handleChangePassword = async () => {
+        if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+            toast.error("Please fill in both fields");
+            return;
+        }
+        if (passwordForm.newPassword.length < 8) {
+            toast.error("New password must be at least 8 characters");
+            return;
+        }
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            toast.error("New passwords do not match");
+            return;
+        }
+        try {
+            setChangingPassword(true);
+            const response = await usersService.changePassword(passwordForm);
+            if (response.success) {
+                toast.success("Password changed successfully");
+                setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+            } else {
+                toast.error(response.error?.message || "Failed to change password");
+            }
+        } catch (error) {
+            console.error("Failed to change password:", error);
+            toast.error("Failed to change password");
+        } finally {
+            setChangingPassword(false);
         }
     };
 
@@ -354,6 +397,69 @@ export default function ProfilePage() {
                             </Button>
                         </div>
                     )}
+                </div>
+
+                {/* ===== Change Password ===== */}
+                <div className="bg-background rounded-xl border border-border p-6">
+                    <h2 className="font-semibold text-foreground mb-1 flex items-center gap-2">
+                        <Lock className="w-4 h-4" /> Change Password
+                    </h2>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        If you were given a shared temporary password, change it here to something only you know.
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2 max-w-xl">
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="currentPassword">Current Password</Label>
+                            <Input
+                                id="currentPassword"
+                                type={showPasswords ? "text" : "password"}
+                                value={passwordForm.currentPassword}
+                                onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
+                                placeholder="Your current password"
+                                rightIcon={
+                                    <button type="button" onClick={() => setShowPasswords((v) => !v)} className="hover:text-foreground transition-colors" tabIndex={-1} aria-label={showPasswords ? "Hide passwords" : "Show passwords"}>
+                                        {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                }
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="newPassword">New Password</Label>
+                            <Input
+                                id="newPassword"
+                                type={showPasswords ? "text" : "password"}
+                                value={passwordForm.newPassword}
+                                onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
+                                placeholder="At least 8 characters"
+                                rightIcon={
+                                    <button type="button" onClick={() => setShowPasswords((v) => !v)} className="hover:text-foreground transition-colors" tabIndex={-1} aria-label={showPasswords ? "Hide passwords" : "Show passwords"}>
+                                        {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                }
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                            <Input
+                                id="confirmPassword"
+                                type={showPasswords ? "text" : "password"}
+                                value={passwordForm.confirmPassword}
+                                onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                                placeholder="Re-enter new password"
+                                rightIcon={
+                                    <button type="button" onClick={() => setShowPasswords((v) => !v)} className="hover:text-foreground transition-colors" tabIndex={-1} aria-label={showPasswords ? "Hide passwords" : "Show passwords"}>
+                                        {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                }
+                            />
+                        </div>
+                    </div>
+                    <div className="mt-4 flex justify-end max-w-xl">
+                        <Button onClick={handleChangePassword} disabled={changingPassword}>
+                            {changingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Update Password
+                        </Button>
+                    </div>
                 </div>
             </div>
         </DashboardLayout>

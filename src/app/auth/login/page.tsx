@@ -25,6 +25,8 @@ import {
     Sparkles,
     Heart,
     Activity,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 
 const loginSchema = z.object({
@@ -151,6 +153,9 @@ function LoginPageInner() {
     const [otp, setOtp] = React.useState("");
     const [otpSent, setOtpSent] = React.useState(false);
     const [emailWarning, setEmailWarning] = React.useState<string | null>(null);
+
+    // Password visibility toggle (admin/password login)
+    const [showPassword, setShowPassword] = React.useState(false);
 
     const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -667,9 +672,20 @@ function LoginPageInner() {
                                             <div className="input-focus-glow rounded-xl">
                                                 <Input
                                                     id="password"
-                                                    type="password"
+                                                    type={showPassword ? "text" : "password"}
                                                     placeholder="Enter your password"
                                                     icon={<Lock className="w-4 h-4" />}
+                                                    rightIcon={
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowPassword((v) => !v)}
+                                                            className="hover:text-foreground transition-colors"
+                                                            tabIndex={-1}
+                                                            aria-label={showPassword ? "Hide password" : "Show password"}
+                                                        >
+                                                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                        </button>
+                                                    }
                                                     error={errors.password?.message}
                                                     className="h-12 rounded-xl"
                                                     {...register("password")}

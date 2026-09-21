@@ -16,11 +16,11 @@
  */
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
-import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
+import { IFPC_TENANT_SLUG, IFPC_DEFAULT_PASSWORD } from "@/lib/ifpc-constants";
 import { generateCertificatePDF, type CertificateTemplateConfig } from "@/lib/certificate-pdf";
 import { sendEmail, certificateIssuedHtml, badgeReadyHtml } from "@/lib/notifications";
 import { findOrCreateUserAccount } from "@/lib/auto-account";
-import { generatePassword, hashPassword } from "@/lib/auth-utils";
+import { hashPassword } from "@/lib/auth-utils";
 
 function randomCode(len: number): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
@@ -93,7 +93,7 @@ export async function issueAttendeeBadgeAndCertificate(registrationId: string): 
     let newPlainPassword: string | null = null;
     const account = await prisma.user.findUnique({ where: { id: userId }, select: { password: true } });
     if (!account?.password) {
-      newPlainPassword = generatePassword();
+      newPlainPassword = IFPC_DEFAULT_PASSWORD;
       await prisma.user.update({ where: { id: userId }, data: { password: await hashPassword(newPlainPassword) } });
     }
 
