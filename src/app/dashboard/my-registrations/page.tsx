@@ -16,10 +16,12 @@ import {
     XCircle,
     AlertCircle,
     CreditCard,
+    Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { format } from "date-fns";
+import { QRCodeSVG } from "qrcode.react";
 
 interface MyRegistration {
     id: string;
@@ -32,6 +34,11 @@ interface MyRegistration {
     registeredAt: string;
     qrCode?: string | null;
     badgeGenerated?: boolean;
+    photo?: string | null;
+    designation?: string | null;
+    organization?: string | null;
+    category?: string | null;
+    registrationCode?: string | null;
     event: {
         id: string;
         title: string;
@@ -69,6 +76,27 @@ export default function MyRegistrationsPage() {
 
         fetchMyRegistrations();
     }, []);
+
+    // Prints only the one card whose id matches — injects a scoped print
+    // stylesheet so the rest of the (possibly multi-registration) page and
+    // dashboard chrome stay hidden.
+    const handlePrintBadge = (registrationId: string) => {
+        const styleId = "badge-print-style";
+        let style = document.getElementById(styleId) as HTMLStyleElement | null;
+        if (!style) {
+            style = document.createElement("style");
+            style.id = styleId;
+            document.head.appendChild(style);
+        }
+        style.textContent = `
+            @media print {
+                body * { visibility: hidden; }
+                #badge-${registrationId}, #badge-${registrationId} * { visibility: visible; }
+                #badge-${registrationId} { position: fixed; top: 40px; left: 50%; transform: translateX(-50%); }
+            }
+        `;
+        window.print();
+    };
 
     const getStatusConfig = (status: string) => {
         switch (status) {
@@ -190,22 +218,51 @@ export default function MyRegistrationsPage() {
                                                 )}
                                             </div>
 
-                                            {/* ID Card / Badge */}
+                                            {/* ID Card / Badge — exact card used at check-in, same data admin sees */}
                                             {registration.badgeGenerated && registration.qrCode && (
                                                 <div className="mt-3 p-4 rounded-xl bg-gradient-to-br from-slate-50 to-teal-50/30 border border-slate-200">
-                                                    <p className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
-                                                        <CreditCard className="h-3.5 w-3.5 text-teal-600" />
-                                                        Your ID Card
-                                                    </p>
-                                                    <div className="bg-white rounded-lg border shadow-sm p-4 flex items-center gap-4">
-                                                        <div className="w-20 h-20 bg-white rounded-lg border-2 border-teal-100 p-1.5 flex-shrink-0">
-                                                            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(registration.qrCode)}`} alt="Badge QR" className="w-full h-full" />
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                                            <CreditCard className="h-3.5 w-3.5 text-teal-600" />
+                                                            Your ID Card
+                                                        </p>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 px-2 text-xs print:hidden"
+                                                            onClick={() => handlePrintBadge(registration.id)}
+                                                        >
+                                                            <Printer className="h-3 w-3 mr-1" /> Print
+                                                        </Button>
+                                                    </div>
+                                                    <div id={`badge-${registration.id}`} className="bg-white rounded-xl border-2 border-teal-100 shadow-sm overflow-hidden max-w-xs mx-auto sm:mx-0">
+                                                        <div className="bg-slate-900 text-white text-center py-2">
+                                                            <p className="text-[10px] uppercase tracking-widest text-teal-300">{registration.event.title}</p>
                                                         </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="font-bold text-sm truncate">{registration.name || "Delegate"}</p>
-                                                            <p className="text-xs text-teal-700 font-medium capitalize">{registration.participantRole?.toLowerCase() || "Delegate"}</p>
-                                                            <p className="text-[10px] text-muted-foreground mt-1 truncate">{registration.event.title}</p>
-                                                            <p className="text-[9px] text-muted-foreground font-mono mt-0.5">{registration.id.slice(-8).toUpperCase()}</p>
+                                                        <div className="p-4 text-center">
+                                                            {registration.photo && (
+                                                                <img
+                                                                    src={registration.photo}
+                                                                    alt={registration.name || "Delegate"}
+                                                                    className="mx-auto w-16 h-16 rounded-full object-cover border-2 border-teal-100 -mt-1 mb-2"
+                                                                />
+                                                            )}
+                                                            <div className="mx-auto w-28 h-28 p-1.5 bg-white border-2 border-teal-100 rounded-lg">
+                                                                <QRCodeSVG value={registration.qrCode} className="w-full h-full" />
+                                                            </div>
+                                                            <p className="font-bold text-sm mt-2 truncate">{registration.name || "Delegate"}</p>
+                                                            {registration.designation && (
+                                                                <p className="text-xs text-slate-500 truncate">{registration.designation}</p>
+                                                            )}
+                                                            {registration.organization && (
+                                                                <p className="text-[10px] text-slate-400 truncate">{registration.organization}</p>
+                                                            )}
+                                                            <span className="inline-block mt-2 rounded-full px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-teal-100 text-teal-700">
+                                                                {registration.category || registration.participantRole || "Delegate"}
+                                                            </span>
+                                                            <p className="text-[9px] text-muted-foreground font-mono mt-2">
+                                                                {registration.registrationCode || registration.id.slice(-8).toUpperCase()}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                     <p className="text-[10px] text-muted-foreground mt-2 text-center">Show this QR code at the venue for check-in and access</p>

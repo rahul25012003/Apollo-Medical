@@ -26,6 +26,19 @@ function normalizeFoodPreference(raw: string | undefined): "VEG" | "NON_VEG" | u
 
 const STATUS_VALUES = new Set(["PENDING", "CONFIRMED", "WAITLIST", "ATTENDED", "CANCELLED"]);
 const PAYMENT_STATUS_VALUES = new Set(["PENDING", "PAID", "REFUNDED", "FAILED", "FREE"]);
+const PARTICIPANT_ROLE_VALUES = new Set(["DELEGATE", "SPEAKER", "ORGANIZER", "VOLUNTEER", "CHAIRPERSON"]);
+// Free-text synonyms admins naturally type in a CSV instead of the exact
+// enum value — every event's capacity/slot count only recognizes DELEGATE
+// (or null), so an unrecognized role here silently vanishes from every
+// "remaining seats" count across the app.
+const PARTICIPANT_ROLE_SYNONYMS: Record<string, string> = { PARTICIPANT: "DELEGATE", ATTENDEE: "DELEGATE" };
+function normalizeParticipantRole(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const v = raw.trim().toUpperCase();
+  if (PARTICIPANT_ROLE_VALUES.has(v)) return v;
+  if (PARTICIPANT_ROLE_SYNONYMS[v]) return PARTICIPANT_ROLE_SYNONYMS[v];
+  return "DELEGATE"; // unrecognized role text — default to the role that counts toward capacity
+}
 
 // POST /api/registrations/bulk-upload — admin bulk-imports already-registered
 // candidates from a CSV. Each row goes through the exact same creation path
@@ -117,7 +130,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
           organization: r.organization || undefined,
           designation: r.designation || undefined,
           category: r.category || undefined,
-          participantRole: r.participantrole || undefined,
+          participantRole: normalizeParticipantRole(r.participantrole),
           foodPreference: normalizeFoodPreference(r.foodpreference),
           amount,
           status,

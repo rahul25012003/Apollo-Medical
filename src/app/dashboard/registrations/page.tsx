@@ -1451,7 +1451,7 @@ function RegistrationsContent() {
                                     onChange={(e) => setBulkFile(e.target.files?.[0] || null)}
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Required columns: name, email. Optional: phone, organization, designation, category, participantRole, foodPreference (veg/non-veg). Rows without a status default to Confirmed. Up to 500 rows per upload.
+                                    Required columns: name, email. Optional: phone, organization, designation, category, participantRole (DELEGATE/SPEAKER/ORGANIZER/VOLUNTEER/CHAIRPERSON — anything else defaults to DELEGATE), foodPreference (veg/non-veg). Rows without a status default to Confirmed. Up to 500 rows per upload.
                                 </p>
                             </div>
 

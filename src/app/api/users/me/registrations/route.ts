@@ -56,6 +56,11 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     certificates: reg.certificates,
     qrCode: reg.qrCode,
     badgeGenerated: reg.badgeGenerated,
+    photo: reg.photo,
+    designation: reg.designation,
+    organization: reg.organization,
+    category: reg.category,
+    registrationCode: reg.registrationCode,
   }));
 
   return successResponse(mappedRegistrations);
