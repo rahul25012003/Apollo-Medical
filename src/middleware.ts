@@ -62,8 +62,10 @@ const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANA
 const roleRoutes: Record<string, string[]> = {
   "/dashboard/users": ["SUPER_ADMIN", "ADMIN"],
   "/api/users": ["SUPER_ADMIN", "ADMIN"],
-  "/dashboard/events/create": ADMIN_ROLES,
-  "/dashboard/events/new": ADMIN_ROLES,
+  // Whole admin event area (list, event page, edit, preview, scanner, create).
+  // Delegates view events via /dashboard/browse-events instead.
+  "/dashboard/events": ADMIN_ROLES,
+  "/dashboard/organization": ADMIN_ROLES,
   "/dashboard/registrations": ADMIN_ROLES,
   "/dashboard/certificates": ADMIN_ROLES,
   "/dashboard/speakers": ADMIN_ROLES,

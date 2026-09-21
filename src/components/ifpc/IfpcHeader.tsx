@@ -79,9 +79,6 @@ export function IfpcHeader({ tenantSlug }: { tenantSlug: string }) {
           </nav>
 
           <div className="hidden xl:flex items-center gap-2 flex-none">
-            <Button asChild size="sm" variant="outline">
-              <Link href={`${base}${CTA_LINKS.submitAbstract.href}`}>{CTA_LINKS.submitAbstract.label}</Link>
-            </Button>
             <Button asChild size="sm">
               <Link href={`${base}${CTA_LINKS.registerNow.href}`}>
                 {CTA_LINKS.registerNow.label} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -120,9 +117,6 @@ export function IfpcHeader({ tenantSlug }: { tenantSlug: string }) {
               </Link>
             ))}
             <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-              <Button asChild size="sm" variant="outline" className="flex-1">
-                <Link href={`${base}${CTA_LINKS.submitAbstract.href}`}>{CTA_LINKS.submitAbstract.label}</Link>
-              </Button>
               <Button asChild size="sm" className="flex-1">
                 <Link href={`${base}${CTA_LINKS.registerNow.href}`}>{CTA_LINKS.registerNow.label}</Link>
               </Button>

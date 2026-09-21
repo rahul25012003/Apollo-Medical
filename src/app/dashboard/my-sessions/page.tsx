@@ -228,7 +228,7 @@ export default function MySessionsPage() {
                                                     <Calendar className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <a href={`/dashboard/events/${e.event.id}`} className="font-semibold text-foreground hover:text-primary transition-colors">
+                                                    <a href={`/dashboard/browse-events/${e.event.id}`} className="font-semibold text-foreground hover:text-primary transition-colors">
                                                         {e.event.title}
                                                     </a>
                                                     <div className="flex items-center gap-3 text-xs text-muted-foreground">

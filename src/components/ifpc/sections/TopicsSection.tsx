@@ -1,7 +1,6 @@
 import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
-import { Button } from "@/components/ui/button";
-import { TOPICS_INTRO, TOPIC_CATEGORIES, CTA_LINKS } from "@/content/ifpc-2026";
-import { ListChecks, ArrowRight } from "lucide-react";
+import { TOPICS_INTRO, TOPIC_CATEGORIES } from "@/content/ifpc-2026";
+import { ListChecks } from "lucide-react";
 
 const BADGE_COLORS = ["#4B2FE5", "#1e3a5f", "#CCFF33"];
 
@@ -25,12 +24,6 @@ export function TopicsSection() {
             </ul>
           </div>
         ))}
-      </div>
-
-      <div className="mt-12 text-center">
-        <Button asChild size="lg" className="h-12 px-8 text-base">
-          <a href="#abstract">{CTA_LINKS.submitAbstract.label} <ArrowRight className="ml-2 h-4 w-4 inline" /></a>
-        </Button>
       </div>
     </Section>
   );

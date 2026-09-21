@@ -368,7 +368,6 @@ function ifpcNavGroups(p: IfpcNavProps): { primary: NavLink[]; more: NavLink[] }
     p.sections.testimonials && p.hasRealTestimonials && { href: "#testimonials", label: "Testimonials" },
     { href: "#highlights", label: "Highlights" },
     { href: "#topics", label: "Topics" },
-    { href: "#abstract", label: "Abstract" },
     { href: "#venue", label: "Venue" },
     { href: "#organising-committee", label: "Committee" },
     (p.sections.faq !== false) && p.faqsCount > 0 && { href: "#faq", label: "FAQ" },
@@ -1291,7 +1290,6 @@ export default function TenantHomePage() {
                   <a href="#speakers" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Speakers</a>
                   <a href="#programme" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Programme</a>
                   <a href="#topics" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Topics</a>
-                  <a href="#abstract" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Abstract</a>
                   <a href="#registration" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Registration</a>
                   <a href="#venue" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Venue</a>
                   <a href="#organising-committee" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Committee</a>
@@ -1340,7 +1338,6 @@ export default function TenantHomePage() {
                     <a href="#speakers" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Speakers</a>
                     <a href="#programme" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Scientific Programme</a>
                     <a href="#topics" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Topics</a>
-                    <a href="#abstract" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Abstract Submission</a>
                     <a href="#registration" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Registration</a>
                     <a href="#venue" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Venue &amp; Travel</a>
                     <a href="#organising-committee" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Organising Committee</a>
@@ -3186,7 +3183,6 @@ export default function TenantHomePage() {
                     tenantSlug === "apollo-medical" && { href: "#speakers", label: "Speakers" },
                     tenantSlug === "apollo-medical" && { href: "#programme", label: "Scientific Programme" },
                     tenantSlug === "apollo-medical" && { href: "#topics", label: "Topics" },
-                    tenantSlug === "apollo-medical" && { href: "#abstract", label: "Abstract Submission" },
                     tenantSlug === "apollo-medical" && { href: "#registration", label: "Registration" },
                     tenantSlug === "apollo-medical" && { href: "#venue", label: "Venue & Travel" },
                     tenantSlug === "apollo-medical" && { href: "#organising-committee", label: "Organising Committee" },

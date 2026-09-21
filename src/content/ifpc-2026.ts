@@ -28,7 +28,6 @@ export const CONFERENCE = {
 // page.tsx) — there are no separate routes for these sections anymore.
 export const CTA_LINKS = {
   registerNow: { label: "Register Now", href: "#registration" },
-  submitAbstract: { label: "Submit Abstract", href: "#abstract" },
   exploreHighlights: { label: "Explore the Highlights", href: "#highlights" },
   viewSpeakers: { label: "View Speakers", href: "#speakers" },
   viewProgramme: { label: "View Scientific Programme", href: "#programme" },
