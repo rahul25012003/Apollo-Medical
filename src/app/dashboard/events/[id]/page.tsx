@@ -77,6 +77,7 @@ import {
     Shield,
     ScanLine,
     Camera,
+    Heart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
@@ -95,6 +96,7 @@ import { VenuesTab } from "@/components/events/venues-tab";
 import { EventConfigTab } from "@/components/events/event-config-tab";
 import { CertificatesTab } from "@/components/events/certificates-tab";
 import { PhotosTab } from "@/components/events/photos-tab";
+import { InterestsTab } from "@/components/events/interests-tab";
 
 // Display session type
 interface DisplaySessionSpeaker {
@@ -1190,6 +1192,10 @@ export default function EventDetailPage() {
                             <Mic2 className="h-3.5 w-3.5" />
                             Scientific Program
                         </TabsTrigger>
+                        <TabsTrigger value="interests" className="gap-1.5">
+                            <Heart className="h-3.5 w-3.5" />
+                            Interests
+                        </TabsTrigger>
                         <TabsTrigger value="quizzes" className="gap-1.5">
                             <Award className="h-3.5 w-3.5" />
                             Quizzes
@@ -1689,6 +1695,11 @@ export default function EventDetailPage() {
                     {/* Scientific Program Tab */}
                     <TabsContent value="scientific-program" className="space-y-6">
                         <ScientificProgramTab eventId={event.id} />
+                    </TabsContent>
+
+                    {/* Interests Tab */}
+                    <TabsContent value="interests" className="space-y-6">
+                        <InterestsTab eventId={event.id} />
                     </TabsContent>
 
                     {/* Speakers Tab */}
