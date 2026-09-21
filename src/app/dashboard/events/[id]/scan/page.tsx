@@ -69,6 +69,42 @@ interface FoodZone {
     isActive: boolean;
 }
 
+// html5-qrcode manipulates the DOM directly (camera video/canvas elements),
+// outside React's control. Despite isolating its mount point from React's
+// vdom (see #qr-reader below), a 3rd-party camera library can still fail in
+// ways specific to a given phone/browser/OS combination we can't reproduce
+// here. This boundary keeps that failure local to the scanner widget —
+// "reload the scanner" — instead of taking down the whole dashboard.
+class ScannerErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+    constructor(props: { children: React.ReactNode }) {
+        super(props);
+        this.state = { hasError: false };
+    }
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+    componentDidCatch(error: unknown) {
+        console.error("[Scanner] camera viewport crashed:", error);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="rounded-2xl border-2 border-red-500/50 bg-slate-900/80 aspect-square sm:aspect-video flex items-center justify-center">
+                    <div className="text-center space-y-4 p-8">
+                        <AlertTriangle className="h-10 w-10 text-red-400 mx-auto" />
+                        <p className="text-white font-semibold">The scanner hit an error and needs to reload.</p>
+                        <p className="text-sm text-slate-400">Manual entry below still works if you'd rather not reload.</p>
+                        <Button onClick={() => window.location.reload()} className="bg-red-500/20 border border-red-500/50 text-red-300 hover:bg-red-500/30">
+                            Reload Scanner
+                        </Button>
+                    </div>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 const RESULT_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string; bg: string; border: string; label: string; sound: "success" | "error" | "warning" }> = {
     SUCCESS: { icon: ShieldCheck, color: "text-emerald-400", bg: "from-emerald-500/20 to-emerald-600/10", border: "border-emerald-500/50", label: "Access Granted", sound: "success" },
     DENIED: { icon: ShieldX, color: "text-red-400", bg: "from-red-500/20 to-red-600/10", border: "border-red-500/50", label: "Access Denied", sound: "error" },
@@ -503,6 +539,7 @@ export default function ScannerPage() {
                         </div>
 
                         {/* Camera viewport */}
+                        <ScannerErrorBoundary>
                         <div className="relative">
                             <div
                                 ref={scannerRef}
@@ -514,15 +551,23 @@ export default function ScannerPage() {
                                     "border-white/10"
                                 )}
                             >
-                                {/* QR reader element */}
+                                {/* QR reader mount point — html5-qrcode injects/removes its own
+                                    video/canvas elements here directly. React must NEVER render
+                                    any children inside this specific div: if it does, the two
+                                    DOM-management systems fight over the same nodes and React's
+                                    reconciler throws a "removeChild" NotFoundError the moment the
+                                    camera starts, which crashes the whole page (not just this
+                                    component) since it happens outside any try/catch. The
+                                    placeholder lives in a sibling overlay instead, positioned on
+                                    top with CSS, so React only ever adds/removes IT, never
+                                    anything inside #qr-reader itself. */}
                                 <div
                                     id="qr-reader"
-                                    className={cn(
-                                        "w-full aspect-square sm:aspect-video bg-slate-900/80",
-                                        !cameraActive && "flex items-center justify-center min-h-[300px] sm:min-h-[400px]"
-                                    )}
-                                >
-                                    {!cameraActive && (
+                                    className="w-full aspect-square sm:aspect-video bg-slate-900/80"
+                                />
+
+                                {!cameraActive && (
+                                    <div className="absolute inset-0 flex items-center justify-center min-h-[300px] sm:min-h-[400px] bg-slate-900/80">
                                         <div className="text-center space-y-6 p-8">
                                             <div className="relative mx-auto w-24 h-24">
                                                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 animate-pulse" />
@@ -553,8 +598,8 @@ export default function ScannerPage() {
                                                 Start Camera
                                             </Button>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
 
                                 {/* Scan result overlay */}
                                 {lastResultType && resultConfig && (
@@ -610,6 +655,7 @@ export default function ScannerPage() {
                                 </div>
                             )}
                         </div>
+                        </ScannerErrorBoundary>
 
                         {/* Manual entry */}
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
