@@ -1727,11 +1727,19 @@ function RegistrationsContent() {
                                                 )}
                                             </div>
                                             {(selectedReg.designation || selectedReg.organization) && (
-                                                <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                                                    <Building2 className="h-4 w-4" />
-                                                    {selectedReg.designation}
-                                                    {selectedReg.designation && selectedReg.organization && " at "}
-                                                    {selectedReg.organization}
+                                                <div className="flex items-start gap-1.5 text-sm mt-2 pt-2 border-t border-border/60">
+                                                    <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                                                    <span>
+                                                        {selectedReg.designation && (
+                                                            <span className="font-medium text-foreground">{selectedReg.designation}</span>
+                                                        )}
+                                                        {selectedReg.designation && selectedReg.organization && (
+                                                            <span className="text-muted-foreground"> at </span>
+                                                        )}
+                                                        {selectedReg.organization && (
+                                                            <span className="text-muted-foreground">{selectedReg.organization}</span>
+                                                        )}
+                                                    </span>
                                                 </div>
                                             )}
                                             <div className="flex gap-2 mt-2 flex-wrap">

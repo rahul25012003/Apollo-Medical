@@ -149,6 +149,15 @@ interface TenantBranding {
     slug: string;
 }
 
+// Maps the Title <Select>'s internal value to a clean, capitalized salutation
+// for the stored/displayed full name (was previously used raw, e.g. "prof
+// Bhargav Reddy" instead of "Prof. Bhargav Reddy").
+const TITLE_LABELS: Record<string, string> = { dr: "Dr.", mr: "Mr.", ms: "Ms.", prof: "Prof." };
+function buildFullName(title: string, firstName: string, lastName: string): string {
+    const salutation = TITLE_LABELS[title] || title;
+    return `${salutation} ${firstName} ${lastName}`.replace(/\s+/g, " ").trim();
+}
+
 export default function RegisterPage() {
     const params = useParams();
     const router = useRouter();
@@ -507,7 +516,7 @@ export default function RegisterPage() {
             // Step 1: Create registration
             const registrationData: CreateRegistrationData = {
                 eventId: eventData.id,
-                name: `${formData.title} ${formData.firstName} ${formData.lastName}`.trim(),
+                name: buildFullName(formData.title, formData.firstName, formData.lastName),
                 email: formData.email,
                 phone: formData.phone || undefined,
                 organization: formData.institution || undefined,
@@ -776,7 +785,7 @@ export default function RegisterPage() {
 
         <div class="section">
             <div class="section-title">Attendee</div>
-            <div class="row"><span class="label">Name</span><span class="value">${formData.title} ${formData.firstName} ${formData.lastName}</span></div>
+            <div class="row"><span class="label">Name</span><span class="value">${buildFullName(formData.title, formData.firstName, formData.lastName)}</span></div>
             <div class="row"><span class="label">Email</span><span class="value">${formData.email}</span></div>
             <div class="row"><span class="label">Phone</span><span class="value">${formData.phone}</span></div>
             <div class="row"><span class="label">Institution</span><span class="value">${formData.institution}</span></div>
