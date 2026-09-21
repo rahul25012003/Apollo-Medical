@@ -20,14 +20,12 @@ import {
     Building2,
     User,
     CheckCircle2,
-    Utensils,
-    Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { format } from "date-fns";
 import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
-import { toast } from "sonner";
+import { FoodAccommodationCard } from "@/components/ifpc/FoodAccommodationCard";
 
 interface EventDetails {
     id: string;
@@ -99,40 +97,6 @@ export default function EventDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isRegistered, setIsRegistered] = useState(false);
-    const [foodPreference, setFoodPreference] = useState<"VEG" | "NON_VEG" | null>(null);
-    const [savingFood, setSavingFood] = useState<"VEG" | "NON_VEG" | null>(null);
-
-    useEffect(() => {
-        if (!isRegistered) return;
-        fetch("/api/users/me/food-preference")
-            .then((r) => r.json())
-            .then((json) => {
-                if (json.success) setFoodPreference(json.data.preference);
-            })
-            .catch(() => {});
-    }, [isRegistered]);
-
-    async function selectFoodPreference(preference: "VEG" | "NON_VEG") {
-        setSavingFood(preference);
-        try {
-            const res = await fetch("/api/users/me/food-preference", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ preference }),
-            });
-            const json = await res.json();
-            if (!res.ok || !json.success) {
-                toast.error(json?.error?.message || "Could not save your preference");
-                return;
-            }
-            setFoodPreference(json.data.preference);
-            toast.success("Food preference saved");
-        } catch {
-            toast.error("Something went wrong. Please try again.");
-        } finally {
-            setSavingFood(null);
-        }
-    }
 
     useEffect(() => {
         async function fetchEvent() {
@@ -397,44 +361,7 @@ export default function EventDetailsPage() {
                         })()}
 
                         {/* Food & Accommodation — only once you're registered */}
-                        {isRegistered && (
-                            <div className="bg-background rounded-xl border p-6">
-                                <h2 className="text-lg font-semibold mb-4">Food & Accommodation</h2>
-                                <div className="grid sm:grid-cols-2 gap-4">
-                                    <div className="p-4 rounded-lg border bg-muted/30">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <Utensils className="w-4 h-4 text-muted-foreground" />
-                                            <p className="text-sm font-medium">Food Preference</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            {(["VEG", "NON_VEG"] as const).map((pref) => (
-                                                <Button
-                                                    key={pref}
-                                                    size="sm"
-                                                    variant={foodPreference === pref ? "default" : "outline"}
-                                                    disabled={savingFood !== null}
-                                                    onClick={() => selectFoodPreference(pref)}
-                                                >
-                                                    {savingFood === pref ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : pref === "VEG" ? "Vegetarian" : "Non-Vegetarian"}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="p-4 rounded-lg border bg-muted/30">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <Building2 className="w-4 h-4 text-muted-foreground" />
-                                            <p className="text-sm font-medium">Accommodation</p>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mb-3">
-                                            Browse nearby hotels and mark where you&apos;re staying.
-                                        </p>
-                                        <Link href="/dashboard/accommodation">
-                                            <Button size="sm" variant="outline">View Hotels</Button>
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        {isRegistered && <FoodAccommodationCard eventId={event.id} />}
 
                         {/* Contact Information */}
                         {(event.organizer || event.contactEmail || event.contactPhone || event.website) && (

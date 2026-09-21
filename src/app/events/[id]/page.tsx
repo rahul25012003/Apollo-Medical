@@ -45,6 +45,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { eventsService, Event, EventSpeaker, EventSponsor, EventSession } from "@/services/events";
 import { getEffectiveEventStatus } from "@/lib/event-utils";
+import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
+import { FoodAccommodationCard } from "@/components/ifpc/FoodAccommodationCard";
+import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 
 // Display types
 interface DisplaySessionSpeaker {
@@ -67,6 +70,7 @@ interface DisplaySession {
     endTime: string | null;
     venue: string | null;
     hallName: string | null;
+    capacity: number | null;
     speakers: DisplaySessionSpeaker[];
     // Legacy single speaker fallback
     speaker?: {
@@ -96,6 +100,7 @@ interface EventPhoto {
 
 interface DisplayEvent {
     id: string;
+    tenantSlug: string | null;
     title: string;
     description: string | null;
     date: string;
@@ -240,6 +245,7 @@ export default function EventDetailPage() {
                         type: apiEvent.type,
                         registrations: apiEvent._count?.registrations || 0,
                         capacity: apiEvent.capacity,
+                        tenantSlug: apiEvent.tenant?.slug ?? null,
                         status: apiEvent.status.toLowerCase(),
                         price: Number(apiEvent.price) || 0,
                         currency: apiEvent.currency || "INR",
@@ -269,6 +275,7 @@ export default function EventDetailPage() {
                             endTime: es.endTime,
                             venue: es.venue,
                             hallName: es.hall?.name || es.venue || null,
+                            capacity: es.capacity ?? null,
                             speakers: (es.sessionSpeakers || []).map((ss: { speaker: { id: string; name: string; designation: string | null; institution: string | null; photo: string | null }; talkTitle: string | null }) => ({
                                 id: ss.speaker.id,
                                 name: ss.speaker.name,
@@ -449,6 +456,13 @@ export default function EventDetailPage() {
                                     </h3>
                                     {session.description && (
                                         <p className="text-sm text-muted-foreground mt-1">{session.description}</p>
+                                    )}
+
+                                    {/* Seat-limited workshops/sessions/tour take "I'd like to attend" sign-ups */}
+                                    {!isBreak && session.capacity != null && (
+                                        <div className="mt-3">
+                                            <ExpressInterestButton sessionId={session.id} />
+                                        </div>
                                     )}
 
                                     {/* Speakers */}
@@ -806,6 +820,8 @@ export default function EventDetailPage() {
                                         )}
                                     </CardContent>
                                 </Card>
+
+                                {event.tenantSlug === IFPC_TENANT_SLUG && <FoodAccommodationCard eventId={event.id} />}
                             </TabsContent>
 
                             <TabsContent value="schedule" className="space-y-6 mt-6">
