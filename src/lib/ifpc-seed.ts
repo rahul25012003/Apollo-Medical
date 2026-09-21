@@ -109,7 +109,6 @@ export async function seedIfpc2026(prisma: PrismaClient) {
         { id: 4, question: "Who should attend?", answer: "The conference is designed for psychiatry trainees, psychiatrists, forensic medicine professionals, mental health professionals, and law professionals." },
         { id: 5, question: "How do I register, and what does registration include?", answer: "Registration is completed through the official registration portal. It includes access to all workshops and scientific sessions, daily lunch, snacks and refreshments, the two-day cultural programme, and two official conference dinners. Accommodation is not included." },
         { id: 6, question: "Are there different registration fees for Indian and international delegates?", answer: "Yes. Separate early-bird and standard fees apply for Indian Delegates, Indian Trainee Delegates, International Delegates, and International Trainee Delegates. Full fee details are available on the Registration page." },
-        { id: 7, question: "How do I submit an abstract, and what is the deadline?", answer: "Abstracts are submitted online through the official abstract submission portal. The submission deadline is 15 September 2026 (extended). Full formatting and category guidelines are available on the Abstract Submission page." },
         { id: 8, question: "Do presenters need to register separately?", answer: "Yes. All presenters must register for the conference for their presentation to be included in the programme. Accepting an abstract does not include travel, accommodation, registration costs, or a presenter fee." },
         { id: 9, question: "Are CME or credit points available?", answer: "KMC credit points are available for Indian doctors under the NMC Act, 2019." },
         { id: 10, question: "What optional activities are available to delegates?", answer: "Registered delegates can enquire at the Registration Desk about the guided NIMHANS campus tour and the complimentary daily morning yoga sessions." },
@@ -313,15 +312,6 @@ export async function seedIfpc2026(prisma: PrismaClient) {
     sessionOrder: 7, status: "scheduled", isPublished: true,
   }});
   console.log("Sessions created (incl. capacity-limited Workshop/Seminar listings).\n");
-
-  // Announcements — shown in the "Bridging the Gap" home section feed
-  await prisma.eventEngagement.create({ data: {
-    eventId: event.id,
-    title: "Abstract Submission Deadline Extended",
-    type: "ANNOUNCEMENT",
-    description: "The abstract submission deadline has been extended to 15 September 2026, 11:59 PM IST. Submit via the Abstract Submission page.",
-    isActive: true, displayOrder: 0,
-  }});
 
   // Delegate feedback — sessions, workshops, overall experience
   await prisma.eventEngagement.create({ data: {
