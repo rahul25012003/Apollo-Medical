@@ -6,14 +6,20 @@ import { IFPC_DEFAULT_PASSWORD } from "@/lib/ifpc-constants";
 // GET /api/setup/backfill-passwords?key=SETUP_KEY — one-off fix for accounts
 // created before every account always got a real password (OTP-only accounts
 // with password: null). Sets the known default password so they can log in.
+// &all=true additionally resets every ATTENDEE account to the default —
+// covers accounts stuck with an unrecoverable random password from the old
+// generatePassword() path that predates the IFPC_DEFAULT_PASSWORD fix.
+// Never touches ADMIN/staff accounts (role filter is unconditional).
 export async function GET(request: NextRequest) {
   const key = request.nextUrl.searchParams.get("key");
   if (key !== process.env.SETUP_KEY) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const resetAll = request.nextUrl.searchParams.get("all") === "true";
+
   const affected = await prisma.user.findMany({
-    where: { password: null, role: "ATTENDEE" },
+    where: resetAll ? { role: "ATTENDEE" } : { password: null, role: "ATTENDEE" },
     select: { id: true },
   });
 
