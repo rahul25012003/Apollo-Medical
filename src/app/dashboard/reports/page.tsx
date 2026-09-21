@@ -352,7 +352,8 @@ function RegistrationAnalytics({ data }: { data: RegistrationReport | null }) {
             </div>
           </div>
 
-          {/* Food Preference Breakdown */}
+          {/* Food Preference Breakdown — IFPC only (the API sends it for IFPC alone) */}
+          {data.foodBreakdown && (
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
               <Utensils className="w-3.5 h-3.5" /> Food Preference
@@ -373,8 +374,10 @@ function RegistrationAnalytics({ data }: { data: RegistrationReport | null }) {
               </p>
             )}
           </div>
+          )}
 
-          {/* Accommodation Selections */}
+          {/* Accommodation Selections — IFPC only */}
+          {data.accommodationBreakdown && (
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
               <Hotel className="w-3.5 h-3.5" /> Accommodation Selections
@@ -395,6 +398,7 @@ function RegistrationAnalytics({ data }: { data: RegistrationReport | null }) {
               </div>
             )}
           </div>
+          )}
         </div>
       </CardContent>
     </Card>

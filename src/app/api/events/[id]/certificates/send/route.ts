@@ -6,6 +6,8 @@ import { Errors } from "@/lib/api-utils";
 import { generateCertificatePDF, type CertificateTemplateConfig } from "@/lib/certificate-pdf";
 import { sendEmail, certificateIssuedHtml, getActiveChannel } from "@/lib/notifications";
 import { randomUUID } from "crypto";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import * as legacy from "./legacy";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -13,7 +15,7 @@ const BATCH_SIZE = 5; // process 5 in parallel — keeps memory low and avoids S
 
 // POST /api/events/[id]/certificates/send
 // Body: { categories?: string[] }  — omit = all categories with templates
-export async function POST(req: NextRequest, context: RouteContext) {
+async function ifpcPOST(req: NextRequest, context: RouteContext) {
   const session = await auth();
   if (!session) return Errors.unauthorized();
   if (!canAccess(session.user.role, "certificates")) return Errors.forbidden("You don't have permission to manage certificates");
@@ -132,4 +134,11 @@ export async function POST(req: NextRequest, context: RouteContext) {
   }
 
   return NextResponse.json({ success: true, sent, failed, skipped, total: registrations.length, failures, skippedDetails });
+}
+
+// IFPC (apollo-medical) uses the handlers above. Every other tenant keeps the
+// original pre-IFPC handlers, unchanged, in ./legacy.ts.
+export async function POST(request: NextRequest, context: RouteContext) {
+  const isIfpc = await isIfpcEvent((await context.params).id);
+  return isIfpc ? ifpcPOST(request, context) : legacy.POST(request, context);
 }

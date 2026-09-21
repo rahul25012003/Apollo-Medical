@@ -12,6 +12,7 @@ import {
 import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
 import { sendEmail, registrationApprovedHtml, registrationCancelledHtml } from "@/lib/notifications";
 import { issueAttendeeBadgeAndCertificate } from "@/lib/ifpc-automation";
+import { isIfpcRegistration } from "@/lib/ifpc-tenant";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -120,6 +121,8 @@ export const PUT = withErrorHandler(
 
     const data = parsed.data;
     const updateData: Record<string, unknown> = { ...data };
+    // Food preference is an IFPC (apollo-medical) field; other tenants never stored it.
+    if (!(await isIfpcRegistration(id))) delete updateData.foodPreference;
 
     // Convert date strings to Date objects
     if (data.paidAt) {

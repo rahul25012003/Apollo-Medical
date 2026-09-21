@@ -8,6 +8,8 @@ import {
   withErrorHandler,
 } from "@/lib/api-utils";
 import { randomBytes } from "crypto";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import * as legacy from "./legacy";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -19,7 +21,7 @@ function generateCertificateCode(): string {
 }
 
 // POST /api/certificates/[id]/regenerate - Regenerate certificate (delete and create new)
-export const POST = withErrorHandler(
+const ifpcPOST = withErrorHandler(
   async (request: NextRequest, context?: RouteContext) => {
     const session = await auth();
 
@@ -132,3 +134,11 @@ export const POST = withErrorHandler(
     return successResponse(newCertificate, "Certificate regenerated successfully");
   }
 );
+
+// IFPC (apollo-medical) uses the handlers above. Every other tenant keeps the
+// original pre-IFPC handlers, unchanged, in ./legacy.ts.
+export async function POST(request: NextRequest, context: RouteContext) {
+  const cert = await prisma.certificate.findUnique({ where: { id: (await context.params).id }, select: { eventId: true } });
+  const isIfpc = await isIfpcEvent(cert?.eventId);
+  return isIfpc ? ifpcPOST(request, context) : legacy.POST(request, context);
+}

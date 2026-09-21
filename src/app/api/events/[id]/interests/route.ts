@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
 import { isTenantOwner } from "@/lib/tenant-scope";
 import { successResponse, Errors, withErrorHandler } from "@/lib/api-utils";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -10,6 +11,8 @@ type RouteContext = { params: Promise<{ id: string }> };
 // event in one place, each linked to the matching delegate registration (by
 // email) so the admin doesn't have to open registrations one by one.
 export const GET = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcEvent((await context!.params).id))) return Errors.notFound("Page");
   const session = await auth();
   if (!session) return Errors.unauthorized();
   if (!canAccess(session.user.role, "events") && !canAccess(session.user.role, "registrations")) {

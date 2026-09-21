@@ -4,6 +4,7 @@ import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { sendEmail, abstractSubmittedHtml } from "@/lib/notifications";
 import { z } from "zod";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
 
 const rateLimiter = createRateLimiter("abstracts-public", { maxRequests: 5, windowSeconds: 60 });
 
@@ -41,6 +42,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   const parsed = submitSchema.safeParse(body);
   if (!parsed.success) return Errors.validationError(parsed.error);
   const data = parsed.data;
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcEvent(data.eventId))) return Errors.notFound("Page");
 
   const event = await prisma.event.findUnique({
     where: { id: data.eventId },

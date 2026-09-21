@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { sendEmail, getActiveChannel } from "./notifications";
 import { hashPassword } from "./auth-utils";
 import { IFPC_DEFAULT_PASSWORD } from "./ifpc-constants";
+import { isIfpcTenantId } from "./ifpc-tenant";
 
 interface CreateAccountParams {
   email: string;
@@ -18,14 +19,16 @@ interface AccountResult {
 
 /**
  * Find or create a user account for delegates/speakers/organizers.
- * New accounts always get the known default password so they can log in
- * immediately — no separate OTP-only path.
+ * These accounts have no password — they log in via OTP only.
+ * Exception: IFPC (apollo-medical) accounts get the known default password
+ * (IFPC login is password-only).
  * Also links any existing unlinked registrations to the user.
  */
 export async function findOrCreateUserAccount(
   params: CreateAccountParams
 ): Promise<AccountResult> {
   const email = params.email.toLowerCase().trim();
+  const isIfpc = await isIfpcTenantId(params.tenantId);
 
   // Use upsert to avoid race condition when two requests hit simultaneously
   const user = await prisma.user.upsert({
@@ -34,7 +37,7 @@ export async function findOrCreateUserAccount(
       email,
       name: params.name || null,
       phone: params.phone || null,
-      password: await hashPassword(IFPC_DEFAULT_PASSWORD),
+      password: isIfpc ? await hashPassword(IFPC_DEFAULT_PASSWORD) : null,
       role: "ATTENDEE",
       isActive: true,
       tenantId: params.tenantId || null,
@@ -81,6 +84,7 @@ export async function sendAccountCreatedEmail(params: {
   const { email, name, eventTitle, role, loginUrl, tenantId } = params;
 
   const roleText = role || "delegate";
+  const isIfpc = await isIfpcTenantId(tenantId);
   const eventLine = eventTitle
     ? `<p style="margin: 0 0 16px;">You have been added as a <strong>${roleText}</strong>${eventTitle ? ` for <strong>${eventTitle}</strong>` : ""}.</p>`
     : "";
@@ -92,7 +96,9 @@ export async function sendAccountCreatedEmail(params: {
       <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 16px 0;">
         <p style="margin: 0 0 8px;"><strong>Hello ${name || "there"},</strong></p>
         ${eventLine}
-        <p style="margin: 0 0 16px;">An account has been created for you. You can log in using your email address — a one-time verification code (OTP) will be sent to you each time.</p>
+        ${isIfpc
+          ? `<p style="margin: 0 0 16px;">An account has been created for you. Log in with your email address and the password below, then change it under Profile &rarr; Change Password.</p>`
+          : `<p style="margin: 0 0 16px;">An account has been created for you. You can log in using your email address — a one-time verification code (OTP) will be sent to you each time.</p>`}
         <div style="text-align: center; margin: 24px 0;">
           <a href="${loginUrl}" style="display: inline-block; background: #0d9488; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold;">
             Log In Now
@@ -100,11 +106,15 @@ export async function sendAccountCreatedEmail(params: {
         </div>
         <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
           <tr><td style="padding: 6px 0; color: #666;">Email</td><td style="padding: 6px 0; text-align: right;">${email}</td></tr>
-          <tr><td style="padding: 6px 0; color: #666;">Login Method</td><td style="padding: 6px 0; text-align: right;">OTP (sent to your email)</td></tr>
+          ${isIfpc
+            ? `<tr><td style="padding: 6px 0; color: #666;">Password</td><td style="padding: 6px 0; text-align: right;">${IFPC_DEFAULT_PASSWORD}</td></tr>`
+            : `<tr><td style="padding: 6px 0; color: #666;">Login Method</td><td style="padding: 6px 0; text-align: right;">OTP (sent to your email)</td></tr>`}
           <tr><td style="padding: 6px 0; color: #666;">Role</td><td style="padding: 6px 0; text-align: right; text-transform: capitalize;">${roleText}</td></tr>
         </table>
       </div>
-      <p style="color: #666; font-size: 14px;">Simply enter your email on the login page and click "Send Login Code". A 6-digit code will be sent to your inbox.</p>
+      ${isIfpc
+        ? `<p style="color: #666; font-size: 14px;">Enter your email and password on the login page to sign in.</p>`
+        : `<p style="color: #666; font-size: 14px;">Simply enter your email on the login page and click "Send Login Code". A 6-digit code will be sent to your inbox.</p>`}
       <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
       <p style="color: #999; font-size: 12px;">This is an automated email from ICMS Conference Management System.</p>
     </div>

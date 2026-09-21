@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-utils";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { z } from "zod";
+import { isIfpcTenantId } from "@/lib/ifpc-tenant";
 
 async function findMyRegistration(email: string) {
   return prisma.registration.findFirst({
@@ -21,6 +22,8 @@ async function findMyRegistration(email: string) {
 export const GET = withErrorHandler(async () => {
   const session = await auth();
   if (!session) return Errors.unauthorized();
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcTenantId(session.user.tenantId))) return Errors.notFound("Page");
 
   const registration = await findMyRegistration(session.user.email);
   if (!registration) return successResponse({ preference: null });
@@ -34,6 +37,8 @@ const selectSchema = z.object({ preference: z.enum(["VEG", "NON_VEG"]) });
 export const POST = withErrorHandler(async (request: NextRequest) => {
   const session = await auth();
   if (!session) return Errors.unauthorized();
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcTenantId(session.user.tenantId))) return Errors.notFound("Page");
 
   const body = await parseBody(request);
   if (!body) return Errors.badRequest("Invalid request body");

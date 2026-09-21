@@ -10,6 +10,7 @@ import {
   parseBody,
 } from "@/lib/api-utils";
 import { findOrCreateUserAccount } from "@/lib/auto-account";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -111,6 +112,8 @@ export const POST = withErrorHandler(
     const eventSpeaker = await prisma.eventSpeaker.create({
       data: {
         ...data,
+        // IFPC (apollo-medical): speakers are published unless the admin says otherwise.
+        ...((body as { isPublished?: unknown }).isPublished === undefined && (await isIfpcEvent(eventId)) ? { isPublished: true } : {}),
         sessionDate: data.sessionDate ? new Date(data.sessionDate) : null,
       },
       include: {
@@ -255,6 +258,10 @@ export const PUT = withErrorHandler(
     }
     if (data.isPublished !== undefined) {
       updateFields.isPublished = data.isPublished;
+    }
+    // IFPC (apollo-medical): an update that doesn't mention isPublished keeps speakers published.
+    if ((updateData as { isPublished?: unknown }).isPublished === undefined && (await isIfpcEvent(eventId))) {
+      updateFields.isPublished = true;
     }
 
     const eventSpeaker = await prisma.eventSpeaker.update({

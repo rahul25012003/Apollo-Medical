@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
-import { uploadFile, UPLOAD_CONFIG } from "@/lib/upload";
+import { uploadFile, UPLOAD_CONFIG, PPTX_MIME_TYPE } from "@/lib/upload";
 import {
   successResponse,
   Errors,
   withErrorHandler,
 } from "@/lib/api-utils";
+import { isIfpcTenantId } from "@/lib/ifpc-tenant";
 
 // POST /api/upload - Upload file
 export const POST = withErrorHandler(async (request: NextRequest) => {
@@ -36,6 +37,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   let allowedTypes = UPLOAD_CONFIG.allowedImageTypes;
   if (folder === "documents" || folder === "events/brochures") {
     allowedTypes = [...UPLOAD_CONFIG.allowedImageTypes, ...UPLOAD_CONFIG.allowedDocumentTypes];
+    // IFPC (apollo-medical) documents may also be PowerPoint.
+    if (await isIfpcTenantId(session.user.tenantId)) allowedTypes = [...allowedTypes, PPTX_MIME_TYPE];
   }
 
   const result = await uploadFile(file, {
@@ -67,6 +70,8 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   return successResponse({
     maxFileSize: UPLOAD_CONFIG.maxFileSize,
     allowedImageTypes: UPLOAD_CONFIG.allowedImageTypes,
-    allowedDocumentTypes: UPLOAD_CONFIG.allowedDocumentTypes,
+    allowedDocumentTypes: (await isIfpcTenantId(session.user.tenantId))
+      ? [...UPLOAD_CONFIG.allowedDocumentTypes, PPTX_MIME_TYPE]
+      : UPLOAD_CONFIG.allowedDocumentTypes,
   });
 });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 
 export const runtime = "nodejs";
 
@@ -9,6 +10,7 @@ export const runtime = "nodejs";
 // Domain → Tenant slug mapping (cached in memory, refreshed every 5 minutes)
 // ---------------------------------------------------------------------------
 let domainCache: Record<string, string> = {};
+let slugByTenantId: Record<string, string> = {};
 let domainCacheTime = 0;
 const DOMAIN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -18,9 +20,10 @@ async function getTenantSlugByDomain(domain: string): Promise<string | null> {
     try {
       const tenants = await prisma.tenant.findMany({
         where: { isActive: true },
-        select: { domain: true, slug: true },
+        select: { id: true, domain: true, slug: true },
       });
       domainCache = {};
+      slugByTenantId = Object.fromEntries(tenants.map((t) => [t.id, t.slug]));
       let tenantsWithDomain = 0;
       for (const t of tenants) {
         if (t.domain) {
@@ -66,6 +69,30 @@ const roleRoutes: Record<string, string[]> = {
   // Delegates view events via /dashboard/browse-events instead.
   "/dashboard/events": ADMIN_ROLES,
   "/dashboard/organization": ADMIN_ROLES,
+  "/dashboard/registrations": ADMIN_ROLES,
+  "/dashboard/certificates": ADMIN_ROLES,
+  "/dashboard/speakers": ADMIN_ROLES,
+  "/dashboard/sponsors": ADMIN_ROLES,
+  "/dashboard/settings": ADMIN_ROLES,
+  "/dashboard/tenants": ["SUPER_ADMIN", "ADMIN"],
+  "/dashboard/id-cards": ADMIN_ROLES,
+  "/dashboard/scientific-program": ADMIN_ROLES,
+  "/dashboard/access-control": ADMIN_ROLES,
+  "/dashboard/scanner": ADMIN_ROLES,
+  "/dashboard/engagement": ADMIN_ROLES,
+  "/dashboard/communications": ADMIN_ROLES,
+  "/dashboard/reports": ADMIN_ROLES,
+  "/api/communications": ADMIN_ROLES,
+  "/api/reports": ADMIN_ROLES,
+};
+
+// Every tenant except IFPC (apollo-medical) keeps the original rules, where only
+// event create/new were staff-only.
+const legacyRoleRoutes: Record<string, string[]> = {
+  "/dashboard/users": ["SUPER_ADMIN", "ADMIN"],
+  "/api/users": ["SUPER_ADMIN", "ADMIN"],
+  "/dashboard/events/create": ADMIN_ROLES,
+  "/dashboard/events/new": ADMIN_ROLES,
   "/dashboard/registrations": ADMIN_ROLES,
   "/dashboard/certificates": ADMIN_ROLES,
   "/dashboard/speakers": ADMIN_ROLES,
@@ -265,7 +292,9 @@ export async function middleware(request: NextRequest) {
 
   // Check role-based access (skip if it's an exception)
   if (!isRoleException) {
-    for (const [route, allowedRoles] of Object.entries(roleRoutes)) {
+    const tenantId = (session.user as { tenantId?: string | null }).tenantId;
+    const isIfpcUser = !!tenantId && slugByTenantId[tenantId] === IFPC_TENANT_SLUG;
+    for (const [route, allowedRoles] of Object.entries(isIfpcUser ? roleRoutes : legacyRoleRoutes)) {
       if (pathname.startsWith(route)) {
         if (!allowedRoles.includes(session.user.role)) {
           // For API routes, return 403

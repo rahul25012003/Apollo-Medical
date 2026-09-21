@@ -6,6 +6,7 @@ import { isTenantOwner } from "@/lib/tenant-scope";
 import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-utils";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -19,6 +20,9 @@ const interestSchema = z.object({
 
 // GET /api/sessions/[id]/interest — public seat counter; ?list=1 (auth) returns the roster
 export const GET = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  const ifpcSession = await prisma.eventSession.findUnique({ where: { id: (await context!.params).id }, select: { eventId: true } });
+  if (!(await isIfpcEvent(ifpcSession?.eventId))) return Errors.notFound("Page");
   const { id: sessionId } = await context!.params;
 
   const eventSession = await prisma.eventSession.findUnique({
@@ -55,6 +59,9 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
 
 // POST /api/sessions/[id]/interest — delegate expresses interest ("I would like to attend")
 export const POST = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  const ifpcSession = await prisma.eventSession.findUnique({ where: { id: (await context!.params).id }, select: { eventId: true } });
+  if (!(await isIfpcEvent(ifpcSession?.eventId))) return Errors.notFound("Page");
   const rl = rateLimiter.check(getClientIp(request));
   if (!rl.allowed) return Errors.badRequest(rl.message);
 

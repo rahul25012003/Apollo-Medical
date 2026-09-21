@@ -7,6 +7,7 @@ import {
   Errors,
   withErrorHandler,
 } from "@/lib/api-utils";
+import { isIfpcTenantId } from "@/lib/ifpc-tenant";
 
 // GET /api/reports?type=registrations|revenue|attendance|certificates
 export const GET = withErrorHandler(async (request: NextRequest) => {
@@ -128,8 +129,8 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
         statusBreakdown,
         roleBreakdown,
         categoryBreakdown,
-        foodBreakdown,
-        accommodationBreakdown,
+        // Food/accommodation breakdowns are IFPC (apollo-medical) only.
+        ...((await isIfpcTenantId(tenantId)) ? { foodBreakdown, accommodationBreakdown } : {}),
       });
     }
 

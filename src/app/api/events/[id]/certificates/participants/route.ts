@@ -3,12 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
 import { isTenantOwner } from "@/lib/tenant-scope";
 import { successResponse, Errors, withErrorHandler } from "@/lib/api-utils";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import * as legacy from "./legacy";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/events/[id]/certificates/participants?category=Faculty
 // Returns registrations with certificate status so admin can review before sending
-export const GET = withErrorHandler(async (req: NextRequest, context?: RouteContext) => {
+const ifpcGET = withErrorHandler(async (req: NextRequest, context?: RouteContext) => {
   const session = await auth();
   if (!session) return Errors.unauthorized();
   if (!canAccess(session.user.role, "certificates")) return Errors.forbidden("You don't have permission to manage certificates");
@@ -69,3 +71,10 @@ export const GET = withErrorHandler(async (req: NextRequest, context?: RouteCont
 
   return successResponse({ participants });
 });
+
+// IFPC (apollo-medical) uses the handlers above. Every other tenant keeps the
+// original pre-IFPC handlers, unchanged, in ./legacy.ts.
+export async function GET(request: NextRequest, context: RouteContext) {
+  const isIfpc = await isIfpcEvent((await context.params).id);
+  return isIfpc ? ifpcGET(request, context) : legacy.GET(request, context);
+}

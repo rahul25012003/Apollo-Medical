@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store";
 import { useSession, signOut } from "next-auth/react";
 import { useTenant } from "@/lib/tenant/context";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 import {
     LayoutDashboard,
     Calendar,
@@ -100,6 +101,7 @@ const menuItems = [
     },
     {
         title: "My Interests",
+        ifpcOnly: true,
         href: "/dashboard/my-interests",
         icon: Heart,
         roles: ["ATTENDEE"] as UserRole[],
@@ -107,6 +109,7 @@ const menuItems = [
     },
     {
         title: "Campus Tour",
+        ifpcOnly: true,
         href: "/dashboard/campus-tour",
         icon: Landmark,
         roles: ["ATTENDEE"] as UserRole[],
@@ -114,6 +117,7 @@ const menuItems = [
     },
     {
         title: "Accommodation",
+        ifpcOnly: true,
         href: "/dashboard/accommodation",
         icon: Building2,
         roles: ["ATTENDEE"] as UserRole[],
@@ -321,8 +325,13 @@ export function Sidebar() {
         },
     ] : [];
 
+    const { isIfpc } = useIsIfpcDashboard();
+
     // Filter menu items based on user role + tenant module config
     const filteredMenuItems = menuItems.filter((item) => {
+        // IFPC (apollo-medical) delegate pages; hidden for every other tenant
+        if (item.ifpcOnly && !isIfpc) return false;
+
         // Role check first
         if (!item.roles.includes(userRole)) return false;
 

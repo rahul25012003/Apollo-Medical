@@ -12,8 +12,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Landmark, Clock } from "lucide-react";
 import { HIGHLIGHTS } from "@/content/ifpc-2026";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
+import { notFound } from "next/navigation";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 export default function CampusTourPage() {
+    // IFPC (apollo-medical) only — this page doesn't exist for other tenants.
+    const ifpcCheck = useIsIfpcDashboard();
+    if (!ifpcCheck.loading && !ifpcCheck.isIfpc) notFound();
     const { sidebarCollapsed } = useUIStore();
     const { tenant, isLoading: tenantLoading } = useTenant();
     const isIfpc = tenant?.slug === IFPC_TENANT_SLUG;

@@ -8,6 +8,8 @@ import {
   parseBody,
 } from "@/lib/api-utils";
 import { z } from "zod";
+import { isIfpcTenantId } from "@/lib/ifpc-tenant";
+import * as legacy from "./legacy";
 
 const paymentSettingsSchema = z.object({
   paymentMode: z.enum(["NONE", "RAZORPAY", "QR_CODE"]),
@@ -24,7 +26,7 @@ const paymentSettingsSchema = z.object({
 });
 
 // GET /api/tenants/my/payment - Get current tenant's payment settings
-export const GET = withErrorHandler(async () => {
+const ifpcGET = withErrorHandler(async () => {
   const session = await auth();
 
   if (!session) {
@@ -76,7 +78,7 @@ export const GET = withErrorHandler(async () => {
 });
 
 // PUT /api/tenants/my/payment - Update current tenant's payment settings
-export const PUT = withErrorHandler(async (request: NextRequest) => {
+const ifpcPUT = withErrorHandler(async (request: NextRequest) => {
   const session = await auth();
 
   if (!session) {
@@ -169,3 +171,17 @@ export const PUT = withErrorHandler(async (request: NextRequest) => {
 
   return successResponse(tenant, "Payment settings updated successfully");
 });
+
+// IFPC (apollo-medical) uses the handlers above. Every other tenant keeps the
+// original pre-IFPC handlers, unchanged, in ./legacy.ts.
+export async function GET(request: NextRequest) {
+  const session = await auth();
+  const isIfpc = await isIfpcTenantId((session?.user as { tenantId?: string | null } | undefined)?.tenantId);
+  return isIfpc ? ifpcGET(request) : legacy.GET(request);
+}
+
+export async function PUT(request: NextRequest) {
+  const session = await auth();
+  const isIfpc = await isIfpcTenantId((session?.user as { tenantId?: string | null } | undefined)?.tenantId);
+  return isIfpc ? ifpcPUT(request) : legacy.PUT(request);
+}

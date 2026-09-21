@@ -13,11 +13,13 @@ import { sendEmail, getActiveChannel, registrationConfirmationHtml, registration
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications-db";
 import { issueAttendeeBadgeAndCertificate } from "@/lib/ifpc-automation";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import * as legacy from "./legacy";
 
 const rateLimiter = createRateLimiter("registrations-public", { maxRequests: 10, windowSeconds: 60 });
 
 // POST /api/registrations/public - Public registration (no auth required, but links user if logged in)
-export const POST = withErrorHandler(async (request: NextRequest) => {
+const ifpcPOST = withErrorHandler(async (request: NextRequest) => {
   const rl = rateLimiter.check(getClientIp(request));
   if (!rl.allowed) {
     return Errors.badRequest(rl.message);
@@ -314,3 +316,12 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   return successResponse(registration, "Registration successful", 201);
 });
+
+// IFPC (apollo-medical) uses the handlers above. Every other tenant keeps the
+// original pre-IFPC handlers, unchanged, in ./legacy.ts.
+export async function POST(request: NextRequest) {
+  // Peek at a clone so the chosen handler can still read the original body.
+  const body = await request.clone().json().catch(() => null);
+  const eventId = body && typeof body.eventId === "string" ? body.eventId : null;
+  return (await isIfpcEvent(eventId)) ? ifpcPOST(request) : legacy.POST(request);
+}

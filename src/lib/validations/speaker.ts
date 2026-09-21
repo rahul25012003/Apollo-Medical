@@ -53,7 +53,7 @@ export const eventSpeakerSchema = z.object({
 
   // Status
   status: z.enum(["pending", "confirmed", "cancelled"]).default("pending"),
-  isPublished: z.boolean().default(true),
+  isPublished: z.boolean().default(false),
 });
 
 export const updateEventSpeakerSchema = eventSpeakerSchema.partial().omit({

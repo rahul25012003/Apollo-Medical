@@ -3,12 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
 import { isTenantOwner } from "@/lib/tenant-scope";
 import { successResponse, Errors, withErrorHandler } from "@/lib/api-utils";
+import { isIfpcRegistration } from "@/lib/ifpc-tenant";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/registrations/[id]/interests - Sessions this delegate has
 // expressed interest in, for the same event as this registration.
 export const GET = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcRegistration((await context!.params).id))) return Errors.notFound("Page");
   const session = await auth();
   if (!session) return Errors.unauthorized();
   if (!canAccess(session.user.role, "registrations")) {

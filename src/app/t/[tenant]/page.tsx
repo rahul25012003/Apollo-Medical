@@ -1537,6 +1537,8 @@ export default function TenantHomePage() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center hero-stagger-4">
+                {/* IFPC (apollo-medical) opens the events page; other tenants scroll to the events section as before */}
+                {tenantSlug === "apollo-medical" ? (
                 <Link href="/events">
                   <Button
                     size="lg"
@@ -1547,6 +1549,18 @@ export default function TenantHomePage() {
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
+                ) : (
+                <a href="#events">
+                  <Button
+                    size="lg"
+                    className="rounded-full px-10 h-13 text-base font-bold shadow-2xl hover:shadow-3xl transition-all hover:scale-105 hover:-translate-y-0.5 group bg-emerald-500 hover:bg-emerald-600 text-white border-0"
+                    style={{ boxShadow: "0 10px 40px rgba(16,185,129,0.4), 0 4px 12px rgba(16,185,129,0.3)" }}
+                  >
+                    {hasEvents ? "Browse Events" : "Explore Events"}
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </a>
+                )}
                 <a href="#about">
                   <Button
                     size="lg"

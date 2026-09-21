@@ -97,6 +97,7 @@ import { EventConfigTab } from "@/components/events/event-config-tab";
 import { CertificatesTab } from "@/components/events/certificates-tab";
 import { PhotosTab } from "@/components/events/photos-tab";
 import { InterestsTab } from "@/components/events/interests-tab";
+import { useIsIfpcEventId } from "@/components/ifpc/guard";
 
 // Display session type
 interface DisplaySessionSpeaker {
@@ -253,6 +254,8 @@ const tierConfig = {
 export default function EventDetailPage() {
     const params = useParams();
     const router = useRouter();
+    // Interests tab is IFPC (apollo-medical) only.
+    const { isIfpc } = useIsIfpcEventId(typeof params.id === "string" ? params.id : undefined);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [publishDialogOpen, setPublishDialogOpen] = useState(false);
@@ -1192,10 +1195,12 @@ export default function EventDetailPage() {
                             <Mic2 className="h-3.5 w-3.5" />
                             Scientific Program
                         </TabsTrigger>
+                        {isIfpc && (
                         <TabsTrigger value="interests" className="gap-1.5">
                             <Heart className="h-3.5 w-3.5" />
                             Interests
                         </TabsTrigger>
+                        )}
                         <TabsTrigger value="quizzes" className="gap-1.5">
                             <Award className="h-3.5 w-3.5" />
                             Quizzes
@@ -1698,9 +1703,11 @@ export default function EventDetailPage() {
                     </TabsContent>
 
                     {/* Interests Tab */}
+                    {isIfpc && (
                     <TabsContent value="interests" className="space-y-6">
                         <InterestsTab eventId={event.id} />
                     </TabsContent>
+                    )}
 
                     {/* Speakers Tab */}
                     <TabsContent value="speakers" className="space-y-6">

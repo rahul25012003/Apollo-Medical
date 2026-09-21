@@ -13,9 +13,13 @@ import { randomUUID, createHash } from "crypto";
 export const UPLOAD_CONFIG = {
   maxFileSize: 10 * 1024 * 1024, // 10MB
   allowedImageTypes: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/svg+xml", "image/tiff", "image/avif", "image/heic", "image/heif"],
-  allowedDocumentTypes: ["application/pdf", "application/vnd.openxmlformats-officedocument.presentationml.presentation"],
+  allowedDocumentTypes: ["application/pdf"],
   uploadDir: "public/uploads",
 };
+
+// PowerPoint is accepted only where a caller opts in by listing this type in
+// allowedTypes (IFPC abstract uploads) — never by default.
+export const PPTX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
 export interface UploadResult {
   success: boolean;
@@ -141,7 +145,7 @@ async function uploadToCloudinary(
 
 // Whitelist of allowed file extensions
 const ALLOWED_EXTENSIONS = [
-  "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "avif", "heic", "heif", "pdf", "pptx",
+  "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "avif", "heic", "heif", "pdf",
 ];
 
 /**
@@ -149,11 +153,11 @@ const ALLOWED_EXTENSIONS = [
  * e.g., "file.php.jpg" becomes "file.jpg"
  * Returns null if the final extension is not in the whitelist.
  */
-function sanitizeFileName(originalName: string): { sanitized: string; extension: string } | null {
+function sanitizeFileName(originalName: string, extraExtensions: string[] = []): { sanitized: string; extension: string } | null {
   // Get only the last extension (strips double extensions like file.php.jpg -> jpg)
   const extension = (originalName.split(".").pop() || "").toLowerCase();
 
-  if (!extension || !ALLOWED_EXTENSIONS.includes(extension)) {
+  if (!extension || !(ALLOWED_EXTENSIONS.includes(extension) || extraExtensions.includes(extension))) {
     return null;
   }
 
@@ -190,7 +194,7 @@ function validateFile(
     options;
 
   // Validate file extension against whitelist and strip double extensions
-  const sanitized = sanitizeFileName(file.name);
+  const sanitized = sanitizeFileName(file.name, allowedTypes.includes(PPTX_MIME_TYPE) ? ["pptx"] : []);
   if (!sanitized) {
     return {
       valid: false,

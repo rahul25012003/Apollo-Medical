@@ -56,6 +56,7 @@ import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useIsIfpcEventId } from "@/components/ifpc/guard";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -130,6 +131,8 @@ const SESSION_TYPE_CONFIG: Record<
 };
 
 const SESSION_TYPES = ["KEYNOTE", "PLENARY", "WORKSHOP", "SEMINAR", "COMPETITION", "PANEL", "BREAK", "OTHER"] as const;
+// Every tenant except IFPC (apollo-medical) keeps the original type list.
+const LEGACY_SESSION_TYPES = ["KEYNOTE", "PLENARY", "WORKSHOP", "PANEL", "BREAK", "OTHER"] as const;
 const SESSION_STATUSES = ["scheduled", "ongoing", "completed", "cancelled"] as const;
 
 const STATUS_DOT: Record<string, string> = {
@@ -205,6 +208,9 @@ const DEFAULT_FORM: SessionFormData = {
 const CAPACITY_ELIGIBLE_TYPES = ["WORKSHOP", "SEMINAR", "COMPETITION"];
 
 export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
+    // Seminar/Competition types, seat capacity and Express Interest are IFPC (apollo-medical) only.
+    const { isIfpc } = useIsIfpcEventId(eventId);
+    const sessionTypes = isIfpc ? SESSION_TYPES : LEGACY_SESSION_TYPES;
     // Data state
     const [sessions, setSessions] = useState<EventSession[]>([]);
     const [halls, setHalls] = useState<EventHall[]>([]);
@@ -834,7 +840,7 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
                                                     )}
 
                                                     {/* Live seat counter — Express Interest ("I'd like to attend") */}
-                                                    {session.capacity != null && (
+                                                    {isIfpc && session.capacity != null && (
                                                         <div className="mt-3" onClick={(e) => e.stopPropagation()}>
                                                             <ExpressInterestButton sessionId={session.id} />
                                                         </div>
@@ -948,7 +954,7 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {SESSION_TYPES.map((t) => (
+                                        {sessionTypes.map((t) => (
                                             <SelectItem key={t} value={t}>
                                                 {SESSION_TYPE_CONFIG[t].icon}{" "}
                                                 {SESSION_TYPE_CONFIG[t].label}
@@ -988,7 +994,7 @@ export function ScientificProgramTab({ eventId }: ScientificProgramTabProps) {
                         </div>
 
                         {/* Seat capacity — Workshop / Seminar / Competition only ("Express Interest" + live seat counter) */}
-                        {CAPACITY_ELIGIBLE_TYPES.includes(form.sessionType) && (
+                        {isIfpc && CAPACITY_ELIGIBLE_TYPES.includes(form.sessionType) && (
                             <div className="space-y-2">
                                 <Label htmlFor="session-capacity">Seat Capacity (optional)</Label>
                                 <Input

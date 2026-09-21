@@ -7,11 +7,13 @@ import {
   Errors,
   withErrorHandler,
 } from "@/lib/api-utils";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import * as legacy from "./legacy";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/events/[id]/access-control/stats - Get access control dashboard stats
-export const GET = withErrorHandler(
+const ifpcGET = withErrorHandler(
   async (request: NextRequest, context?: RouteContext) => {
     const session = await auth();
 
@@ -228,3 +230,9 @@ export const GET = withErrorHandler(
     });
   }
 );
+
+// IFPC (apollo-medical) uses the handlers above. Every other tenant keeps the
+// original pre-IFPC handlers, unchanged, in ./legacy.ts.
+export async function GET(request: NextRequest, context: RouteContext) {
+  return (await isIfpcEvent((await context.params).id)) ? ifpcGET(request, context) : legacy.GET(request, context);
+}

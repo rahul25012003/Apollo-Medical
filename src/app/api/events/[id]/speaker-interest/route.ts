@@ -6,6 +6,7 @@ import { isTenantOwner } from "@/lib/tenant-scope";
 import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-utils";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -21,6 +22,8 @@ async function countsFor(eventId: string) {
 //   (signed in)     -> also { mine: speakerId[] }
 //   ?list=1 (staff) -> { interests: [...] } each linked to the delegate's registration
 export const GET = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcEvent((await context!.params).id))) return Errors.notFound("Page");
   const { id: eventId } = await context!.params;
   const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true, tenantId: true } });
   if (!event) return Errors.notFound("Event");
@@ -69,6 +72,8 @@ const bodySchema = z.object({ speakerId: z.string().min(1) });
 // POST /api/events/[id]/speaker-interest — signed-in delegate marks "Interested"
 // in one of this event's speakers. Idempotent per person/speaker/event.
 export const POST = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcEvent((await context!.params).id))) return Errors.notFound("Page");
   const rl = rateLimiter.check(getClientIp(request));
   if (!rl.allowed) return Errors.badRequest(rl.message);
 

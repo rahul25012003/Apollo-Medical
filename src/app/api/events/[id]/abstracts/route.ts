@@ -4,11 +4,14 @@ import { auth, canAccess } from "@/lib/auth";
 import { isTenantOwner } from "@/lib/tenant-scope";
 import { successResponse, Errors, withErrorHandler } from "@/lib/api-utils";
 import { AbstractStatus } from "@prisma/client";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/events/[id]/abstracts — admin: list all abstracts for review
 export const GET = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcEvent((await context!.params).id))) return Errors.notFound("Page");
   const session = await auth();
   if (!session) return Errors.unauthorized();
   if (!canAccess(session.user.role, "events")) return Errors.forbidden("You don't have permission to view abstracts");

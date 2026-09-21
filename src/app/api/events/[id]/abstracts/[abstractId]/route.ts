@@ -6,6 +6,7 @@ import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-
 import { sendEmail, abstractStatusUpdatedHtml } from "@/lib/notifications";
 import { issuePresentationCertificate } from "@/lib/ifpc-automation";
 import { z } from "zod";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
 
 type RouteContext = { params: Promise<{ id: string; abstractId: string }> };
 
@@ -18,6 +19,8 @@ const updateSchema = z.object({
 
 // PATCH /api/events/[id]/abstracts/[abstractId] — admin review: accept/reject, assign mode/board number
 export const PATCH = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcEvent((await context!.params).id))) return Errors.notFound("Page");
   const session = await auth();
   if (!session) return Errors.unauthorized();
   if (!canAccess(session.user.role, "events")) return Errors.forbidden("You don't have permission to review abstracts");

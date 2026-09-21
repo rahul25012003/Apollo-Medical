@@ -10,6 +10,8 @@ import {
 } from "@/lib/api-utils";
 import { z } from "zod";
 import { Prisma, RegistrationStatus } from "@prisma/client";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import * as legacy from "./legacy";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -26,7 +28,7 @@ const generateBadgesSchema = z.object({
 });
 
 // GET /api/events/[id]/badges - Get registrations with badge status + settings + categories
-export const GET = withErrorHandler(
+const ifpcGET = withErrorHandler(
   async (request: NextRequest, context?: RouteContext) => {
     const session = await auth();
 
@@ -98,7 +100,7 @@ export const GET = withErrorHandler(
 );
 
 // POST /api/events/[id]/badges - Generate QR codes for registrations
-export const POST = withErrorHandler(
+const ifpcPOST = withErrorHandler(
   async (request: NextRequest, context?: RouteContext) => {
     const session = await auth();
 
@@ -245,3 +247,15 @@ export const PATCH = withErrorHandler(
     }, "Settings updated");
   }
 );
+
+// IFPC (apollo-medical) uses the handlers above. Every other tenant keeps the
+// original pre-IFPC handlers, unchanged, in ./legacy.ts.
+export async function GET(request: NextRequest, context: RouteContext) {
+  const isIfpc = await isIfpcEvent((await context.params).id);
+  return isIfpc ? ifpcGET(request, context) : legacy.GET(request, context);
+}
+
+export async function POST(request: NextRequest, context: RouteContext) {
+  const isIfpc = await isIfpcEvent((await context.params).id);
+  return isIfpc ? ifpcPOST(request, context) : legacy.POST(request, context);
+}

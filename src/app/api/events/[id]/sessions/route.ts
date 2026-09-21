@@ -9,6 +9,7 @@ import {
   parseBody,
 } from "@/lib/api-utils";
 import { z } from "zod";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -198,7 +199,8 @@ export const POST = withErrorHandler(
           hallId: data.hallId || null,
           sessionOrder: data.sessionOrder,
           speakerId: data.speakerId || null,
-          capacity: data.capacity ?? null,
+          // Seat capacity is IFPC (apollo-medical) only.
+          ...((await isIfpcEvent(eventId)) ? { capacity: data.capacity ?? null } : {}),
           status: data.status,
           isPublished: data.isPublished,
         },
@@ -324,7 +326,7 @@ export const PUT = withErrorHandler(
     if (data.hallId !== undefined) updateFields.hallId = data.hallId || null;
     if (data.sessionOrder !== undefined) updateFields.sessionOrder = data.sessionOrder;
     if (data.speakerId !== undefined) updateFields.speakerId = data.speakerId || null;
-    if (data.capacity !== undefined) updateFields.capacity = data.capacity ?? null;
+    if (data.capacity !== undefined && (await isIfpcEvent(eventId))) updateFields.capacity = data.capacity ?? null;
     if (data.status !== undefined) updateFields.status = data.status;
     if (data.isPublished !== undefined) updateFields.isPublished = data.isPublished;
 

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 type PaymentMode = "NONE" | "RAZORPAY" | "QR_CODE";
 
@@ -43,6 +44,8 @@ interface PaymentSettings {
 }
 
 export default function PaymentSettingsPage() {
+    // Webhook secret is IFPC (apollo-medical) only.
+    const { isIfpc } = useIsIfpcDashboard();
     const [settings, setSettings] = useState<PaymentSettings>({
         paymentMode: "NONE",
         razorpayKeyId: null,
@@ -280,6 +283,7 @@ export default function PaymentSettingsPage() {
                                     Your secret key is encrypted and stored securely.
                                 </p>
                             </div>
+                            {isIfpc && (
                             <div className="space-y-2 border-t pt-4">
                                 <Label htmlFor="razorpayWebhookSecret">Webhook Secret</Label>
                                 <div className="relative">
@@ -317,6 +321,7 @@ export default function PaymentSettingsPage() {
                                     </Button>
                                 </div>
                             </div>
+                            )}
                         </CardContent>
                     </Card>
                 )}

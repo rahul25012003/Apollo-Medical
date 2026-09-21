@@ -3,12 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
 import { isTenantOwner } from "@/lib/tenant-scope";
 import { successResponse, Errors, withErrorHandler } from "@/lib/api-utils";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import * as legacy from "./legacy";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/events/[id]/certificates/config
 // Returns existing config + list of categories from confirmed registrations
-export const GET = withErrorHandler(async (
+const ifpcGET = withErrorHandler(async (
   _req: NextRequest,
   context?: RouteContext
 ) => {
@@ -71,7 +73,7 @@ export const GET = withErrorHandler(async (
 });
 
 // POST /api/events/[id]/certificates/config
-export const POST = withErrorHandler(async (
+const ifpcPOST = withErrorHandler(async (
   req: NextRequest,
   context?: RouteContext
 ) => {
@@ -101,3 +103,15 @@ export const POST = withErrorHandler(async (
 
   return successResponse({ templates }, "Certificate config saved");
 });
+
+// IFPC (apollo-medical) uses the handlers above. Every other tenant keeps the
+// original pre-IFPC handlers, unchanged, in ./legacy.ts.
+export async function GET(request: NextRequest, context: RouteContext) {
+  const isIfpc = await isIfpcEvent((await context.params).id);
+  return isIfpc ? ifpcGET(request, context) : legacy.GET(request, context);
+}
+
+export async function POST(request: NextRequest, context: RouteContext) {
+  const isIfpc = await isIfpcEvent((await context.params).id);
+  return isIfpc ? ifpcPOST(request, context) : legacy.POST(request, context);
+}

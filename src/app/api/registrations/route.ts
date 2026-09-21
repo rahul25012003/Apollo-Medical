@@ -14,6 +14,8 @@ import {
 import { Prisma } from "@prisma/client";
 import { getEffectiveTenantId, tenantWhereClause } from "@/lib/tenant-scope";
 import { createAdminRegistration } from "@/lib/registration-creation";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import * as legacy from "./legacy";
 
 // GET /api/registrations - List all registrations (with filters)
 export const GET = withErrorHandler(async (request: NextRequest) => {
@@ -137,7 +139,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
 });
 
 // POST /api/registrations - Create new registration
-export const POST = withErrorHandler(async (request: NextRequest) => {
+const ifpcPOST = withErrorHandler(async (request: NextRequest) => {
   // Check if user is authenticated (for admin registrations)
   const session = await auth();
 
@@ -253,3 +255,12 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   return successResponse(result.registration, "Registration successful", 201);
 });
+
+// IFPC (apollo-medical) uses the handlers above. Every other tenant keeps the
+// original pre-IFPC handlers, unchanged, in ./legacy.ts.
+export async function POST(request: NextRequest) {
+  // Peek at a clone so the chosen handler can still read the original body.
+  const body = await request.clone().json().catch(() => null);
+  const eventId = body && typeof body.eventId === "string" ? body.eventId : null;
+  return (await isIfpcEvent(eventId)) ? ifpcPOST(request) : legacy.POST(request);
+}

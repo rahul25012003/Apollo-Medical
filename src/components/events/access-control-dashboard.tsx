@@ -38,6 +38,8 @@ import {
     Activity,
     Loader2,
 } from "lucide-react";
+import { useIsIfpcEventId } from "@/components/ifpc/guard";
+import { AccessControlDashboard as LegacyAccessControlDashboard } from "./access-control-dashboard-legacy";
 
 // ---------- Types ----------
 
@@ -173,7 +175,7 @@ interface AccessControlDashboardProps {
     eventId: string;
 }
 
-export function AccessControlDashboard({ eventId }: AccessControlDashboardProps) {
+function IfpcAccessControlDashboard({ eventId }: AccessControlDashboardProps) {
     const [stats, setStats] = useState<DashboardStats>(defaultStats);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -843,4 +845,12 @@ export function AccessControlDashboard({ eventId }: AccessControlDashboardProps)
             </Dialog>
         </div>
     );
+}
+
+// IFPC (apollo-medical) events get the dashboard above. Every other tenant keeps
+// the original pre-IFPC dashboard, unchanged, in ./access-control-dashboard-legacy.tsx.
+export function AccessControlDashboard({ eventId }: AccessControlDashboardProps) {
+  const { isIfpc, loading } = useIsIfpcEventId(eventId);
+  if (loading) return null;
+  return isIfpc ? <IfpcAccessControlDashboard eventId={eventId} /> : <LegacyAccessControlDashboard eventId={eventId} />;
 }

@@ -18,6 +18,7 @@ import {
     FileText,
 } from "lucide-react";
 import { format } from "date-fns";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 interface SessionData {
     id: string;
@@ -68,6 +69,7 @@ const SESSION_TYPE_STYLES: Record<string, { badge: string; icon: string }> = {
 };
 
 export default function MySessionsPage() {
+    const { isIfpc } = useIsIfpcDashboard();
     const { sidebarCollapsed } = useUIStore();
     const [loading, setLoading] = useState(true);
     const [sessions, setSessions] = useState<SessionData[]>([]);
@@ -228,7 +230,7 @@ export default function MySessionsPage() {
                                                     <Calendar className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <a href={`/dashboard/browse-events/${e.event.id}`} className="font-semibold text-foreground hover:text-primary transition-colors">
+                                                    <a href={isIfpc ? `/dashboard/browse-events/${e.event.id}` : `/dashboard/events/${e.event.id}`} className="font-semibold text-foreground hover:text-primary transition-colors">
                                                         {e.event.title}
                                                     </a>
                                                     <div className="flex items-center gap-3 text-xs text-muted-foreground">

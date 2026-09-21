@@ -13,6 +13,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Calendar, Clock, MapPin } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
+import { notFound } from "next/navigation";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 const SESSION_TYPE_STYLES: Record<string, string> = {
     WORKSHOP: "bg-emerald-100 text-emerald-700",
@@ -23,6 +25,9 @@ const SESSION_TYPE_STYLES: Record<string, string> = {
 };
 
 export default function MyInterestsPage() {
+    // IFPC (apollo-medical) only — this page doesn't exist for other tenants.
+    const ifpcCheck = useIsIfpcDashboard();
+    if (!ifpcCheck.loading && !ifpcCheck.isIfpc) notFound();
     const { sidebarCollapsed } = useUIStore();
     const { tenant, isLoading: tenantLoading } = useTenant();
     const isIfpc = tenant?.slug === IFPC_TENANT_SLUG;

@@ -13,6 +13,8 @@ import { MapPin, Utensils, Info, CheckCircle2, Loader2 } from "lucide-react";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { VENUE_TRAVEL, REGISTRATION } from "@/content/ifpc-2026";
 import { toast } from "sonner";
+import { notFound } from "next/navigation";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 type Tier = "Budget" | "Mid-Range" | "Premium";
 
@@ -33,6 +35,9 @@ const TIER_STYLES: Record<Tier, string> = {
 };
 
 export default function AccommodationPage() {
+  // IFPC (apollo-medical) only — this page doesn't exist for other tenants.
+  const ifpcCheck = useIsIfpcDashboard();
+  if (!ifpcCheck.loading && !ifpcCheck.isIfpc) notFound();
   const { sidebarCollapsed } = useUIStore();
   const { tenant, isLoading } = useTenant();
 

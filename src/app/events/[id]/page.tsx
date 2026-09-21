@@ -461,7 +461,7 @@ export default function EventDetailPage() {
                                     )}
 
                                     {/* Seat-limited workshops/sessions/tour take "I'd like to attend" sign-ups */}
-                                    {!isBreak && session.capacity != null && (
+                                    {!isBreak && session.capacity != null && event?.tenantSlug === IFPC_TENANT_SLUG && (
                                         <div className="mt-3">
                                             <ExpressInterestButton sessionId={session.id} />
                                         </div>
@@ -1002,9 +1002,11 @@ export default function EventDetailPage() {
                                                                 </Badge>
                                                             </div>
                                                         )}
+                                                        {event.tenantSlug === IFPC_TENANT_SLUG && (
                                                         <div className="mt-2">
                                                             <SpeakerInterestButton speakerId={speaker.id} state={speakerInterest} />
                                                         </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </CardContent>

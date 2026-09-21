@@ -24,6 +24,7 @@ import {
     CheckCircle2,
     CreditCard,
     Mail,
+    Eye,
     ArrowRight,
     Presentation,
     Timer,
@@ -34,6 +35,7 @@ import { useTenantFilter } from "@/hooks/use-tenant-filter";
 import { useSession } from "next-auth/react";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import Link from "next/link";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 interface UpcomingEvent {
     id: string;
@@ -69,6 +71,8 @@ export default function DashboardPage() {
     const { sidebarCollapsed } = useUIStore();
     const { data: session } = useSession();
     const { tenantFilterParams, effectiveTenantId, sessionLoading } = useTenantFilter();
+    // IFPC (apollo-medical) delegate wording; other tenants keep the original text.
+    const { isIfpc } = useIsIfpcDashboard();
     const userRole = (session?.user?.role || "ATTENDEE") as RoleKey;
     const accent = roleAccent[userRole] || roleAccent.ATTENDEE;
     const isAdmin = ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER", "CERTIFICATE_MANAGER"].includes(userRole);
@@ -315,7 +319,7 @@ export default function DashboardPage() {
                             </div>
                             <div>
                                 <span className="text-4xl font-black text-slate-900 dark:text-white block tracking-tighter leading-none animate-number-pop">{delegateRegistrationCount}</span>
-                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">My Registered Events</span>
+                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">{isIfpc ? "My Registered Events" : "Registrations"}</span>
                             </div>
                         </Link>
 
@@ -360,14 +364,14 @@ export default function DashboardPage() {
                         </div>
                     )}
 
-                    {/* Events */}
+                    {/* Upcoming Events */}
                     <div className="rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 overflow-hidden">
                         <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
                             <div className="p-2 rounded-lg text-white shadow-md" style={{ background: "linear-gradient(135deg, #10b981, #14b8a6)" }}>
                                 <CalendarDays className="w-4 h-4" />
                             </div>
                             <div>
-                                <h2 className="font-bold text-slate-800">Events</h2>
+                                <h2 className="font-bold text-slate-800">{isIfpc ? "Events" : "Your Upcoming Events"}</h2>
                                 <p className="text-xs text-slate-500">Events you are registered for</p>
                             </div>
                         </div>
@@ -395,7 +399,7 @@ export default function DashboardPage() {
                                 <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
                                     <CalendarDays className="w-8 h-8 text-slate-400" />
                                 </div>
-                                <h3 className="font-semibold text-slate-700 mb-1">No events yet</h3>
+                                <h3 className="font-semibold text-slate-700 mb-1">{isIfpc ? "No events yet" : "No upcoming events yet"}</h3>
                                 <p className="text-sm text-slate-500 mb-4">Browse available events and register to see them here.</p>
                                 <Link href="/dashboard/browse-events">
                                     <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition-all shadow-md">
@@ -405,6 +409,30 @@ export default function DashboardPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* Quick Help — always visible for attendees */}
+                    {!isIfpc && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                        <div className="rounded-2xl bg-white border-2 border-slate-100 p-5 flex items-start gap-4">
+                            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 flex-shrink-0">
+                                <Eye className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-800 text-sm mb-1">How to Register</h3>
+                                <p className="text-xs text-slate-500 leading-relaxed">Browse events, select one, fill the registration form, and complete payment if required. Your registration will be confirmed by the admin.</p>
+                            </div>
+                        </div>
+                        <div className="rounded-2xl bg-white border-2 border-slate-100 p-5 flex items-start gap-4">
+                            <div className="p-2.5 rounded-xl bg-violet-50 text-violet-600 flex-shrink-0">
+                                <Award className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-800 text-sm mb-1">Getting Certificates</h3>
+                                <p className="text-xs text-slate-500 leading-relaxed">After attending an event, certificates will be issued by the organizer. You can download them from the My Certificates section.</p>
+                            </div>
+                        </div>
+                    </div>
+                    )}
                 </div>
             </Shell>
         );

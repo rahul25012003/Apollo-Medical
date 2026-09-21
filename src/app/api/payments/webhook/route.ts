@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { issueAttendeeBadgeAndCertificate } from "@/lib/ifpc-automation";
+import { isIfpcTenantId } from "@/lib/ifpc-tenant";
 
 // POST /api/payments/webhook
 // Razorpay webhook: independent confirmation path for payments, so a
@@ -50,6 +51,11 @@ export async function POST(request: NextRequest) {
     // and move on rather than erroring, so Razorpay doesn't keep retrying.
     if (!tenantId || !registrationId) {
       return NextResponse.json({ success: true, data: { ignored: true } });
+    }
+
+    // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+    if (!(await isIfpcTenantId(tenantId))) {
+      return NextResponse.json({ success: false, error: { code: "NOT_FOUND", message: "Page not found" } }, { status: 404 });
     }
 
     const tenant = await prisma.tenant.findUnique({

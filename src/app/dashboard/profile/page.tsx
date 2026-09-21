@@ -22,8 +22,11 @@ import { usersService, User } from "@/services/users";
 import { uploadFile } from "@/services";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 export default function ProfilePage() {
+    // Change Password is IFPC (apollo-medical) only.
+    const { isIfpc } = useIsIfpcDashboard();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -400,6 +403,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* ===== Change Password ===== */}
+                {isIfpc && (
                 <div className="bg-background rounded-xl border border-border p-6">
                     <h2 className="font-semibold text-foreground mb-1 flex items-center gap-2">
                         <Lock className="w-4 h-4" /> Change Password
@@ -461,6 +465,7 @@ export default function ProfilePage() {
                         </Button>
                     </div>
                 </div>
+                )}
             </div>
         </DashboardLayout>
     );

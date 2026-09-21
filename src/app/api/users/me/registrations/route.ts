@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { successResponse, Errors, withErrorHandler } from "@/lib/api-utils";
+import { isIfpcTenantId } from "@/lib/ifpc-tenant";
 
 // GET /api/users/me/registrations - Get current user's registrations
 export const GET = withErrorHandler(async (request: NextRequest) => {
@@ -43,6 +44,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   });
 
   // Map to response format
+  const isIfpc = await isIfpcTenantId(session.user.tenantId);
   const mappedRegistrations = registrations.map((reg) => ({
     id: reg.id,
     name: reg.name,
@@ -56,11 +58,16 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     certificates: reg.certificates,
     qrCode: reg.qrCode,
     badgeGenerated: reg.badgeGenerated,
-    photo: reg.photo,
-    designation: reg.designation,
-    organization: reg.organization,
-    category: reg.category,
-    registrationCode: reg.registrationCode,
+    // ID-card fields — IFPC (apollo-medical) only.
+    ...(isIfpc
+      ? {
+          photo: reg.photo,
+          designation: reg.designation,
+          organization: reg.organization,
+          category: reg.category,
+          registrationCode: reg.registrationCode,
+        }
+      : {}),
   }));
 
   return successResponse(mappedRegistrations);

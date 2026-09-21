@@ -6,6 +6,8 @@ import { loginSchema } from "./validations/auth";
 import type { UserRole } from "@prisma/client";
 import { headers } from "next/headers";
 import { UAParser } from "ua-parser-js";
+import { IFPC_TENANT_SLUG } from "./ifpc-constants";
+import { isIfpcTenantId } from "./ifpc-tenant";
 
 declare module "next-auth" {
   interface Session {
@@ -156,6 +158,168 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           if (user.role !== "SUPER_ADMIN") {
             throw new Error("ICMS_SUPER_ADMIN_ONLY");
           }
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          image: user.avatar,
+          tenantId: user.tenantId,
+        };
+      },
+    }),
+    Credentials({
+      id: "otp-login",
+      name: "otp-login",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        code: { label: "OTP Code", type: "text" },
+        tenantSlug: { label: "Tenant", type: "text" },
+      },
+      async authorize(credentials) {
+        const email = credentials?.email as string | undefined;
+        const code = credentials?.code as string | undefined;
+        const tenantSlug = credentials?.tenantSlug as string | undefined;
+
+        if (!email || !code || code.length !== 6) {
+          return null;
+        }
+
+        // IFPC (apollo-medical) is password-only — no OTP login there.
+        if (tenantSlug === IFPC_TENANT_SLUG) {
+          return null;
+        }
+
+        // Verify OTP directly against the database
+        // First check for a valid (non-expired, unused) OTP
+        const otp = await prisma.oTP.findFirst({
+          where: {
+            email: email.toLowerCase(),
+            code,
+            purpose: "LOGIN",
+            used: false,
+            expiresAt: { gt: new Date() },
+          },
+        });
+
+        if (!otp) {
+          // Distinguish between expired OTP and completely invalid OTP
+          const expiredOtp = await prisma.oTP.findFirst({
+            where: {
+              email: email.toLowerCase(),
+              code,
+              purpose: "LOGIN",
+              used: false,
+              expiresAt: { lte: new Date() },
+            },
+          });
+
+          if (expiredOtp) {
+            // Mark the expired OTP as used to prevent reuse
+            await prisma.oTP.update({
+              where: { id: expiredOtp.id },
+              data: { used: true },
+            });
+            throw new Error("OTP_EXPIRED");
+          }
+
+          throw new Error("INVALID_OTP");
+        }
+
+        // Mark OTP as used
+        await prisma.oTP.update({
+          where: { id: otp.id },
+          data: { used: true },
+        });
+
+        // Look up the user
+        const user = await prisma.user.findUnique({
+          where: { email: email.toLowerCase() },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            isActive: true,
+            avatar: true,
+            tenantId: true,
+          },
+        });
+
+        if (user && (await isIfpcTenantId(user.tenantId))) {
+          return null;
+        }
+
+        // Tenant isolation: verify user belongs to the tenant they're logging into
+        if (user && tenantSlug) {
+          const loginTenant = await prisma.tenant.findUnique({
+            where: { slug: tenantSlug },
+            select: { id: true },
+          });
+          if (loginTenant && user.tenantId && user.tenantId !== loginTenant.id) {
+            throw new Error("NO_ACCOUNT_FOR_TENANT");
+          }
+        }
+
+        if (!user) {
+          // Auto-create user account for OTP-only login (speakers, delegates, etc.)
+          // Try to find tenantId from existing registration scoped to the login tenant
+          let regWhere: Record<string, unknown> = { email: { equals: email.toLowerCase(), mode: "insensitive" } };
+          if (tenantSlug) {
+            const loginTenant = await prisma.tenant.findUnique({ where: { slug: tenantSlug }, select: { id: true } });
+            if (loginTenant) {
+              regWhere = { ...regWhere, event: { tenantId: loginTenant.id } };
+            }
+          }
+          const existingReg = await prisma.registration.findFirst({
+            where: regWhere,
+            include: { event: { select: { tenantId: true } } },
+            orderBy: { createdAt: "desc" },
+          });
+
+          if (!existingReg && tenantSlug) {
+            throw new Error("NO_REGISTRATION_FOR_TENANT");
+          }
+          if (await isIfpcTenantId(existingReg?.event?.tenantId)) {
+            return null;
+          }
+
+          const tenantId = existingReg?.event?.tenantId || null;
+
+          // Also get name from registration if available
+          const regName = existingReg?.name || null;
+
+          const newUser = await prisma.user.create({
+            data: {
+              email: email.toLowerCase(),
+              name: regName,
+              password: null,
+              role: "ATTENDEE",
+              isActive: true,
+              tenantId,
+            },
+          });
+
+          // Link any existing registrations to this newly created user
+          await prisma.registration.updateMany({
+            where: { email: { equals: email.toLowerCase(), mode: "insensitive" }, userId: null },
+            data: { userId: newUser.id },
+          });
+
+          return {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            image: null,
+            tenantId: newUser.tenantId,
+          };
+        }
+
+        if (!user.isActive) {
+          throw new Error("Account is deactivated");
         }
 
         return {

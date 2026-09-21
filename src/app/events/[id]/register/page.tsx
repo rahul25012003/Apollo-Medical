@@ -517,7 +517,8 @@ export default function RegisterPage() {
             // Step 1: Create registration
             const registrationData: CreateRegistrationData = {
                 eventId: eventData.id,
-                name: buildFullName(formData.title, formData.firstName, formData.lastName),
+                // IFPC only: clean salutation ("Dr. Jane Doe"); other tenants keep the original format.
+                name: isIfpcEvent ? buildFullName(formData.title, formData.firstName, formData.lastName) : `${formData.title} ${formData.firstName} ${formData.lastName}`.trim(),
                 email: formData.email,
                 phone: formData.phone || undefined,
                 organization: formData.institution || undefined,
@@ -527,7 +528,7 @@ export default function RegisterPage() {
                 // above is only for display/storage. Sent only when pricing
                 // categories actually exist; otherwise selectedCategory is
                 // just the "general" placeholder, not a real EventPricing id.
-                categoryId: (eventData?.pricingCategories?.length ?? 0) > 0 ? selectedCategory : undefined,
+                categoryId: isIfpcEvent && (eventData?.pricingCategories?.length ?? 0) > 0 ? selectedCategory : undefined,
                 participantRole: participantRole || undefined,
                 amount: totalPrice,
                 foodPreference: isIfpcEvent
@@ -786,7 +787,7 @@ export default function RegisterPage() {
 
         <div class="section">
             <div class="section-title">Attendee</div>
-            <div class="row"><span class="label">Name</span><span class="value">${buildFullName(formData.title, formData.firstName, formData.lastName)}</span></div>
+            <div class="row"><span class="label">Name</span><span class="value">${isIfpcEvent ? buildFullName(formData.title, formData.firstName, formData.lastName) : `${formData.title} ${formData.firstName} ${formData.lastName}`}</span></div>
             <div class="row"><span class="label">Email</span><span class="value">${formData.email}</span></div>
             <div class="row"><span class="label">Phone</span><span class="value">${formData.phone}</span></div>
             <div class="row"><span class="label">Institution</span><span class="value">${formData.institution}</span></div>
@@ -1006,8 +1007,8 @@ export default function RegisterPage() {
                                         <div>
                                             <h4 className="font-bold text-base mb-3">Speakers</h4>
                                             <div className="grid sm:grid-cols-2 gap-3">
-                                                {eventData.speakers.map((speaker) => (
-                                                    <div key={speaker.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border">
+                                                {eventData.speakers.map((speaker, index) => (
+                                                    <div key={isIfpcEvent ? speaker.id : index} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border">
                                                         {speaker.photo ? (
                                                             <img src={speaker.photo} alt={speaker.name} className="h-12 w-12 rounded-full object-cover" />
                                                         ) : (

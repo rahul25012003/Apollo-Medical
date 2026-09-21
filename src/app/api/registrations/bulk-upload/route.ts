@@ -6,6 +6,7 @@ import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-
 import { parseCsv } from "@/lib/csv";
 import { createAdminRegistration, type RegistrationEventContext } from "@/lib/registration-creation";
 import { z } from "zod";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
 
 // Keeps one request well within Render's free-tier request/memory limits —
 // larger lists should be split into multiple uploads.
@@ -57,6 +58,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) return Errors.validationError(parsed.error);
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcEvent(parsed.data.eventId))) return Errors.notFound("Page");
 
   const event = await prisma.event.findUnique({
     where: { id: parsed.data.eventId },

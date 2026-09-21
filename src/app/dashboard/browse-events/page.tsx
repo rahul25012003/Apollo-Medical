@@ -32,6 +32,7 @@ import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { format } from "date-fns";
 import { EVENT_TYPES, EVENT_CATEGORIES } from "@/lib/event-constants";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 interface PublicEvent {
     id: string;
@@ -62,6 +63,7 @@ const eventTypes = ["All Types", ...EVENT_TYPES.map(t => t.value)];
 const categories = ["All Categories", ...EVENT_CATEGORIES.map(c => c.value)];
 
 export default function BrowseEventsPage() {
+    const { isIfpc } = useIsIfpcDashboard();
     const [events, setEvents] = useState<PublicEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -365,7 +367,7 @@ export default function BrowseEventsPage() {
                                                 <Link href={`/dashboard/browse-events/${event.id}`}>
                                                     <Button variant="outline" size="sm">
                                                         <Eye className="w-4 h-4 mr-2" />
-                                                        View Event
+                                                        {isIfpc ? "View Event" : "View Details"}
                                                     </Button>
                                                 </Link>
                                                 {registeredEventIds.has(event.id) ? (

@@ -5,6 +5,7 @@ import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { VENUE_TRAVEL } from "@/content/ifpc-2026";
 import { z } from "zod";
+import { isIfpcTenantId } from "@/lib/ifpc-tenant";
 
 const HOTEL_NAMES = new Set(VENUE_TRAVEL.accommodation.hotels.map((h) => h.name));
 
@@ -24,6 +25,8 @@ async function findMyRegistration(email: string) {
 export const GET = withErrorHandler(async () => {
   const session = await auth();
   if (!session) return Errors.unauthorized();
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcTenantId(session.user.tenantId))) return Errors.notFound("Page");
 
   const registration = await findMyRegistration(session.user.email);
   if (!registration) return successResponse({ choice: null, selectedAt: null });
@@ -40,6 +43,8 @@ const selectSchema = z.object({ hotelName: z.string().min(1).max(200) });
 export const POST = withErrorHandler(async (request: NextRequest) => {
   const session = await auth();
   if (!session) return Errors.unauthorized();
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcTenantId(session.user.tenantId))) return Errors.notFound("Page");
 
   const body = await parseBody(request);
   if (!body) return Errors.badRequest("Invalid request body");
