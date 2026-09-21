@@ -54,7 +54,7 @@ import { eventsService, Event } from "@/services/events";
 import { EventCard, EventCardData } from "@/components/events/EventCard";
 import { getEventImage, getEffectiveEventStatus } from "@/lib/event-utils";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
-import { HOME as IFPC_HOME, CTA_LINKS as IFPC_CTA } from "@/content/ifpc-2026";
+import { HOME as IFPC_HOME, CTA_LINKS as IFPC_CTA, CONFERENCE } from "@/content/ifpc-2026";
 import { AboutExtendedSection } from "@/components/ifpc/sections/AboutExtendedSection";
 import { HighlightsSection } from "@/components/ifpc/sections/HighlightsSection";
 import { SpeakersSection } from "@/components/ifpc/sections/SpeakersSection";
@@ -67,7 +67,7 @@ import { CampusTourSection } from "@/components/ifpc/sections/CampusTourSection"
 import { OrganisingCommitteeSection } from "@/components/ifpc/sections/OrganisingCommitteeSection";
 import { FeedbackSection } from "@/components/ifpc/sections/FeedbackSection";
 import { PwaRegister } from "@/components/ifpc/PwaRegister";
-import { Reveal, RevealHeadline } from "@/components/ifpc/design/Reveal";
+import { Reveal } from "@/components/ifpc/design/Reveal";
 import { Swirl, Blob } from "@/components/ifpc/design/Decor";
 import "@/components/ifpc/design/tokens.css";
 
@@ -573,7 +573,7 @@ function IfpcHeroV2({ branding, hero, theme, nextEvent, yearlyStats }: IfpcHeroP
   );
 }
 
-function CountdownTimer({ targetDate, theme, bgDark }: { targetDate: string; theme: { primaryColor: string; secondaryColor: string }; bgDark?: boolean }) {
+function CountdownTimer({ targetDate, theme, bgDark, hideSeconds }: { targetDate: string; theme: { primaryColor: string; secondaryColor: string }; bgDark?: boolean; hideSeconds?: boolean }) {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
@@ -596,7 +596,7 @@ function CountdownTimer({ targetDate, theme, bgDark }: { targetDate: string; the
     { label: "Days", value: timeLeft.days },
     { label: "Hours", value: timeLeft.hours },
     { label: "Minutes", value: timeLeft.minutes },
-    { label: "Seconds", value: timeLeft.seconds },
+    ...(hideSeconds ? [] : [{ label: "Seconds", value: timeLeft.seconds }]),
   ];
 
   return (
@@ -1270,7 +1270,7 @@ export default function TenantHomePage() {
               >
                 <GraduationCap className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
               </div>
-              <span className="font-bold text-sm lg:text-lg tracking-tight hidden sm:block max-w-[140px] lg:max-w-[220px] truncate">{branding.name}</span>
+              <span className="font-bold text-sm lg:text-lg tracking-tight hidden sm:block max-w-[140px] lg:max-w-[220px] truncate">{tenantSlug === "apollo-medical" ? "IFPC" : branding.name}</span>
             </Link>
 
             {/* apollo-medical has far more nav items than other tenants (15 vs
@@ -1406,24 +1406,64 @@ export default function TenantHomePage() {
             ))}
           </div>
 
-          {/* Hero Logos — floating glass cards on desktop, inline on mobile */}
-          {branding.logo && (
-            <div className="hidden lg:flex absolute left-[4%] xl:left-[7%] 2xl:left-[11%] top-[42%] -translate-y-1/2 z-10 animate-fadeInUp">
-              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl flex items-center justify-center p-3 overflow-hidden border border-white/50 hover:scale-105 transition-transform duration-500" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.2)" }}>
-                <img src={branding.logo} alt={branding.name} className="w-full h-full object-contain" />
-              </div>
-            </div>
-          )}
-          {branding.secondaryLogo && (
-            <div className="hidden lg:flex absolute right-[4%] xl:right-[7%] 2xl:right-[11%] top-[42%] -translate-y-1/2 z-10 animate-fadeInUp animation-delay-200">
-              <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl flex items-center justify-center p-3 overflow-hidden border border-white/50 hover:scale-105 transition-transform duration-500" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.2)" }}>
-                <img src={branding.secondaryLogo} alt="Secondary Logo" className="w-full h-full object-contain" />
-              </div>
-            </div>
-          )}
+          {/* Hero Logos — floating glass cards on desktop, inline on mobile.
+              IFPC 2026 shows its two host institutions (NIMHANS left, RANZCP
+              right); every other tenant keeps its own branding logos. */}
+          {(() => {
+            const leftLogo = tenantSlug === "apollo-medical" ? { src: "/ifpc/nimhans-logo.png", alt: "NIMHANS, Bengaluru" } : branding.logo ? { src: branding.logo, alt: branding.name } : null;
+            const rightLogo = tenantSlug === "apollo-medical" ? { src: "/ifpc/ranzcp-logo.png", alt: "RANZCP" } : branding.secondaryLogo ? { src: branding.secondaryLogo, alt: "Secondary Logo" } : null;
+            return (
+              <>
+                {leftLogo && (
+                  <div className="hidden lg:flex absolute left-[4%] xl:left-[7%] 2xl:left-[11%] top-[42%] -translate-y-1/2 z-10 animate-fadeInUp">
+                    <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl flex items-center justify-center p-3 overflow-hidden border border-white/50 hover:scale-105 transition-transform duration-500" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.2)" }}>
+                      <img src={leftLogo.src} alt={leftLogo.alt} className="w-full h-full object-contain" />
+                    </div>
+                  </div>
+                )}
+                {rightLogo && (
+                  <div className="hidden lg:flex absolute right-[4%] xl:right-[7%] 2xl:right-[11%] top-[42%] -translate-y-1/2 z-10 animate-fadeInUp animation-delay-200">
+                    <div className="h-28 w-28 xl:h-36 xl:w-36 2xl:h-40 2xl:w-40 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl flex items-center justify-center p-3 overflow-hidden border border-white/50 hover:scale-105 transition-transform duration-500" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.2)" }}>
+                      <img src={rightLogo.src} alt={rightLogo.alt} className="w-full h-full object-contain" />
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-6 sm:pt-8">
             <div className="text-center max-w-4xl mx-auto">
+              {tenantSlug === "apollo-medical" ? (
+                <>
+                  {/* Mobile/Tablet: host logos inline (desktop floats them left/right above) */}
+                  <div className="flex lg:hidden items-center justify-center gap-4 sm:gap-6 mb-6 hero-stagger-1">
+                    {[{ src: "/ifpc/nimhans-logo.png", alt: "NIMHANS, Bengaluru" }, { src: "/ifpc/ranzcp-logo.png", alt: "RANZCP" }].map((l) => (
+                      <div key={l.src} className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl flex items-center justify-center p-2 flex-shrink-0 overflow-hidden border border-white/50">
+                        <img src={l.src} alt={l.alt} className="w-full h-full object-contain" />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="text-center mb-4 hero-stagger-2">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1] text-white text-balance" style={{ textShadow: "0 4px 30px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3)" }}>
+                      International Forensic Psychiatry Conference (IFPC) 2026
+                    </h1>
+                    <div className="flex items-center justify-center gap-3 mt-3">
+                      <div className="h-[2px] w-10 bg-gradient-to-r from-transparent to-emerald-400" />
+                      <div className="h-[3px] w-16 rounded-full bg-emerald-400" />
+                      <div className="h-[2px] w-10 bg-gradient-to-l from-transparent to-emerald-400" />
+                    </div>
+                  </div>
+
+                  <div className="max-w-2xl mx-auto mb-5 hero-stagger-3 space-y-1.5" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.45)" }}>
+                    <p className="text-base lg:text-lg italic text-white/85">a global gathering advancing forensic psychiatry knowledge and practice.</p>
+                    <p className="text-base lg:text-lg font-bold text-white">{CONFERENCE.dates}, {CONFERENCE.venueName}, {CONFERENCE.city}, India.</p>
+                    <p className="text-base lg:text-lg font-bold text-white">{CONFERENCE.hosts}.</p>
+                  </div>
+                </>
+              ) : (
+              <>
               {/* Tagline pill */}
               <div className="mb-3 hero-stagger-1">
                 <span className={cn(
@@ -1495,6 +1535,8 @@ export default function TenantHomePage() {
               <p className={cn("text-base lg:text-lg font-medium max-w-2xl mx-auto mb-5 hero-stagger-3 leading-relaxed", "text-white/80")}>
                 {hero.subtitle || "Register for the upcoming CME and workshop programs."}
               </p>
+              </>
+              )}
 
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center hero-stagger-4">
@@ -1584,7 +1626,7 @@ export default function TenantHomePage() {
                       <p className={cn("text-sm font-medium", "text-white/70")}>
                         Next Event: <span className={cn("font-bold", "text-white")}>{nextEvent.title}</span>
                       </p>
-                      <CountdownTimer targetDate={nextEvent.startDate} theme={theme} bgDark={!!hero.bgImage} />
+                      <CountdownTimer targetDate={nextEvent.startDate} theme={theme} bgDark={!!hero.bgImage} hideSeconds={tenantSlug === "apollo-medical"} />
                     </>
                   )}
                 </div>
@@ -2832,13 +2874,6 @@ export default function TenantHomePage() {
         <section className="ifpc-v2 relative overflow-hidden py-16 lg:py-24 bg-white">
           <Blob className="-top-20 -right-20" color="#1e3a5f" />
           <div className="container mx-auto px-4 lg:px-8 max-w-5xl relative z-10">
-            <div className="text-center mb-12">
-              <p className="v2-eyebrow justify-center mb-4" style={{ color: "#4B2FE5" }}>Conference Theme</p>
-              <h2 className="text-[28px] sm:text-[36px] lg:text-[44px] font-extrabold mb-4 tracking-tight leading-[1.1]">
-                <RevealHeadline text={IFPC_HOME.theme.title} activeColor="#111111" />
-              </h2>
-            </div>
-
             {ifpcAnnouncements.length > 0 && (
               <Reveal className="ifpc-v2 v2-card mb-12 p-5 lg:p-6" style={{ background: "#FFF7DB" }}>
                 <div className="flex items-center gap-2 mb-3">
@@ -2859,23 +2894,6 @@ export default function TenantHomePage() {
             <div className="space-y-4 max-w-3xl mx-auto mb-14">
               {IFPC_HOME.theme.paragraphs.map((p, i) => (
                 <p key={i} className="opacity-70 leading-relaxed text-center lg:text-left">{p}</p>
-              ))}
-            </div>
-
-            <h3 className="text-xl lg:text-2xl font-bold text-center mb-8">{IFPC_HOME.hosts.title}</h3>
-            <div className="grid sm:grid-cols-2 gap-6 mb-16">
-              {IFPC_HOME.hosts.items.map((h, i) => (
-                <Reveal key={h.name} delayMs={i * 80} className={`ifpc-v2 v2-card p-6 flex flex-col items-center text-center ${i === 0 ? "v2-card-tilt-l" : "v2-card-tilt-r"}`}>
-                  <div className="h-20 w-20 rounded-full bg-white shadow-md flex items-center justify-center mb-4 p-2 overflow-hidden border-4" style={{ borderColor: i === 0 ? "#4B2FE5" : "#1e3a5f" }}>
-                    <img
-                      src={h.name === "RANZCP" ? "/ifpc/ranzcp-logo.png" : "/ifpc/nimhans-logo.png"}
-                      alt={h.name}
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
-                  <h4 className="font-bold mb-2">{h.name}</h4>
-                  <p className="text-sm opacity-60">{h.description}</p>
-                </Reveal>
               ))}
             </div>
 

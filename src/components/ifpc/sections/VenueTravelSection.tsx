@@ -32,18 +32,8 @@ export function VenueTravelSection() {
         </div>
       </Section>
 
-      <Section tint>
-        <SectionTitle title={VENUE_TRAVEL.gettingToBengaluru.title} />
-        <p className="opacity-75 leading-relaxed mb-5 max-w-3xl">{VENUE_TRAVEL.gettingToBengaluru.intro}</p>
-        <div className="grid sm:grid-cols-3 gap-4">
-          {VENUE_TRAVEL.gettingToBengaluru.items.map((it, i) => (
-            <div key={i} className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 text-sm leading-relaxed">{it}</div>
-          ))}
-        </div>
-      </Section>
-
       <Section>
-        <div className="grid sm:grid-cols-2 gap-6 mb-10">
+        <div className="grid sm:grid-cols-2 gap-6">
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
             <h3 className="font-bold mb-2">{VENUE_TRAVEL.localTravel.title}</h3>
             <p className="text-sm opacity-70 leading-relaxed">{VENUE_TRAVEL.localTravel.text}</p>
@@ -53,14 +43,6 @@ export function VenueTravelSection() {
             <p className="text-sm opacity-70 leading-relaxed">{VENUE_TRAVEL.payment.text}</p>
           </div>
         </div>
-        <SectionTitle title={VENUE_TRAVEL.weather.title} />
-        <p className="opacity-75 leading-relaxed mb-5 max-w-3xl">{VENUE_TRAVEL.weather.intro}</p>
-        <ul className="space-y-2 mb-4">
-          {VENUE_TRAVEL.weather.items.map((it, i) => (
-            <li key={i} className="text-sm opacity-75 pl-4 relative before:content-['•'] before:absolute before:left-0">{it}</li>
-          ))}
-        </ul>
-        <p className="text-sm opacity-55 italic">{VENUE_TRAVEL.weather.etiquette}</p>
       </Section>
 
       {/* Accommodation Near the Venue — not needed as of now, disabled per request. Content preserved in VENUE_TRAVEL.accommodation; uncomment to re-enable.

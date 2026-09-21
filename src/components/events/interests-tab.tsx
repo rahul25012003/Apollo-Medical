@@ -21,7 +21,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Search, Heart, Mail, Phone, UserX, Utensils, Building2, Mic2 } from "lucide-react";
+import { Search, Heart, Mail, Phone, UserX, Utensils, Building2, Mic2, Landmark } from "lucide-react";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 
 interface Interest {
@@ -52,6 +52,10 @@ interface AccommodationRow {
     hotel: string;
     selectedAt: string | null;
 }
+
+// Campus Tour is a seeded SEMINAR-type session, so it's split out by title
+// before the generic workshop/session buckets.
+const isCampusTour = (i: Interest) => i.session.title.toLowerCase().includes("campus tour");
 
 function DelegateCell({ name, category, participantRole, notRegisteredLabel }: { name: string; category?: string | null; participantRole?: string | null; notRegisteredLabel?: string }) {
     return (
@@ -97,8 +101,9 @@ export function InterestsTab({ eventId }: { eventId: string }) {
         return () => { cancelled = true; };
     }, [eventId]);
 
-    const workshopInterests = useMemo(() => interests.filter((i) => i.session.sessionType === "WORKSHOP"), [interests]);
-    const otherInterests = useMemo(() => interests.filter((i) => i.session.sessionType !== "WORKSHOP"), [interests]);
+    const campusTourInterests = useMemo(() => interests.filter(isCampusTour), [interests]);
+    const workshopInterests = useMemo(() => interests.filter((i) => !isCampusTour(i) && i.session.sessionType === "WORKSHOP"), [interests]);
+    const otherInterests = useMemo(() => interests.filter((i) => !isCampusTour(i) && i.session.sessionType !== "WORKSHOP"), [interests]);
 
     const sessionsFor = (list: Interest[]) => {
         const map = new Map<string, string>();
@@ -215,7 +220,7 @@ export function InterestsTab({ eventId }: { eventId: string }) {
                 </div>
 
                 <Tabs defaultValue="workshops" onValueChange={() => setSessionFilter("all")}>
-                    <TabsList>
+                    <TabsList className="flex flex-wrap h-auto justify-start">
                         <TabsTrigger value="workshops" className="gap-1.5">
                             <Mic2 className="h-3.5 w-3.5" /> Workshops ({workshopInterests.length})
                         </TabsTrigger>
@@ -227,6 +232,9 @@ export function InterestsTab({ eventId }: { eventId: string }) {
                         </TabsTrigger>
                         <TabsTrigger value="food" className="gap-1.5">
                             <Utensils className="h-3.5 w-3.5" /> Food ({food.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="campus-tour" className="gap-1.5">
+                            <Landmark className="h-3.5 w-3.5" /> NIMHANS Campus Tour ({campusTourInterests.length})
                         </TabsTrigger>
                     </TabsList>
 
@@ -339,6 +347,10 @@ export function InterestsTab({ eventId }: { eventId: string }) {
                                 </Table>
                             </div>
                         )}
+                    </TabsContent>
+
+                    <TabsContent value="campus-tour" className="space-y-3 pt-2">
+                        {renderInterestTable(campusTourInterests)}
                     </TabsContent>
                 </Tabs>
             </CardContent>
