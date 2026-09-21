@@ -120,7 +120,7 @@ interface EventDisplayData {
     contactPhone: string | null;
     website: string | null;
     includes: string[];
-    speakers: { name: string; designation: string | null; institution: string | null; photo: string | null }[];
+    speakers: { id: string; name: string; designation: string | null; institution: string | null; photo: string | null }[];
     bannerImage: string | null;
     brochureUrl: string | null;
     sponsors: { name: string; logo: string | null; tier: string }[];
@@ -293,6 +293,7 @@ export default function RegisterPage() {
                         website: event.website,
                         includes: event.includes || [],
                         speakers: event.eventSpeakers?.map(es => ({
+                            id: es.speaker.id,
                             name: es.speaker.name,
                             designation: es.speaker.designation,
                             institution: es.speaker.institution,
@@ -1005,8 +1006,8 @@ export default function RegisterPage() {
                                         <div>
                                             <h4 className="font-bold text-base mb-3">Speakers</h4>
                                             <div className="grid sm:grid-cols-2 gap-3">
-                                                {eventData.speakers.map((speaker, index) => (
-                                                    <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border">
+                                                {eventData.speakers.map((speaker) => (
+                                                    <div key={speaker.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border">
                                                         {speaker.photo ? (
                                                             <img src={speaker.photo} alt={speaker.name} className="h-12 w-12 rounded-full object-cover" />
                                                         ) : (

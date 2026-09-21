@@ -738,8 +738,8 @@ export default function RegisterPage() {
                                                 <div>
                                                     <h4 className="font-bold text-base mb-3">Speakers</h4>
                                                     <div className="grid sm:grid-cols-2 gap-3">
-                                                        {event.eventSpeakers.map((es, i) => (
-                                                            <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border">
+                                                        {event.eventSpeakers.map((es) => (
+                                                            <div key={es.speaker.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border">
                                                                 {es.speaker.photo ? (
                                                                     <img src={es.speaker.photo} alt={es.speaker.name} className="h-12 w-12 rounded-full object-cover" />
                                                                 ) : (
