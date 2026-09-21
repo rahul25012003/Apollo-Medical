@@ -63,6 +63,7 @@ import { TopicsSection } from "@/components/ifpc/sections/TopicsSection";
 import { AbstractSubmissionSection } from "@/components/ifpc/sections/AbstractSubmissionSection";
 import { RegistrationSection } from "@/components/ifpc/sections/RegistrationSection";
 import { VenueTravelSection } from "@/components/ifpc/sections/VenueTravelSection";
+import { CampusTourSection } from "@/components/ifpc/sections/CampusTourSection";
 import { OrganisingCommitteeSection } from "@/components/ifpc/sections/OrganisingCommitteeSection";
 import { FeedbackSection } from "@/components/ifpc/sections/FeedbackSection";
 import { PwaRegister } from "@/components/ifpc/PwaRegister";
@@ -1497,7 +1498,7 @@ export default function TenantHomePage() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center hero-stagger-4">
-                <a href="#events">
+                <Link href="/events">
                   <Button
                     size="lg"
                     className="rounded-full px-10 h-13 text-base font-bold shadow-2xl hover:shadow-3xl transition-all hover:scale-105 hover:-translate-y-0.5 group bg-emerald-500 hover:bg-emerald-600 text-white border-0"
@@ -1506,7 +1507,7 @@ export default function TenantHomePage() {
                     {hasEvents ? "Browse Events" : "Explore Events"}
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
-                </a>
+                </Link>
                 <a href="#about">
                   <Button
                     size="lg"
@@ -2908,6 +2909,7 @@ export default function TenantHomePage() {
           <div id="abstract"><AbstractSubmissionSection /></div>
           <div id="registration"><RegistrationSection /></div>
           <div id="venue"><VenueTravelSection /></div>
+          <div id="campus-tour"><CampusTourSection /></div>
           <div id="organising-committee"><OrganisingCommitteeSection /></div>
         </>
       )}

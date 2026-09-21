@@ -106,6 +106,13 @@ const menuItems = [
         group: "Main",
     },
     {
+        title: "Campus Tour",
+        href: "/dashboard/campus-tour",
+        icon: Landmark,
+        roles: ["ATTENDEE"] as UserRole[],
+        group: "Main",
+    },
+    {
         title: "Accommodation",
         href: "/dashboard/accommodation",
         icon: Building2,
