@@ -20,7 +20,6 @@ import { IFPC_TENANT_SLUG, IFPC_DEFAULT_PASSWORD } from "@/lib/ifpc-constants";
 import { generateCertificatePDF, type CertificateTemplateConfig } from "@/lib/certificate-pdf";
 import { sendEmail, certificateIssuedHtml, badgeReadyHtml } from "@/lib/notifications";
 import { findOrCreateUserAccount } from "@/lib/auto-account";
-import { hashPassword } from "@/lib/auth-utils";
 
 function randomCode(len: number): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
@@ -78,11 +77,10 @@ export async function issueAttendeeBadgeAndCertificate(registrationId: string): 
     }
     await prisma.registration.update({ where: { id: registrationId }, data: updateData });
 
-    // Ensure the delegate has a login account, and a real password (not just
-    // OTP) — every confirmation path routes through here, so this is the one
-    // place that needs to create it, regardless of how the registration was
-    // made (public, admin, bulk, Razorpay).
-    const { userId } = await findOrCreateUserAccount({
+    // Ensure the delegate has a login account — findOrCreateUserAccount
+    // always sets the default password on creation, so every confirmation
+    // path (public, admin, bulk, Razorpay) ends up with a working login.
+    const { userId, isNew } = await findOrCreateUserAccount({
       email: registration.email,
       name: registration.name,
       tenantId: registration.event.tenantId,
@@ -90,12 +88,7 @@ export async function issueAttendeeBadgeAndCertificate(registrationId: string): 
     if (!registration.userId) {
       await prisma.registration.update({ where: { id: registrationId }, data: { userId } });
     }
-    let newPlainPassword: string | null = null;
-    const account = await prisma.user.findUnique({ where: { id: userId }, select: { password: true } });
-    if (!account?.password) {
-      newPlainPassword = IFPC_DEFAULT_PASSWORD;
-      await prisma.user.update({ where: { id: userId }, data: { password: await hashPassword(newPlainPassword) } });
-    }
+    const newPlainPassword = isNew ? IFPC_DEFAULT_PASSWORD : null;
 
     // Badge/registration-ID ready — email the printable badge link (independent
     // of certificate template availability, so this always goes out on confirm).

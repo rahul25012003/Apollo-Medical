@@ -1,5 +1,7 @@
 import { prisma } from "./prisma";
 import { sendEmail, getActiveChannel } from "./notifications";
+import { hashPassword } from "./auth-utils";
+import { IFPC_DEFAULT_PASSWORD } from "./ifpc-constants";
 
 interface CreateAccountParams {
   email: string;
@@ -16,7 +18,8 @@ interface AccountResult {
 
 /**
  * Find or create a user account for delegates/speakers/organizers.
- * These accounts have no password — they log in via OTP only.
+ * New accounts always get the known default password so they can log in
+ * immediately — no separate OTP-only path.
  * Also links any existing unlinked registrations to the user.
  */
 export async function findOrCreateUserAccount(
@@ -31,7 +34,7 @@ export async function findOrCreateUserAccount(
       email,
       name: params.name || null,
       phone: params.phone || null,
-      password: null,
+      password: await hashPassword(IFPC_DEFAULT_PASSWORD),
       role: "ATTENDEE",
       isActive: true,
       tenantId: params.tenantId || null,
