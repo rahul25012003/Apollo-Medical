@@ -27,7 +27,7 @@ export const GET = withErrorHandler(
 
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { id: true, tenantId: true },
+      select: { id: true, tenantId: true, timezone: true },
     });
 
     if (!event) {
@@ -39,6 +39,7 @@ export const GET = withErrorHandler(
     }
 
     // Today's start (midnight)
+    // ponytail: server-local midnight (UTC on Render); use the event timezone if early-morning counts matter
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -144,9 +145,13 @@ export const GET = withErrorHandler(
       : 0;
 
     // Calculate hourly checkins
+    // Bucket by the event's local hour, not the server's (Render runs in UTC)
+    const hourFormat = (timeZone: string) => new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone });
+    let hourFmt: Intl.DateTimeFormat;
+    try { hourFmt = hourFormat(event.timezone || "UTC"); } catch { hourFmt = hourFormat("UTC"); } // free-text field; bad value -> UTC
     const hourCounts: Record<number, number> = {};
     for (const log of todayScanLogs) {
-      const hour = new Date(log.scannedAt).getHours();
+      const hour = Number(hourFmt.format(new Date(log.scannedAt)));
       hourCounts[hour] = (hourCounts[hour] || 0) + 1;
     }
 
