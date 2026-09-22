@@ -37,6 +37,7 @@ import {
     ClipboardList,
     MapPinned,
     History,
+    Home,
 } from "lucide-react";
 import { eventsService, Event } from "@/services/events";
 
@@ -59,6 +60,15 @@ interface TenantSections {
 
 // Menu items with role-based access and optional tenant module key
 const menuItems = [
+    {
+        // Redirects all logged-in users to the external conference site.
+        title: "Home",
+        href: "https://forensicpsychiatry.in",
+        icon: Home,
+        roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER", "CERTIFICATE_MANAGER", "ATTENDEE"] as UserRole[],
+        group: "Main",
+        ifpcOnly: true,
+    },
     {
         title: "Dashboard",
         href: "/dashboard",
@@ -641,6 +651,8 @@ export function Sidebar() {
                                                 <Link
                                                     href={item.href === "/dashboard/browse-events" ? browseEventsHref : item.href}
                                                     onClick={() => setSidebarOpen(false)}
+                                                    target={item.href.startsWith("http") ? "_blank" : undefined}
+                                                    rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
                                                     className={cn(
                                                         "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
                                                         isCollapsed && "lg:justify-center lg:px-0",

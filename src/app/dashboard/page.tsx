@@ -36,6 +36,7 @@ import { useSession } from "next-auth/react";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import Link from "next/link";
 import { useIsIfpcDashboard, useBrowseEventsHref } from "@/components/ifpc/guard";
+import { DelegateSchedule } from "@/components/ifpc/MyEventsCard";
 
 interface UpcomingEvent {
     id: string;
@@ -256,6 +257,44 @@ export default function DashboardPage() {
                 <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
             </div>
 
+            {isIfpc ? (
+            // IFPC: the delegate's name and both host institutions lead; no time-of-day greeting.
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <div className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-bold uppercase tracking-wider">
+                            {accent.label}
+                        </div>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold">
+                            <Clock className="w-3.5 h-3.5" />
+                            {currentTime.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+                            {" · "}
+                            {currentTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                        </div>
+                    </div>
+                    <p className="text-white/75 text-xs sm:text-sm font-bold uppercase tracking-[0.2em]">IFPC 2026 · Welcome</p>
+                    <h1 className="mt-1 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight break-words" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.15)" }}>
+                        {userName}
+                    </h1>
+                    <p className="text-white/80 text-sm sm:text-base mt-2 max-w-lg font-medium">
+                        {isAdmin
+                            ? <>You have <span className="text-white font-bold">{upcomingEvents.length} upcoming event{upcomingEvents.length !== 1 ? "s" : ""}</span>{pendingRegistrations > 0 && <> and <span className="text-white font-bold">{pendingRegistrations} pending</span></>}</>
+                            : "Access your registrations, certificates, and upcoming events."
+                        }
+                    </p>
+                </div>
+                <div className="flex-shrink-0 flex items-end gap-3 sm:gap-4">
+                    {[{ src: "/ifpc/nimhans-logo.png", alt: "NIMHANS logo", name: "NIMHANS, Bengaluru" }, { src: "/ifpc/ranzcp-logo.png", alt: "RANZCP logo", name: "RANZCP" }].map((l) => (
+                        <div key={l.src} className="text-center">
+                            <div className="h-20 sm:h-24 rounded-2xl bg-white p-2.5 shadow-lg inline-flex items-center justify-center">
+                                <img src={l.src} alt={l.alt} className="h-full w-auto object-contain" />
+                            </div>
+                            <p className="mt-1.5 text-[11px] sm:text-xs font-semibold text-white/90">{l.name}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            ) : (
             <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2.5 mb-3">
@@ -287,6 +326,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
+            )}
         </div>
     );
 
@@ -364,6 +404,8 @@ export default function DashboardPage() {
                             </Link>
                         </div>
                     )}
+
+                    {isIfpc && <DelegateSchedule />}
 
                     {/* Upcoming Events */}
                     <div className="rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 overflow-hidden">

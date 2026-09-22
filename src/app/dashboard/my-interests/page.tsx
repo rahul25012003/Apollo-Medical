@@ -13,7 +13,9 @@ import { MyInterestsPanel, type MyInterests } from "@/components/ifpc/MyInterest
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Calendar, Clock, MapPin } from "lucide-react";
+import { Heart, Calendar, Clock, MapPin, CircleDot, ListChecks } from "lucide-react";
+import { EOI_CATEGORIES, EOI_CATEGORY_ORDER, eoiCategoryOf } from "@/lib/ifpc-eoi";
+import type { EventSession } from "@/services/events";
 import { format, parseISO } from "date-fns";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { notFound } from "next/navigation";
@@ -70,8 +72,43 @@ export default function MyInterestsPage() {
             return (a.sessionOrder ?? 0) - (b.sessionOrder ?? 0);
         });
 
+    // Tour / yoga / morning & afternoon workshops each follow a selection rule;
+    // everything else stays grouped by day as before.
+    const groups = EOI_CATEGORY_ORDER
+        .map((cat) => ({ cat, sessions: workshops.filter((s) => eoiCategoryOf(s) === cat) }))
+        .filter((g) => g.sessions.length > 0);
+    const others = workshops.filter((s) => !eoiCategoryOf(s));
     const days = Array.from(
-        new Set(workshops.filter((s) => s.sessionDate).map((s) => s.sessionDate!.slice(0, 10)))
+        new Set(others.filter((s) => s.sessionDate).map((s) => s.sessionDate!.slice(0, 10)))
+    );
+
+    const sessionCard = (s: EventSession, showDate: boolean) => (
+        <Card key={s.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
+                    <div>
+                        <Badge className={cn("text-xs mb-1.5", SESSION_TYPE_STYLES[s.sessionType] || SESSION_TYPE_STYLES.OTHER)}>
+                            {s.sessionType}
+                        </Badge>
+                        <h4 className="font-semibold">{s.title}</h4>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                        {showDate && (
+                            <span className="flex items-center gap-1 font-medium text-slate-700">
+                                <Calendar className="h-3.5 w-3.5" />
+                                {s.sessionDate ? format(parseISO(s.sessionDate.slice(0, 10)), "EEE, d MMM") : "Date to be announced"}
+                            </span>
+                        )}
+                        {s.startTime && <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{s.startTime}{s.endTime ? `–${s.endTime}` : ""}</span>}
+                        {s.hall && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{s.hall.name}</span>}
+                    </div>
+                </div>
+                {s.description && (
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{s.description}</p>
+                )}
+                <ExpressInterestButton sessionId={s.id} onInterested={loadMine} />
+            </CardContent>
+        </Card>
     );
 
     return (
@@ -107,6 +144,27 @@ export default function MyInterestsPage() {
                         </Card>
                     ) : (
                         <div className="space-y-8">
+                            {groups.map(({ cat, sessions }) => {
+                                const rule = EOI_CATEGORIES[cat];
+                                return (
+                                    <section key={cat}>
+                                        <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                                            <h3 className="font-bold text-lg">{rule.label}</h3>
+                                            <span className={cn(
+                                                "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
+                                                rule.single ? "bg-amber-50 text-amber-800 border border-amber-200" : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                            )}>
+                                                {rule.single ? <CircleDot className="h-3.5 w-3.5" /> : <ListChecks className="h-3.5 w-3.5" />}
+                                                {rule.rule}
+                                            </span>
+                                        </div>
+                                        {rule.single && sessions.length > 1 && (
+                                            <p className="text-xs text-muted-foreground -mt-1 mb-3">Choosing another option replaces your current choice.</p>
+                                        )}
+                                        <div className="space-y-3">{sessions.map((s) => sessionCard(s, true))}</div>
+                                    </section>
+                                );
+                            })}
                             {days.map((day) => (
                                 <div key={day}>
                                     <div className="flex items-center gap-2 mb-3">
@@ -114,30 +172,7 @@ export default function MyInterestsPage() {
                                         <h3 className="font-bold">{format(parseISO(day), "EEEE, MMMM d, yyyy")}</h3>
                                     </div>
                                     <div className="space-y-3">
-                                        {workshops.filter((s) => s.sessionDate?.slice(0, 10) === day).map((s) => (
-                                            <Card key={s.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                                                <CardContent className="p-4">
-                                                    <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
-                                                        <div>
-                                                            <Badge className={cn("text-xs mb-1.5", SESSION_TYPE_STYLES[s.sessionType] || SESSION_TYPE_STYLES.OTHER)}>
-                                                                {s.sessionType}
-                                                            </Badge>
-                                                            <h4 className="font-semibold">{s.title}</h4>
-                                                        </div>
-                                                        {(s.startTime || s.hall) && (
-                                                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                                                {s.startTime && <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{s.startTime}{s.endTime ? `–${s.endTime}` : ""}</span>}
-                                                                {s.hall && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{s.hall.name}</span>}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    {s.description && (
-                                                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{s.description}</p>
-                                                    )}
-                                                    <ExpressInterestButton sessionId={s.id} onInterested={loadMine} />
-                                                </CardContent>
-                                            </Card>
-                                        ))}
+                                        {others.filter((s) => s.sessionDate?.slice(0, 10) === day).map((s) => sessionCard(s, false))}
                                     </div>
                                 </div>
                             ))}

@@ -7,6 +7,7 @@ import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
 import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import { EOI_CATEGORIES, eoiCategoryOf } from "@/lib/ifpc-eoi";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -68,9 +69,19 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   const { id: sessionId } = await context!.params;
   const eventSession = await prisma.eventSession.findUnique({
     where: { id: sessionId },
-    select: { id: true, capacity: true },
+    select: { id: true, capacity: true, eventId: true, title: true, sessionType: true, startTime: true },
   });
   if (!eventSession) return Errors.notFound("Session");
+
+  // Pick-one categories (campus tour day, morning workshop, afternoon workshop):
+  // the other sessions in the same category, which this choice would replace.
+  const category = eoiCategoryOf(eventSession);
+  const siblings = category && EOI_CATEGORIES[category].single
+    ? (await prisma.eventSession.findMany({
+        where: { eventId: eventSession.eventId, id: { not: sessionId } },
+        select: { id: true, title: true, sessionType: true, startTime: true },
+      })).filter((x) => eoiCategoryOf(x) === category)
+    : [];
 
   const body = await parseBody(request);
   if (!body) return Errors.badRequest("Invalid request body");
@@ -79,13 +90,18 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   if (!parsed.success) return Errors.validationError(parsed.error);
 
   const email = parsed.data.email.toLowerCase();
+  // Only the signed-in owner of this email may swap a pick-one choice; an
+  // anonymous submission can never remove anyone's existing selection.
+  const authSession = siblings.length ? await auth() : null;
+  const canReplace = !!authSession && authSession.user.email.toLowerCase() === email;
 
   // Serializable transaction: the duplicate check, capacity check, and
   // insert must be atomic, or concurrent submissions near the last seat can
   // all pass the count check before any of them commits, overselling
   // capacity. Postgres aborts one side of a genuine conflict with a
   // serialization failure, which we treat below as "someone else took it."
-  let outcome: "ok" | "duplicate" | "full";
+  let outcome: "ok" | "duplicate" | "full" | "conflict";
+  let replaced: string[] = [];
   try {
     outcome = await prisma.$transaction(
       async (tx) => {
@@ -94,9 +110,22 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
         });
         if (existing) return "duplicate" as const;
 
+        const previous = siblings.length
+          ? await tx.sessionInterest.findMany({ where: { email, sessionId: { in: siblings.map((x) => x.id) } }, select: { sessionId: true } })
+          : [];
+        if (previous.length && !canReplace) {
+          return "conflict" as const;
+        }
+
+        // Capacity before removing the old choice, so a full session never costs the delegate their current one.
         if (eventSession.capacity != null) {
           const count = await tx.sessionInterest.count({ where: { sessionId } });
           if (count >= eventSession.capacity) return "full" as const;
+        }
+
+        if (previous.length) {
+          await tx.sessionInterest.deleteMany({ where: { email, sessionId: { in: previous.map((p) => p.sessionId) } } });
+          replaced = previous.map((p) => siblings.find((x) => x.id === p.sessionId)?.title ?? "");
         }
 
         await tx.sessionInterest.create({
@@ -124,7 +153,15 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   if (outcome === "full") {
     return Errors.conflict("This session is full");
   }
+  if (outcome === "conflict") {
+    const label = EOI_CATEGORIES[category!].label;
+    return Errors.conflict(`A ${label} choice is already recorded for this email (only one allowed). Sign in to change it.`);
+  }
 
   const count = await prisma.sessionInterest.count({ where: { sessionId } });
-  return successResponse({ capacity: eventSession.capacity, count }, "Interest registered", 201);
+  return successResponse(
+    { capacity: eventSession.capacity, count, replaced, category },
+    replaced.length ? `Switched your ${EOI_CATEGORIES[category!].label} choice` : "Interest registered",
+    201
+  );
 });

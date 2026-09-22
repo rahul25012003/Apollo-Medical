@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
+export const INTEREST_CHANGED_EVENT = "ifpc-interest-changed";
+
 interface Props {
   sessionId: string;
   /** initial values so the counter renders instantly without a fetch waterfall */
@@ -51,9 +53,16 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
   const [phone, setPhone] = useState("");
   const [isInterested, setIsInterested] = useState(false);
   const [checkingMine, setCheckingMine] = useState(isLoggedIn);
+  // Bumped when any interest on the page changes — a pick-one swap clears another button's selection.
+  const [refreshTick, setRefreshTick] = useState(0);
+  useEffect(() => {
+    const onChange = () => setRefreshTick((t) => t + 1);
+    window.addEventListener(INTEREST_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(INTEREST_CHANGED_EVENT, onChange);
+  }, []);
 
   useEffect(() => {
-    if (initialCount !== undefined && initialCapacity !== undefined) return;
+    if (refreshTick === 0 && initialCount !== undefined && initialCapacity !== undefined) return;
     fetch(`/api/sessions/${sessionId}/interest`)
       .then((r) => r.json())
       .then((json) => {
@@ -63,7 +72,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
         }
       })
       .catch(() => {});
-  }, [sessionId, initialCount, initialCapacity]);
+  }, [sessionId, initialCount, initialCapacity, refreshTick]);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -78,7 +87,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
       })
       .catch(() => {})
       .finally(() => setCheckingMine(false));
-  }, [sessionId, isLoggedIn]);
+  }, [sessionId, isLoggedIn, refreshTick]);
 
   const isFull = typeof capacity === "number" && count >= capacity;
 
@@ -105,7 +114,15 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
       setCapacity(json.data.capacity);
       setDone(true);
       setIsInterested(true);
-      toast.success(json.data.alreadyRegistered ? "You're already on the list" : "Interest saved — you're on the list");
+      const replaced: string[] = json.data.replaced ?? [];
+      toast.success(
+        json.data.alreadyRegistered
+          ? "You're already on the list"
+          : replaced.length
+            ? `${json.message} — replaced "${replaced.join(", ")}"`
+            : "Interest saved — you're on the list"
+      );
+      if (replaced.length) window.dispatchEvent(new Event(INTEREST_CHANGED_EVENT));
       onInterested?.();
       return true;
     } catch {
