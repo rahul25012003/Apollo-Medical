@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTenant } from "@/lib/tenant/context";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
+import { CampusPhotoSlideshow } from "@/components/ifpc/CampusPhotoSlideshow";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Landmark, Clock } from "lucide-react";
@@ -41,7 +42,10 @@ export default function CampusTourPage() {
                 <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
                     {loading ? (
                         <div className="flex justify-center py-20"><AiimsLoader /></div>
-                    ) : !isIfpc || !tourSession ? (
+                    ) : (
+                    <div className="space-y-6">
+                    <CampusPhotoSlideshow />
+                    {!isIfpc || !tourSession ? (
                         <Card className="border-0 shadow-sm">
                             <CardContent className="py-16 text-center text-muted-foreground">
                                 <Landmark className="h-10 w-10 mx-auto mb-3 opacity-30" />
@@ -71,6 +75,8 @@ export default function CampusTourPage() {
                                 </div>
                             </CardContent>
                         </Card>
+                    )}
+                    </div>
                     )}
                 </div>
             </main>

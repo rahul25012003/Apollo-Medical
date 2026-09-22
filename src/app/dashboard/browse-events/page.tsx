@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +38,7 @@ import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 interface PublicEvent {
     id: string;
+    tenant?: { slug: string } | null;
     title: string;
     description: string;
     startDate: string;
@@ -106,6 +109,15 @@ export default function BrowseEventsPage() {
         fetchEvents();
     }, [effectiveTenantId, sessionLoading]);
 
+    // IFPC (apollo-medical) only: a delegate registered for exactly one IFPC
+    // event goes straight to that event instead of this list.
+    const router = useRouter();
+    const ifpcRegistered = events.filter((e) => e.tenant?.slug === IFPC_TENANT_SLUG && registeredEventIds.has(e.id));
+    const redirectEventId = !loading && ifpcRegistered.length === 1 ? ifpcRegistered[0].id : null;
+    useEffect(() => {
+        if (redirectEventId) router.replace(`/dashboard/browse-events/${redirectEventId}`);
+    }, [redirectEventId, router]);
+
     // Filter events
     const filteredEvents = events.filter((event) => {
         const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -140,7 +152,7 @@ export default function BrowseEventsPage() {
         return { text: `${available} spots available`, color: "text-green-600", available };
     };
 
-    if (loading) {
+    if (loading || redirectEventId) {
         return (
             <DashboardLayout title="Browse Events" subtitle="Find and register for upcoming events">
                 <AiimsLoader />
