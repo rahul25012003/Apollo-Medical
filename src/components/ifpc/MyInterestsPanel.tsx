@@ -89,7 +89,7 @@ function Group({ title, icon, empty, children }: { title: string; icon: React.Re
     );
 }
 
-function stayText(d: MyInterests | null): string {
+export function stayText(d: MyInterests | null): string {
     if (!d || (d.accommodationRequired == null && !d.accommodationChoice)) return "Not chosen";
     if (d.accommodationRequired === false) return "Not required";
     const parts = [

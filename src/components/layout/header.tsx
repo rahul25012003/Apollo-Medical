@@ -19,8 +19,9 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useTenant } from "@/lib/tenant/context";
-import { useBrowseEventsHref, useIdCardHref, useIsIfpcDashboard } from "@/components/ifpc/guard";
+import { useBrowseEventsHref, useIsIfpcDashboard } from "@/components/ifpc/guard";
 import { useMySelections, useUpNextMessages } from "@/components/ifpc/useMySelections";
+import { IdCardModal } from "@/components/ifpc/IdCardModal";
 
 interface HeaderProps {
     title: string;
@@ -90,10 +91,10 @@ const headerAccentMap: Record<string, string> = {
 export function Header({ title, subtitle }: HeaderProps) {
     const { sidebarCollapsed } = useUIStore();
     const [searchOpen, setSearchOpen] = React.useState(false);
+    const [idCardOpen, setIdCardOpen] = React.useState(false);
     const { data: session, status } = useSession();
     // IFPC: registered delegates go straight to their event page.
     const browseEventsHref = useBrowseEventsHref();
-    const idCardHref = useIdCardHref();
 
     const user = session?.user;
     const displayName = user?.name || user?.email?.split("@")[0] || "User";
@@ -181,16 +182,17 @@ export function Header({ title, subtitle }: HeaderProps) {
                 {/* Right side */}
                 <div className="flex items-center gap-2 sm:gap-3">
                     {isIfpc ? (
-                        /* ID Card / QR Code — required at multiple points during the conference */
-                        <Link
-                            href={idCardHref}
+                        /* ID Card / QR Code — opens in-app, never navigates away from the dashboard */
+                        <button
+                            type="button"
+                            onClick={() => setIdCardOpen(true)}
                             className="p-2 rounded-xl hover:bg-muted/80 transition-all duration-200 flex items-center gap-1.5"
                             aria-label="ID Card / QR Code"
                             title="ID Card / QR Code"
                         >
                             <QrCode className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
                             <span className="hidden md:inline text-sm font-medium text-muted-foreground">ID Card</span>
-                        </Link>
+                        </button>
                     ) : (
                         <>
                             {/* Search - Desktop */}
@@ -444,6 +446,8 @@ export function Header({ title, subtitle }: HeaderProps) {
                     </div>
                 </div>
             )}
+
+            {isIfpc && <IdCardModal open={idCardOpen} onOpenChange={setIdCardOpen} />}
         </header>
     );
 }

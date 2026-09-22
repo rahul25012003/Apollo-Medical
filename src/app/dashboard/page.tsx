@@ -29,6 +29,9 @@ import {
     Presentation,
     Timer,
     Shield,
+    Heart,
+    Hotel,
+    Bell,
 } from "lucide-react";
 import { dashboardService } from "@/services/dashboard";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
@@ -37,6 +40,9 @@ import { AiimsLoader } from "@/components/ui/aiims-loader";
 import Link from "next/link";
 import { useIsIfpcDashboard, useBrowseEventsHref } from "@/components/ifpc/guard";
 import { DelegateSchedule } from "@/components/ifpc/MyEventsCard";
+import { MyInterests, stayText } from "@/components/ifpc/MyInterestsPanel";
+import { useMySelections, useUpNextMessages } from "@/components/ifpc/useMySelections";
+import { NotificationsModal } from "@/components/ifpc/NotificationsModal";
 
 interface UpcomingEvent {
     id: string;
@@ -75,6 +81,8 @@ export default function DashboardPage() {
     // IFPC (apollo-medical) delegate wording; other tenants keep the original text.
     const { isIfpc } = useIsIfpcDashboard();
     const browseEventsHref = useBrowseEventsHref();
+    // IFPC is single-event, so the top stat card shows notifications instead of a redundant "browse" link.
+    const sessionNotices = useUpNextMessages(useMySelections(isIfpc));
     const userRole = (session?.user?.role || "ATTENDEE") as RoleKey;
     const accent = roleAccent[userRole] || roleAccent.ATTENDEE;
     const isAdmin = ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER", "CERTIFICATE_MANAGER"].includes(userRole);
@@ -91,6 +99,9 @@ export default function DashboardPage() {
     const [delegateCertificateCount, setDelegateCertificateCount] = useState(0);
     const [delegateUpcomingEvents, setDelegateUpcomingEvents] = useState<UpcomingEvent[]>([]);
     const [speakerSessionCount, setSpeakerSessionCount] = useState(0);
+    const [delegateInterests, setDelegateInterests] = useState<MyInterests | null>(null);
+    const [generalNotifications, setGeneralNotifications] = useState<{ title: string; message: string; link: string | null }[]>([]);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
 
     // Live clock
     useEffect(() => {
@@ -143,10 +154,12 @@ export default function DashboardPage() {
         try {
             setLoading(true);
             setError(null);
-            const [regsRes, certsRes, sessionsRes] = await Promise.all([
+            const [regsRes, certsRes, sessionsRes, interestsRes, notificationsRes] = await Promise.all([
                 fetch("/api/users/me/registrations"),
                 fetch("/api/users/me/certificates"),
                 fetch("/api/users/me/speaker-sessions").catch(() => null),
+                isIfpc ? fetch("/api/users/me/interests").catch(() => null) : Promise.resolve(null),
+                isIfpc ? fetch("/api/notifications?limit=5").catch(() => null) : Promise.resolve(null),
             ]);
             if (regsRes.ok) {
                 const regsData = await regsRes.json();
@@ -172,6 +185,17 @@ export default function DashboardPage() {
                 const sessData = await sessionsRes.json();
                 if (sessData.success && Array.isArray(sessData.data)) setSpeakerSessionCount(sessData.data.length);
             }
+            if (interestsRes?.ok) {
+                const interestsData = await interestsRes.json();
+                if (interestsData.success) setDelegateInterests(interestsData.data);
+            }
+            if (notificationsRes?.ok) {
+                const notifData = await notificationsRes.json();
+                const list: { title: string; message: string; link: string | null }[] = notifData.success
+                    ? (notifData.data?.notifications ?? []).map((n: { title: string; message: string; link: string | null }) => ({ title: n.title, message: n.message, link: n.link ?? null }))
+                    : [];
+                setGeneralNotifications(list);
+            }
         } catch {
             setError("Something went wrong.");
         } finally {
@@ -182,7 +206,7 @@ export default function DashboardPage() {
     useEffect(() => {
         if (sessionLoading) return;
         if (!isAdmin) { fetchDelegateData(); } else { fetchDashboardData(); }
-    }, [sessionLoading, effectiveTenantId, isAdmin]);
+    }, [sessionLoading, effectiveTenantId, isAdmin, isIfpc]);
 
     const formatTimeAgo = (date: Date) => {
         const diffMs = Date.now() - date.getTime();
@@ -262,18 +286,12 @@ export default function DashboardPage() {
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <div className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-bold uppercase tracking-wider">
+                        <div className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] font-semibold uppercase tracking-wider">
                             {accent.label}
-                        </div>
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold">
-                            <Clock className="w-3.5 h-3.5" />
-                            {currentTime.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
-                            {" · "}
-                            {currentTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
                         </div>
                     </div>
                     <p className="text-white/75 text-xs sm:text-sm font-bold uppercase tracking-[0.2em]">IFPC 2026 · Welcome</p>
-                    <h1 className="mt-1 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight break-words" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.15)" }}>
+                    <h1 className="mt-1 text-lg sm:text-xl lg:text-2xl font-semibold text-white tracking-tight leading-tight break-words" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.15)" }}>
                         {userName}
                     </h1>
                     <p className="text-white/80 text-sm sm:text-base mt-2 max-w-lg font-medium">
@@ -283,10 +301,10 @@ export default function DashboardPage() {
                         }
                     </p>
                 </div>
-                <div className="flex-shrink-0 flex items-end gap-3 sm:gap-4">
+                <div className="order-first lg:order-last flex-shrink-0 flex items-end justify-center lg:justify-end gap-3 sm:gap-4 w-full lg:w-auto">
                     {[{ src: "/ifpc/nimhans-logo.png", alt: "NIMHANS logo", name: "NIMHANS, Bengaluru" }, { src: "/ifpc/ranzcp-logo.png", alt: "RANZCP logo", name: "RANZCP" }].map((l) => (
                         <div key={l.src} className="text-center">
-                            <div className="h-20 sm:h-24 rounded-2xl bg-white p-2.5 shadow-lg inline-flex items-center justify-center">
+                            <div className="h-24 sm:h-28 lg:h-32 rounded-2xl bg-white p-2.5 shadow-lg inline-flex items-center justify-center">
                                 <img src={l.src} alt={l.alt} className="h-full w-auto object-contain" />
                             </div>
                             <p className="mt-1.5 text-[11px] sm:text-xs font-semibold text-white/90">{l.name}</p>
@@ -333,6 +351,32 @@ export default function DashboardPage() {
     // ========== ATTENDEE / SPEAKER DASHBOARD ==========
     if (!isAdmin) {
         const isSpeaker = speakerSessionCount > 0;
+        const interestsTotal = (delegateInterests?.sessions.length ?? 0) + (delegateInterests?.speakers.length ?? 0);
+        const interestsSubtitle = !delegateInterests
+            ? "Interests"
+            : [
+                  delegateInterests.sessions.length ? `${delegateInterests.sessions.length} session${delegateInterests.sessions.length !== 1 ? "s" : ""}` : null,
+                  delegateInterests.speakers.length ? `${delegateInterests.speakers.length} speaker${delegateInterests.speakers.length !== 1 ? "s" : ""}` : null,
+              ].filter(Boolean).join(" · ") || "Nothing chosen yet";
+
+        // IFPC only: the top stat card shows the most relevant notice instead of "Browse
+        // Events" (moot with a single event) — the delegate's own schedule takes priority
+        // over general announcements, since it's more time-sensitive.
+        const TONE_META = {
+            now: { label: "Live now", dot: "bg-rose-500 animate-pulse" },
+            soon: { label: "Starting soon", dot: "bg-amber-500" },
+            today: { label: "Today", dot: "bg-emerald-500" },
+            next: { label: "Up next", dot: "bg-slate-400" },
+        } as const;
+        const topSessionNotice = sessionNotices[0] ?? null;
+        const latestNotification = generalNotifications[0] ?? null;
+        const totalNotices = sessionNotices.length + generalNotifications.length;
+        const moreNoticeCount = Math.max(0, totalNotices - 1);
+        const notificationCard = topSessionNotice
+            ? { label: TONE_META[topSessionNotice.tone].label, dot: TONE_META[topSessionNotice.tone].dot, text: topSessionNotice.text }
+            : latestNotification
+            ? { label: "Announcement", dot: "bg-primary", text: `${latestNotification.title} — ${latestNotification.message}` }
+            : { label: "Notifications", dot: "bg-slate-300", text: "You're all caught up — nothing new right now." };
 
         return (
             <Shell>
@@ -340,40 +384,106 @@ export default function DashboardPage() {
                     <HeroGreeting />
 
                     {/* Quick Stats Row */}
-                    <div className={cn("grid gap-4 mb-6", isSpeaker ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-3")}>
-                        {/* Browse Events */}
-                        <Link href={browseEventsHref} className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #3b82f6, #06b6d4)", boxShadow: "0 8px 20px rgba(59,130,246,0.3)" }}>
-                                <Calendar className="w-6 h-6" />
-                            </div>
-                            <div className="flex-1">
-                                <span className="text-base font-bold text-slate-800 dark:text-slate-100 block">Browse Events</span>
-                                <span className="text-xs text-slate-500 dark:text-slate-400">Discover conferences</span>
-                            </div>
-                            <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
-                        </Link>
+                    <div className={cn("grid gap-4 mb-6", isIfpc ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4" : isSpeaker ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-3")}>
+                        {isIfpc ? (
+                            /* Notifications — replaces Browse Events since IFPC only has one event */
+                            <button type="button" onClick={() => setNotificationsOpen(true)} className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left">
+                                <div className="relative p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0" style={{ background: "linear-gradient(135deg, #3b82f6, #06b6d4)", boxShadow: "0 8px 20px rgba(59,130,246,0.3)" }}>
+                                    <Bell className="w-6 h-6" />
+                                    {totalNotices > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center text-white text-[10px] font-bold rounded-full ring-2 ring-white dark:ring-slate-800 px-1 bg-rose-500">
+                                            {totalNotices > 9 ? "9+" : totalNotices}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <span className={cn("h-2 w-2 rounded-full flex-none", notificationCard.dot)} />
+                                        {notificationCard.label}
+                                    </span>
+                                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug mt-0.5">{notificationCard.text}</span>
+                                    {moreNoticeCount > 0 && (
+                                        <span className="text-xs font-semibold text-primary mt-1 inline-flex items-center gap-1">
+                                            +{moreNoticeCount} more <ArrowRight className="w-3 h-3" />
+                                        </span>
+                                    )}
+                                </div>
+                            </button>
+                        ) : (
+                            /* Browse Events */
+                            <Link href={browseEventsHref} className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #3b82f6, #06b6d4)", boxShadow: "0 8px 20px rgba(59,130,246,0.3)" }}>
+                                    <Calendar className="w-6 h-6" />
+                                </div>
+                                <div className="flex-1">
+                                    <span className="text-base font-bold text-slate-800 dark:text-slate-100 block">Browse Events</span>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">Discover conferences</span>
+                                </div>
+                                <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                            </Link>
+                        )}
 
-                        {/* My Registrations */}
-                        <Link href="/dashboard/my-registrations" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #10b981, #14b8a6)", boxShadow: "0 8px 20px rgba(16,185,129,0.3)" }}>
-                                <CheckCircle2 className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <span className="text-4xl font-black text-slate-900 dark:text-white block tracking-tighter leading-none animate-number-pop">{delegateRegistrationCount}</span>
-                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">{isIfpc ? "My Registered Events" : "Registrations"}</span>
-                            </div>
-                        </Link>
+                        {isIfpc ? (
+                            <>
+                                {/* Accommodation */}
+                                <Link href="/dashboard/accommodation" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                    <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0" style={{ background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 8px 20px rgba(245,158,11,0.3)" }}>
+                                        <Hotel className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-base font-bold text-slate-800 dark:text-slate-100 block">Accommodation</span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400 block truncate">{stayText(delegateInterests)}</span>
+                                    </div>
+                                    <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500 group-hover:translate-x-1 transition-all flex-shrink-0 xl:hidden 2xl:block" />
+                                </Link>
 
-                        {/* My Certificates */}
-                        <Link href="/dashboard/my-certificates" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #8b5cf6, #a855f7)", boxShadow: "0 8px 20px rgba(139,92,246,0.3)" }}>
-                                <Award className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <span className="text-4xl font-black text-slate-900 dark:text-white block tracking-tighter leading-none animate-number-pop">{delegateCertificateCount}</span>
-                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">Certificates</span>
-                            </div>
-                        </Link>
+                                {/* Interests / EOI */}
+                                <Link href="/dashboard/my-interests" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                    <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #ec4899, #f43f5e)", boxShadow: "0 8px 20px rgba(236,72,153,0.3)" }}>
+                                        <Heart className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <span className="text-4xl font-black text-slate-900 dark:text-white block tracking-tighter leading-none animate-number-pop">{interestsTotal}</span>
+                                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">{interestsSubtitle}</span>
+                                    </div>
+                                </Link>
+
+                                {/* My Certificates */}
+                                <Link href="/dashboard/my-certificates" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                    <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #8b5cf6, #a855f7)", boxShadow: "0 8px 20px rgba(139,92,246,0.3)" }}>
+                                        <Award className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <span className="text-4xl font-black text-slate-900 dark:text-white block tracking-tighter leading-none animate-number-pop">{delegateCertificateCount}</span>
+                                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">Certificates</span>
+                                    </div>
+                                </Link>
+                            </>
+                        ) : (
+                            <>
+                                {/* My Registrations */}
+                                <Link href="/dashboard/my-registrations" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                    <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #10b981, #14b8a6)", boxShadow: "0 8px 20px rgba(16,185,129,0.3)" }}>
+                                        <CheckCircle2 className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <span className="text-4xl font-black text-slate-900 dark:text-white block tracking-tighter leading-none animate-number-pop">{delegateRegistrationCount}</span>
+                                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">Registrations</span>
+                                    </div>
+                                </Link>
+
+                                {/* My Certificates */}
+                                <Link href="/dashboard/my-certificates" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                    <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #8b5cf6, #a855f7)", boxShadow: "0 8px 20px rgba(139,92,246,0.3)" }}>
+                                        <Award className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <span className="text-4xl font-black text-slate-900 dark:text-white block tracking-tighter leading-none animate-number-pop">{delegateCertificateCount}</span>
+                                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 block">Certificates</span>
+                                    </div>
+                                </Link>
+                            </>
+                        )}
 
                         {/* Speaker Sessions */}
                         {isSpeaker && (
@@ -408,13 +518,41 @@ export default function DashboardPage() {
                     {isIfpc && <DelegateSchedule />}
 
                     {/* Upcoming Events */}
+                    {isIfpc ? (
+                        delegateUpcomingEvents[0] ? (
+                            <Link href={`/dashboard/browse-events/${delegateUpcomingEvents[0].id}`}
+                                className="group flex items-center gap-4 px-5 py-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/10 border-2 border-emerald-100 dark:border-emerald-800/40 hover:shadow-lg transition-all duration-300">
+                                <div className="p-3 rounded-xl bg-emerald-600 text-white shadow-md flex-shrink-0">
+                                    <CalendarDays className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate">{delegateUpcomingEvents[0].title}</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{delegateUpcomingEvents[0].date} · {delegateUpcomingEvents[0].time}</p>
+                                </div>
+                                <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex-shrink-0">
+                                    View details <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                                </span>
+                            </Link>
+                        ) : (
+                            <div className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border-2 border-slate-100 dark:border-slate-700">
+                                <div className="p-3 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-500 flex-shrink-0">
+                                    <CalendarDays className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No event yet</p>
+                                    <p className="text-xs text-slate-400">Browse available events and register to see it here.</p>
+                                </div>
+                                <Link href={browseEventsHref} className="text-xs font-semibold text-emerald-600 hover:underline flex-shrink-0">Browse Events</Link>
+                            </div>
+                        )
+                    ) : (
                     <div className="rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 overflow-hidden">
                         <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
                             <div className="p-2 rounded-lg text-white shadow-md" style={{ background: "linear-gradient(135deg, #10b981, #14b8a6)" }}>
                                 <CalendarDays className="w-4 h-4" />
                             </div>
                             <div>
-                                <h2 className="font-bold text-slate-800">{isIfpc ? "Events" : "Your Upcoming Events"}</h2>
+                                <h2 className="font-bold text-slate-800">Your Upcoming Events</h2>
                                 <p className="text-xs text-slate-500">Events you are registered for</p>
                             </div>
                         </div>
@@ -442,7 +580,7 @@ export default function DashboardPage() {
                                 <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
                                     <CalendarDays className="w-8 h-8 text-slate-400" />
                                 </div>
-                                <h3 className="font-semibold text-slate-700 mb-1">{isIfpc ? "No events yet" : "No upcoming events yet"}</h3>
+                                <h3 className="font-semibold text-slate-700 mb-1">No upcoming events yet</h3>
                                 <p className="text-sm text-slate-500 mb-4">Browse available events and register to see them here.</p>
                                 <Link href="/dashboard/browse-events">
                                     <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition-all shadow-md">
@@ -452,6 +590,7 @@ export default function DashboardPage() {
                             </div>
                         )}
                     </div>
+                    )}
 
                     {/* Quick Help — always visible for attendees */}
                     {!isIfpc && (
@@ -477,6 +616,14 @@ export default function DashboardPage() {
                     </div>
                     )}
                 </div>
+                {isIfpc && (
+                    <NotificationsModal
+                        open={notificationsOpen}
+                        onOpenChange={setNotificationsOpen}
+                        sessionNotices={sessionNotices}
+                        generalNotifications={generalNotifications}
+                    />
+                )}
             </Shell>
         );
     }

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, notFound } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
 
@@ -88,54 +87,47 @@ export function useIsIfpcEventId(eventId: string | null | undefined) {
   return useSlugCheck(eventId, eventTenantSlugOf);
 }
 
-// The IFPC event a user is registered for, per user + tenant (never shared
-// between accounts), so "Browse Events" links can go straight to it.
-const registeredEventCache = new Map<string, Promise<string | null>>();
+// IFPC (apollo-medical) is a single-event conference by design, so "Browse
+// Events" can always go straight to that one event — cached per tenant, not
+// per user, since the answer doesn't depend on who's asking.
+const soleEventCache = new Map<string, Promise<string | null>>();
 
-function ifpcRegisteredEventOf(userKey: string, tenantId: string): Promise<string | null> {
-  const key = `${userKey}:${tenantId}`;
-  if (!registeredEventCache.has(key)) {
-    registeredEventCache.set(
-      key,
-      Promise.all([
-        fetch(`/api/events/public?limit=200&tenantId=${encodeURIComponent(tenantId)}`).then((r) => r.json()),
-        fetch("/api/users/me/registrations").then((r) => r.json()),
-      ])
-        .then(([eventsJson, regsJson]) => {
-          const registered = new Set<string>(
-            (Array.isArray(regsJson?.data) ? regsJson.data : []).map((r: { event?: { id: string } }) => r.event?.id).filter(Boolean)
-          );
+function ifpcSoleEventId(tenantId: string): Promise<string | null> {
+  if (!soleEventCache.has(tenantId)) {
+    soleEventCache.set(
+      tenantId,
+      fetch(`/api/events/public?limit=200&tenantId=${encodeURIComponent(tenantId)}`)
+        .then((r) => r.json())
+        .then((eventsJson) => {
           const events: { id: string; tenant?: { slug: string } | null }[] = Array.isArray(eventsJson?.data) ? eventsJson.data : [];
-          const mine = events.filter((e) => e.tenant?.slug === IFPC_TENANT_SLUG && registered.has(e.id));
+          const mine = events.filter((e) => e.tenant?.slug === IFPC_TENANT_SLUG);
           return mine.length === 1 ? mine[0].id : null;
         })
-        .catch(() => { registeredEventCache.delete(key); return null; })
+        .catch(() => { soleEventCache.delete(tenantId); return null; })
     );
   }
-  return registeredEventCache.get(key)!;
+  return soleEventCache.get(tenantId)!;
 }
 
 /**
- * Where "Browse Events" should point: straight to the event page for an IFPC
- * (apollo-medical) user registered for exactly one IFPC event; the usual list
- * otherwise, and always for every other tenant.
+ * Where "Browse Events" should point: straight to the event page for IFPC
+ * (apollo-medical), which only ever has one event; the usual list otherwise,
+ * and always for every other tenant.
  */
 export function useBrowseEventsHref(): string {
   const LIST = "/dashboard/browse-events";
   const { isIfpc } = useIsIfpcDashboard();
-  const { data: session } = useSession();
   const { effectiveTenantId } = useTenantFilter();
-  const userKey = session?.user?.id || session?.user?.email || null;
   const [href, setHref] = useState(LIST);
 
   useEffect(() => {
-    if (!isIfpc || !userKey || !effectiveTenantId) { setHref(LIST); return; }
+    if (!isIfpc || !effectiveTenantId) { setHref(LIST); return; }
     let cancelled = false;
-    ifpcRegisteredEventOf(userKey, effectiveTenantId).then((id) => {
+    ifpcSoleEventId(effectiveTenantId).then((id) => {
       if (!cancelled) setHref(id ? `${LIST}/${id}` : LIST);
     });
     return () => { cancelled = true; };
-  }, [isIfpc, userKey, effectiveTenantId]);
+  }, [isIfpc, effectiveTenantId]);
 
   return href;
 }
