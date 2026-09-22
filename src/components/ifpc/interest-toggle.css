@@ -1,0 +1,19 @@
+/* IFPC interest buttons: selection feedback (pop + ring pulse). */
+@keyframes ifpc-interest-pop {
+  0% { transform: scale(0.92); }
+  55% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ifpc-interest-ring {
+  0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.45); }
+  100% { box-shadow: 0 0 0 10px rgba(5, 150, 105, 0); }
+}
+
+.ifpc-interest-selected-anim {
+  animation: ifpc-interest-pop 380ms cubic-bezier(0.23, 1, 0.32, 1), ifpc-interest-ring 700ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-interest-selected-anim { animation: none; }
+}

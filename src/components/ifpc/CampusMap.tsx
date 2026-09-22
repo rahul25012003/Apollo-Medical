@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Flower2, Home, Footprints, MapPin } from "lucide-react";
+import { Building2, Flower2, Home, Footprints, MapPin, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CAMPUS_POINTS } from "@/content/ifpc-2026";
 
@@ -17,8 +17,7 @@ const POINTS: Record<PointId, { x: number; y: number; icon: typeof Building2; co
  * Hand-drawn interactive campus schematic — not a real GPS map, since no
  * verified building-level coordinates exist for the NIMHANS campus. Pins are
  * clickable, the dashed line traces the Yoga Centre → Convention Centre
- * walking route. "Get Directions" (elsewhere on the page) still links out to
- * Google Maps for real turn-by-turn navigation to the venue address.
+ * walking route. Every pin and place card opens that place in Google Maps.
  */
 export function CampusMap() {
   const [active, setActive] = useState<PointId>("conventionCentre");
@@ -26,7 +25,7 @@ export function CampusMap() {
   return (
     <div className="grid lg:grid-cols-[1fr_280px] gap-6 items-start">
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-50 via-white to-slate-50 p-3 sm:p-5 shadow-sm overflow-hidden">
-        <svg viewBox="0 0 760 460" className="w-full h-auto" role="img" aria-label="NIMHANS campus schematic showing the Convention Centre, Yoga Centre, and Guest House">
+        <svg viewBox="0 0 760 460" className="w-full h-auto" role="group" aria-label="NIMHANS campus schematic showing the Convention Centre, Yoga Centre, and Guest House">
           {/* ground */}
           <rect x="0" y="0" width="760" height="460" rx="20" fill="#f4f8f4" />
           <rect x="0" y="0" width="760" height="460" rx="20" fill="url(#groundGradient)" opacity="0.5" />
@@ -82,12 +81,15 @@ export function CampusMap() {
             const Icon = p.icon;
             const isActive = active === id;
             return (
-              <g
+              <a
                 key={id}
-                transform={`translate(${p.x}, ${p.y})`}
+                href={CAMPUS_POINTS[id].mapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open ${CAMPUS_POINTS[id].label} in Google Maps`}
                 onClick={() => setActive(id)}
-                className="cursor-pointer"
               >
+              <g transform={`translate(${p.x}, ${p.y})`} className="cursor-pointer">
                 {isActive && <circle r="26" fill={p.color} opacity="0.15">
                   <animate attributeName="r" values="20;28;20" dur="2s" repeatCount="indefinite" />
                 </circle>}
@@ -100,10 +102,11 @@ export function CampusMap() {
                   {CAMPUS_POINTS[id].label.split(" — ")[0].split(",")[0].slice(0, 20)}
                 </text>
               </g>
+              </a>
             );
           })}
         </svg>
-        <p className="text-center text-xs text-slate-400 mt-2">Schematic for orientation only — not to scale. Tap a pin for details.</p>
+        <p className="text-center text-xs text-slate-400 mt-2">Schematic for orientation only — not to scale. Tap a pin to open it in Google Maps.</p>
       </div>
 
       <div className="space-y-3">
@@ -112,11 +115,14 @@ export function CampusMap() {
           const Icon = p.icon;
           const isActive = active === id;
           return (
-            <button
+            <a
               key={id}
+              href={CAMPUS_POINTS[id].mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => setActive(id)}
               className={cn(
-                "w-full text-left rounded-xl border p-4 transition-all",
+                "block w-full text-left rounded-xl border p-4 transition-all",
                 isActive ? "border-transparent shadow-md" : "border-slate-200 hover:border-slate-300"
               )}
               style={isActive ? { background: `${p.color}0d`, borderColor: p.color } : undefined}
@@ -128,17 +134,20 @@ export function CampusMap() {
                 <div className="min-w-0">
                   <p className="font-semibold text-sm text-slate-900">{CAMPUS_POINTS[id].label}</p>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">{CAMPUS_POINTS[id].note}</p>
-                  <p className="text-[11px] text-slate-400 mt-1.5 flex items-start gap-1">
+                  <p className="text-[11px] text-slate-500 mt-1.5 flex items-start gap-1">
                     <MapPin className="h-3 w-3 flex-none mt-0.5" /> {CAMPUS_POINTS[id].address}
+                  </p>
+                  <p className="text-xs font-semibold mt-2 inline-flex items-center gap-1" style={{ color: p.color }}>
+                    Open in Google Maps <ExternalLink className="h-3 w-3" />
                   </p>
                 </div>
               </div>
-            </button>
+            </a>
           );
         })}
         <div className="flex items-start gap-2 rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-500">
           <MapPin className="h-3.5 w-3.5 flex-none mt-0.5" />
-          All three points are within the same NIMHANS campus. For turn-by-turn navigation to the campus, use the &ldquo;Get Directions&rdquo; link above.
+          All three places are on the NIMHANS campus. Tap any of them to open it in Google Maps for directions.
         </div>
       </div>
     </div>

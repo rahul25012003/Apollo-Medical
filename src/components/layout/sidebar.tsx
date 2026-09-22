@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store";
 import { useSession, signOut } from "next-auth/react";
 import { useTenant } from "@/lib/tenant/context";
-import { useIsIfpcDashboard } from "@/components/ifpc/guard";
+import { useIsIfpcDashboard, useBrowseEventsHref } from "@/components/ifpc/guard";
 import {
     LayoutDashboard,
     Calendar,
@@ -326,6 +326,8 @@ export function Sidebar() {
     ] : [];
 
     const { isIfpc } = useIsIfpcDashboard();
+    // IFPC: registered delegates go straight to their event page.
+    const browseEventsHref = useBrowseEventsHref();
 
     // Filter menu items based on user role + tenant module config
     const filteredMenuItems = menuItems.filter((item) => {
@@ -610,7 +612,7 @@ export function Sidebar() {
                                         return (
                                             <li key={item.href}>
                                                 <Link
-                                                    href={item.href}
+                                                    href={item.href === "/dashboard/browse-events" ? browseEventsHref : item.href}
                                                     onClick={() => setSidebarOpen(false)}
                                                     className={cn(
                                                         "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",

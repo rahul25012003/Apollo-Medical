@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { useUIStore } from "@/store";
@@ -7,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useTenant } from "@/lib/tenant/context";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
+import { MyInterestsPanel, type MyInterests } from "@/components/ifpc/MyInterestsPanel";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,6 +38,26 @@ export default function MyInterestsPage() {
 
     const loading = tenantLoading || (isIfpc && eventLoading);
 
+    // The signed-in user's own selections, refreshed whenever they add one here.
+    const { data: authSession, status } = useSession();
+    const userId = authSession?.user?.id;
+    const [mine, setMine] = useState<MyInterests | null>(null);
+    const [mineLoading, setMineLoading] = useState(true);
+    const loadMine = useCallback(async () => {
+        try {
+            const json = await fetch("/api/users/me/interests", { cache: "no-store" }).then((r) => r.json());
+            if (json.success) setMine(json.data);
+        } catch { /* keep what we have */ } finally {
+            setMineLoading(false);
+        }
+    }, []);
+    useEffect(() => {
+        if (status !== "authenticated" || !ifpcCheck.isIfpc) return;
+        setMine(null);
+        setMineLoading(true);
+        loadMine();
+    }, [status, userId, ifpcCheck.isIfpc, loadMine]);
+
     // Only sessions with a capacity set take sign-ups ("Express Interest") —
     // same convention the public Scientific Programme page uses.
     const workshops = (event?.eventSessions || [])
@@ -61,7 +84,11 @@ export default function MyInterestsPage() {
                     sidebarCollapsed ? "lg:pl-[72px]" : "lg:pl-64"
                 )}
             >
-                <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+                <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto grid gap-6 lg:grid-cols-[1fr_320px] items-start">
+                    <aside className="lg:order-2 lg:sticky lg:top-20">
+                        <MyInterestsPanel data={mine} loading={mineLoading} />
+                    </aside>
+                    <div className="lg:order-1 min-w-0">
                     {loading ? (
                         <div className="flex justify-center py-20"><AiimsLoader /></div>
                     ) : !isIfpc ? (
@@ -107,7 +134,7 @@ export default function MyInterestsPage() {
                                                     {s.description && (
                                                         <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{s.description}</p>
                                                     )}
-                                                    <ExpressInterestButton sessionId={s.id} />
+                                                    <ExpressInterestButton sessionId={s.id} onInterested={loadMine} />
                                                 </CardContent>
                                             </Card>
                                         ))}
@@ -116,6 +143,7 @@ export default function MyInterestsPage() {
                             ))}
                         </div>
                     )}
+                    </div>
                 </div>
             </main>
         </div>

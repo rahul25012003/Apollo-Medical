@@ -2,6 +2,7 @@
 
 import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
 import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
+import { CampusPhotoSlideshow } from "@/components/ifpc/CampusPhotoSlideshow";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { HIGHLIGHTS } from "@/content/ifpc-2026";
 import { Landmark, Clock } from "lucide-react";
@@ -24,6 +25,9 @@ export function CampusTourSection() {
   return (
     <Section tint>
       <SectionTitle title={tourItem.title} subtitle="A complimentary guided tour for registered delegates" />
+      <div className="max-w-3xl mb-6">
+        <CampusPhotoSlideshow />
+      </div>
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-6 sm:p-8 max-w-3xl">
         <div className="flex items-start gap-4">
           <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white" style={{ background: "#4B2FE5" }}>

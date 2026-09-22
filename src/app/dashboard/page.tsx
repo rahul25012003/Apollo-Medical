@@ -35,7 +35,7 @@ import { useTenantFilter } from "@/hooks/use-tenant-filter";
 import { useSession } from "next-auth/react";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import Link from "next/link";
-import { useIsIfpcDashboard } from "@/components/ifpc/guard";
+import { useIsIfpcDashboard, useBrowseEventsHref } from "@/components/ifpc/guard";
 
 interface UpcomingEvent {
     id: string;
@@ -73,6 +73,7 @@ export default function DashboardPage() {
     const { tenantFilterParams, effectiveTenantId, sessionLoading } = useTenantFilter();
     // IFPC (apollo-medical) delegate wording; other tenants keep the original text.
     const { isIfpc } = useIsIfpcDashboard();
+    const browseEventsHref = useBrowseEventsHref();
     const userRole = (session?.user?.role || "ATTENDEE") as RoleKey;
     const accent = roleAccent[userRole] || roleAccent.ATTENDEE;
     const isAdmin = ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER", "CERTIFICATE_MANAGER"].includes(userRole);
@@ -301,7 +302,7 @@ export default function DashboardPage() {
                     {/* Quick Stats Row */}
                     <div className={cn("grid gap-4 mb-6", isSpeaker ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-3")}>
                         {/* Browse Events */}
-                        <Link href="/dashboard/browse-events" className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <Link href={browseEventsHref} className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                             <div className="p-3.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: "linear-gradient(135deg, #3b82f6, #06b6d4)", boxShadow: "0 8px 20px rgba(59,130,246,0.3)" }}>
                                 <Calendar className="w-6 h-6" />
                             </div>

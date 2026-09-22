@@ -110,9 +110,12 @@ export default function BrowseEventsPage() {
     }, [effectiveTenantId, sessionLoading]);
 
     // IFPC (apollo-medical) only: a delegate registered for exactly one IFPC
-    // event goes straight to that event instead of this list.
+    // event goes straight to that event instead of this list. Only when the
+    // list is scoped to the user's own tenant. Other tenants always see the list.
     const router = useRouter();
-    const ifpcRegistered = events.filter((e) => e.tenant?.slug === IFPC_TENANT_SLUG && registeredEventIds.has(e.id));
+    const ifpcRegistered = effectiveTenantId
+        ? events.filter((e) => e.tenant?.slug === IFPC_TENANT_SLUG && registeredEventIds.has(e.id))
+        : [];
     const redirectEventId = !loading && ifpcRegistered.length === 1 ? ifpcRegistered[0].id : null;
     useEffect(() => {
         if (redirectEventId) router.replace(`/dashboard/browse-events/${redirectEventId}`);

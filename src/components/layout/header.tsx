@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useTenant } from "@/lib/tenant/context";
+import { useBrowseEventsHref } from "@/components/ifpc/guard";
 
 interface HeaderProps {
     title: string;
@@ -89,6 +90,8 @@ export function Header({ title, subtitle }: HeaderProps) {
     const { sidebarCollapsed } = useUIStore();
     const [searchOpen, setSearchOpen] = React.useState(false);
     const { data: session, status } = useSession();
+    // IFPC: registered delegates go straight to their event page.
+    const browseEventsHref = useBrowseEventsHref();
 
     const user = session?.user;
     const displayName = user?.name || user?.email?.split("@")[0] || "User";
@@ -340,7 +343,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                             {user?.role === "ATTENDEE" && (
                                 <>
                                     <DropdownMenuItem asChild>
-                                        <Link href="/dashboard/browse-events" className="flex items-center gap-2 cursor-pointer">
+                                        <Link href={browseEventsHref} className="flex items-center gap-2 cursor-pointer">
                                             <Calendar className="w-4 h-4" />
                                             Browse Events
                                         </Link>

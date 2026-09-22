@@ -564,10 +564,31 @@ export const FEEDBACK_QUESTIONS: { id: string; label: string; type: "rating" | "
 // VENUE CAMPUS MAP (hand-drawn schematic — see CampusMap.tsx)
 // ---------------------------------------------------------------------------
 
-const NIMHANS_CAMPUS_ADDRESS = "NIMHANS Campus, Hosur Road, Bengaluru, India – 560029";
-
+// Addresses and map links are the Google Maps listings for each place;
+// `mapUrl` uses the listing's place id (cid) so it opens that exact place.
 export const CAMPUS_POINTS = {
-  conventionCentre: { label: "NIMHANS Convention Centre", note: "Main conference venue — all sessions, workshops, and the exhibition area.", address: NIMHANS_CAMPUS_ADDRESS },
-  yogaCentre: { label: "Yoga Hall — Dept. of Integrative Medicine", note: "Daily 6:30–7:30 AM morning yoga, offered by the Department of Integrative Medicine.", address: NIMHANS_CAMPUS_ADDRESS },
-  guestHouse: { label: "NIMHANS Guest House", note: "On-campus delegate accommodation.", address: NIMHANS_CAMPUS_ADDRESS },
+  conventionCentre: {
+    label: "NIMHANS Convention Centre",
+    note: "Main conference venue — all sessions, workshops, and the exhibition area.",
+    address: "15, Hosur Main Road, Lakkasandra, Hombegowda Nagar, Bengaluru, Karnataka 560029",
+    mapUrl: "https://maps.google.com/?cid=14143977283967748386",
+  },
+  yogaCentre: {
+    label: "Yoga Hall — Dept. of Integrative Medicine",
+    note: "Daily 6:30–7:30 AM morning yoga, offered by the Department of Integrative Medicine.",
+    address: "NIMHANS Integrated Centre for Yoga (NICY), NIMHANS, Hombegowda Nagar, Bengaluru, Karnataka 560029",
+    mapUrl: "https://maps.google.com/?cid=759596108814515556",
+  },
+  guestHouse: {
+    label: "NIMHANS Guest House",
+    note: "On-campus delegate accommodation.",
+    address: "15, Hombegowda Nagar, Bengaluru, Karnataka 560029",
+    mapUrl: "https://maps.google.com/?cid=2258000435490589916",
+  },
+  administrativeBlock: {
+    label: "NIMHANS Administrative Block",
+    note: "The historic main building of the institute.",
+    address: "Hosur Road, Lakkasandra, Wilson Garden, Bengaluru, Karnataka 560029",
+    mapUrl: "https://maps.google.com/?cid=6862955690746402769",
+  },
 };

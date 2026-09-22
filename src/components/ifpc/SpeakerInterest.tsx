@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2, Heart } from "lucide-react";
 import { toast } from "sonner";
+import { Heart } from "lucide-react";
+import { InterestToggle, INTEREST_BUTTON_CLASS } from "./InterestToggle";
 
 // One request per page for all of an event's speakers, shared by every
 // SpeakerInterestButton on that page.
@@ -25,6 +25,9 @@ export function useSpeakerInterests(eventId?: string) {
     async function mark(speakerId: string) {
         if (!eventId) return;
         setPending(speakerId);
+        // Show the selected state immediately; undo it if saving fails.
+        setMine((prev) => new Set(prev).add(speakerId));
+        const undo = () => setMine((prev) => { const next = new Set(prev); next.delete(speakerId); return next; });
         try {
             const res = await fetch(`/api/events/${eventId}/speaker-interest`, {
                 method: "POST",
@@ -33,12 +36,13 @@ export function useSpeakerInterests(eventId?: string) {
             });
             const json = await res.json();
             if (!res.ok || !json.success) {
+                undo();
                 toast.error(json?.error?.message || "Could not save your interest");
                 return;
             }
-            setMine((prev) => new Set(prev).add(speakerId));
-            toast.success(json.data.alreadyInterested ? "You're already interested in this speaker" : "Marked as interested");
+            toast.success(json.data.alreadyInterested ? "You're already interested in this speaker" : "Interest saved");
         } catch {
+            undo();
             toast.error("Something went wrong. Please try again.");
         } finally {
             setPending(null);
@@ -52,22 +56,18 @@ export function SpeakerInterestButton({ speakerId, state }: { speakerId: string;
     if (state.status === "loading") return null;
     if (state.status !== "authenticated") {
         return (
-            <Link href="/auth/login" className="text-xs text-primary font-medium hover:underline">
-                Log in to mark interest
+            <Link href="/auth/login" className={INTEREST_BUTTON_CLASS} title="Log in to mark your interest">
+                <Heart className="h-4 w-4" /> Interested? Log in
             </Link>
         );
     }
-    if (state.mine.has(speakerId)) {
-        return (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1">
-                <CheckCircle2 className="h-3.5 w-3.5" /> You&apos;re interested
-            </span>
-        );
-    }
     return (
-        <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs gap-1" disabled={state.pending === speakerId} onClick={() => state.mark(speakerId)}>
-            {state.pending === speakerId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Heart className="h-3.5 w-3.5" />}
-            Interested
-        </Button>
+        <InterestToggle
+            selected={state.mine.has(speakerId)}
+            pending={state.pending === speakerId && !state.mine.has(speakerId)}
+            label="Interested?"
+            selectedLabel="You're interested"
+            onSelect={() => state.mark(speakerId)}
+        />
     );
 }

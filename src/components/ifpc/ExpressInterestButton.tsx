@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Users, Loader2, CheckCircle2 } from "lucide-react";
+import { Users, Loader2, CheckCircle2, Heart } from "lucide-react";
+import { InterestToggle, INTEREST_BUTTON_CLASS } from "./InterestToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,8 @@ interface Props {
   /** initial values so the counter renders instantly without a fetch waterfall */
   initialCount?: number;
   initialCapacity?: number | null;
+  /** called after an interest is saved (e.g. to refresh a "your interests" list) */
+  onInterested?: () => void;
 }
 
 /**
@@ -34,7 +37,7 @@ interface Props {
  * account already has that) and see whether they're already on the list.
  * Signed-out visitors get the original name/email/phone dialog.
  */
-export function ExpressInterestButton({ sessionId, initialCount, initialCapacity }: Props) {
+export function ExpressInterestButton({ sessionId, initialCount, initialCapacity, onInterested }: Props) {
   const { data: authSession } = useSession();
   const isLoggedIn = !!authSession?.user;
 
@@ -79,12 +82,12 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
 
   const isFull = typeof capacity === "number" && count >= capacity;
 
-  async function submit(nameOverride?: string, emailOverride?: string) {
+  async function submit(nameOverride?: string, emailOverride?: string): Promise<boolean> {
     const submitName = nameOverride ?? name;
     const submitEmail = emailOverride ?? email;
     if (!submitName.trim() || !submitEmail.trim()) {
       toast.error("Please enter your name and email");
-      return;
+      return false;
     }
     setSubmitting(true);
     try {
@@ -96,18 +99,28 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
       const json = await res.json();
       if (!res.ok || !json.success) {
         toast.error(json?.error?.message || "Could not register your interest");
-        return;
+        return false;
       }
       setCount(json.data.count);
       setCapacity(json.data.capacity);
       setDone(true);
       setIsInterested(true);
-      toast.success(json.data.alreadyRegistered ? "You're already on the list" : "Interest registered!");
+      toast.success(json.data.alreadyRegistered ? "You're already on the list" : "Interest saved — you're on the list");
+      onInterested?.();
+      return true;
     } catch {
       toast.error("Something went wrong. Please try again.");
+      return false;
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Show the selected state immediately; undo it if saving fails.
+  async function selectAsLoggedIn() {
+    setIsInterested(true);
+    const ok = await submit(authSession!.user!.name || "", authSession!.user!.email || "");
+    if (!ok) setIsInterested(false);
   }
 
   // Logged-in delegate: one-click, no dialog — we already know who they are.
@@ -118,20 +131,14 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
           <Users className="h-3.5 w-3.5" />
           {typeof capacity === "number" ? `${count}/${capacity} seats filled` : `${count} interested`}
         </span>
-        {isInterested ? (
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-1.5">
-            <CheckCircle2 className="h-4 w-4" /> You&apos;re interested
-          </span>
-        ) : (
-          <Button
-            size="sm"
-            variant={isFull ? "outline" : "default"}
-            disabled={isFull || submitting || checkingMine}
-            onClick={() => submit(authSession!.user!.name || "", authSession!.user!.email || "")}
-          >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : isFull ? "Session Full" : "I'd like to attend"}
-          </Button>
-        )}
+        <InterestToggle
+          selected={isInterested}
+          pending={submitting}
+          disabled={(isFull && !isInterested) || checkingMine}
+          label={isFull ? "Session Full" : "I'd like to attend"}
+          selectedLabel="You're interested"
+          onSelect={selectAsLoggedIn}
+        />
       </div>
     );
   }
@@ -145,9 +152,9 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setDone(false); }}>
         <DialogTrigger asChild>
-          <Button size="sm" variant={isFull ? "outline" : "default"} disabled={isFull}>
-            {isFull ? "Session Full" : "I'd like to attend"}
-          </Button>
+          <button type="button" className={INTEREST_BUTTON_CLASS} disabled={isFull}>
+            <Heart className="h-4 w-4" /> {isFull ? "Session Full" : "I'd like to attend"}
+          </button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-sm">
           {done ? (
