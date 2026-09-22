@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
 import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
 import { SCIENTIFIC_PROGRAMME } from "@/content/ifpc-2026";
-import { CalendarDays, Clock, MapPin, Loader2 } from "lucide-react";
-import { format, parseISO, addDays } from "date-fns";
+import { CalendarDays, MapPin, Loader2, Wrench, Presentation, Mic2, Users, Trophy } from "lucide-react";
+import { format, parseISO, addDays, differenceInCalendarDays } from "date-fns";
+import { cn } from "@/lib/utils";
+import type { EventSession } from "@/services/events";
 
 // Builds the "Day 1 / Days 2-N / Closing" narrative from the live event's
 // own startDate/endDate, so it's always correct for whichever dates this
@@ -31,6 +34,114 @@ function buildStructureItems(startDate: string, endDate: string): string[] {
   return items;
 }
 
+const SESSION_TYPE_META: Record<string, { label: string; color: string; bg: string; Icon: typeof Mic2 }> = {
+  WORKSHOP: { label: "Workshop", color: "#047857", bg: "#ECFDF5", Icon: Wrench },
+  SEMINAR: { label: "Seminar", color: "#1D4ED8", bg: "#EFF6FF", Icon: Presentation },
+  PLENARY: { label: "Plenary", color: "#4B2FE5", bg: "#F1EEFF", Icon: Mic2 },
+  KEYNOTE: { label: "Keynote", color: "#B45309", bg: "#FFFBEB", Icon: Mic2 },
+  PANEL: { label: "Panel", color: "#4338CA", bg: "#EEF2FF", Icon: Users },
+  COMPETITION: { label: "Competition", color: "#7E22CE", bg: "#FAF5FF", Icon: Trophy },
+  OTHER: { label: "Session", color: "#1e3a5f", bg: "#F1F5F9", Icon: CalendarDays },
+};
+const typeMeta = (t: string) => SESSION_TYPE_META[t] ?? SESSION_TYPE_META.OTHER;
+
+function DayWiseSchedule({ sessions, eventStart }: { sessions: EventSession[]; eventStart: string }) {
+  // "Day N" counts from the conference's first day, so it matches the programme structure above.
+  const dayNumber = (d: string) => differenceInCalendarDays(parseISO(d), parseISO(eventStart.slice(0, 10))) + 1;
+  const days = Array.from(new Set(sessions.filter((s) => s.sessionDate).map((s) => s.sessionDate!.slice(0, 10)))).sort();
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const [active, setActive] = useState(() => Math.max(0, days.indexOf(todayKey)));
+  const day = days[Math.min(active, days.length - 1)];
+  if (!day) return null;
+
+  const daySessions = sessions
+    .filter((s) => s.sessionDate?.slice(0, 10) === day)
+    .sort((a, b) => (a.startTime ?? "99:99").localeCompare(b.startTime ?? "99:99") || (a.sessionOrder ?? 0) - (b.sessionOrder ?? 0));
+  const typesPresent = Array.from(new Set(sessions.map((s) => (SESSION_TYPE_META[s.sessionType] ? s.sessionType : "OTHER"))));
+
+  return (
+    <Section>
+      <SectionTitle title="Day-Wise Schedule" subtitle="Includes any workshops, seminars, and competitions delegates can express interest in attending." />
+
+      {/* Day navigation */}
+      <div role="tablist" aria-label="Conference days" className="-mx-4 px-4 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto pb-2">
+        {days.map((d, i) => {
+          const selected = d === day;
+          const count = sessions.filter((s) => s.sessionDate?.slice(0, 10) === d).length;
+          return (
+            <button
+              key={d}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => setActive(i)}
+              className={cn(
+                "flex-none min-w-[128px] rounded-2xl border-2 px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4B2FE5] focus-visible:ring-offset-2",
+                selected ? "border-[#12112B] bg-[#12112B] text-white" : "border-slate-200 bg-white text-slate-800 hover:border-slate-400"
+              )}
+            >
+              <span className={cn("block text-[11px] font-bold uppercase tracking-[0.16em]", selected ? "text-[#CCFF33]" : "text-[#4B2FE5]")}>{dayNumber(d) >= 1 ? `Day ${dayNumber(d)}` : "Before"}</span>
+              <span className="block text-base font-extrabold leading-tight">{format(parseISO(d), "EEE, d MMM")}</span>
+              <span className={cn("block text-xs mt-0.5", selected ? "text-white/70" : "text-slate-500")}>{count} session{count === 1 ? "" : "s"}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Type legend */}
+      <div className="mt-4 mb-8 flex flex-wrap gap-2" aria-hidden="true">
+        {typesPresent.map((t) => {
+          const m = typeMeta(t);
+          return (
+            <span key={t} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold" style={{ color: m.color, background: m.bg }}>
+              <m.Icon className="h-3.5 w-3.5" /> {m.label}
+            </span>
+          );
+        })}
+      </div>
+
+      <div role="tabpanel" aria-label={format(parseISO(day), "EEEE, d MMMM yyyy")}>
+        <h3 className="mb-5 text-xl sm:text-2xl font-extrabold tracking-tight">
+          {format(parseISO(day), "EEEE, d MMMM yyyy")}
+        </h3>
+        <ol className="relative space-y-4 sm:space-y-5 sm:before:absolute sm:before:left-[93px] sm:before:top-2 sm:before:bottom-2 sm:before:w-px sm:before:bg-slate-200">
+          {daySessions.map((s) => {
+            const m = typeMeta(s.sessionType);
+            return (
+              <li key={s.id} className="sm:grid sm:grid-cols-[76px_1fr] sm:gap-8">
+                <div className="sm:pt-4 sm:text-right mb-2 sm:mb-0 flex sm:block items-baseline gap-2">
+                  <p className="text-lg sm:text-xl font-extrabold tabular-nums leading-none text-[#12112B]">{s.startTime ?? "TBA"}</p>
+                  {s.endTime && <p className="text-sm sm:mt-1 tabular-nums text-slate-500">to {s.endTime}</p>}
+                </div>
+                <div className="relative">
+                  <span className="hidden sm:block absolute -left-[21px] top-5 h-3 w-3 rounded-full ring-4 ring-white" style={{ background: m.color }} aria-hidden="true" />
+                  <article className="rounded-2xl border border-slate-200 border-l-4 bg-white p-4 sm:p-5 shadow-sm" style={{ borderLeftColor: m.color }}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider" style={{ color: m.color, background: m.bg }}>
+                        <m.Icon className="h-3.5 w-3.5" /> {m.label}
+                      </span>
+                      {s.hall && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600"><MapPin className="h-3.5 w-3.5" />{s.hall.name}</span>
+                      )}
+                    </div>
+                    <h4 className="mt-2 text-lg font-bold leading-snug text-[#12112B]">{s.title}</h4>
+                    {s.description && <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{s.description}</p>}
+                    {s.capacity != null && (
+                      <div className="mt-4 border-t border-slate-100 pt-4">
+                        <ExpressInterestButton sessionId={s.id} />
+                      </div>
+                    )}
+                  </article>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </Section>
+  );
+}
+
 export function ScientificProgrammeSection() {
   const { event, loading } = useIfpcEvent();
   const hasEnded = !!event?.endDate && new Date(event.endDate) < new Date();
@@ -42,10 +153,6 @@ export function ScientificProgrammeSection() {
     if (ad !== bd) return ad - bd;
     return (a.sessionOrder ?? 0) - (b.sessionOrder ?? 0);
   });
-
-  const days = Array.from(
-    new Set(sessions.filter((s) => s.sessionDate).map((s) => s.sessionDate!.slice(0, 10)))
-  );
 
   return (
     <>
@@ -79,43 +186,7 @@ export function ScientificProgrammeSection() {
           <div className="flex justify-center py-10 opacity-40"><Loader2 className="h-6 w-6 animate-spin" /></div>
         </Section>
       ) : sessions.length > 0 ? (
-        <Section>
-          <SectionTitle title="Day-Wise Schedule" subtitle="Includes any workshops, seminars, and competitions delegates can express interest in attending." />
-          <div className="space-y-10">
-            {days.map((day) => (
-              <div key={day}>
-                <div className="flex items-center gap-2 mb-4">
-                  <CalendarDays className="h-4 w-4" style={{ color: "#4B2FE5" }} />
-                  <h3 className="font-bold">{format(parseISO(day), "EEEE, MMMM d, yyyy")}</h3>
-                </div>
-                <div className="space-y-3">
-                  {sessions.filter((s) => s.sessionDate?.slice(0, 10) === day).map((s) => (
-                    <div key={s.id} className="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500" style={{ color: "#4B2FE5" }}>{s.sessionType}</span>
-                          <h4 className="font-bold mt-0.5">{s.title}</h4>
-                        </div>
-                        {(s.startTime || s.hall) && (
-                          <div className="flex items-center gap-3 text-xs opacity-60">
-                            {s.startTime && <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{s.startTime}{s.endTime ? `–${s.endTime}` : ""}</span>}
-                            {s.hall && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{s.hall.name}</span>}
-                          </div>
-                        )}
-                      </div>
-                      {s.description && <p className="text-sm opacity-70 mt-2 leading-relaxed">{s.description}</p>}
-                      {s.capacity != null && (
-                        <div className="mt-3">
-                          <ExpressInterestButton sessionId={s.id} />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
+        <DayWiseSchedule sessions={sessions} eventStart={event!.startDate} />
       ) : null}
     </>
   );

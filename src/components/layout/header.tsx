@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { Bell, Search, ChevronDown, Settings, User, LogOut, HelpCircle, Loader2, Ticket, Award, Calendar, Users, CheckCircle2 } from "lucide-react";
+import { Bell, Search, ChevronDown, Settings, User, LogOut, HelpCircle, Loader2, Ticket, Award, Calendar, Users, CheckCircle2, QrCode } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DarkModeToggle } from "@/components/ui/dark-mode-toggle";
 import {
@@ -19,7 +19,8 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useTenant } from "@/lib/tenant/context";
-import { useBrowseEventsHref } from "@/components/ifpc/guard";
+import { useBrowseEventsHref, useIdCardHref, useIsIfpcDashboard } from "@/components/ifpc/guard";
+import { useMySelections, useUpNextMessages } from "@/components/ifpc/useMySelections";
 
 interface HeaderProps {
     title: string;
@@ -92,6 +93,7 @@ export function Header({ title, subtitle }: HeaderProps) {
     const { data: session, status } = useSession();
     // IFPC: registered delegates go straight to their event page.
     const browseEventsHref = useBrowseEventsHref();
+    const idCardHref = useIdCardHref();
 
     const user = session?.user;
     const displayName = user?.name || user?.email?.split("@")[0] || "User";
@@ -102,6 +104,11 @@ export function Header({ title, subtitle }: HeaderProps) {
     // Notifications
     const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
     const [unreadCount, setUnreadCount] = React.useState(0);
+    // IFPC (apollo-medical) only: live notices about the user's own session picks.
+    const { isIfpc } = useIsIfpcDashboard();
+    const sessionNotices = useUpNextMessages(useMySelections(isIfpc && status === "authenticated"));
+    const urgentNotices = sessionNotices.filter((m) => m.tone === "now" || m.tone === "soon").length;
+    const badgeCount = unreadCount + urgentNotices;
 
     const fetchNotifications = useCallback(async () => {
         try {
@@ -173,26 +180,41 @@ export function Header({ title, subtitle }: HeaderProps) {
 
                 {/* Right side */}
                 <div className="flex items-center gap-2 sm:gap-3">
-                    {/* Search - Desktop */}
-                    <div className="hidden md:flex items-center">
-                        <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-foreground" />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="h-9 w-44 lg:w-56 pl-9 pr-4 bg-muted/50 backdrop-blur-sm rounded-xl border border-white/[0.08] outline-none text-sm placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/30 focus:border-primary/30 focus:bg-muted/80 transition-all duration-300"
-                            />
-                        </div>
-                    </div>
+                    {isIfpc ? (
+                        /* ID Card / QR Code — required at multiple points during the conference */
+                        <Link
+                            href={idCardHref}
+                            className="p-2 rounded-xl hover:bg-muted/80 transition-all duration-200 flex items-center gap-1.5"
+                            aria-label="ID Card / QR Code"
+                            title="ID Card / QR Code"
+                        >
+                            <QrCode className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+                            <span className="hidden md:inline text-sm font-medium text-muted-foreground">ID Card</span>
+                        </Link>
+                    ) : (
+                        <>
+                            {/* Search - Desktop */}
+                            <div className="hidden md:flex items-center">
+                                <div className="relative group">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-foreground" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        className="h-9 w-44 lg:w-56 pl-9 pr-4 bg-muted/50 backdrop-blur-sm rounded-xl border border-white/[0.08] outline-none text-sm placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/30 focus:border-primary/30 focus:bg-muted/80 transition-all duration-300"
+                                    />
+                                </div>
+                            </div>
 
-                    {/* Search - Mobile toggle */}
-                    <button
-                        onClick={() => setSearchOpen(!searchOpen)}
-                        className="md:hidden p-2 rounded-xl hover:bg-muted/80 transition-all duration-200"
-                        aria-label="Search"
-                    >
-                        <Search className="w-5 h-5 text-muted-foreground" />
-                    </button>
+                            {/* Search - Mobile toggle */}
+                            <button
+                                onClick={() => setSearchOpen(!searchOpen)}
+                                className="md:hidden p-2 rounded-xl hover:bg-muted/80 transition-all duration-200"
+                                aria-label="Search"
+                            >
+                                <Search className="w-5 h-5 text-muted-foreground" />
+                            </button>
+                        </>
+                    )}
 
                     {/* Tenant Selector (SUPER_ADMIN only) */}
                     <TenantSelector />
@@ -203,12 +225,12 @@ export function Header({ title, subtitle }: HeaderProps) {
                             <button aria-label="Notifications" className="relative p-2 rounded-xl hover:bg-muted/80 transition-all duration-200 group">
                                 <Bell className={cn(
                                     "w-5 h-5 text-muted-foreground transition-all duration-200 group-hover:text-foreground",
-                                    unreadCount > 0 && "text-foreground"
+                                    badgeCount > 0 && "text-foreground"
                                 )} />
-                                {unreadCount > 0 && (
+                                {badgeCount > 0 && (
                                     <>
                                         <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center text-white text-[10px] font-bold rounded-full ring-2 ring-background px-1 shadow-lg" style={{ background: acColor, boxShadow: `0 4px 12px ${acColor}50` }}>
-                                            {unreadCount > 99 ? "99+" : unreadCount}
+                                            {badgeCount > 99 ? "99+" : badgeCount}
                                         </span>
                                         <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full animate-ping" style={{ background: `${acColor}40` }} />
                                     </>
@@ -229,7 +251,24 @@ export function Header({ title, subtitle }: HeaderProps) {
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <div className="max-h-[350px] overflow-y-auto">
-                                {notifications.length === 0 ? (
+                                {sessionNotices.length > 0 && (
+                                    <div className="px-2 pt-1 pb-2">
+                                        <p className="px-1 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Your sessions</p>
+                                        {sessionNotices.map((m) => (
+                                            <DropdownMenuItem key={m.sessionId + m.tone} asChild className="rounded-lg p-2.5 cursor-pointer">
+                                                <Link href="/dashboard" className="flex items-center gap-2.5">
+                                                    <span className={cn(
+                                                        "h-2.5 w-2.5 flex-none rounded-full",
+                                                        m.tone === "now" ? "bg-rose-500 animate-pulse" : m.tone === "soon" ? "bg-amber-500" : m.tone === "today" ? "bg-emerald-500" : "bg-slate-400"
+                                                    )} />
+                                                    <span className="text-sm font-medium leading-snug">{m.text}</span>
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </div>
+                                )}
+                                {sessionNotices.length > 0 && notifications.length > 0 && <DropdownMenuSeparator />}
+                                {notifications.length === 0 ? (sessionNotices.length > 0 ? null : (
                                     <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
                                         <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
                                             <Bell className="w-6 h-6 opacity-30" />
@@ -237,7 +276,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                                         <p className="text-sm font-medium">No notifications yet</p>
                                         <p className="text-xs text-muted-foreground/60 mt-1">We will notify you when something arrives</p>
                                     </div>
-                                ) : (
+                                )) : (
                                     notifications.map((n) => (
                                         <DropdownMenuItem
                                             key={n.id}
@@ -285,13 +324,15 @@ export function Header({ title, subtitle }: HeaderProps) {
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    {/* Dark mode toggle */}
-                    <DarkModeToggle />
+                    {/* Dark mode toggle — disabled for now */}
+                    {!isIfpc && <DarkModeToggle />}
 
                     {/* Help - desktop only */}
-                    <button className="hidden lg:flex p-2 rounded-xl hover:bg-muted/80 transition-all duration-200" aria-label="Help">
-                        <HelpCircle className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-                    </button>
+                    {!isIfpc && (
+                        <button className="hidden lg:flex p-2 rounded-xl hover:bg-muted/80 transition-all duration-200" aria-label="Help">
+                            <HelpCircle className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+                        </button>
+                    )}
 
                     {/* Divider */}
                     <div className="hidden sm:block w-px h-6 bg-gradient-to-b from-transparent via-border to-transparent mx-1" />
@@ -389,7 +430,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             </div>
 
             {/* Mobile Search Expanded */}
-            {searchOpen && (
+            {!isIfpc && searchOpen && (
                 <div className="md:hidden absolute top-full left-0 right-0 p-3 bg-background/80 backdrop-blur-xl border-b border-border/50">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

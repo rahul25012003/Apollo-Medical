@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Users, Loader2, CheckCircle2, Heart } from "lucide-react";
+import { Users, Loader2, CheckCircle2, Heart, CircleDot, ListChecks } from "lucide-react";
 import { InterestToggle, INTEREST_BUTTON_CLASS } from "./InterestToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,16 +17,34 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
-export const INTEREST_CHANGED_EVENT = "ifpc-interest-changed";
+import { INTEREST_CHANGED_EVENT } from "@/lib/ifpc-eoi";
 
 interface Props {
   sessionId: string;
   /** initial values so the counter renders instantly without a fetch waterfall */
   initialCount?: number;
   initialCapacity?: number | null;
-  /** called after an interest is saved (e.g. to refresh a "your interests" list) */
+  /** called after an interest is saved or removed (e.g. to refresh a "your interests" list) */
   onInterested?: () => void;
+  /** hide the "Choose one" rule chip where the page already shows it */
+  showRule?: boolean;
+}
+
+interface SelectionRule { category: string; label: string; single: boolean; rule: string }
+
+function RuleChip({ rule }: { rule: SelectionRule }) {
+  return (
+    <span
+      title={rule.single ? `${rule.label}: only one can be chosen — a new choice replaces the old one` : `${rule.label}: choose as many as you like`}
+      className={
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border " +
+        (rule.single ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-emerald-50 text-emerald-800 border-emerald-200")
+      }
+    >
+      {rule.single ? <CircleDot className="h-3.5 w-3.5" /> : <ListChecks className="h-3.5 w-3.5" />}
+      {rule.label}: {rule.rule.toLowerCase()}
+    </span>
+  );
 }
 
 /**
@@ -39,7 +57,7 @@ interface Props {
  * account already has that) and see whether they're already on the list.
  * Signed-out visitors get the original name/email/phone dialog.
  */
-export function ExpressInterestButton({ sessionId, initialCount, initialCapacity, onInterested }: Props) {
+export function ExpressInterestButton({ sessionId, initialCount, initialCapacity, onInterested, showRule = true }: Props) {
   const { data: authSession } = useSession();
   const isLoggedIn = !!authSession?.user;
 
@@ -53,6 +71,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
   const [phone, setPhone] = useState("");
   const [isInterested, setIsInterested] = useState(false);
   const [checkingMine, setCheckingMine] = useState(isLoggedIn);
+  const [rule, setRule] = useState<SelectionRule | null>(null);
   // Bumped when any interest on the page changes — a pick-one swap clears another button's selection.
   const [refreshTick, setRefreshTick] = useState(0);
   useEffect(() => {
@@ -69,6 +88,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
         if (json.success) {
           setCount(json.data.count);
           setCapacity(json.data.capacity);
+          setRule(json.data.rule ?? null);
         }
       })
       .catch(() => {});
@@ -122,7 +142,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
             ? `${json.message} — replaced "${replaced.join(", ")}"`
             : "Interest saved — you're on the list"
       );
-      if (replaced.length) window.dispatchEvent(new Event(INTEREST_CHANGED_EVENT));
+      window.dispatchEvent(new Event(INTEREST_CHANGED_EVENT));
       onInterested?.();
       return true;
     } catch {
@@ -140,14 +160,40 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
     if (!ok) setIsInterested(false);
   }
 
+  async function removeAsLoggedIn() {
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/interest`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        toast.error(json?.error?.message || "Could not remove your choice");
+        return;
+      }
+      setCount(json.data.count);
+      setIsInterested(false);
+      toast.success(json.message || "Removed from your choices");
+      window.dispatchEvent(new Event(INTEREST_CHANGED_EVENT));
+      onInterested?.();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const seats = (
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-3 py-1">
+      <Users className="h-3.5 w-3.5" />
+      {typeof capacity === "number" ? `${count}/${capacity} seats filled` : `${count} interested`}
+    </span>
+  );
+
   // Logged-in delegate: one-click, no dialog — we already know who they are.
   if (isLoggedIn) {
     return (
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-3 py-1">
-          <Users className="h-3.5 w-3.5" />
-          {typeof capacity === "number" ? `${count}/${capacity} seats filled` : `${count} interested`}
-        </span>
+        {seats}
+        {showRule && rule && <RuleChip rule={rule} />}
         <InterestToggle
           selected={isInterested}
           pending={submitting}
@@ -155,6 +201,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
           label={isFull ? "Session Full" : "I'd like to attend"}
           selectedLabel="You're interested"
           onSelect={selectAsLoggedIn}
+          onRemove={removeAsLoggedIn}
         />
       </div>
     );
@@ -162,10 +209,8 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-3 py-1">
-        <Users className="h-3.5 w-3.5" />
-        {typeof capacity === "number" ? `${count}/${capacity} seats filled` : `${count} interested`}
-      </span>
+      {seats}
+      {showRule && rule && <RuleChip rule={rule} />}
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setDone(false); }}>
         <DialogTrigger asChild>

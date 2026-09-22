@@ -106,7 +106,7 @@ export default function MyInterestsPage() {
                 {s.description && (
                     <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{s.description}</p>
                 )}
-                <ExpressInterestButton sessionId={s.id} onInterested={loadMine} />
+                <ExpressInterestButton sessionId={s.id} onInterested={loadMine} showRule={false} />
             </CardContent>
         </Card>
     );

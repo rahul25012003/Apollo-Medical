@@ -28,11 +28,13 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
 
   const eventSession = await prisma.eventSession.findUnique({
     where: { id: sessionId },
-    select: { id: true, capacity: true, event: { select: { tenantId: true } } },
+    select: { id: true, capacity: true, title: true, sessionType: true, startTime: true, event: { select: { tenantId: true } } },
   });
   if (!eventSession) return Errors.notFound("Session");
 
   const count = await prisma.sessionInterest.count({ where: { sessionId } });
+  const category = eoiCategoryOf(eventSession);
+  const rule = category ? { category, ...EOI_CATEGORIES[category] } : null;
 
   const { searchParams } = new URL(request.url);
   if (searchParams.get("list") === "1") {
@@ -52,10 +54,27 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
       where: { sessionId_email: { sessionId, email: session.user.email.toLowerCase() } },
       select: { id: true },
     });
-    return successResponse({ capacity: eventSession.capacity, count, isInterested: !!mine });
+    return successResponse({ capacity: eventSession.capacity, count, isInterested: !!mine, rule });
   }
 
-  return successResponse({ capacity: eventSession.capacity, count });
+  return successResponse({ capacity: eventSession.capacity, count, rule });
+});
+
+// DELETE /api/sessions/[id]/interest — the signed-in delegate withdraws their own interest.
+export const DELETE = withErrorHandler(async (_request: NextRequest, context?: RouteContext) => {
+  const { id: sessionId } = await context!.params;
+  const eventSession = await prisma.eventSession.findUnique({ where: { id: sessionId }, select: { eventId: true, capacity: true } });
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!eventSession || !(await isIfpcEvent(eventSession.eventId))) return Errors.notFound("Page");
+
+  const session = await auth();
+  if (!session) return Errors.unauthorized();
+
+  const { count: removed } = await prisma.sessionInterest.deleteMany({
+    where: { sessionId, email: session.user.email.toLowerCase() },
+  });
+  const count = await prisma.sessionInterest.count({ where: { sessionId } });
+  return successResponse({ capacity: eventSession.capacity, count, removed: removed > 0 }, removed ? "Removed from your choices" : "It wasn't in your choices");
 });
 
 // POST /api/sessions/[id]/interest — delegate expresses interest ("I would like to attend")

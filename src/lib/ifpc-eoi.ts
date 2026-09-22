@@ -1,6 +1,9 @@
 // Expression-of-interest categories for IFPC 2026. Derived from each session's
 // own data (title / type / start time), so any session an admin adds lands in
 // the right group automatically — no extra field to maintain.
+/** Fired on window whenever a delegate's session selections change (pick, swap, remove). */
+export const INTEREST_CHANGED_EVENT = "ifpc-interest-changed";
+
 export type EoiCategory = "tour" | "yoga" | "morningWorkshop" | "afternoonWorkshop";
 
 export const EOI_CATEGORIES: Record<EoiCategory, { label: string; single: boolean; rule: string }> = {

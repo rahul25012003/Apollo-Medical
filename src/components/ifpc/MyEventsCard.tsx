@@ -1,50 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format, parseISO, formatDistanceToNowStrict, isToday, isTomorrow } from "date-fns";
 import { ArrowRight, Heart, Clock, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { EOI_CATEGORIES, eoiCategoryOf, sessionStartsAt, upNextMessages } from "@/lib/ifpc-eoi";
+import { useMySelections, useUpNextMessages, type MySelection } from "@/components/ifpc/useMySelections";
 import { ScheduleCalendar } from "@/components/ifpc/ScheduleCalendar";
-
-export interface MySessionInterest {
-  sessionId: string;
-  title: string;
-  sessionType: string;
-  sessionDate: string | null;
-  startTime: string | null;
-  endTime: string | null;
-  hall: string | null;
-}
-
-export interface MySelection extends MySessionInterest {
-  label: string;
-  startsAt: Date | null;
-}
-
-/** The signed-in delegate's session selections, soonest first (undated next, finished last). */
-export function useMySelections() {
-  const [items, setItems] = useState<MySelection[] | null>(null);
-  useEffect(() => {
-    fetch("/api/users/me/interests", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((json) => {
-        const rows: MySessionInterest[] = json.success ? json.data.sessions : [];
-        setItems(sortSelections(rows.map((s) => {
-          const cat = eoiCategoryOf(s);
-          return { ...s, label: cat ? EOI_CATEGORIES[cat].label : s.sessionType.charAt(0) + s.sessionType.slice(1).toLowerCase(), startsAt: sessionStartsAt(s) };
-        })));
-      })
-      .catch(() => setItems([]));
-  }, []);
-  return items;
-}
-
-export function sortSelections(items: MySelection[], now = new Date()): MySelection[] {
-  const rank = (s: MySelection) => (!s.startsAt ? 1 : s.startsAt >= now ? 0 : 2);
-  return [...items].sort((a, b) => rank(a) - rank(b) || (a.startsAt?.getTime() ?? 0) - (b.startsAt?.getTime() ?? 0));
-}
 
 function whenText(s: MySelection, now: Date) {
   if (!s.startsAt) return "Date to be announced";
@@ -74,12 +35,7 @@ const TONE_STYLE = {
 } as const;
 
 export function UpNextNotices({ items }: { items: MySelection[] | null }) {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 30000);
-    return () => clearInterval(id);
-  }, []);
-  const messages = items ? upNextMessages(items, now) : [];
+  const messages = useUpNextMessages(items);
   if (messages.length === 0) return null;
 
   return (

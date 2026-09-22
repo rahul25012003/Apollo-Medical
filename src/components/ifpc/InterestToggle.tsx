@@ -20,6 +20,8 @@ interface Props {
     label: string;
     selectedLabel: string;
     onSelect: () => void;
+    /** When given, the selected state offers a "Remove" action. */
+    onRemove?: () => void;
     className?: string;
 }
 
@@ -28,7 +30,7 @@ interface Props {
  * an unmistakable solid "selected" state (check icon, pop + ring pulse) the
  * moment it's chosen.
  */
-export function InterestToggle({ selected, pending, disabled, label, selectedLabel, onSelect, className }: Props) {
+export function InterestToggle({ selected, pending, disabled, label, selectedLabel, onSelect, onRemove, className }: Props) {
     // Animate only when the user just selected it, not when a page loads with
     // an interest that was saved earlier.
     const wasSelected = useRef(selected);
@@ -39,7 +41,7 @@ export function InterestToggle({ selected, pending, disabled, label, selectedLab
     }, [selected]);
 
     if (selected) {
-        return (
+        const badge = (
             <span
                 role="status"
                 aria-live="polite"
@@ -53,6 +55,20 @@ export function InterestToggle({ selected, pending, disabled, label, selectedLab
                 )}
             >
                 <CheckCircle2 className="h-4 w-4" /> {selectedLabel}
+            </span>
+        );
+        if (!onRemove) return badge;
+        return (
+            <span className="inline-flex items-center gap-1">
+                {badge}
+                <button
+                    type="button"
+                    onClick={onRemove}
+                    disabled={pending}
+                    className="inline-flex items-center justify-center h-11 sm:h-9 min-w-[44px] px-3 rounded-lg text-sm font-semibold text-slate-600 hover:text-rose-700 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 disabled:opacity-60"
+                >
+                    {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Remove"}
+                </button>
             </span>
         );
     }
