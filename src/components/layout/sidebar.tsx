@@ -34,6 +34,9 @@ import {
     Mail,
     Eye,
     Heart,
+    ClipboardList,
+    MapPinned,
+    History,
 } from "lucide-react";
 import { eventsService, Event } from "@/services/events";
 
@@ -124,6 +127,14 @@ const menuItems = [
         group: "Main",
     },
     {
+        title: "Feedback",
+        ifpcOnly: true,
+        href: "/dashboard/feedback",
+        icon: ClipboardList,
+        roles: ["ATTENDEE"] as UserRole[],
+        group: "Main",
+    },
+    {
         title: "Speakers",
         href: "/dashboard/speakers",
         icon: Mic2,
@@ -171,9 +182,25 @@ const menuItems = [
         group: "Management",
     },
     {
+        title: "Locations",
+        ifpcOnly: true,
+        href: "/dashboard/locations",
+        icon: MapPinned,
+        roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
+        group: "Management",
+    },
+    {
         title: "User Management",
         href: "/dashboard/users",
         icon: UserCog,
+        roles: ["SUPER_ADMIN", "ADMIN"] as UserRole[],
+        group: "System",
+    },
+    {
+        title: "Activity Log",
+        ifpcOnly: true,
+        href: "/dashboard/activity-log",
+        icon: History,
         roles: ["SUPER_ADMIN", "ADMIN"] as UserRole[],
         group: "System",
     },

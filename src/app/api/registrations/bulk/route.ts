@@ -12,6 +12,7 @@ import { sendEmail } from "@/lib/notifications";
 import { isTenantOwner } from "@/lib/tenant-scope";
 import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
 import { issueAttendeeBadgeAndCertificate } from "@/lib/ifpc-automation";
+import { logActivity } from "@/lib/activity-log";
 
 // POST /api/registrations/bulk - Perform bulk actions on registrations
 export const POST = withErrorHandler(async (request: NextRequest) => {
@@ -161,6 +162,14 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         )
       );
       const sent = results.filter((r) => r.status === "fulfilled" && r.value).length;
+      await logActivity(session, {
+        action: "registration.bulk-email",
+        summary: `Sent a bulk email to ${sent}/${emails.length} registrants`,
+        entityType: "Event",
+        tenantId: existingRegistrations[0]?.event.tenantId,
+        metadata: { subject },
+        request,
+      });
       return successResponse(
         { sent, total: emails.length },
         `${sent}/${emails.length} emails sent`
@@ -170,6 +179,15 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     default:
       return Errors.badRequest("Invalid action");
   }
+
+  await logActivity(session, {
+    action: `registration.bulk-${action}`,
+    summary: `Bulk ${action} on ${result?.count ?? registrationIds.length} registrations`,
+    entityType: "Event",
+    tenantId: existingRegistrations[0]?.event.tenantId,
+    metadata: { action, count: registrationIds.length },
+    request,
+  });
 
   return successResponse(
     { updated: result.count },

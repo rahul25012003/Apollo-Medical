@@ -21,7 +21,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Search, Heart, Mail, Phone, UserX, Utensils, Building2, Mic2, Landmark, Users } from "lucide-react";
+import { Search, Heart, Mail, Phone, UserX, Utensils, Building2, Mic2, Landmark, Users, Download } from "lucide-react";
+import { sharingLabel } from "@/lib/ifpc-constants";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 
 interface Interest {
@@ -49,9 +50,23 @@ interface AccommodationRow {
     email: string;
     category: string | null;
     participantRole: string | null;
-    hotel: string;
+    hotel: string | null;
     selectedAt: string | null;
+    required: boolean | null;
+    sharing: string | null;
+    checkIn: string | null;
+    checkOut: string | null;
+    remarks: string | null;
 }
+
+// CSV downloads for the organizing team (GET /api/events/[id]/exports).
+const EXPORTS: { type: string; label: string }[] = [
+    { type: "session-interests", label: "Workshops & sessions" },
+    { type: "speaker-interests", label: "Speakers" },
+    { type: "accommodation", label: "Accommodation" },
+    { type: "food", label: "Food" },
+    { type: "participant-interests", label: "Everything per delegate" },
+];
 
 interface SpeakerInterestRow {
     id: string;
@@ -147,8 +162,23 @@ export function InterestsTab({ eventId }: { eventId: string }) {
     const nonVegCount = food.filter((f) => f.preference === "NON_VEG").length;
     const hotelCounts = useMemo(() => {
         const counts = new Map<string, number>();
-        accommodation.forEach((a) => counts.set(a.hotel, (counts.get(a.hotel) || 0) + 1));
+        accommodation.forEach((a) => a.hotel && counts.set(a.hotel, (counts.get(a.hotel) || 0) + 1));
         return Array.from(counts, ([hotel, count]) => ({ hotel, count })).sort((a, b) => b.count - a.count);
+    }, [accommodation]);
+
+    // Room planning: how many need a room, split by sharing preference.
+    const accommodationSummary = useMemo(() => {
+        const needs = accommodation.filter((a) => a.required !== false && (a.required || a.hotel));
+        const bySharing = new Map<string, number>();
+        needs.forEach((a) => {
+            const label = sharingLabel(a.sharing) ?? "Sharing not chosen";
+            bySharing.set(label, (bySharing.get(label) || 0) + 1);
+        });
+        return {
+            needs: needs.length,
+            notRequired: accommodation.filter((a) => a.required === false).length,
+            bySharing: Array.from(bySharing, ([label, count]) => ({ label, count })),
+        };
     }, [accommodation]);
 
     if (loading) return <AiimsLoader />;
@@ -219,6 +249,19 @@ export function InterestsTab({ eventId }: { eventId: string }) {
                 <CardDescription>
                     Everything delegates have expressed interest in for this event, linked to their registration
                 </CardDescription>
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                    <span className="text-xs font-medium text-muted-foreground">Download (Excel/CSV):</span>
+                    {EXPORTS.map((x) => (
+                        <a
+                            key={x.type}
+                            href={`/api/events/${eventId}/exports?type=${x.type}`}
+                            download
+                            className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+                        >
+                            <Download className="h-3.5 w-3.5" /> {x.label}
+                        </a>
+                    ))}
+                </div>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="relative">
@@ -284,6 +327,15 @@ export function InterestsTab({ eventId }: { eventId: string }) {
                     </TabsContent>
 
                     <TabsContent value="accommodation" className="space-y-3 pt-2">
+                        {accommodation.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">Need a room: {accommodationSummary.needs}</Badge>
+                                {accommodationSummary.bySharing.map((s) => (
+                                    <Badge key={s.label} variant="outline" className="text-xs">{s.label}: {s.count}</Badge>
+                                ))}
+                                <Badge variant="outline" className="text-xs bg-slate-50 text-slate-600">Not required: {accommodationSummary.notRequired}</Badge>
+                            </div>
+                        )}
                         {hotelCounts.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {hotelCounts.map((h) => (
@@ -294,7 +346,7 @@ export function InterestsTab({ eventId }: { eventId: string }) {
                         {filterRows(accommodation).length === 0 ? (
                             <div className="text-center py-12 text-muted-foreground">
                                 <Building2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                                <p>{accommodation.length === 0 ? "No one has selected accommodation yet." : "No results match your search."}</p>
+                                <p>{accommodation.length === 0 ? "No one has submitted an accommodation preference yet." : "No results match your search."}</p>
                             </div>
                         ) : (
                             <div className="rounded-lg border overflow-x-auto">
@@ -302,16 +354,24 @@ export function InterestsTab({ eventId }: { eventId: string }) {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Delegate</TableHead>
+                                            <TableHead>Needs room</TableHead>
+                                            <TableHead>Sharing</TableHead>
+                                            <TableHead>Dates</TableHead>
                                             <TableHead>Hotel</TableHead>
+                                            <TableHead>Remarks</TableHead>
                                             <TableHead>Contact</TableHead>
-                                            <TableHead>Selected</TableHead>
+                                            <TableHead>Updated</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {filterRows(accommodation).map((a) => (
                                             <TableRow key={a.id}>
                                                 <TableCell><DelegateCell name={a.name} category={a.category} participantRole={a.participantRole} /></TableCell>
-                                                <TableCell className="text-sm font-medium">{a.hotel}</TableCell>
+                                                <TableCell className="text-sm">{a.required === false ? "No" : a.required || a.hotel ? "Yes" : "—"}</TableCell>
+                                                <TableCell className="text-sm">{sharingLabel(a.sharing) ?? "—"}</TableCell>
+                                                <TableCell className="text-sm whitespace-nowrap">{a.checkIn ? `${a.checkIn} → ${a.checkOut ?? "?"}` : "—"}</TableCell>
+                                                <TableCell className="text-sm font-medium">{a.hotel ?? "—"}</TableCell>
+                                                <TableCell className="text-xs text-muted-foreground max-w-[220px] whitespace-pre-wrap">{a.remarks || "—"}</TableCell>
                                                 <TableCell className="text-xs text-muted-foreground">{a.email}</TableCell>
                                                 <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                                                     {a.selectedAt ? new Date(a.selectedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}

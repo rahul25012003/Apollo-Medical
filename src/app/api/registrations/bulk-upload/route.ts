@@ -7,6 +7,7 @@ import { parseCsv } from "@/lib/csv";
 import { createAdminRegistration, type RegistrationEventContext } from "@/lib/registration-creation";
 import { z } from "zod";
 import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import { logActivity } from "@/lib/activity-log";
 
 // Keeps one request well within Render's free-tier request/memory limits —
 // larger lists should be split into multiple uploads.
@@ -152,6 +153,16 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       failed.push({ row: rowNum, email, reason: err instanceof Error ? err.message : "Unknown error" });
     }
   }
+
+  await logActivity(session, {
+    action: "registration.bulk-upload",
+    summary: `Bulk-uploaded ${created} registration(s) for ${event.title} (${skipped} already registered, ${failed.length} failed)`,
+    entityType: "Event",
+    entityId: event.id,
+    tenantId: event.tenantId,
+    metadata: { total: rows.length, created, skipped, failedCount: failed.length },
+    request,
+  });
 
   return successResponse(
     { total: rows.length, created, skipped, failed },

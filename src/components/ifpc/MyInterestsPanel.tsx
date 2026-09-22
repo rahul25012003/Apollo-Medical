@@ -5,12 +5,17 @@ import { format, parseISO } from "date-fns";
 import { CheckCircle2, Clock, Heart, Hotel, Mic2, Utensils, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { sharingLabel } from "@/lib/ifpc-constants";
 
 export interface MyInterests {
     sessions: { id: string; sessionId: string; title: string; sessionType: string; sessionDate: string | null; startTime: string | null; endTime: string | null; hall: string | null }[];
     speakers: { id: string; speakerId: string; name: string; designation: string | null }[];
     foodPreference: "VEG" | "NON_VEG" | null;
     accommodationChoice: string | null;
+    accommodationRequired?: boolean | null;
+    accommodationSharing?: string | null;
+    accommodationCheckIn?: string | null;
+    accommodationCheckOut?: string | null;
 }
 
 /** "Your interests" — only what the signed-in delegate has chosen. */
@@ -63,7 +68,7 @@ export function MyInterestsPanel({ data, loading }: { data: MyInterests | null; 
                             </p>
                             <p className="flex items-start gap-2 text-slate-600">
                                 <Hotel className="h-3.5 w-3.5 text-slate-400 mt-0.5" />
-                                <span>Stay: <span className="font-medium text-slate-900">{data?.accommodationChoice || "Not chosen"}</span></span>
+                                <span>Stay: <span className="font-medium text-slate-900">{stayText(data)}</span></span>
                             </p>
                             <Link href="/dashboard/accommodation" className="text-xs font-medium text-primary hover:underline">Choose accommodation</Link>
                         </div>
@@ -82,4 +87,15 @@ function Group({ title, icon, empty, children }: { title: string; icon: React.Re
             {hasItems ? <ul className="space-y-2">{children}</ul> : <p className="text-xs text-slate-400">{empty}</p>}
         </div>
     );
+}
+
+function stayText(d: MyInterests | null): string {
+    if (!d || (d.accommodationRequired == null && !d.accommodationChoice)) return "Not chosen";
+    if (d.accommodationRequired === false) return "Not required";
+    const parts = [
+        sharingLabel(d.accommodationSharing),
+        d.accommodationChoice,
+        d.accommodationCheckIn ? `${d.accommodationCheckIn} → ${d.accommodationCheckOut ?? "?"}` : null,
+    ].filter(Boolean);
+    return parts.length ? parts.join(" · ") : "Room needed";
 }

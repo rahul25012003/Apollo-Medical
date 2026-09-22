@@ -1,17 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Flower2, Home, Footprints, MapPin, ExternalLink } from "lucide-react";
+import { Building2, Flower2, Home, Landmark, Footprints, MapPin, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CAMPUS_POINTS } from "@/content/ifpc-2026";
+import { useTenant } from "@/lib/tenant/context";
 
-type PointId = "conventionCentre" | "yogaCentre" | "guestHouse";
+type PointId = "conventionCentre" | "yogaCentre" | "guestHouse" | "administrativeBlock";
 
-const POINTS: Record<PointId, { x: number; y: number; icon: typeof Building2; color: string }> = {
+// Layout (position, icon, colour) is structural and fixed; label/note/address/
+// mapUrl are content and can be overridden by the admin (Locations page).
+const LAYOUT: Record<PointId, { x: number; y: number; icon: typeof Building2; color: string }> = {
   yogaCentre: { x: 165, y: 130, icon: Flower2, color: "#0d9488" },
   guestHouse: { x: 250, y: 360, icon: Home, color: "#b45309" },
   conventionCentre: { x: 570, y: 250, icon: Building2, color: "#1e3a5f" },
+  administrativeBlock: { x: 470, y: 110, icon: Landmark, color: "#7c3aed" },
 };
+const POINT_IDS = Object.keys(LAYOUT) as PointId[];
 
 /**
  * Hand-drawn interactive campus schematic — not a real GPS map, since no
@@ -20,12 +25,18 @@ const POINTS: Record<PointId, { x: number; y: number; icon: typeof Building2; co
  * walking route. Every pin and place card opens that place in Google Maps.
  */
 export function CampusMap() {
+  const { tenant } = useTenant();
   const [active, setActive] = useState<PointId>("conventionCentre");
+
+  // Admin override (src/app/dashboard/locations) merged over the built-in
+  // defaults, by id — a saved point replaces only the fields it sets.
+  const overrides = new Map((tenant?.campusLocations?.points ?? []).map((p) => [p.id, p]));
+  const contentOf = (id: PointId) => ({ ...CAMPUS_POINTS[id], ...overrides.get(id) });
 
   return (
     <div className="grid lg:grid-cols-[1fr_280px] gap-6 items-start">
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-50 via-white to-slate-50 p-3 sm:p-5 shadow-sm overflow-hidden">
-        <svg viewBox="0 0 760 460" className="w-full h-auto" role="group" aria-label="NIMHANS campus schematic showing the Convention Centre, Yoga Centre, and Guest House">
+        <svg viewBox="0 0 760 460" className="w-full h-auto" role="group" aria-label="NIMHANS campus schematic showing the Convention Centre, Administrative Block, Yoga Centre, and Guest House">
           {/* ground */}
           <rect x="0" y="0" width="760" height="460" rx="20" fill="#f4f8f4" />
           <rect x="0" y="0" width="760" height="460" rx="20" fill="url(#groundGradient)" opacity="0.5" />
@@ -49,7 +60,7 @@ export function CampusMap() {
 
           {/* walking route: Yoga Centre -> Convention Centre */}
           <path
-            d={`M ${POINTS.yogaCentre.x} ${POINTS.yogaCentre.y} Q 340 80, ${POINTS.conventionCentre.x - 40} ${POINTS.conventionCentre.y - 60}`}
+            d={`M ${LAYOUT.yogaCentre.x} ${LAYOUT.yogaCentre.y} Q 340 80, ${LAYOUT.conventionCentre.x - 40} ${LAYOUT.conventionCentre.y - 60}`}
             fill="none"
             stroke="#0d9488"
             strokeWidth="4"
@@ -66,7 +77,7 @@ export function CampusMap() {
 
           {/* connector: Guest House -> Convention Centre (short walk) */}
           <path
-            d={`M ${POINTS.guestHouse.x} ${POINTS.guestHouse.y} Q 420 340, ${POINTS.conventionCentre.x - 30} ${POINTS.conventionCentre.y + 40}`}
+            d={`M ${LAYOUT.guestHouse.x} ${LAYOUT.guestHouse.y} Q 420 340, ${LAYOUT.conventionCentre.x - 30} ${LAYOUT.conventionCentre.y + 40}`}
             fill="none"
             stroke="#b45309"
             strokeWidth="3"
@@ -75,18 +86,30 @@ export function CampusMap() {
             opacity="0.6"
           />
 
+          {/* connector: Administrative Block -> Convention Centre */}
+          <path
+            d={`M ${LAYOUT.administrativeBlock.x} ${LAYOUT.administrativeBlock.y} Q 520 160, ${LAYOUT.conventionCentre.x - 20} ${LAYOUT.conventionCentre.y - 30}`}
+            fill="none"
+            stroke="#7c3aed"
+            strokeWidth="3"
+            strokeDasharray="1 12"
+            strokeLinecap="round"
+            opacity="0.5"
+          />
+
           {/* pins */}
-          {(Object.keys(POINTS) as PointId[]).map((id) => {
-            const p = POINTS[id];
+          {POINT_IDS.map((id) => {
+            const p = LAYOUT[id];
+            const content = contentOf(id);
             const Icon = p.icon;
             const isActive = active === id;
             return (
               <a
                 key={id}
-                href={CAMPUS_POINTS[id].mapUrl}
+                href={content.mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Open ${CAMPUS_POINTS[id].label} in Google Maps`}
+                aria-label={`Open ${content.label} in Google Maps`}
                 onClick={() => setActive(id)}
               >
               <g transform={`translate(${p.x}, ${p.y})`} className="cursor-pointer">
@@ -99,7 +122,7 @@ export function CampusMap() {
                 </foreignObject>
                 <rect x={-60} y={24} width="120" height="20" rx="10" fill="white" stroke={p.color} strokeWidth="1" opacity={isActive ? 1 : 0.85} />
                 <text x="0" y="38" textAnchor="middle" fontSize="10" fontWeight={isActive ? 700 : 500} fill={p.color}>
-                  {CAMPUS_POINTS[id].label.split(" — ")[0].split(",")[0].slice(0, 20)}
+                  {content.label.split(" — ")[0].split(",")[0].slice(0, 20)}
                 </text>
               </g>
               </a>
@@ -110,14 +133,15 @@ export function CampusMap() {
       </div>
 
       <div className="space-y-3">
-        {(Object.keys(POINTS) as PointId[]).map((id) => {
-          const p = POINTS[id];
+        {POINT_IDS.map((id) => {
+          const p = LAYOUT[id];
+          const content = contentOf(id);
           const Icon = p.icon;
           const isActive = active === id;
           return (
             <a
               key={id}
-              href={CAMPUS_POINTS[id].mapUrl}
+              href={content.mapUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setActive(id)}
@@ -132,10 +156,10 @@ export function CampusMap() {
                   <Icon className="h-4.5 w-4.5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm text-slate-900">{CAMPUS_POINTS[id].label}</p>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">{CAMPUS_POINTS[id].note}</p>
+                  <p className="font-semibold text-sm text-slate-900">{content.label}</p>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">{content.note}</p>
                   <p className="text-[11px] text-slate-500 mt-1.5 flex items-start gap-1">
-                    <MapPin className="h-3 w-3 flex-none mt-0.5" /> {CAMPUS_POINTS[id].address}
+                    <MapPin className="h-3 w-3 flex-none mt-0.5" /> {content.address}
                   </p>
                   <p className="text-xs font-semibold mt-2 inline-flex items-center gap-1" style={{ color: p.color }}>
                     Open in Google Maps <ExternalLink className="h-3 w-3" />
@@ -147,7 +171,7 @@ export function CampusMap() {
         })}
         <div className="flex items-start gap-2 rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-500">
           <MapPin className="h-3.5 w-3.5 flex-none mt-0.5" />
-          All three places are on the NIMHANS campus. Tap any of them to open it in Google Maps for directions.
+          All four places are on the NIMHANS campus. Tap any of them to open it in Google Maps for directions.
         </div>
       </div>
     </div>

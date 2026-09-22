@@ -12,6 +12,7 @@ import {
 import { findOrCreateUserAccount, sendAccountCreatedEmail } from "@/lib/auto-account";
 import { sendEmail, registrationApprovedHtml, registrationCancelledHtml } from "@/lib/notifications";
 import { issueAttendeeBadgeAndCertificate } from "@/lib/ifpc-automation";
+import { logActivity } from "@/lib/activity-log";
 import { isIfpcRegistration } from "@/lib/ifpc-tenant";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -239,6 +240,15 @@ export const PUT = withErrorHandler(
       }
     }
 
+    await logActivity(session, {
+      action: "registration.update",
+      summary: `Updated registration for ${registration.name}`,
+      entityType: "Registration",
+      entityId: registration.id,
+      tenantId: existingRegistration.event.tenantId,
+      request,
+    });
+
     return successResponse(registration, "Registration updated successfully");
   }
 );
@@ -284,6 +294,15 @@ export const DELETE = withErrorHandler(
 
     await prisma.registration.delete({
       where: { id },
+    });
+
+    await logActivity(session, {
+      action: "registration.delete",
+      summary: `Deleted registration for ${existingRegistration.name}`,
+      entityType: "Registration",
+      entityId: id,
+      tenantId: existingRegistration.event.tenantId,
+      request,
     });
 
     return successResponse({ id }, "Registration deleted successfully");

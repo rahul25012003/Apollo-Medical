@@ -43,3 +43,19 @@ export function parseCsv(text: string): Record<string, string>[] {
     return obj;
   });
 }
+
+type CsvCell = string | number | boolean | Date | null | undefined;
+
+/**
+ * CSV writer for admin downloads (opens cleanly in Excel): every cell quoted,
+ * dates as ISO, and cells that start with = + - @ prefixed with ' so a
+ * delegate-entered value can't run as a spreadsheet formula.
+ */
+export function toCsv(headers: string[], rows: CsvCell[][]): string {
+  const cell = (v: CsvCell) => {
+    let s = v == null ? "" : v instanceof Date ? v.toISOString() : String(v);
+    if (/^[=+\-@]/.test(s)) s = `'${s}`;
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+  return [headers, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+}

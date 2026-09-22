@@ -34,7 +34,7 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
   const registrations = await prisma.registration.findMany({
     where: {
       eventId,
-      OR: [{ foodPreference: { not: null } }, { accommodationChoice: { not: null } }],
+      OR: [{ foodPreference: { not: null } }, { accommodationChoice: { not: null } }, { accommodationRequired: { not: null } }],
     },
     orderBy: { name: "asc" },
     select: {
@@ -46,6 +46,11 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
       foodPreference: true,
       accommodationChoice: true,
       accommodationSelectedAt: true,
+      accommodationRequired: true,
+      accommodationSharing: true,
+      accommodationCheckIn: true,
+      accommodationCheckOut: true,
+      accommodationRemarks: true,
     },
   });
 
@@ -53,9 +58,15 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
     .filter((r) => r.foodPreference)
     .map((r) => ({ id: r.id, name: r.name, email: r.email, category: r.category, participantRole: r.participantRole, preference: r.foodPreference }));
 
+  const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
   const accommodation = registrations
-    .filter((r) => r.accommodationChoice)
-    .map((r) => ({ id: r.id, name: r.name, email: r.email, category: r.category, participantRole: r.participantRole, hotel: r.accommodationChoice, selectedAt: r.accommodationSelectedAt }));
+    .filter((r) => r.accommodationChoice || r.accommodationRequired != null)
+    .map((r) => ({
+      id: r.id, name: r.name, email: r.email, category: r.category, participantRole: r.participantRole,
+      hotel: r.accommodationChoice, selectedAt: r.accommodationSelectedAt,
+      required: r.accommodationRequired, sharing: r.accommodationSharing,
+      checkIn: day(r.accommodationCheckIn), checkOut: day(r.accommodationCheckOut), remarks: r.accommodationRemarks,
+    }));
 
   return successResponse({ food, accommodation });
 });

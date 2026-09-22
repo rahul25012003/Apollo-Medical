@@ -40,7 +40,7 @@ export const GET = withErrorHandler(async () => {
     prisma.registration.findFirst({
       where: { email, status: { in: ["CONFIRMED", "ATTENDED"] }, event: ifpcEvent },
       orderBy: { createdAt: "desc" },
-      select: { foodPreference: true, accommodationChoice: true },
+      select: { foodPreference: true, accommodationChoice: true, accommodationRequired: true, accommodationSharing: true, accommodationCheckIn: true, accommodationCheckOut: true },
     }),
   ]);
 
@@ -65,5 +65,9 @@ export const GET = withErrorHandler(async () => {
     })),
     foodPreference: registration?.foodPreference ?? null,
     accommodationChoice: registration?.accommodationChoice ?? null,
+    accommodationRequired: registration?.accommodationRequired ?? null,
+    accommodationSharing: registration?.accommodationSharing ?? null,
+    accommodationCheckIn: registration?.accommodationCheckIn?.toISOString().slice(0, 10) ?? null,
+    accommodationCheckOut: registration?.accommodationCheckOut?.toISOString().slice(0, 10) ?? null,
   });
 });

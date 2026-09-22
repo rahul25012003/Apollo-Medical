@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { auth, canAccess } from "@/lib/auth";
+import { isIfpcEvent } from "@/lib/ifpc-tenant";
 import {
   successResponse,
   paginatedResponse,
@@ -112,9 +113,18 @@ export const GET = withErrorHandler(
         ? [{ createdAt: "desc" as const }] // We'll sort by upvotes client-side since it's in JSON
         : [{ createdAt: "desc" as const }];
 
+    // IFPC feedback is private: a delegate only gets their own response back
+    // (enough to know they've already answered); staff see everything.
+    const ownOnly =
+      engagement.type === "FEEDBACK" &&
+      !canAccess(session.user.role, "events") &&
+      !canAccess(session.user.role, "registrations") &&
+      (await isIfpcEvent(eventId));
+    const responseWhere = ownOnly ? { engagementId, userId: session.user.id } : { engagementId };
+
     const [responses, total] = await Promise.all([
       prisma.engagementResponse.findMany({
-        where: { engagementId },
+        where: responseWhere,
         orderBy,
         skip,
         take: limit,
@@ -126,7 +136,7 @@ export const GET = withErrorHandler(
           createdAt: true,
         },
       }),
-      prisma.engagementResponse.count({ where: { engagementId } }),
+      prisma.engagementResponse.count({ where: responseWhere }),
     ]);
 
     // Check if user has already responded (for FEEDBACK)

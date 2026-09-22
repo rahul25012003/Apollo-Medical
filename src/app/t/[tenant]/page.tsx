@@ -189,7 +189,7 @@ function adaptiveGrid(count: number, maxCols: 2 | 3 | 4 = 3): string {
 
 
 function IfpcFAQSectionV2({ faqs }: { faqs: { question: string; answer: string }[] }) {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | string | null>(null);
   if (faqs.length === 0) return null;
 
   return (
@@ -237,10 +237,21 @@ function IfpcFAQSectionV2({ faqs }: { faqs: { question: string; answer: string }
   );
 }
 
-function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryColor: string }; faqs: { question: string; answer: string }[] }) {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryColor: string }; faqs: { id?: number; question: string; answer: string; category?: string }[] }) {
+  const [openIndex, setOpenIndex] = useState<number | string | null>(null);
 
   if (faqs.length === 0) return null;
+
+  // Group by category where the admin has set one; uncategorized FAQs render
+  // as a single group with no header, same as before categories existed.
+  const groupOrder: string[] = [];
+  const groups = new Map<string, typeof faqs>();
+  for (const faq of faqs) {
+    const key = faq.category || "";
+    if (!groups.has(key)) { groups.set(key, []); groupOrder.push(key); }
+    groups.get(key)!.push(faq);
+  }
+  const isGrouped = groupOrder.some((k) => k !== "");
 
   return (
     <section
@@ -264,46 +275,50 @@ function FAQSection({ theme, faqs }: { theme: { primaryColor: string; secondaryC
         </div>
 
         <div className="max-w-3xl mx-auto space-y-3">
-          {faqs.map((faq, index) => {
-            const isOpen = openIndex === index;
-            return (
-            <div
-              key={index}
-              data-scroll-reveal
-              data-scroll-delay={String(index + 1)}
-            >
-            <div
-              className={cn(
-                "rounded-2xl border-2 transition-all duration-300 overflow-hidden",
-                isOpen ? "bg-white shadow-lg border-emerald-200" : "bg-white shadow-sm border-slate-100 hover:border-slate-200 hover:shadow-md"
+          {groupOrder.map((category) => (
+            <div key={category || "_uncategorized"} className={isGrouped ? "space-y-3" : "contents"}>
+              {isGrouped && category && (
+                <h3 className="text-sm font-bold uppercase tracking-wide text-slate-400 pt-4 first:pt-0">{category}</h3>
               )}
-              style={isOpen ? { borderLeftWidth: "4px", borderLeftColor: "#10b981" } : {}}
-            >
-              <button
-                type="button"
-                aria-expanded={isOpen}
-                onClick={() => setOpenIndex(isOpen ? null : index)}
-                className="w-full flex items-center justify-between p-5 sm:p-6 text-left gap-4"
-              >
-                <span className={cn("font-semibold text-base transition-colors", isOpen ? "text-slate-900" : "text-slate-700")}>{faq.question}</span>
-                <div className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300",
-                  isOpen ? "bg-emerald-500 rotate-180" : "bg-slate-100"
-                )}>
-                  <ChevronDown className={cn("h-4 w-4", isOpen ? "text-white" : "text-slate-500")} />
-                </div>
-              </button>
-              <div className={cn("faq-content", isOpen && "faq-content--open")}>
-                <div>
-                  <p className="px-5 sm:px-6 pb-5 sm:pb-6 text-slate-500 leading-relaxed">
-                    {faq.answer}
-                  </p>
-                </div>
-              </div>
+              {groups.get(category)!.map((faq) => {
+                const key = faq.id ?? faq.question;
+                const isOpen = openIndex === key;
+                return (
+                  <div key={key} data-scroll-reveal>
+                    <div
+                      className={cn(
+                        "rounded-2xl border-2 transition-all duration-300 overflow-hidden",
+                        isOpen ? "bg-white shadow-lg border-emerald-200" : "bg-white shadow-sm border-slate-100 hover:border-slate-200 hover:shadow-md"
+                      )}
+                      style={isOpen ? { borderLeftWidth: "4px", borderLeftColor: "#10b981" } : {}}
+                    >
+                      <button
+                        type="button"
+                        aria-expanded={isOpen}
+                        onClick={() => setOpenIndex(isOpen ? null : key)}
+                        className="w-full flex items-center justify-between p-5 sm:p-6 text-left gap-4"
+                      >
+                        <span className={cn("font-semibold text-base transition-colors", isOpen ? "text-slate-900" : "text-slate-700")}>{faq.question}</span>
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300",
+                          isOpen ? "bg-emerald-500 rotate-180" : "bg-slate-100"
+                        )}>
+                          <ChevronDown className={cn("h-4 w-4", isOpen ? "text-white" : "text-slate-500")} />
+                        </div>
+                      </button>
+                      <div className={cn("faq-content", isOpen && "faq-content--open")}>
+                        <div>
+                          <p className="px-5 sm:px-6 pb-5 sm:pb-6 text-slate-500 leading-relaxed">
+                            {faq.answer}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            </div>
-            );
-          })}
+          ))}
         </div>
 
         {/* Still have questions? CTA */}

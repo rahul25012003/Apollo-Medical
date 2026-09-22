@@ -7,6 +7,7 @@ import { generateCertificatePDF, type CertificateTemplateConfig } from "@/lib/ce
 import { sendEmail, certificateIssuedHtml, getActiveChannel } from "@/lib/notifications";
 import { randomUUID } from "crypto";
 import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import { logActivity } from "@/lib/activity-log";
 import * as legacy from "./legacy";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -132,6 +133,16 @@ async function ifpcPOST(req: NextRequest, context: RouteContext) {
   for (let i = 0; i < registrations.length; i += BATCH_SIZE) {
     await Promise.all(registrations.slice(i, i + BATCH_SIZE).map(processOne));
   }
+
+  await logActivity(session, {
+    action: "certificate.send",
+    summary: `Sent ${sent} certificate(s) for ${event.title} (${failed} failed, ${skipped} skipped)`,
+    entityType: "Event",
+    entityId: event.id,
+    tenantId: event.tenantId,
+    metadata: { sent, failed, skipped, total: registrations.length },
+    request: req,
+  });
 
   return NextResponse.json({ success: true, sent, failed, skipped, total: registrations.length, failures, skippedDetails });
 }

@@ -482,25 +482,28 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
     // --- FAQ handlers ---
     const [faqDialogOpen, setFaqDialogOpen] = useState(false);
     const [editingFaq, setEditingFaq] = useState<FAQItem | null>(null);
-    const [faqForm, setFaqForm] = useState({ question: "", answer: "" });
+    const [faqForm, setFaqForm] = useState({ question: "", answer: "", category: "" });
+
+    const faqCategories = Array.from(new Set(((formData.faqs as FAQItem[] | null) || []).map((f) => f.category).filter((c): c is string => !!c)));
 
     const openAddFaq = () => {
         setEditingFaq(null);
-        setFaqForm({ question: "", answer: "" });
+        setFaqForm({ question: "", answer: "", category: "" });
         setFaqDialogOpen(true);
     };
     const openEditFaq = (faq: FAQItem) => {
         setEditingFaq(faq);
-        setFaqForm({ question: faq.question, answer: faq.answer });
+        setFaqForm({ question: faq.question, answer: faq.answer, category: faq.category || "" });
         setFaqDialogOpen(true);
     };
     const saveFaq = () => {
         const list = (formData.faqs as FAQItem[] | null) || [];
+        const entry = { question: faqForm.question, answer: faqForm.answer, category: faqForm.category.trim() || undefined };
         if (editingFaq) {
-            updateField("faqs", list.map((f) => f.id === editingFaq.id ? { ...f, ...faqForm } : f));
+            updateField("faqs", list.map((f) => f.id === editingFaq.id ? { ...f, ...entry } : f));
         } else {
             const newId = list.length > 0 ? Math.max(...list.map((f) => f.id)) + 1 : 1;
-            updateField("faqs", [...list, { id: newId, ...faqForm }]);
+            updateField("faqs", [...list, { id: newId, ...entry }]);
         }
         setFaqDialogOpen(false);
     };
@@ -1825,6 +1828,7 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                     {(formData.faqs as FAQItem[]).map((faq) => (
                                         <div key={faq.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 group">
                                             <div className="flex-1 min-w-0">
+                                                {faq.category && <span className="inline-block text-[10px] font-medium uppercase tracking-wide text-primary mb-1">{faq.category}</span>}
                                                 <p className="font-medium text-sm">{faq.question}</p>
                                                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{faq.answer}</p>
                                             </div>
@@ -1853,6 +1857,19 @@ export function TenantForm({ initialData, onSubmit, isEditing, slug, restrictedM
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-2">
+                                <div className="space-y-2">
+                                    <Label>Category (optional)</Label>
+                                    <Input
+                                        placeholder="e.g. Registration, Venue, Accommodation, Food"
+                                        value={faqForm.category}
+                                        onChange={(e) => setFaqForm((p) => ({ ...p, category: e.target.value }))}
+                                        list="faq-category-suggestions"
+                                    />
+                                    <datalist id="faq-category-suggestions">
+                                        {faqCategories.map((c) => <option key={c} value={c} />)}
+                                    </datalist>
+                                    <p className="text-xs text-muted-foreground">FAQs with the same category are grouped together. Leave blank for an ungrouped FAQ.</p>
+                                </div>
                                 <div className="space-y-2">
                                     <Label>Question *</Label>
                                     <Input placeholder="What is this conference?" value={faqForm.question} onChange={(e) => setFaqForm((p) => ({ ...p, question: e.target.value }))} />

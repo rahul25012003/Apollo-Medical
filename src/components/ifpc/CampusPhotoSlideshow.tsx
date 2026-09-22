@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ExternalLink, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CAMPUS_POINTS } from "@/content/ifpc-2026";
+import { useTenant } from "@/lib/tenant/context";
 
 type PlaceId = keyof typeof CAMPUS_POINTS;
 
@@ -27,6 +28,10 @@ const TOUR_PLACES: { id: PlaceId; name: string }[] = [
 const SLIDE_MS = 4500;
 
 export function CampusPhotoSlideshow() {
+    const { tenant } = useTenant();
+    const overrides = new Map((tenant?.campusLocations?.points ?? []).map((p) => [p.id, p]));
+    const mapUrlOf = (id: PlaceId) => overrides.get(id)?.mapUrl || CAMPUS_POINTS[id].mapUrl;
+
     const [active, setActive] = useState(0);
     const [paused, setPaused] = useState(false);
 
@@ -71,7 +76,7 @@ export function CampusPhotoSlideshow() {
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70">NIMHANS Campus Tour</p>
                         <p className="text-base sm:text-lg font-bold text-white">{current.caption}</p>
                         <a
-                            href={CAMPUS_POINTS[current.place].mapUrl}
+                            href={mapUrlOf(current.place)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-white/90 underline-offset-2 hover:underline"
@@ -102,10 +107,10 @@ export function CampusPhotoSlideshow() {
                 {TOUR_PLACES.map((place) => (
                     <a
                         key={place.id}
-                        href={CAMPUS_POINTS[place.id].mapUrl}
+                        href={mapUrlOf(place.id)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        title={CAMPUS_POINTS[place.id].address}
+                        title={overrides.get(place.id)?.address || CAMPUS_POINTS[place.id].address}
                         className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
                     >
                         <MapPin className="h-3 w-3 text-slate-400" /> {place.name}

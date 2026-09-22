@@ -11,6 +11,7 @@ export interface IfpcEventEngagement {
   description: string | null;
   content: unknown;
   isActive: boolean;
+  sessionId?: string | null;
 }
 
 export type IfpcEvent = Event & {

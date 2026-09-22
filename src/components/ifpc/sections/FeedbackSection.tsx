@@ -4,15 +4,13 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
-import { EngagementFeedback } from "@/components/events/engagement-feedback";
+import { IfpcFeedbackForms } from "@/components/ifpc/IfpcFeedbackForms";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogIn } from "lucide-react";
 
 export function FeedbackSection({ tenantSlug }: { tenantSlug: string }) {
   const { event, loading } = useIfpcEvent();
   const { status } = useSession();
-
-  const engagement = event?.engagements?.find((e) => e.type === "FEEDBACK" && e.isActive);
 
   return (
     <Section tint>
@@ -28,8 +26,8 @@ export function FeedbackSection({ tenantSlug }: { tenantSlug: string }) {
               <Link href={`/auth/login?tenant=${tenantSlug}`}><LogIn className="mr-2 h-4 w-4" /> Log In</Link>
             </Button>
           </div>
-        ) : engagement && event?.id ? (
-          <EngagementFeedback engagement={engagement as unknown as Parameters<typeof EngagementFeedback>[0]["engagement"]} eventId={event.id} isAdmin={false} />
+        ) : event?.id ? (
+          <IfpcFeedbackForms event={event} />
         ) : (
           <p className="text-sm opacity-55 text-center">Feedback isn&apos;t open yet — please check back closer to the conference.</p>
         )}

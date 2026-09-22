@@ -95,6 +95,8 @@ export interface FAQItem {
   id: number;
   question: string;
   answer: string;
+  /** e.g. Registration, Venue, Accommodation — optional, for grouping */
+  category?: string;
 }
 
 export interface ResearchItem {
@@ -177,6 +179,8 @@ export interface TenantConfig {
   yearlyStats?: YearlyStats;
   faqs?: FAQItem[];
   researchItems?: ResearchItem[];
+  /** IFPC: admin-editable campus points/routes; undefined = use built-in defaults */
+  campusLocations?: { points: { id: string; label: string; note?: string; address?: string; mapUrl?: string }[]; routes?: { from: string; to: string; note?: string }[] };
 
   // Settings
   settings: TenantSettings;
@@ -227,6 +231,7 @@ export interface TenantModel {
   yearlyStats: unknown | null; // JSON
   faqs: unknown | null; // JSON
   researchItems: unknown | null; // JSON
+  campusLocations: unknown | null; // JSON
   footerText: string | null;
   copyrightText: string | null;
   isActive: boolean;
@@ -323,6 +328,7 @@ export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
     yearlyStats: (tenant.yearlyStats as YearlyStats) || undefined,
     faqs: (tenant.faqs as FAQItem[]) || undefined,
     researchItems: (tenant.researchItems as ResearchItem[]) || undefined,
+    campusLocations: (tenant.campusLocations as TenantConfig["campusLocations"]) || undefined,
 
     footer: {
       text: tenant.footerText || undefined,

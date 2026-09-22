@@ -7,6 +7,7 @@ import { generateCertificatePDF, type CertificateTemplateConfig } from "@/lib/ce
 import { sendEmail, certificateIssuedHtml } from "@/lib/notifications";
 import { randomUUID } from "crypto";
 import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import { logActivity } from "@/lib/activity-log";
 import * as legacy from "./legacy";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -94,6 +95,15 @@ async function ifpcPOST(req: NextRequest, context: RouteContext) {
         data: { status: "ISSUED", issuedAt: new Date(), recipientName: nameToUse },
       });
     }
+
+    await logActivity(session, {
+      action: "certificate.send",
+      summary: `Sent a certificate to ${nameToUse} (${registration.email})`,
+      entityType: "Registration",
+      entityId: registration.id,
+      tenantId: event.tenantId,
+      request: req,
+    });
 
     return NextResponse.json({ success: true, sent: true, name: nameToUse, email: registration.email });
   } catch (err) {

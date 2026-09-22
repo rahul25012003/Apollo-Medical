@@ -54,6 +54,8 @@ import {
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { eventsService, Event } from "@/services/events";
+import { useIsIfpcEventId } from "@/components/ifpc/guard";
+import { IFPC_COMMS_TEMPLATES } from "@/content/ifpc-comms-templates";
 import {
   communicationsService,
   MessageTemplate,
@@ -67,10 +69,12 @@ import {
 function SendMessageTab() {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
+  const { isIfpc } = useIsIfpcEventId(selectedEventId || undefined);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -125,6 +129,7 @@ function SendMessageTab() {
       const recipientFilter: Record<string, string> = {};
       if (filterStatus !== "all") recipientFilter.status = filterStatus;
       if (filterRole !== "all") recipientFilter.role = filterRole;
+      if (filterCategory.trim()) recipientFilter.category = filterCategory.trim();
 
       const res = await communicationsService.send({
         eventId: selectedEventId,
@@ -165,6 +170,34 @@ function SendMessageTab() {
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
+          {/* Quick-start templates for communications with no automated trigger */}
+          {isIfpc && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5" />
+                Quick start
+              </Label>
+              <Select
+                value="none"
+                onValueChange={(id) => {
+                  const tpl = IFPC_COMMS_TEMPLATES.find((t) => t.id === id);
+                  if (tpl) { setSubject(tpl.subject); setBody(tpl.body); setSelectedTemplateId("none"); }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Event start, reminders, schedule updates, feedback requests…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" disabled>Choose a starting point…</SelectItem>
+                  {IFPC_COMMS_TEMPLATES.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Fills the subject &amp; body below — review, edit and send like any other message.</p>
+            </div>
+          )}
+
           {/* Template Selector */}
           {templates.length > 0 && (
             <div className="space-y-2">
@@ -211,7 +244,7 @@ function SendMessageTab() {
           </div>
 
           {/* Recipient Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={cn("grid grid-cols-1 gap-4", isIfpc ? "md:grid-cols-3" : "md:grid-cols-2")}>
             <div className="space-y-2">
               <Label>Filter by Status</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -244,6 +277,16 @@ function SendMessageTab() {
                 </SelectContent>
               </Select>
             </div>
+            {isIfpc && (
+              <div className="space-y-2">
+                <Label>Filter by Category</Label>
+                <Input
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  placeholder="e.g. Student, Professional, General…"
+                />
+              </div>
+            )}
           </div>
 
           {/* Subject */}

@@ -284,6 +284,7 @@ export interface EventEngagement {
   content: unknown;
   isActive: boolean;
   displayOrder: number;
+  sessionId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -295,6 +296,7 @@ export interface CreateEngagementData {
   content?: unknown;
   isActive?: boolean;
   displayOrder?: number;
+  sessionId?: string | null;
 }
 
 export const eventsService = {

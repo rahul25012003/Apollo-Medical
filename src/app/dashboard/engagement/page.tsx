@@ -25,6 +25,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useIsIfpcEventId } from "@/components/ifpc/guard";
+import { EngagementFeedback, type FeedbackQuestion } from "@/components/events/engagement-feedback";
+import { FeedbackQuestionsEditor, DEFAULT_FEEDBACK_QUESTIONS, cleanFeedbackQuestions } from "@/components/ifpc/FeedbackQuestionsEditor";
 
 const TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
   POLL:         { label: "Poll",         icon: BarChart2,    color: "text-blue-600",   bg: "bg-blue-100 dark:bg-blue-900/30"   },
@@ -75,18 +78,23 @@ function PollOptionsEditor({
 }
 
 function EngagementDialog({
-  open, onClose, onSave, eventId, editing,
+  open, onClose, onSave, eventId, editing, ifpc = false,
 }: {
   open: boolean;
   onClose: () => void;
   onSave: () => void;
   eventId: string;
   editing: EventEngagement | null;
+  /** IFPC (apollo-medical) event: feedback question editor + session link */
+  ifpc?: boolean;
 }) {
   const [form, setForm] = useState({ title: "", type: "ANNOUNCEMENT", description: "", isActive: false });
   const [pollOptions, setPollOptions] = useState<PollOption[]>([
     { id: "a", label: "" }, { id: "b", label: "" },
   ]);
+  const [questions, setQuestions] = useState<FeedbackQuestion[]>(DEFAULT_FEEDBACK_QUESTIONS);
+  const [sessionId, setSessionId] = useState<string>("none");
+  const [sessions, setSessions] = useState<{ id: string; title: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -98,14 +106,31 @@ function EngagementDialog({
       } else {
         setPollOptions([{ id: "a", label: "" }, { id: "b", label: "" }]);
       }
+      setQuestions(editing.type === "FEEDBACK" && content?.questions?.length ? content.questions : DEFAULT_FEEDBACK_QUESTIONS);
+      setSessionId(editing.sessionId || "none");
     } else {
       setForm({ title: "", type: "ANNOUNCEMENT", description: "", isActive: false });
       setPollOptions([{ id: "a", label: "" }, { id: "b", label: "" }]);
+      setQuestions(DEFAULT_FEEDBACK_QUESTIONS);
+      setSessionId("none");
     }
   }, [editing, open]);
 
+  useEffect(() => {
+    if (!ifpc || !open) return;
+    eventsService.getSessions(eventId).then((res) => {
+      if (res.success && Array.isArray(res.data)) setSessions(res.data.map((s) => ({ id: s.id, title: s.title })));
+    }).catch(() => {});
+  }, [ifpc, open, eventId]);
+
   const handleSave = async () => {
     if (!form.title.trim()) return;
+    const ifpcFeedback = ifpc && form.type === "FEEDBACK";
+    const cleaned = ifpcFeedback ? cleanFeedbackQuestions(questions) : null;
+    if (cleaned?.error) {
+      toast.error(cleaned.error);
+      return;
+    }
     setSaving(true);
     try {
       const data: CreateEngagementData = {
@@ -113,7 +138,10 @@ function EngagementDialog({
         type: form.type,
         description: form.description.trim() || null,
         isActive: form.isActive,
-        content: form.type === "POLL" ? { options: pollOptions.filter((o) => o.label.trim()) } : undefined,
+        content: form.type === "POLL"
+          ? { options: pollOptions.filter((o) => o.label.trim()) }
+          : ifpcFeedback ? { questions: cleaned!.questions } : undefined,
+        ...(ifpcFeedback ? { sessionId: sessionId === "none" ? null : sessionId } : {}),
       };
       if (editing) {
         await eventsService.updateEngagement(eventId, editing.id, data);
@@ -196,6 +224,27 @@ function EngagementDialog({
             </div>
           )}
 
+          {ifpc && form.type === "FEEDBACK" && (
+            <>
+              <div className="space-y-2">
+                <Label>Feedback for</Label>
+                <Select value={sessionId} onValueChange={setSessionId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">The conference overall</SelectItem>
+                    {sessions.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>Session: {s.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Questions</Label>
+                <FeedbackQuestionsEditor questions={questions} onChange={setQuestions} />
+              </div>
+            </>
+          )}
+
           <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
             <div>
               <p className="text-sm font-medium">Make Active</p>
@@ -232,6 +281,9 @@ export default function EngagementPage() {
   const [editingItem, setEditingItem] = useState<EventEngagement | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // IFPC (apollo-medical) events get feedback questions/sessions and a responses view.
+  const { isIfpc } = useIsIfpcEventId(selectedEventId);
+  const [viewingResponses, setViewingResponses] = useState<EventEngagement | null>(null);
 
   const fetchEngagements = useCallback(async () => {
     if (!selectedEventId) return;
@@ -301,7 +353,26 @@ export default function EngagementPage() {
         onSave={fetchEngagements}
         eventId={selectedEventId}
         editing={editingItem}
+        ifpc={isIfpc}
       />
+
+      {isIfpc && (
+        <Dialog open={!!viewingResponses} onOpenChange={(v) => !v && setViewingResponses(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{viewingResponses?.title}</DialogTitle>
+              <DialogDescription>Feedback responses</DialogDescription>
+            </DialogHeader>
+            {viewingResponses && (
+              <EngagementFeedback
+                engagement={viewingResponses as unknown as Parameters<typeof EngagementFeedback>[0]["engagement"]}
+                eventId={selectedEventId}
+                isAdmin
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
 
       <div className="space-y-6">
         {/* Header banner */}
@@ -392,6 +463,17 @@ export default function EngagementPage() {
                             <span className="text-muted-foreground">{opt.label}</span>
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {isIfpc && eng.type === "FEEDBACK" && (
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                        <span>
+                          {((eng.content as any)?.questions?.length ?? 0)} question(s) · {eng.sessionId ? "Session feedback" : "Conference feedback"}
+                        </span>
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setViewingResponses(eng)}>
+                          <BarChart className="w-3.5 h-3.5 mr-1" /> Responses
+                        </Button>
                       </div>
                     )}
 

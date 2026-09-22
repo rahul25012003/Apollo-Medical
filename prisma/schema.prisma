@@ -190,6 +190,10 @@ model Tenant {
   // FAQ Config
   faqs              Json?              // Array of [{id, question, answer}]
 
+  // Location & Directions (IFPC): {points: [{id,label,note,address,mapUrl}], routes: [{from,to,note}]}.
+  // Null = use the built-in defaults from src/content/ifpc-2026.ts.
+  campusLocations   Json?
+
   // Ongoing Research Config
   researchItems     Json?              // Array of [{id, icon, title, description, status}]
 
@@ -587,6 +591,13 @@ model Registration {
   // for this event, so this records intent/choice, not a confirmed booking.
   accommodationChoice     String?
   accommodationSelectedAt DateTime?
+  // Accommodation expression of interest (IFPC): whether they need a room,
+  // preferred sharing (SINGLE / TWO_SHARING / THREE_SHARING), dates, remarks.
+  accommodationRequired   Boolean?
+  accommodationSharing    String?
+  accommodationCheckIn    DateTime? @db.Date
+  accommodationCheckOut   DateTime? @db.Date
+  accommodationRemarks    String?   @db.Text
 
   // Registration Details
   eventId          String
@@ -1272,4 +1283,28 @@ model MessageLog {
   @@index([tenantId, createdAt])
   @@index([eventId])
   @@map("message_logs")
+}
+
+// ============================================================================
+// ACTIVITY LOG — who did what, when (admin audit trail)
+// ============================================================================
+// No foreign keys on purpose: entries must survive deletion of the user or
+// record they describe.
+model ActivityLog {
+  id         String   @id @default(cuid())
+  tenantId   String?
+  actorId    String?
+  actorEmail String?
+  actorRole  String?
+  action     String   // e.g. "registration.update", "user.deactivate"
+  entityType String?  // e.g. "Registration", "User", "Event"
+  entityId   String?
+  summary    String
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([entityType, entityId])
+  @@map("activity_logs")
 }
