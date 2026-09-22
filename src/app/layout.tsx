@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SplashScreen } from "@/components/splash-screen";
+import { PwaRegister } from "@/components/ifpc/PwaRegister";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -58,16 +59,34 @@ export const metadata: Metadata = {
   },
 };
 
+// IFPC 2026 deployment (apollo-medical served at the site root): every page is
+// part of the installable app, so the manifest must be in the initial HTML of
+// every page (not just the home page) for browsers to offer "Install app".
+// Any other deployment renders exactly as before.
+const IFPC_SITE = process.env.DEFAULT_TENANT_SLUG === "apollo-medical";
+// Chrome can fire beforeinstallprompt before React hydrates; keep it for the banner.
+const CAPTURE_INSTALL_PROMPT =
+  'window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__ifpcInstallPrompt=e;window.dispatchEvent(new Event("ifpc-installable"));});';
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning {...(IFPC_SITE ? { "data-ifpc-pwa": "global" } : {})}>
+      {IFPC_SITE && (
+        <head>
+          <link rel="manifest" href="/manifest-ifpc-root.json" />
+          <meta name="theme-color" content="#1e3a5f" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/ifpc/nimhans-icon-180.png" />
+          <script dangerouslySetInnerHTML={{ __html: CAPTURE_INSTALL_PROMPT }} />
+        </head>
+      )}
       <body className={`${jakarta.className} ${jakarta.variable}`} suppressHydrationWarning>
         <SplashScreen />
         <Providers>{children}</Providers>
+        {IFPC_SITE && <PwaRegister global />}
       </body>
     </html>
   );
