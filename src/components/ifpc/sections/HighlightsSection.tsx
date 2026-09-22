@@ -5,7 +5,7 @@ import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
 import { Button } from "@/components/ui/button";
 import { HIGHLIGHTS, CTA_LINKS } from "@/content/ifpc-2026";
-import { CheckCircle2, Sparkles, ArrowRight, Tent } from "lucide-react";
+import { Sparkles, ArrowRight, Tent } from "lucide-react";
 import { format } from "date-fns";
 
 const BADGE_COLORS = ["#4B2FE5", "#1e3a5f", "#CCFF33"];
@@ -17,19 +17,26 @@ export function HighlightsSection() {
   return (
     <>
       <Section>
-        <SectionTitle title={HIGHLIGHTS.scientific.title} />
-        <div className="grid sm:grid-cols-2 gap-4">
-          {HIGHLIGHTS.scientific.items.map((item, i) => (
-            <div key={i} className="rounded-xl border border-slate-200 bg-white shadow-sm relative flex items-start gap-3 p-5 pt-6">
-              <span
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white absolute -top-3 -left-3"
-                style={{ background: BADGE_COLORS[i % BADGE_COLORS.length] }}
-              >
-                <CheckCircle2 className="h-4 w-4" />
-              </span>
-              <p className="text-sm leading-relaxed pl-2">{item}</p>
-            </div>
-          ))}
+        <div className="grid lg:grid-cols-12 gap-2 lg:gap-12">
+          <div className="lg:col-span-4">
+            <SectionTitle title={HIGHLIGHTS.scientific.title} subtitle={HIGHLIGHTS.intro} />
+            <a
+              href={CTA_LINKS.viewProgramme.href}
+              className="-mt-4 mb-8 lg:mb-0 inline-flex items-center gap-2 rounded-full border-2 border-[#4B2FE5] px-5 py-2.5 text-sm font-bold text-[#4B2FE5] transition-colors hover:bg-[#4B2FE5] hover:text-white"
+            >
+              {CTA_LINKS.viewProgramme.label} <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+          <ol className="lg:col-span-8 divide-y divide-slate-200 border-y border-slate-200">
+            {HIGHLIGHTS.scientific.items.map((item, i) => (
+              <li key={i} className="flex gap-4 sm:gap-6 py-5">
+                <span className="w-9 sm:w-11 flex-none text-2xl sm:text-3xl font-extrabold tabular-nums leading-none text-[#4B2FE5]">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <p className="text-[15px] sm:text-base leading-relaxed opacity-80">{item}</p>
+              </li>
+            ))}
+          </ol>
         </div>
       </Section>
 

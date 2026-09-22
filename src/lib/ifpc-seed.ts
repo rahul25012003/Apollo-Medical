@@ -165,12 +165,13 @@ export async function seedIfpc2026(prisma: PrismaClient) {
   // ── 3. Speakers (no email supplied in source content — left null) ─────
   console.log("Creating speakers...");
   const SPEAKER_DATA = [
-    { name: "Prof. Suresh Bada Math", institution: "India" },
+    // Same order as forensicpsychiatry.in/experts — sessionOrder follows this array.
+    { name: "Prof. (Dr.) Nandimath Omprakash V", institution: "India" },
     { name: "Dr. Vinesh Gupta", institution: "Australia" },
     { name: "Dr. Jacqueline Short", institution: "New Zealand" },
     { name: "Prof. Rajan Darjee", institution: "Australia" },
     { name: "Dr. Kerri Eagle", institution: "Australia" },
-    { name: "Prof. (Dr.) Nandimath Omprakash V", institution: "India" },
+    { name: "Prof. Suresh Bada Math", institution: "India" },
     { name: "Prof. Yogender Malik", institution: "India" },
   ];
   const speakerIds: string[] = [];

@@ -471,19 +471,19 @@ function ifpcRegistrationStatus(nextEvent: { startDate: string; endDate?: string
   const isNotOpenYet = opens && now < opens;
 
   if (isEnded) return null;
-  if (isDeadlinePassed) return { text: `Registration closed — Event: ${fmtEventRange(nextEvent.startDate, nextEvent.endDate)}`, color: "#12112B" };
+  if (isDeadlinePassed) return { kind: "closed", text: `Registration closed — Event: ${fmtEventRange(nextEvent.startDate, nextEvent.endDate)}`, color: "#12112B" };
   if (isNotOpenYet) {
     const opensStr = opens!.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
     const deadlineStr = deadline ? deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : null;
-    return { text: `Registrations will open from ${opensStr}${deadlineStr ? ` to ${deadlineStr}` : ""}`, color: "#4B2FE5" };
+    return { kind: "upcoming", text: `Registrations will open from ${opensStr}${deadlineStr ? ` to ${deadlineStr}` : ""}`, color: "#4B2FE5" };
   }
   const daysLeft = deadline ? Math.ceil((deadline.getTime() - now.getTime()) / 86400000) : null;
   const isClosingSoon = daysLeft !== null && daysLeft <= 7 && daysLeft >= 0;
   if (isClosingSoon && deadline) {
     const deadlineStr = deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
-    return { text: `⏰ Closes ${deadlineStr} · ${daysLeft} day${daysLeft === 1 ? "" : "s"} left`, color: "#ea580c", flash: true };
+    return { kind: "soon", text: `⏰ Closes ${deadlineStr} · ${daysLeft} day${daysLeft === 1 ? "" : "s"} left`, color: "#ea580c", flash: true };
   }
-  return { text: "Registration Open", color: "#0a0a0a", bg: "#CCFF33" };
+  return { kind: "open", text: "Registration Open", color: "#0a0a0a", bg: "#CCFF33" };
 }
 
 interface IfpcHeroProps {
@@ -495,91 +495,138 @@ interface IfpcHeroProps {
   yearlyStats?: { events?: string | number; attendees?: string | number; speakers?: string | number } | null;
 }
 
-function IfpcHeroV2({ branding, hero, theme, nextEvent, yearlyStats }: IfpcHeroProps) {
+const IFPC_STATUS_STYLE: Record<string, React.CSSProperties> = {
+  open: { background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 4px 20px rgba(16,185,129,0.4)" },
+  soon: { background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.4)" },
+  upcoming: { background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", boxShadow: "0 4px 20px rgba(29,78,216,0.4)" },
+  closed: { background: "rgba(71,85,105,0.85)" },
+};
+
+const IFPC_HOSTS = [
+  { src: "/ifpc/nimhans-logo.png", alt: "NIMHANS logo", name: "NIMHANS, Bengaluru" },
+  { src: "/ifpc/ranzcp-logo.png", alt: "RANZCP logo", name: "RANZCP" },
+];
+
+// IFPC 2026 hero: conference identity first (theme, name, dates, venue, hosts);
+// the Convention Centre photo sits behind a navy wash as atmosphere only.
+function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
   const status = nextEvent?.startDate ? ifpcRegistrationStatus(nextEvent) : null;
-  const showCountdown = nextEvent?.startDate && new Date(nextEvent.startDate) > new Date();
+  const showCountdown = !!nextEvent?.startDate && new Date(nextEvent.startDate) > new Date();
 
   return (
-    <section id="hero" className="ifpc-v2 relative overflow-hidden pt-10 pb-20 lg:pt-16 lg:pb-28">
-      {/* Convention Centre photo as full-bleed background. The entrance
-          (red canopy + blue signage) sits in the left ~25% of this wide
-          panorama, so object-position keeps that edge in frame instead of
-          centering (which would crop it out entirely). */}
+    <section id="hero" className="relative overflow-hidden lg:min-h-[calc(100vh-5.5rem)] flex items-center" style={{ backgroundColor: "#12112B" }}>
       <img
         src={hero.bgImage || "/ifpc/convention-centre.jpg"}
         alt=""
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-cover scale-105 blur-[3px]"
         style={{ objectPosition: "22% center" }}
         loading="eager"
       />
-      {/* Navy duotone over the photo: kills the stock sky-blue sky and keeps
-          white text legible, while leaving the building visible. Navy family
-          only — no cyan/sky-blue, per the tenant's overall look. */}
-      <div className="absolute inset-0" style={{ background: "linear-gradient(120deg, rgba(18,17,43,0.92) 0%, rgba(30,58,95,0.80) 38%, rgba(18,17,43,0.86) 74%, rgba(18,17,43,0.94) 100%)" }} />
-      <Blob className="top-0 left-0" color="#1e3a5f" />
-      <Blob className="bottom-0 right-0" color="#12112B" size={420} />
+      <div className="absolute inset-0" style={{ background: "linear-gradient(115deg, rgba(18,17,43,0.95) 0%, rgba(30,58,95,0.88) 48%, rgba(18,17,43,0.92) 100%)" }} />
 
-      <div className="container mx-auto px-4 lg:px-8 relative z-10">
-        <div className="max-w-2xl text-center lg:text-left">
-          <div>
-            <p className="v2-eyebrow text-[#CCFF33] justify-center lg:justify-start mb-4">{branding.name}</p>
-            <h1 className="text-[36px] sm:text-[48px] lg:text-[56px] font-extrabold tracking-tight leading-[1.05] text-white">
-              {hero.title || branding.name}
-            </h1>
-            <p className="mt-5 text-base lg:text-lg text-white/75 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              {hero.subtitle || "Register for the upcoming CME and workshop programs."}
+      <div className="container mx-auto px-4 lg:px-8 relative z-10 py-12 sm:py-16 lg:py-20">
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+          <div className="lg:col-span-7 text-center lg:text-left hero-stagger-1">
+            <div className="lg:hidden mb-6 flex items-center justify-center gap-3">
+              {IFPC_HOSTS.map((h) => (
+                <div key={h.src} className="h-14 sm:h-16 rounded-xl bg-white p-1.5 shadow-lg inline-flex items-center justify-center">
+                  <img src={h.src} alt={h.alt} className="h-full w-auto object-contain" />
+                </div>
+              ))}
+            </div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-400/10 px-4 py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em] text-emerald-300">
+              Conference Theme
             </p>
+            <p className="mt-4 text-[40px] sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[0.95] text-emerald-300">
+              {CONFERENCE.theme}
+            </p>
+            <h1 className="mt-6 text-2xl sm:text-3xl lg:text-[40px] font-extrabold leading-[1.15] tracking-tight text-white text-balance">
+              International Forensic Psychiatry Conference (IFPC) 2026
+            </h1>
+            <p className="mt-4 text-base lg:text-lg italic text-white/75 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              a global gathering advancing forensic psychiatry knowledge and practice.
+            </p>
+            <div className="lg:hidden mt-5 space-y-2 text-white">
+              <p className="flex items-center justify-center gap-2 text-lg font-extrabold"><Calendar className="h-5 w-5 text-emerald-300" />{CONFERENCE.dates}</p>
+              <p className="flex items-center justify-center gap-2 text-base font-bold"><MapPin className="h-5 w-5 flex-none text-emerald-300" />{CONFERENCE.venueName}, {CONFERENCE.city}</p>
+            </div>
 
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <a href="#registration" className="v2-pill-primary h-13 px-8 text-base">
-                Register Now <ArrowRight className="ml-2 h-4 w-4" />
-              </a>
-              <a href="#about" className="v2-pill-secondary-onDark h-13 px-8 text-base">
-                Learn More
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+              <Link href="/events">
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto rounded-full px-9 h-13 text-base font-bold transition-all hover:-translate-y-0.5 group bg-emerald-500 hover:bg-emerald-600 text-white border-0"
+                  style={{ boxShadow: "0 10px 40px rgba(16,185,129,0.35)" }}
+                >
+                  {hasEvents ? "Browse Events" : "Explore Events"}
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              <a href="#about">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full px-9 h-13 text-base font-semibold border-2 bg-white/5 border-white/30 text-white hover:bg-white/15 hover:text-white">
+                  Learn More
+                </Button>
               </a>
             </div>
 
-            {nextEvent && (
-              <div className="mt-8 flex flex-col items-center lg:items-start gap-4">
-                {status && (
-                  <span
-                    className={cn("inline-flex items-center gap-2 px-5 py-2 rounded-full font-bold text-sm", status.flash && "animate-flash")}
-                    style={{ background: status.bg ?? "rgba(255,255,255,0.12)", color: status.bg ? status.color : "#fff", border: status.bg ? "none" : "1px solid rgba(255,255,255,0.3)" }}
-                  >
-                    {status.text}
-                  </span>
-                )}
-                {showCountdown && (
-                  <>
-                    <p className="text-sm text-white/70">Next Event: <span className="font-bold text-white">{nextEvent.title}</span></p>
-                    <CountdownTimer targetDate={nextEvent.startDate} theme={theme} bgDark />
-                  </>
-                )}
+            {status && (
+              <div className="mt-6">
+                <span
+                  className={cn("inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-extrabold text-white", status.flash && "animate-flash")}
+                  style={IFPC_STATUS_STYLE[status.kind]}
+                >
+                  <span className="h-2.5 w-2.5 rounded-full bg-white flex-none" />
+                  {status.text}
+                </span>
               </div>
             )}
+          </div>
 
-            {yearlyStats && ((yearlyStats.events && String(yearlyStats.events) !== "0") || (yearlyStats.attendees && String(yearlyStats.attendees) !== "0") || (yearlyStats.speakers && String(yearlyStats.speakers) !== "0")) && (
-              <div className="flex items-center justify-center lg:justify-start gap-6 lg:gap-10 mt-10">
-                {yearlyStats.events && String(yearlyStats.events) !== "0" && (
-                  <div className="text-center lg:text-left">
-                    <p className="text-3xl font-extrabold text-white"><AnimatedCounter value={yearlyStats.events} /></p>
-                    <p className="text-xs mt-1 font-medium text-white/60">Events</p>
+          <div className={cn("lg:col-span-5 hero-stagger-2", !showCountdown && "hidden lg:block")}>
+            <div className="rounded-3xl border border-white/15 bg-white/[0.07] backdrop-blur-md p-6 sm:p-8 shadow-2xl">
+              <div className="hidden lg:block">
+              <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-white/60">Hosted by</p>
+              <div className="mt-4 flex items-start justify-center gap-4 sm:gap-6">
+                {IFPC_HOSTS.map((h) => (
+                  <div key={h.src} className="text-center">
+                    <div className="h-20 sm:h-24 rounded-2xl bg-white p-2.5 shadow-lg inline-flex items-center justify-center">
+                      <img src={h.src} alt={h.alt} className="h-full w-auto object-contain" />
+                    </div>
+                    <p className="mt-2 text-xs sm:text-sm font-semibold text-white/90">{h.name}</p>
                   </div>
-                )}
-                {yearlyStats.attendees && String(yearlyStats.attendees) !== "0" && (
-                  <div className="text-center lg:text-left">
-                    <p className="text-3xl font-extrabold text-white"><AnimatedCounter value={yearlyStats.attendees} /></p>
-                    <p className="text-xs mt-1 font-medium text-white/60">Attendees</p>
-                  </div>
-                )}
-                {yearlyStats.speakers && String(yearlyStats.speakers) !== "0" && (
-                  <div className="text-center lg:text-left">
-                    <p className="text-3xl font-extrabold text-white"><AnimatedCounter value={yearlyStats.speakers} /></p>
-                    <p className="text-xs mt-1 font-medium text-white/60">Speakers</p>
-                  </div>
-                )}
+                ))}
               </div>
-            )}
+
+              <div className="my-6 h-px bg-white/15" />
+
+              <dl className="space-y-5">
+                <div className="flex items-start gap-4">
+                  <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-emerald-400/15 text-emerald-300"><Calendar className="h-5 w-5" /></span>
+                  <div>
+                    <dt className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">Dates</dt>
+                    <dd className="text-xl sm:text-2xl font-extrabold text-white">{CONFERENCE.dates}</dd>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-emerald-400/15 text-emerald-300"><MapPin className="h-5 w-5" /></span>
+                  <div>
+                    <dt className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">Venue</dt>
+                    <dd className="text-lg sm:text-xl font-extrabold leading-snug text-white">{CONFERENCE.venueName}</dd>
+                    <dd className="text-sm text-white/70">{CONFERENCE.city}, India</dd>
+                  </div>
+                </div>
+              </dl>
+              </div>
+
+              {showCountdown && (
+                <div className="lg:mt-6 lg:border-t border-white/15 lg:pt-6 text-center">
+                  <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">Conference begins in</p>
+                  <div className="flex justify-center">
+                    <CountdownTimer targetDate={nextEvent!.startDate} theme={theme} bgDark hideSeconds />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1374,7 +1421,7 @@ export default function TenantHomePage() {
       <div className="relative">
 
       {/* Hero Section */}
-      {sections.hero && (IFPC_V2_DESIGN && tenantSlug === "apollo-medical" ? (
+      {sections.hero && (tenantSlug === "apollo-medical" ? (
         <IfpcHeroV2
           branding={branding}
           hero={hero}
@@ -1806,6 +1853,8 @@ export default function TenantHomePage() {
               {/* Section header */}
               <div className="flex items-center justify-between mb-8">
                 <div>
+                  {/* IFPC is a single conference — no "Upcoming Events" list heading. */}
+                  {tenantSlug !== "apollo-medical" && (
                   <div className="flex items-center gap-3 mb-1">
                     <span className="h-8 w-1.5 rounded-full" style={{ background: theme.primaryColor }} />
                     <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">Upcoming Events</h2>
@@ -1813,6 +1862,7 @@ export default function TenantHomePage() {
                       {visibleEvents.length}
                     </span>
                   </div>
+                  )}
                   <p className="text-slate-400 ml-[1.375rem] text-sm">{carouselCards.length > 0 ? "Swipe or use arrows to browse more events" : ""}</p>
                 </div>
                 {carouselCards.length > evtItemsPerView && (
@@ -2806,6 +2856,26 @@ export default function TenantHomePage() {
           <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "radial-gradient(#475569 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
+            {tenantSlug === "apollo-medical" ? (
+              // IFPC has no About images — use the full width (heading | text) instead of a half-empty two-column grid.
+              <div className="grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-6 lg:gap-16 items-start mb-12">
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-600">About Us</span>
+                  </div>
+                  {about.title && <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight">{about.title}</h2>}
+                </div>
+                <div className="space-y-5 lg:pt-2">
+                  {about.description?.split("\n\n").map((paragraph: string, idx: number) => (
+                    <p key={idx} className="text-slate-600 text-base lg:text-lg leading-[1.85]">{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            ) : (
+            <>
             {/* Two-column: Slideshow + Text */}
             <div className="grid lg:grid-cols-2 gap-10 items-center mb-8">
               {/* Image Slideshow */}
@@ -2870,9 +2940,13 @@ export default function TenantHomePage() {
                 </div>
               )}
             </div>
+            </>
+            )}
 
             {about.features && about.features.length > 0 && (
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className={tenantSlug === "apollo-medical"
+                ? "grid sm:grid-cols-2 lg:grid-cols-5 gap-5 sm:[&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1"
+                : "grid md:grid-cols-2 lg:grid-cols-4 gap-8"}>
                 {about.features.map((feature, index) => {
                   const IconComponent = iconMap[feature.icon] || Award;
                   return (
@@ -2880,7 +2954,7 @@ export default function TenantHomePage() {
                       key={index}
                       data-scroll-reveal
                       data-scroll-delay={String(index + 1)}
-                      className="group text-center p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white rounded-2xl shadow-md hover:shadow-xl border-2 border-slate-100 hover:border-slate-200 relative overflow-hidden"
+                      className={`group text-center ${tenantSlug === "apollo-medical" ? "p-6" : "p-8"} hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white rounded-2xl shadow-md hover:shadow-xl border-2 border-slate-100 hover:border-slate-200 relative overflow-hidden`}
                     >
                       <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300 bg-slate-100 group-hover:bg-slate-200 border border-slate-200">
                         <IconComponent className="h-8 w-8 text-slate-700" />

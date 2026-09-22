@@ -113,7 +113,13 @@ export function PwaRegister({ global = false }: { global?: boolean }) {
     }
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw-ifpc.js", { scope }).catch(() => {});
+      if (process.env.NODE_ENV === "production") {
+        navigator.serviceWorker.register("/sw-ifpc.js", { scope }).catch(() => {});
+      } else {
+        // The SW caches /_next/static cache-first, which serves stale code under next dev.
+        navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister())).catch(() => {});
+        caches?.keys().then((keys) => keys.filter((k) => k.startsWith("ifpc-")).forEach((k) => caches.delete(k))).catch(() => {});
+      }
     }
 
     // The prompt may already have been captured by the inline head script.

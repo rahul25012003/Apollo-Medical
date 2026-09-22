@@ -158,10 +158,6 @@ export const ABOUT = {
     title: "About RANZCP",
     text: "The Royal Australian and New Zealand College of Psychiatrists (RANZCP) brings together experts in forensic psychiatry from around the world to share knowledge and advance the field. RANZCP’s Bi-national Faculty of Forensic Psychiatry (Australia & New Zealand) is a co-host and academic partner for IFPC 2026.",
   },
-  city: {
-    title: "About Bengaluru — The Host City",
-    text: "Bengaluru, popularly known as the “Silicon Valley of India,” blends a rich historical legacy with modern innovation. Founded in the 16th century by Kempe Gowda I, the city later evolved under the Wadiyar dynasty of the Mysore Kingdom and subsequent British administration. Today, Bengaluru is renowned for its thriving information-technology sector, world-class research institutions, pleasant climate, and cosmopolitan culture, making it one of Asia’s most dynamic and globally connected cities.",
-  },
 };
 
 // ---------------------------------------------------------------------------
