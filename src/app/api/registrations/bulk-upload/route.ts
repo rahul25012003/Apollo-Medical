@@ -34,12 +34,15 @@ const PARTICIPANT_ROLE_VALUES = new Set(["DELEGATE", "SPEAKER", "ORGANIZER", "VO
 // (or null), so an unrecognized role here silently vanishes from every
 // "remaining seats" count across the app.
 const PARTICIPANT_ROLE_SYNONYMS: Record<string, string> = { PARTICIPANT: "DELEGATE", ATTENDEE: "DELEGATE" };
-function normalizeParticipantRole(raw: string | undefined): string | undefined {
-  if (!raw) return undefined;
+// Returns { role } for a recognized value, or { error } for text that isn't
+// one of the known roles/synonyms — the caller reports this as a failed row
+// instead of silently mis-categorizing the person as a generic delegate.
+function normalizeParticipantRole(raw: string | undefined): { role: string | undefined } | { error: string } {
+  if (!raw || !raw.trim()) return { role: undefined };
   const v = raw.trim().toUpperCase();
-  if (PARTICIPANT_ROLE_VALUES.has(v)) return v;
-  if (PARTICIPANT_ROLE_SYNONYMS[v]) return PARTICIPANT_ROLE_SYNONYMS[v];
-  return "DELEGATE"; // unrecognized role text — default to the role that counts toward capacity
+  if (PARTICIPANT_ROLE_VALUES.has(v)) return { role: v };
+  if (PARTICIPANT_ROLE_SYNONYMS[v]) return { role: PARTICIPANT_ROLE_SYNONYMS[v] };
+  return { error: `Unrecognized role "${raw}" — use one of: ${[...PARTICIPANT_ROLE_VALUES].join(", ")}` };
 }
 
 // POST /api/registrations/bulk-upload — admin bulk-imports already-registered
@@ -124,6 +127,12 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     const amountRaw = r.amount?.trim();
     const amount = amountRaw && !Number.isNaN(Number(amountRaw)) ? Number(amountRaw) : undefined;
 
+    const roleResult = normalizeParticipantRole(r.participantrole);
+    if ("error" in roleResult) {
+      failed.push({ row: rowNum, email, reason: roleResult.error });
+      continue;
+    }
+
     try {
       const result = await createAdminRegistration(
         eventContext,
@@ -134,7 +143,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
           organization: r.organization || undefined,
           designation: r.designation || undefined,
           category: r.category || undefined,
-          participantRole: normalizeParticipantRole(r.participantrole),
+          participantRole: roleResult.role,
           foodPreference: normalizeFoodPreference(r.foodpreference),
           amount,
           status,

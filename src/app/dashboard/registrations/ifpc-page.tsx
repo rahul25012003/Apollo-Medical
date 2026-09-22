@@ -38,6 +38,7 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { CsvColumnMapper, parseCsvHeaders, remapCsvHeaders, BULK_UPLOAD_FIELDS } from "@/components/ifpc/CsvColumnMapper";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,6 +118,8 @@ function RegistrationsContent() {
     const [isBulkOpen, setIsBulkOpen] = useState(false);
     const [bulkEventId, setBulkEventId] = useState(eventIdParam || "");
     const [bulkFile, setBulkFile] = useState<File | null>(null);
+    const [bulkHeaders, setBulkHeaders] = useState<string[]>([]);
+    const [bulkMapping, setBulkMapping] = useState<Record<string, string>>({});
     const [bulkSubmitting, setBulkSubmitting] = useState(false);
     const [bulkResult, setBulkResult] = useState<{ total: number; created: number; skipped: number; failed: { row: number; email: string; reason: string }[] } | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -598,7 +601,8 @@ function RegistrationsContent() {
         setBulkResult(null);
         try {
             const csvText = await bulkFile.text();
-            const res = await registrationsService.bulkUpload(bulkEventId, csvText);
+            const mappedCsv = remapCsvHeaders(csvText, bulkMapping);
+            const res = await registrationsService.bulkUpload(bulkEventId, mappedCsv);
             if (res.success && res.data) {
                 setBulkResult(res.data);
                 if (res.data.created > 0) await refreshRegistrations();
@@ -1405,7 +1409,7 @@ function RegistrationsContent() {
                 </Dialog>
 
                 {/* Bulk Upload Dialog */}
-                <Dialog open={isBulkOpen} onOpenChange={(v) => { setIsBulkOpen(v); if (!v) { setBulkFile(null); setBulkResult(null); } }}>
+                <Dialog open={isBulkOpen} onOpenChange={(v) => { setIsBulkOpen(v); if (!v) { setBulkFile(null); setBulkHeaders([]); setBulkMapping({}); setBulkResult(null); } }}>
                     <DialogContent className="w-[95vw] sm:max-w-lg backdrop-blur-xl bg-white/95">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
@@ -1448,12 +1452,21 @@ function RegistrationsContent() {
                                 <Input
                                     type="file"
                                     accept=".csv,text/csv"
-                                    onChange={(e) => setBulkFile(e.target.files?.[0] || null)}
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        setBulkFile(file);
+                                        setBulkResult(null);
+                                        setBulkHeaders(file ? parseCsvHeaders(await file.text()) : []);
+                                    }}
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Required columns: name, email. Optional: phone, organization, designation, category, participantRole (DELEGATE/SPEAKER/ORGANIZER/VOLUNTEER/CHAIRPERSON — anything else defaults to DELEGATE), foodPreference (veg/non-veg). Rows without a status default to Confirmed. Up to 500 rows per upload.
+                                    Any spreadsheet works — match its columns below. Role: Delegate/Speaker/Organizer/Volunteer/Chairperson (anything else is reported as a failed row, not silently imported as Delegate). Food Preference: veg/non-veg. Rows without a status default to Confirmed. Up to 500 rows per upload.
                                 </p>
                             </div>
+
+                            {bulkHeaders.length > 0 && (
+                                <CsvColumnMapper headers={bulkHeaders} onChange={setBulkMapping} />
+                            )}
 
                             {bulkResult && (
                                 <div className="rounded-lg border p-3 space-y-2 bg-muted/30">
@@ -1482,7 +1495,10 @@ function RegistrationsContent() {
                             <Button variant="outline" onClick={() => setIsBulkOpen(false)}>Close</Button>
                             <Button
                                 onClick={handleBulkUpload}
-                                disabled={!bulkEventId || !bulkFile || bulkSubmitting}
+                                disabled={
+                                    !bulkEventId || !bulkFile || bulkSubmitting ||
+                                    BULK_UPLOAD_FIELDS.some((f) => f.required && !Object.values(bulkMapping).includes(f.key))
+                                }
                                 className="gap-2"
                             >
                                 {bulkSubmitting ? (
