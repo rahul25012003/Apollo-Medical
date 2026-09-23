@@ -5,7 +5,7 @@
 
 // The tenant is served at "/" in production (DEFAULT_TENANT_SLUG) and at
 // "/t/apollo-medical" locally, so the shell covers both.
-const CACHE_NAME = "ifpc-2026-v4";
+const CACHE_NAME = "ifpc-2026-v5";
 const SHELL_URL = self.registration.scope.endsWith("/t/apollo-medical")
   ? "/t/apollo-medical"
   : "/";

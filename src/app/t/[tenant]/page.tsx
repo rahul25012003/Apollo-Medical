@@ -518,19 +518,19 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
       <img
         src={hero.bgImage || "/ifpc/convention-centre.jpg"}
         alt=""
-        className="absolute inset-0 w-full h-full object-cover scale-105 blur-[3px]"
+        className="absolute inset-0 w-full h-full object-cover"
         style={{ objectPosition: "22% center" }}
         loading="eager"
       />
-      <div className="absolute inset-0" style={{ background: "linear-gradient(115deg, rgba(18,17,43,0.95) 0%, rgba(30,58,95,0.88) 48%, rgba(18,17,43,0.92) 100%)" }} />
+      <div className="absolute inset-0" style={{ background: "linear-gradient(115deg, rgba(18,17,43,0.82) 0%, rgba(30,58,95,0.68) 48%, rgba(18,17,43,0.8) 100%)" }} />
 
       <div className="container mx-auto px-4 lg:px-8 relative z-10 py-12 sm:py-16 lg:py-20">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           <div className="lg:col-span-7 text-center lg:text-left hero-stagger-1">
             <div className="lg:hidden mb-6 flex items-center justify-center gap-3">
               {IFPC_HOSTS.map((h) => (
-                <div key={h.src} className="h-14 sm:h-16 rounded-xl bg-white p-1.5 shadow-lg inline-flex items-center justify-center">
-                  <img src={h.src} alt={h.alt} className="h-full w-auto object-contain" />
+                <div key={h.src} className="h-14 w-14 sm:h-16 sm:w-16 rounded-xl bg-white p-1.5 shadow-lg flex items-center justify-center flex-none">
+                  <img src={h.src} alt={h.alt} className="max-h-full max-w-full object-contain" />
                 </div>
               ))}
             </div>
@@ -589,8 +589,8 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
               <div className="mt-4 flex items-start justify-center gap-4 sm:gap-6">
                 {IFPC_HOSTS.map((h) => (
                   <div key={h.src} className="text-center">
-                    <div className="h-20 sm:h-24 rounded-2xl bg-white p-2.5 shadow-lg inline-flex items-center justify-center">
-                      <img src={h.src} alt={h.alt} className="h-full w-auto object-contain" />
+                    <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-white p-2.5 shadow-lg flex items-center justify-center flex-none">
+                      <img src={h.src} alt={h.alt} className="max-h-full max-w-full object-contain" />
                     </div>
                     <p className="mt-2 text-xs sm:text-sm font-semibold text-white/90">{h.name}</p>
                   </div>

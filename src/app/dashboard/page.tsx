@@ -304,8 +304,8 @@ export default function DashboardPage() {
                 <div className="order-first lg:order-last flex-shrink-0 flex items-end justify-center lg:justify-end gap-3 sm:gap-4 w-full lg:w-auto">
                     {[{ src: "/ifpc/nimhans-logo.png", alt: "NIMHANS logo", name: "NIMHANS, Bengaluru" }, { src: "/ifpc/ranzcp-logo.png", alt: "RANZCP logo", name: "RANZCP" }].map((l) => (
                         <div key={l.src} className="text-center">
-                            <div className="h-24 sm:h-28 lg:h-32 rounded-2xl bg-white p-2.5 shadow-lg inline-flex items-center justify-center">
-                                <img src={l.src} alt={l.alt} className="h-full w-auto object-contain" />
+                            <div className="h-24 w-24 sm:h-28 sm:w-28 lg:h-32 lg:w-32 rounded-2xl bg-white p-2.5 shadow-lg flex items-center justify-center flex-none">
+                                <img src={l.src} alt={l.alt} className="max-h-full max-w-full object-contain" />
                             </div>
                             <p className="mt-1.5 text-[11px] sm:text-xs font-semibold text-white/90">{l.name}</p>
                         </div>

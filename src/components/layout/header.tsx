@@ -327,7 +327,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                     </DropdownMenu>
 
                     {/* Dark mode toggle — disabled for now */}
-                    {!isIfpc && <DarkModeToggle />}
+                    <DarkModeToggle />
 
                     {/* Help - desktop only */}
                     {!isIfpc && (
