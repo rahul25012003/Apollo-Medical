@@ -1,0 +1,147 @@
+/*
+ * Veg / non-veg choice for IFPC 2026. Lives beside the component rather than
+ * in the dashboard's scoped stylesheet, because this control also renders on
+ * the public event page, which is outside .ifpc-neu.
+ *
+ * Colour carries the meaning here — green for vegetarian, red for not — so it
+ * is never the only signal: the Indian food mark (a dot inside a square) sits
+ * beside the label, and the chosen one is filled rather than merely tinted.
+ */
+
+.ifpc-food {
+  --food: #15803d;
+  --food-tint: #f0fdf4;
+  --food-edge: #bbf7d0;
+  --food-glow: rgb(21 128 61 / 0.35);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid var(--food-edge);
+  border-radius: 999px;
+  background: var(--food-tint);
+  color: var(--food);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ifpc-food--nonveg {
+  --food: #b91c1c;
+  --food-tint: #fef2f2;
+  --food-edge: #fecaca;
+  --food-glow: rgb(185 28 28 / 0.35);
+}
+
+/* The mark: a square outline with a dot, the convention on Indian packaging. */
+.ifpc-food-mark {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ifpc-food-mark::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: scale(0.7);
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ifpc-food[data-selected="true"] {
+  background: var(--food);
+  border-color: var(--food);
+  color: #fff;
+  box-shadow: 0 8px 18px -8px var(--food-glow);
+  animation: ifpc-food-pop 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ifpc-food[data-selected="true"] .ifpc-food-mark::before {
+  transform: scale(1);
+  animation: ifpc-food-dot 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ifpc-food:hover:not(:disabled):not([data-selected="true"]) {
+  border-color: var(--food);
+  transform: translateY(-1px);
+}
+
+.ifpc-food:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.ifpc-food:focus-visible {
+  outline: 2px solid var(--food);
+  outline-offset: 2px;
+}
+
+.ifpc-food:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Still legible when the window has closed: the pick keeps its colour, it
+   just stops inviting a press. */
+.ifpc-food:disabled[data-selected="true"] {
+  opacity: 0.8;
+}
+
+@keyframes ifpc-food-pop {
+  0% { transform: scale(0.94); }
+  60% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ifpc-food-dot {
+  0% { transform: scale(0.35); }
+  55% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-food,
+  .ifpc-food-mark::before {
+    transition-duration: 0.01ms;
+    animation: none;
+  }
+}
+
+/* Read-only echo of the choice (the interests panel): same colour language,
+   smaller, and it never looks pressable. */
+.ifpc-food--readout {
+  min-height: 26px;
+  padding: 0 10px;
+  gap: 6px;
+  font-size: 12px;
+  cursor: default;
+  box-shadow: none;
+  animation: none;
+}
+
+.ifpc-food--readout .ifpc-food-mark {
+  width: 13px;
+  height: 13px;
+}
+
+.ifpc-food--readout .ifpc-food-mark::before {
+  width: 5px;
+  height: 5px;
+  animation: none;
+}

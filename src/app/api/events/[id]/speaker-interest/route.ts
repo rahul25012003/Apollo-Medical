@@ -7,6 +7,7 @@ import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
 import { isIfpcEvent } from "@/lib/ifpc-tenant";
+import { logActivity } from "@/lib/activity-log";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -86,6 +87,22 @@ export const DELETE = withErrorHandler(async (request: NextRequest, context?: Ro
     where: { speakerId, eventId, email: session.user.email.toLowerCase() },
   });
 
+  if (removed) {
+    const [speaker, event] = await Promise.all([
+      prisma.speaker.findUnique({ where: { id: speakerId }, select: { name: true } }),
+      prisma.event.findUnique({ where: { id: eventId }, select: { tenantId: true } }),
+    ]);
+    await logActivity(session, {
+      action: "interest.remove",
+      summary: `${session.user.name || session.user.email} removed interest in speaker ${speaker?.name ?? ""}`.trim(),
+      entityType: "Speaker",
+      entityId: speakerId,
+      tenantId: event?.tenantId ?? null,
+      metadata: { kind: "speaker", speakerName: speaker?.name ?? null, status: "not interested", eventId, delegateName: session.user.name ?? null },
+      request,
+    });
+  }
+
   const counts = await countsFor(eventId);
   return successResponse(
     { speakerId, count: counts[speakerId] ?? 0, removed: removed > 0 },
@@ -134,6 +151,22 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") alreadyInterested = true;
     else throw e;
+  }
+
+  if (!alreadyInterested) {
+    const [speaker, event] = await Promise.all([
+      prisma.speaker.findUnique({ where: { id: speakerId }, select: { name: true } }),
+      prisma.event.findUnique({ where: { id: eventId }, select: { tenantId: true } }),
+    ]);
+    await logActivity(session, {
+      action: "interest.add",
+      summary: `${session.user.name || email} is interested in speaker ${speaker?.name ?? ""}`.trim(),
+      entityType: "Speaker",
+      entityId: speakerId,
+      tenantId: event?.tenantId ?? null,
+      metadata: { kind: "speaker", speakerName: speaker?.name ?? null, status: "interested", eventId, delegateName: session.user.name ?? null },
+      request,
+    });
   }
 
   const counts = await countsFor(eventId);

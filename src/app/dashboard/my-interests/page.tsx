@@ -13,7 +13,8 @@ import { MyInterestsPanel, type MyInterests } from "@/components/ifpc/MyInterest
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Calendar, Clock, MapPin, CircleDot, ListChecks } from "lucide-react";
+import { Heart, Calendar, Clock, MapPin, CircleDot, ListChecks, Lock, Info } from "lucide-react";
+import { formatClosesAt } from "@/lib/ifpc-deadline";
 import { EOI_CATEGORIES, EOI_CATEGORY_ORDER, eoiCategoryOf, INTEREST_CHANGED_EVENT } from "@/lib/ifpc-eoi";
 import type { EventSession } from "@/services/events";
 import { format, parseISO } from "date-fns";
@@ -134,7 +135,15 @@ export default function MyInterestsPage() {
                         <MyInterestsPanel data={mine} loading={mineLoading} />
                     </aside>
                     <div className="lg:order-2 min-w-0">
-                        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">More Interests</h2>
+                        <h2 className="mb-2 text-lg font-bold text-slate-900 dark:text-slate-100">More Interests</h2>
+                        {/* Everything here is reversible until registration closes. */}
+                        <p className="mb-4 flex items-start gap-1.5 text-xs text-muted-foreground">
+                            {mine?.choices && !mine.choices.open ? (
+                                <><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Registration has closed{formatClosesAt(mine.choices.closesAt) ? ` (${formatClosesAt(mine.choices.closesAt)})` : ""}, so your choices are now final.</>
+                            ) : (
+                                <><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Add or remove any of these as often as you like{mine?.choices?.closesAt ? <> — until <strong>{formatClosesAt(mine.choices.closesAt)}</strong>, when registration closes</> : null}.</>
+                            )}
+                        </p>
                     {loading ? (
                         <div className="flex justify-center py-20"><AiimsLoader /></div>
                     ) : !isIfpc ? (

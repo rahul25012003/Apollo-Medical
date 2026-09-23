@@ -1,0 +1,285 @@
+/*
+ * IFPC 2026 grouped section navigation. Scoped to .ifpc-bn, rendered for
+ * apollo-medical alone. Two placements share every style below: --bottom
+ * floats above the page on mobile, tablet and PWA; --top sits inline in the
+ * desktop header.
+ */
+
+.ifpc-bn {
+  /* Overridden inline with the tenant's own two brand colours, so the
+     selected pill is the gradient the page already uses for Login and the
+     other primary actions. The fallbacks only apply if none are passed. */
+  --bn-accent: #2582a1;
+  --bn-accent-2: #fdb931;
+  --bn-selected: linear-gradient(135deg, var(--bn-accent), var(--bn-accent-2));
+  --bn-idle: #475569;
+  --bn-well: #eef3f6;
+  --bn-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ifpc-bn--bottom {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  /* Above the install banner, which also floats at the bottom: the two never
+     overlap, but the open panel reaches into the banner's space. */
+  z-index: 61;
+  width: min(calc(100vw - 28px), 560px);
+}
+
+.ifpc-bn--top {
+  position: relative;
+  z-index: 50;
+}
+
+/* Both the bar and the sub-item panel are the same white container. */
+.ifpc-bn-shell {
+  background: #fff;
+  border-radius: 28px;
+  box-shadow: 0 1px 2px rgb(16 16 42 / 0.05), 0 12px 32px -8px rgb(16 16 42 / 0.18);
+}
+
+/* ── The bar ──────────────────────────────────────────────────────────── */
+
+.ifpc-bn-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 4px;
+  padding: 10px;
+}
+
+.ifpc-bn-group {
+  /* Equal quarters, so no label ever squeezes another out. */
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bn-idle);
+  cursor: pointer;
+  transition: background 260ms var(--bn-ease), color 260ms var(--bn-ease);
+}
+
+.ifpc-bn-group svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.5;
+}
+
+/* Every group is named, not just the selected one — an icon alone does not
+   say what "Connect" holds. */
+.ifpc-bn-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+/* Current section: the brand gradient. Merely opened: a quiet well, so one
+   pill never claims to be two different things. */
+.ifpc-bn-group[data-selected="true"] {
+  background: var(--bn-selected);
+  color: #fff;
+}
+
+.ifpc-bn-group[data-open="true"]:not([data-selected="true"]) {
+  background: var(--bn-well);
+  color: var(--bn-accent);
+}
+
+/* Side by side once there is room for it; stacked is only a narrow-screen
+   concession, and 480px is where "Programme" stops fitting beside its icon. */
+@media (min-width: 480px) {
+  .ifpc-bn-group {
+    flex-direction: row;
+    gap: 8px;
+    padding: 0 12px;
+    min-height: 48px;
+  }
+  .ifpc-bn-label {
+    font-size: 13px;
+  }
+}
+
+.ifpc-bn-group:active {
+  transform: scale(0.96);
+}
+
+.ifpc-bn-group:focus-visible {
+  outline: 2px solid var(--bn-accent);
+  outline-offset: 3px;
+}
+
+/* ── The sub-item panel ───────────────────────────────────────────────── */
+
+/* Absolutely placed above the bar, so the three closed panels cost no layout
+   and the bar never shifts. */
+.ifpc-bn-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 10px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  transform-origin: bottom center;
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 200ms ease-out, transform 320ms var(--bn-ease),
+              visibility 0s linear 320ms;
+}
+
+.ifpc-bn-panel[data-open="true"] {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 200ms ease-out, transform 360ms var(--bn-ease),
+              visibility 0s linear 0s;
+}
+
+.ifpc-bn-sub {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: center;
+  color: #3f5666;
+  background: var(--bn-well);
+  text-decoration: none;
+  /* Staggered entrance; the delay is set per child below. */
+  opacity: 0;
+  transform: translateY(8px) scale(0.94);
+  transition: opacity 220ms ease-out, transform 320ms var(--bn-ease),
+              background-color 200ms ease-out, color 200ms ease-out;
+}
+
+.ifpc-bn-panel[data-open="true"] .ifpc-bn-sub {
+  opacity: 1;
+  transform: none;
+}
+
+.ifpc-bn-panel[data-open="true"] .ifpc-bn-sub:nth-child(1) { transition-delay: 40ms; }
+.ifpc-bn-panel[data-open="true"] .ifpc-bn-sub:nth-child(2) { transition-delay: 80ms; }
+.ifpc-bn-panel[data-open="true"] .ifpc-bn-sub:nth-child(3) { transition-delay: 120ms; }
+.ifpc-bn-panel[data-open="true"] .ifpc-bn-sub:nth-child(4) { transition-delay: 160ms; }
+
+.ifpc-bn-sub[data-current="true"] {
+  background: var(--bn-selected);
+  color: #fff;
+}
+
+.ifpc-bn-sub:active {
+  transform: scale(0.96);
+}
+
+.ifpc-bn-sub:focus-visible {
+  outline: 2px solid var(--bn-accent);
+  outline-offset: 2px;
+}
+
+/* ── Top placement: tighter, and the panel drops down instead of up ───── */
+
+.ifpc-bn--top .ifpc-bn-bar {
+  padding: 6px;
+  gap: 2px;
+}
+
+/* In the header the bar sizes to its content, so labels are never clipped —
+   equal quarters only make sense when the bar spans a fixed width. */
+.ifpc-bn--top .ifpc-bn-group {
+  flex: 0 0 auto;
+  min-height: 38px;
+  min-width: 44px;
+  padding: 0 14px;
+}
+
+.ifpc-bn--top .ifpc-bn-label {
+  max-width: none;
+  overflow: visible;
+}
+
+.ifpc-bn--top .ifpc-bn-group svg {
+  width: 19px;
+  height: 19px;
+}
+
+.ifpc-bn--top .ifpc-bn-panel {
+  bottom: auto;
+  top: calc(100% + 10px);
+  transform-origin: top center;
+  transform: translateY(-10px) scale(0.96);
+}
+
+.ifpc-bn--top .ifpc-bn-panel[data-open="true"] {
+  transform: none;
+}
+
+.ifpc-bn--top .ifpc-bn-sub {
+  transform: translateY(-8px) scale(0.94);
+}
+
+.ifpc-bn--top .ifpc-bn-panel[data-open="true"] .ifpc-bn-sub {
+  transform: none;
+}
+
+/* Keep the page's own bottom (footer, last section) clear of the floating
+   bar. Only the bottom placement overlays content. */
+@media (max-width: 1279px) {
+  /* How much of the bottom edge is spoken for, nav included. */
+  body:has(.ifpc-bn--bottom) {
+    --ifpc-bn-stack: 104px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* The page's own sticky "Register Now" bar already owns the bottom edge on
+     phones, so the nav stacks above it rather than on top of it. */
+  body:has(.ifpc-sticky-cta) .ifpc-bn--bottom {
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body:has(.ifpc-bn--bottom):has(.ifpc-sticky-cta) {
+    --ifpc-bn-stack: 178px;
+    padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Everything else that floats at the bottom clears the nav too, rather
+     than landing on top of it. */
+  body:has(.ifpc-bn--bottom) .back-to-top-btn,
+  body:has(.ifpc-bn--bottom) .ifpc-pwa-banner {
+    bottom: calc(var(--ifpc-bn-stack) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Motion is decoration here; the states still read without it. */
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-bn *,
+  .ifpc-bn {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

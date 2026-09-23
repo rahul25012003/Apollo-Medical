@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Users, Loader2, CheckCircle2, Heart, CircleDot, ListChecks } from "lucide-react";
+import { Users, Loader2, CheckCircle2, Heart, CircleDot, ListChecks, Lock } from "lucide-react";
 import { InterestToggle, INTEREST_BUTTON_CLASS } from "./InterestToggle";
+import { formatClosesAt } from "@/lib/ifpc-deadline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,6 +73,8 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
   const [isInterested, setIsInterested] = useState(false);
   const [checkingMine, setCheckingMine] = useState(isLoggedIn);
   const [rule, setRule] = useState<SelectionRule | null>(null);
+  // Null until the server tells us; choices stay open until registration closes.
+  const [closedOn, setClosedOn] = useState<string | null | undefined>(undefined);
   // Bumped when any interest on the page changes — a pick-one swap clears another button's selection.
   const [refreshTick, setRefreshTick] = useState(0);
   useEffect(() => {
@@ -103,7 +106,10 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
     fetch(`/api/sessions/${sessionId}/interest?mine=1`)
       .then((r) => r.json())
       .then((json) => {
-        if (json.success) setIsInterested(json.data.isInterested);
+        if (!json.success) return;
+        setIsInterested(json.data.isInterested);
+        const w = json.data.choices;
+        setClosedOn(w && !w.open ? (formatClosesAt(w.closesAt) ?? "") : null);
       })
       .catch(() => {})
       .finally(() => setCheckingMine(false));
@@ -190,6 +196,9 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
 
   // Logged-in delegate: one-click, no dialog — we already know who they are.
   if (isLoggedIn) {
+    // Once registration closes the choice is final, so the control stops
+    // offering an action it cannot carry out and says why instead.
+    const closed = typeof closedOn === "string";
     return (
       <div className="flex items-center gap-3 flex-wrap">
         {seats}
@@ -197,12 +206,17 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
         <InterestToggle
           selected={isInterested}
           pending={submitting}
-          disabled={(isFull && !isInterested) || checkingMine}
+          disabled={closed || (isFull && !isInterested) || checkingMine}
           label={isFull ? "Session Full" : "I'd like to attend"}
           selectedLabel="You're interested"
           onSelect={selectAsLoggedIn}
-          onRemove={removeAsLoggedIn}
+          onRemove={closed ? undefined : removeAsLoggedIn}
         />
+        {closed && (
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <Lock className="h-3 w-3" /> Final{closedOn ? ` since ${closedOn}` : ""}
+          </span>
+        )}
       </div>
     );
   }

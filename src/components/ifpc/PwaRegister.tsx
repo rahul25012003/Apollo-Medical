@@ -212,7 +212,7 @@ export function PwaRegister({ global = false }: { global?: boolean }) {
   });
 
   return (
-    <div className="fixed inset-x-4 bottom-4 z-[60] flex justify-center sm:inset-x-auto sm:right-6 sm:justify-end">
+    <div className="ifpc-pwa-banner fixed inset-x-4 bottom-4 z-[60] flex justify-center sm:inset-x-auto sm:right-6 sm:justify-end">
       <style>{`
         @keyframes ifpc-pwa-ring {
           0% { transform: scale(0.85); opacity: 0.55; }

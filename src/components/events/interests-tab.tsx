@@ -21,7 +21,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Search, Heart, Mail, Phone, UserX, Utensils, Building2, Mic2, Landmark, Users, Download } from "lucide-react";
+import { Search, Heart, Mail, Phone, UserX, Utensils, Building2, Mic2, Landmark, Users, Download, History } from "lucide-react";
+import { InterestChangeLog } from "./interest-change-log";
 import { sharingLabel } from "@/lib/ifpc-constants";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 
@@ -294,7 +295,14 @@ export function InterestsTab({ eventId }: { eventId: string }) {
                         <TabsTrigger value="speakers" className="gap-1.5">
                             <Users className="h-3.5 w-3.5" /> Speakers ({speakerInterests.length})
                         </TabsTrigger>
+                        <TabsTrigger value="change-log" className="gap-1.5">
+                            <History className="h-3.5 w-3.5" /> Change Log
+                        </TabsTrigger>
                     </TabsList>
+
+                    <TabsContent value="change-log" className="space-y-3 pt-2">
+                        <InterestChangeLog eventId={eventId} />
+                    </TabsContent>
 
                     <TabsContent value="workshops" className="space-y-3 pt-2">
                         <Select value={sessionFilter} onValueChange={setSessionFilter}>

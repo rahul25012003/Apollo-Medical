@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { successResponse, Errors, withErrorHandler } from "@/lib/api-utils";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { isIfpcTenantId } from "@/lib/ifpc-tenant";
+import { ifpcChoicesWindow } from "@/lib/ifpc-deadline.server";
 
 // GET /api/users/me/interests — everything the signed-in delegate has marked
 // as interested (sessions/workshops/campus tour, speakers) plus their food and
@@ -17,7 +18,7 @@ export const GET = withErrorHandler(async () => {
   const email = session.user.email.toLowerCase();
   const ifpcEvent = { tenant: { slug: IFPC_TENANT_SLUG } };
 
-  const [sessionRows, speakerRows, registration] = await Promise.all([
+  const [sessionRows, speakerRows, registration, choices] = await Promise.all([
     prisma.sessionInterest.findMany({
       where: { email, session: { event: ifpcEvent } },
       orderBy: { createdAt: "desc" },
@@ -42,9 +43,12 @@ export const GET = withErrorHandler(async () => {
       orderBy: { createdAt: "desc" },
       select: { foodPreference: true, accommodationChoice: true, accommodationRequired: true, accommodationSharing: true, accommodationCheckIn: true, accommodationCheckOut: true },
     }),
+    ifpcChoicesWindow(),
   ]);
 
   return successResponse({
+    // Every choice below stays editable until this window closes.
+    choices,
     sessions: sessionRows.map((r) => ({
       id: r.id,
       sessionId: r.session.id,

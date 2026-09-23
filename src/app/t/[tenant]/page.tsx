@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { IfpcBottomNav, type BottomNavGroup } from "@/components/ifpc/IfpcBottomNav";
 import {
   GraduationCap,
   Calendar,
@@ -47,9 +47,12 @@ import {
   ArrowUp,
   Megaphone,
   ArrowLeftRight,
+  Home as HomeIcon,
+  CalendarDays,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { eventsService, Event } from "@/services/events";
 import { EventCard, EventCardData } from "@/components/events/EventCard";
 import { getEventImage, getEffectiveEventStatus } from "@/lib/event-utils";
@@ -360,44 +363,83 @@ interface IfpcNavProps {
   tUrl: (path: string) => string;
 }
 
-type NavLink = { href: string; label: string };
+// Four groups of three, matching the bottom bar. Every section the old nav
+// reached is still reachable — the group's own anchor plus its three children
+// cover the same set, just organised. Optional sections that this tenant may
+// not render fall out of their group rather than being hidden elsewhere.
+function ifpcSectionGroups(p: {
+  sections: IfpcNavProps["sections"];
+  hasEvents: boolean;
+  hasGallery: boolean;
+  hasRealTestimonials: boolean;
+  researchItemsCount: number;
+  faqsCount: number;
+}): BottomNavGroup[] {
+  const on = {
+    hero: !!p.sections.hero,
+    about: !!p.sections.about,
+    contact: !!p.sections.contact,
+    events: !!p.sections.events && p.hasEvents,
+    gallery: !!p.sections.gallery && p.hasGallery,
+    research: p.sections.ongoingResearch !== false && p.researchItemsCount > 0,
+    testimonials: !!p.sections.testimonials && p.hasRealTestimonials,
+    faq: p.sections.faq !== false && p.faqsCount > 0,
+  };
+  const pick = (...items: (false | { id: string; label: string })[]) =>
+    items.filter(Boolean) as { id: string; label: string }[];
 
-// Split into a "primary" row (always inline) and a "More" dropdown so the
-// full set fits one row with no scrolling even with every optional item
-// enabled — see the coordinator's fit requirement. Labels are unchanged
-// from the original desktop nav, just regrouped.
-function ifpcNavGroups(p: IfpcNavProps): { primary: NavLink[]; more: NavLink[] } {
-  const primary: NavLink[] = [
-    p.sections.hero && { href: "#hero", label: "Home" },
-    p.sections.about && { href: "#about", label: "About" },
-    { href: "#programme", label: "Programme" },
-    { href: "#speakers", label: "Speakers" },
-    { href: "#registration", label: "Registration" },
-    p.sections.contact && { href: "#contact", label: "Contact" },
-  ].filter(Boolean) as NavLink[];
-
-  const more: NavLink[] = [
-    p.sections.events && p.hasEvents && { href: "#events", label: "Events" },
-    p.sections.gallery && p.hasGallery && { href: "#gallery", label: "Gallery" },
-    (p.sections.ongoingResearch !== false) && p.researchItemsCount > 0 && { href: "#research", label: "Research" },
-    p.sections.testimonials && p.hasRealTestimonials && { href: "#testimonials", label: "Testimonials" },
-    { href: "#highlights", label: "Highlights" },
-    { href: "#topics", label: "Topics" },
-    { href: "#venue", label: "Venue" },
-    { href: "#organising-committee", label: "Committee" },
-    (p.sections.faq !== false) && p.faqsCount > 0 && { href: "#faq", label: "FAQ" },
-    { href: "#feedback", label: "Feedback" },
-  ].filter(Boolean) as NavLink[];
-
-  return { primary, more };
+  return [
+    {
+      id: on.hero ? "hero" : "highlights",
+      label: "Home",
+      icon: HomeIcon,
+      items: pick(
+        on.about && { id: "about", label: "About" },
+        { id: "highlights", label: "Highlights" },
+        on.events && { id: "events", label: "Events" },
+        on.gallery && { id: "gallery", label: "Gallery" },
+      ),
+    },
+    {
+      id: "programme",
+      label: "Programme",
+      icon: CalendarDays,
+      items: pick(
+        { id: "programme", label: "Scientific Programme" },
+        { id: "speakers", label: "Speakers" },
+        { id: "topics", label: "Topics" },
+        on.research && { id: "research", label: "Research" },
+      ),
+    },
+    {
+      id: "registration",
+      label: "Attend",
+      icon: Ticket,
+      items: pick(
+        { id: "registration", label: "Registration" },
+        { id: "venue", label: "Venue & Travel" },
+        on.faq && { id: "faq", label: "FAQ" },
+      ),
+    },
+    {
+      id: on.contact ? "contact" : "organising-committee",
+      label: "Connect",
+      icon: MessageSquare,
+      items: pick(
+        { id: "organising-committee", label: "Committee" },
+        on.contact && { id: "contact", label: "Contact" },
+        { id: "feedback", label: "Feedback" },
+        on.testimonials && { id: "testimonials", label: "Testimonials" },
+      ),
+    },
+  ].filter((g) => g.items.length > 0);
 }
 
 function IfpcHeaderV2(p: IfpcNavProps) {
-  const { primary, more } = ifpcNavGroups(p);
-  const allLinks = [...primary, ...more];
-  const [moreOpen, setMoreOpen] = useState(false);
+  const groups = ifpcSectionGroups(p);
 
   return (
+    <>
     <header className="ifpc-v2 sticky top-0 z-50 shadow-[0_2px_20px_-4px_rgba(18,17,43,0.35)]" style={{ background: "#12112B" }}>
       <div className="w-full pl-4 pr-0 sm:pl-6">
         <div className="flex h-16 sm:h-[68px] items-center justify-between gap-2">
@@ -408,54 +450,24 @@ function IfpcHeaderV2(p: IfpcNavProps) {
             <span className="font-extrabold text-sm tracking-tight hidden xl:block max-w-[160px] truncate" style={{ color: "#ffffff" }}>{p.branding.name}</span>
           </Link>
 
-          <nav className="hidden xl:flex items-center gap-4 2xl:gap-6 flex-1 justify-center min-w-0 px-4">
-            {primary.map((l) => (
-              <a key={l.href} href={l.href} className="text-[12px] xl:text-[13px] font-semibold tracking-tight text-white/70 hover:text-white transition-colors whitespace-nowrap">{l.label}</a>
-            ))}
-            {more.length > 0 && (
-              <DropdownMenu open={moreOpen} onOpenChange={setMoreOpen}>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1 text-[12px] xl:text-[13px] font-semibold tracking-tight text-white/70 hover:text-white transition-colors whitespace-nowrap">
-                    More <ChevronDown className={cn("h-3 w-3 transition-transform", moreOpen && "rotate-180")} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="ifpc-v2 rounded-2xl p-2 min-w-[180px]">
-                  {more.map((l) => (
-                    <DropdownMenuItem key={l.href} asChild className="rounded-xl text-sm font-semibold cursor-pointer">
-                      <a href={l.href}>{l.label}</a>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </nav>
+          {/* Desktop: the same grouped control, anchored in the header. */}
+          <div className="hidden xl:flex flex-1 justify-center min-w-0 px-4">
+            <IfpcBottomNav groups={groups} placement="top" />
+          </div>
 
           <div className="flex items-center flex-shrink-0 h-full">
-            <button
-              className="xl:hidden p-2 mr-2 rounded-full text-white hover:bg-white/10 transition-colors"
-              onClick={() => p.setMobileMenuOpen(!p.mobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              {p.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
             <Link href={p.tUrl("/auth/login")} className="h-full flex items-center gap-2 pl-5 pr-5 sm:pl-6 sm:pr-6 font-bold text-xs sm:text-sm hover:brightness-95 transition-[filter]" style={{ background: "#CCFF33", color: "#0a0a0a" }}>
               Login
               <span className="v2-icon-btn h-6 w-6 sm:h-7 sm:w-7" style={{ background: "#12112B", color: "#CCFF33" }}><ArrowRight className="h-3 w-3" /></span>
             </Link>
           </div>
         </div>
-
-        {p.mobileMenuOpen && (
-          <div className="xl:hidden border-t border-white/10 pb-4 pr-4">
-            <nav className="flex flex-col gap-1 pt-2">
-              {allLinks.map((l) => (
-                <a key={l.href} href={l.href} onClick={() => p.setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-semibold text-white/70 hover:text-white hover:bg-white/[0.06] rounded-full transition-colors">{l.label}</a>
-              ))}
-            </nav>
-          </div>
-        )}
       </div>
     </header>
+
+    {/* Mobile, tablet and PWA: the same control, floating at the bottom. */}
+    <IfpcBottomNav groups={groups} placement="bottom" />
+    </>
   );
 }
 
@@ -1003,6 +1015,20 @@ export default function TenantHomePage() {
   const hasSponsors = sponsors.length > 0;
   const hasGallery = galleryImages.length > 0 || galleryVideos.length > 0;
 
+  // Grouped section nav for apollo-medical (see ifpcSectionGroups). Memoised
+  // because the nav observes every section id it is handed.
+  const ifpcNavSections = useMemo(
+    () => ifpcSectionGroups({
+      sections,
+      hasEvents,
+      hasGallery,
+      hasRealTestimonials,
+      researchItemsCount: researchItems.length,
+      faqsCount: faqs.length,
+    }),
+    [sections, hasEvents, hasGallery, hasRealTestimonials, researchItems.length, faqs.length]
+  );
+
   // About slideshow auto-rotate
   const aboutImageCount = about.images?.length || 0;
   useEffect(() => {
@@ -1339,7 +1365,16 @@ export default function TenantHomePage() {
                 horizontal nav — otherwise it overlaps the logo/login button
                 at typical laptop widths. Other tenants keep the original
                 threshold unchanged. */}
-            <nav className={cn("items-center gap-4 xl:gap-6 flex-1 justify-center", tenantSlug === "apollo-medical" ? "hidden 2xl:flex" : "hidden lg:flex")}>
+            {/* apollo-medical: the 15 links are grouped into four, so they fit
+                from xl instead of 2xl and the same control serves every size.
+                Every other tenant keeps the original nav below, untouched. */}
+            {tenantSlug === "apollo-medical" && (
+              <div className="hidden xl:flex flex-1 justify-center min-w-0 px-4">
+                <IfpcBottomNav groups={ifpcNavSections} placement="top" accentFrom={theme.primaryColor} accentTo={theme.secondaryColor} />
+              </div>
+            )}
+
+            <nav className={cn("items-center gap-4 xl:gap-6 flex-1 justify-center", tenantSlug === "apollo-medical" ? "hidden" : "hidden lg:flex")}>
               {sections.hero && <a href="#hero" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Home</a>}
               {sections.events && hasEvents && <a href="#events" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Events</a>}
               {sections.gallery && hasGallery && <a href="#gallery" className="text-xs xl:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">Gallery</a>}
@@ -1367,7 +1402,7 @@ export default function TenantHomePage() {
             <div className="flex items-center gap-2 flex-shrink-0">
               {/* Mobile/tablet hamburger */}
               <button
-                className={cn("p-2 rounded-lg hover:bg-gray-100 transition-colors", tenantSlug === "apollo-medical" ? "2xl:hidden" : "lg:hidden")}
+                className={cn("p-2 rounded-lg hover:bg-gray-100 transition-colors", tenantSlug === "apollo-medical" ? "hidden" : "lg:hidden")}
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label="Toggle menu"
               >
@@ -1384,9 +1419,9 @@ export default function TenantHomePage() {
             </div>
           </div>
 
-          {/* Mobile nav dropdown */}
-          {mobileMenuOpen && (
-            <div className={cn("border-t bg-white/95 backdrop-blur-xl pb-4 px-4", tenantSlug === "apollo-medical" ? "2xl:hidden" : "lg:hidden")}>
+          {/* Mobile nav dropdown — replaced by the bottom bar on apollo-medical */}
+          {mobileMenuOpen && tenantSlug !== "apollo-medical" && (
+            <div className="border-t bg-white/95 backdrop-blur-xl pb-4 px-4 lg:hidden">
               <nav className="flex flex-col gap-1 pt-2">
                 {sections.hero && <a href="#hero" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Home</a>}
                 {sections.events && hasEvents && <a href="#events" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-lg transition-colors">Events</a>}
@@ -1415,6 +1450,12 @@ export default function TenantHomePage() {
           )}
         </div>
       </header>
+      )}
+
+      {/* apollo-medical: the same grouped control, floating, for mobile,
+          tablet and the installed PWA. */}
+      {tenantSlug === "apollo-medical" && (
+        <IfpcBottomNav groups={ifpcNavSections} placement="bottom" accentFrom={theme.primaryColor} accentTo={theme.secondaryColor} />
       )}
 
       {/* Background wrapper: hero only */}
@@ -3452,7 +3493,7 @@ export default function TenantHomePage() {
         const isDeadlinePassed = deadline && now > deadline;
         if (isEnded || isDeadlinePassed || isNotOpenYet) return null;
         return (
-          <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-xl border-t shadow-lg md:hidden">
+          <div className="ifpc-sticky-cta fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-xl border-t shadow-lg md:hidden">
             <Link href={tUrl(`/events/${evt.id}/register`)} className="block">
               <Button className="w-full text-white rounded-full font-semibold py-3 bg-emerald-500 hover:bg-emerald-600" style={{ boxShadow: "0 4px 16px rgba(16,185,129,0.35)" }}>
                 Register Now

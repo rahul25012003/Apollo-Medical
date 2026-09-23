@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Utensils, Info, CheckCircle2, Loader2, BedDouble } from "lucide-react";
+import { MapPin, Utensils, Info, CheckCircle2, Loader2, BedDouble, Lock, Pencil, X, BadgeCheck, CircleSlash } from "lucide-react";
 import { IFPC_TENANT_SLUG, ACCOMMODATION_SHARING, sharingLabel } from "@/lib/ifpc-constants";
 import { VENUE_TRAVEL, REGISTRATION } from "@/content/ifpc-2026";
+import { type ChoicesWindow, OPEN_FOREVER, formatClosesAt } from "@/lib/ifpc-deadline";
 import { toast } from "sonner";
 import { notFound } from "next/navigation";
 import { useIsIfpcDashboard } from "@/components/ifpc/guard";
@@ -40,6 +41,7 @@ type AccommodationState = {
   remarks?: string | null;
   eventStart?: string | null;
   eventEnd?: string | null;
+  choices?: ChoicesWindow;
 };
 
 function shiftDay(iso: string | null, days: number): string | undefined {
@@ -56,6 +58,12 @@ const TIER_STYLES: Record<Tier, string> = {
   Premium: "bg-amber-50 text-amber-700 border-amber-200",
 };
 
+/** Where the delegate stands right now. Drives the status card and its actions. */
+type Status = "none" | "requested" | "declined";
+
+type Pref = { required: boolean | null; sharing: string | null; checkIn: string; checkOut: string; remarks: string };
+const EMPTY_PREF: Pref = { required: null, sharing: null, checkIn: "", checkOut: "", remarks: "" };
+
 export default function AccommodationPage() {
   // IFPC (apollo-medical) only — this page doesn't exist for other tenants.
   const ifpcCheck = useIsIfpcDashboard();
@@ -69,20 +77,25 @@ export default function AccommodationPage() {
   const [loadingChoice, setLoadingChoice] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
-  // Accommodation expression of interest (saved separately from the hotel pick)
   const [registered, setRegistered] = useState(true);
-  const [pref, setPref] = useState<{ required: boolean | null; sharing: string | null; checkIn: string; checkOut: string; remarks: string }>({
-    required: null, sharing: null, checkIn: "", checkOut: "", remarks: "",
-  });
+  // `saved` is what the server holds and drives the status card; `pref` is the
+  // draft in the editor. Keeping them apart matters: otherwise picking "Yes"
+  // flips the card to "Requested" before anything has been written.
+  const [saved, setSaved] = useState<Pref>(EMPTY_PREF);
+  const [pref, setPref] = useState<Pref>(EMPTY_PREF);
   const [eventRange, setEventRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
-  const [savedPref, setSavedPref] = useState(false);
   const [savingPref, setSavingPref] = useState(false);
+  const [choicesWindow, setChoicesWindow] = useState<ChoicesWindow>(OPEN_FOREVER);
+  // The editor is open while there is nothing on file, or when they ask to change.
+  const [editing, setEditing] = useState(false);
 
   function applyServerState(d: AccommodationState) {
     setRegistered(d.registered !== false);
     setChoice(d.choice ?? null);
-    setPref({ required: d.required ?? null, sharing: d.sharing ?? null, checkIn: d.checkIn ?? "", checkOut: d.checkOut ?? "", remarks: d.remarks ?? "" });
-    setSavedPref(d.required != null);
+    const next: Pref = { required: d.required ?? null, sharing: d.sharing ?? null, checkIn: d.checkIn ?? "", checkOut: d.checkOut ?? "", remarks: d.remarks ?? "" };
+    setSaved(next);
+    setPref(next);
+    if (d.choices) setChoicesWindow(d.choices);
     if (d.eventStart !== undefined) setEventRange({ start: d.eventStart ?? null, end: d.eventEnd ?? null });
   }
 
@@ -94,15 +107,40 @@ export default function AccommodationPage() {
     fetch("/api/users/me/accommodation")
       .then((r) => r.json())
       .then((json) => {
-        if (json.success) applyServerState(json.data);
+        if (json.success) {
+          applyServerState(json.data);
+          // Nothing answered yet: open the flow rather than making them press
+          // a button to reach an empty form.
+          if (json.data?.required == null && !json.data?.choice) setEditing(true);
+        }
       })
       .catch(() => {})
       .finally(() => setLoadingChoice(false));
   }, [isIfpc]);
 
+  const open = choicesWindow.open;
+  const closesOn = formatClosesAt(choicesWindow.closesAt);
+  const status: Status = saved.required === true ? "requested" : saved.required === false ? "declined" : "none";
+
   // Allowed stay window: a few days either side of the conference.
   const minDate = shiftDay(eventRange.start, -3);
   const maxDate = shiftDay(eventRange.end, 3);
+
+  async function post(body: Record<string, unknown>, success: string) {
+    const res = await fetch("/api/users/me/accommodation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      toast.error(json?.error?.message || "Could not save your change");
+      return false;
+    }
+    applyServerState(json.data);
+    toast.success(success);
+    return true;
+  }
 
   async function savePreference() {
     if (pref.required == null) {
@@ -118,50 +156,31 @@ export default function AccommodationPage() {
       return;
     }
     setSavingPref(true);
-    try {
-      const res = await fetch("/api/users/me/accommodation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          required: pref.required,
-          ...(pref.required ? { sharing: pref.sharing, checkIn: pref.checkIn || null, checkOut: pref.checkOut || null } : {}),
-          remarks: pref.remarks.trim() || null,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        toast.error(json?.error?.message || "Could not save your preference");
-        return;
-      }
-      applyServerState(json.data);
-      toast.success("Accommodation preference saved");
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setSavingPref(false);
-    }
+    const ok = await post({
+      required: pref.required,
+      ...(pref.required ? { sharing: pref.sharing, checkIn: pref.checkIn || null, checkOut: pref.checkOut || null } : {}),
+      remarks: pref.remarks.trim() || null,
+    }, "Accommodation request saved");
+    if (ok) setEditing(false);
+    setSavingPref(false);
   }
 
-  async function selectHotel(hotelName: string) {
-    setSaving(hotelName);
-    try {
-      const res = await fetch("/api/users/me/accommodation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hotelName }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        toast.error(json?.error?.message || "Could not save your selection");
-        return;
-      }
-      applyServerState(json.data);
-      toast.success(`Saved — you're marked as staying at ${hotelName}`);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setSaving(null);
-    }
+  async function declineAccommodation() {
+    setSavingPref(true);
+    if (await post({ required: false }, "Noted — you don't need a room")) setEditing(false);
+    setSavingPref(false);
+  }
+
+  async function cancelRequest() {
+    setSavingPref(true);
+    if (await post({ required: null }, "Request cancelled — you can book again any time")) setEditing(true);
+    setSavingPref(false);
+  }
+
+  async function selectHotel(hotelName: string | null) {
+    setSaving(hotelName ?? "__clear__");
+    await post({ hotelName }, hotelName ? `Saved — you're marked as staying at ${hotelName}` : "Hotel preference removed");
+    setSaving(null);
   }
 
   const grouped: Record<Tier, typeof VENUE_TRAVEL.accommodation.hotels> = {
@@ -173,10 +192,16 @@ export default function AccommodationPage() {
     grouped[tierOf(hotel.price)].push(hotel);
   }
 
+  const summary = [
+    sharingLabel(saved.sharing),
+    choice,
+    saved.checkIn ? `${saved.checkIn} → ${saved.checkOut || "?"}` : null,
+  ].filter(Boolean) as string[];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
       <Sidebar />
-      <Header title="Accommodation" subtitle="Hotels near the conference venue" />
+      <Header title="Accommodation" subtitle="Book and manage your stay" />
       <main
         className={cn(
           "pt-16 min-h-screen transition-all duration-300",
@@ -192,58 +217,113 @@ export default function AccommodationPage() {
                 No accommodation information has been configured for this event yet.
               </CardContent>
             </Card>
+          ) : loadingChoice ? (
+            <div className="flex justify-center py-20"><AiimsLoader /></div>
+          ) : !registered ? (
+            <Card className="border-0 shadow-sm">
+              <CardContent className="py-12 text-center text-muted-foreground">
+                Once your registration is confirmed you can book your accommodation here.
+              </CardContent>
+            </Card>
           ) : (
             <>
-              <Card className="border-0 shadow-sm bg-primary/5">
-                <CardContent className="pt-6 space-y-3">
-                  <div className="flex items-start gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <p>{VENUE_TRAVEL.venue.name}, {VENUE_TRAVEL.venue.address}</p>
+              {/* ── Where you stand ─────────────────────────────────────── */}
+              <Card className={cn("border-0 shadow-sm", status === "requested" && "bg-emerald-50/70 dark:bg-emerald-900/15")}>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Your accommodation</p>
+                      <p className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        {status === "requested" && <BadgeCheck className="h-5 w-5 text-emerald-600" />}
+                        {status === "declined" && <CircleSlash className="h-5 w-5 text-slate-400" />}
+                        {status === "requested" ? "Requested" : status === "declined" ? "Not interested" : "Not booked yet"}
+                      </p>
+                      {status === "requested" && (
+                        <p className="text-sm text-slate-700 dark:text-slate-200">
+                          {summary.length ? summary.join(" · ") : "Room needed — details not filled in yet"}
+                        </p>
+                      )}
+                      {status === "declined" && (
+                        <p className="text-sm text-muted-foreground">You&apos;ve told us you don&apos;t need a room. You can change this any time.</p>
+                      )}
+                      {status === "none" && (
+                        <p className="text-sm text-muted-foreground">Tell us whether you need a room near the venue.</p>
+                      )}
+                      {saved.remarks && <p className="text-xs text-muted-foreground">Note: {saved.remarks}</p>}
+                    </div>
+
+                    {open && (
+                      <div className="flex flex-wrap gap-2">
+                        {status === "requested" ? (
+                          <>
+                            <Button variant="outline" className="h-11 sm:h-9" onClick={() => { setPref(saved); setEditing(true); }} disabled={savingPref}>
+                              <Pencil className="mr-1.5 h-4 w-4" /> Change
+                            </Button>
+                            <Button variant="outline" className="h-11 sm:h-9" onClick={cancelRequest} disabled={savingPref}>
+                              <X className="mr-1.5 h-4 w-4" /> Cancel request
+                            </Button>
+                            <Button variant="outline" className="h-11 sm:h-9" onClick={declineAccommodation} disabled={savingPref}>
+                              Not interested
+                            </Button>
+                          </>
+                        ) : (
+                          <Button className="h-11 sm:h-9" onClick={() => { setPref(saved); setEditing(true); }} disabled={savingPref}>
+                            <BedDouble className="mr-1.5 h-4 w-4" /> Book Accommodation
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <Utensils className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <p>{REGISTRATION.intro}</p>
-                  </div>
-                  <div className="flex items-start gap-2 text-xs text-muted-foreground">
+
+                  <p className="flex items-start gap-1.5 text-xs text-muted-foreground border-t pt-3">
                     <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                    <p>{VENUE_TRAVEL.accommodation.intro}</p>
-                  </div>
+                    {open ? (
+                      <span>
+                        Shared with the organising team. This is a request, not a reservation — the hotel confirms directly.{" "}
+                        {closesOn ? <>You can change it until <strong>{closesOn}</strong>.</> : "You can change it any time."}
+                      </span>
+                    ) : (
+                      <span>Registration closed{closesOn ? ` on ${closesOn}` : ""}, so these choices are now final. Contact the organising team if something needs to change.</span>
+                    )}
+                  </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <BedDouble className="h-4 w-4 text-primary" /> Your accommodation requirement
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  {loadingChoice ? (
-                    <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-                  ) : !registered ? (
-                    <p className="text-sm text-muted-foreground">Once your registration is confirmed you can tell us about your accommodation needs here.</p>
-                  ) : (
-                    <>
-                      <div className="space-y-2">
-                        <Label>Do you need accommodation?</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {[{ v: true, l: "Yes, I need a room" }, { v: false, l: "No, not required" }].map((o) => (
-                            <Button
-                              key={o.l}
-                              type="button"
-                              variant={pref.required === o.v ? "default" : "outline"}
-                              aria-pressed={pref.required === o.v}
-                              className="h-11 sm:h-9"
-                              onClick={() => setPref((p) => ({ ...p, required: o.v }))}
-                            >
-                              {pref.required === o.v && <CheckCircle2 className="mr-1.5 h-4 w-4" />}{o.l}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
+              {!open && (
+                <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Lock className="h-4 w-4" /> Changes are closed
+                </p>
+              )}
 
-                      {pref.required && (
-                        <>
+              {/* ── The flow ────────────────────────────────────────────── */}
+              {open && editing && (
+                <Card className="border-0 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <BedDouble className="h-4 w-4 text-primary" /> {status === "none" ? "Book accommodation" : "Change your request"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <Step n={1} title="Do you need a room?">
+                      <div className="flex flex-wrap gap-2">
+                        {[{ v: true, l: "Yes, I need a room" }, { v: false, l: "No, not required" }].map((o) => (
+                          <Button
+                            key={o.l}
+                            type="button"
+                            variant={pref.required === o.v ? "default" : "outline"}
+                            aria-pressed={pref.required === o.v}
+                            className="h-11 sm:h-9"
+                            onClick={() => setPref((p) => ({ ...p, required: o.v }))}
+                          >
+                            {pref.required === o.v && <CheckCircle2 className="mr-1.5 h-4 w-4" />}{o.l}
+                          </Button>
+                        ))}
+                      </div>
+                    </Step>
+
+                    {pref.required && (
+                      <Step n={2} title="Room and dates">
+                        <div className="space-y-4">
                           <div className="space-y-2">
                             <Label>Preferred sharing</Label>
                             <div className="flex flex-wrap gap-2">
@@ -271,108 +351,134 @@ export default function AccommodationPage() {
                               <Input id="acc-out" type="date" min={pref.checkIn || minDate} max={maxDate} value={pref.checkOut} onChange={(e) => setPref((p) => ({ ...p, checkOut: e.target.value }))} />
                             </div>
                           </div>
-                        </>
-                      )}
+                        </div>
+                      </Step>
+                    )}
 
-                      <div className="space-y-1.5">
-                        <Label htmlFor="acc-remarks">Special requirements / remarks (optional)</Label>
-                        <Textarea
-                          id="acc-remarks"
-                          rows={3}
-                          maxLength={1000}
-                          placeholder="e.g. ground-floor room, accessibility needs, travelling with family"
-                          value={pref.remarks}
-                          onChange={(e) => setPref((p) => ({ ...p, remarks: e.target.value }))}
-                        />
-                      </div>
+                    <Step n={pref.required ? 3 : 2} title="Special requirements (optional)">
+                      <Textarea
+                        id="acc-remarks"
+                        rows={3}
+                        maxLength={1000}
+                        placeholder="e.g. ground-floor room, accessibility needs, travelling with family"
+                        value={pref.remarks}
+                        onChange={(e) => setPref((p) => ({ ...p, remarks: e.target.value }))}
+                      />
+                    </Step>
 
-                      <div className="flex flex-wrap items-center gap-3">
-                        <Button type="button" onClick={savePreference} disabled={savingPref} className="h-11 sm:h-9">
-                          {savingPref && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save preference
+                    <div className="flex flex-wrap items-center gap-3 border-t pt-4">
+                      <Button type="button" onClick={savePreference} disabled={savingPref} className="h-11 sm:h-9">
+                        {savingPref && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {status === "none" ? "Save request" : "Save changes"}
+                      </Button>
+                      {status !== "none" && (
+                        <Button type="button" variant="outline" className="h-11 sm:h-9" onClick={() => { setPref(saved); setEditing(false); }} disabled={savingPref}>
+                          Discard
                         </Button>
-                        {savedPref && (
-                          <span className="inline-flex items-center gap-1.5 text-sm text-emerald-700">
-                            <CheckCircle2 className="h-4 w-4" />
-                            {pref.required
-                              ? `Saved: ${sharingLabel(pref.sharing) ?? "room needed"}${pref.checkIn ? `, ${pref.checkIn} → ${pref.checkOut || "?"}` : ""}`
-                              : "Saved: no accommodation needed"}
-                          </span>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              {pref.required !== false && (
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Preferred hotel (optional)</p>
-              )}
-
-              {choice && (
-                <Card className="border-0 shadow-sm bg-emerald-50 border border-emerald-200">
-                  <CardContent className="py-4 flex items-center gap-2 text-emerald-800">
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    <p className="text-sm">You&apos;re marked as staying at <strong>{choice}</strong>. This is visible to the organizing team.</p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {pref.required !== false && TIER_ORDER.filter((t) => grouped[t].length > 0).map((tier) => (
-                <Card key={tier} className="border-0 shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold border", TIER_STYLES[tier])}>
-                        {tier}
-                      </span>
-                      <span className="text-muted-foreground font-normal text-sm">{grouped[tier].length} option(s)</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {grouped[tier].map((hotel) => {
-                        const isSelected = choice === hotel.name;
-                        return (
-                          <div
-                            key={hotel.name}
-                            className={cn(
-                              "p-3 rounded-lg border flex items-center justify-between gap-3",
-                              isSelected ? "border-emerald-400 bg-emerald-50" : "bg-white dark:bg-slate-900"
-                            )}
-                          >
-                            <div className="min-w-0">
-                              <p className="font-medium text-sm">{hotel.name}</p>
-                              <p className="text-xs text-muted-foreground">{hotel.distance} from venue · {hotel.price}</p>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant={isSelected ? "outline" : "default"}
-                              disabled={loadingChoice || saving === hotel.name}
-                              onClick={() => selectHotel(hotel.name)}
-                              className="shrink-0"
-                            >
-                              {saving === hotel.name ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : isSelected ? (
-                                <span className="flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Selected</span>
-                              ) : (
-                                "I'll stay here"
-                              )}
-                            </Button>
-                          </div>
-                        );
-                      })}
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )}
 
-              <p className="text-xs text-muted-foreground text-center">
-                Selecting a hotel here records your intent for the organizing team — it does not book or pay for the room. Contact the hotel directly to confirm availability and rates.
-              </p>
+              {/* ── Hotels ──────────────────────────────────────────────── */}
+              {status === "requested" && (
+                <>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Preferred hotel (optional)</p>
+                    {choice && open && (
+                      <Button variant="outline" size="sm" onClick={() => selectHotel(null)} disabled={saving === "__clear__"}>
+                        {saving === "__clear__" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><X className="mr-1.5 h-3.5 w-3.5" /> Withdraw hotel choice</>}
+                      </Button>
+                    )}
+                  </div>
+
+                  {TIER_ORDER.filter((t) => grouped[t].length > 0).map((tier) => (
+                    <Card key={tier} className="border-0 shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold border", TIER_STYLES[tier])}>
+                            {tier}
+                          </span>
+                          <span className="text-muted-foreground font-normal text-sm">{grouped[tier].length} option(s)</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {grouped[tier].map((hotel) => {
+                            const isSelected = choice === hotel.name;
+                            return (
+                              <div
+                                key={hotel.name}
+                                className={cn(
+                                  "p-3 rounded-lg border flex items-center justify-between gap-3",
+                                  isSelected ? "border-emerald-400 bg-emerald-50" : "bg-white dark:bg-slate-900"
+                                )}
+                              >
+                                <div className="min-w-0">
+                                  <p className="font-medium text-sm">{hotel.name}</p>
+                                  <p className="text-xs text-muted-foreground">{hotel.distance} from venue · {hotel.price}</p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant={isSelected ? "outline" : "default"}
+                                  disabled={!open || saving === hotel.name}
+                                  onClick={() => selectHotel(hotel.name)}
+                                  className="shrink-0"
+                                >
+                                  {saving === hotel.name ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : isSelected ? (
+                                    <span className="flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Selected</span>
+                                  ) : choice ? (
+                                    "Change to this"
+                                  ) : (
+                                    "I'll stay here"
+                                  )}
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </>
+              )}
+
+              {/* ── Venue reference ─────────────────────────────────────── */}
+              <Card className="border-0 shadow-sm bg-primary/5">
+                <CardContent className="pt-6 space-y-3">
+                  <div className="flex items-start gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <p>{VENUE_TRAVEL.venue.name}, {VENUE_TRAVEL.venue.address}</p>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm">
+                    <Utensils className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <p>{REGISTRATION.intro}</p>
+                  </div>
+                  <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <p>{VENUE_TRAVEL.accommodation.intro}</p>
+                  </div>
+                </CardContent>
+              </Card>
             </>
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <p className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+        <span className="inline-flex h-6 w-6 flex-none items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">{n}</span>
+        {title}
+      </p>
+      <div className="pl-8">{children}</div>
     </div>
   );
 }

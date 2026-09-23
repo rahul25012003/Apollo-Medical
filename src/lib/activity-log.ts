@@ -14,12 +14,20 @@ interface ActivityInput {
   tenantId?: string | null;
   metadata?: Record<string, unknown>;
   request?: Request;
+  /**
+   * Who to record when the change was not made by a signed-in admin — a
+   * delegate editing their own choices, or an anonymous expression of
+   * interest from the public page. Falls back to the session user.
+   */
+  actor?: { email?: string | null; id?: string | null; role?: string | null };
 }
 
 /**
- * Admin audit trail: who did what, when. IFPC (apollo-medical) only — calls
- * for any other tenant are a no-op, so it's safe to call from shared routes.
- * Never throws: a failed log write must not fail the action being logged.
+ * Audit trail: who did what, when — every role, not only admins. A delegate
+ * changing their own interests is logged against their own account via
+ * `actor`. IFPC (apollo-medical) only — calls for any other tenant are a
+ * no-op, so it's safe to call from shared routes. Never throws: a failed log
+ * write must not fail the action being logged.
  */
 export async function logActivity(session: Session | null, input: ActivityInput): Promise<void> {
   try {
@@ -31,9 +39,9 @@ export async function logActivity(session: Session | null, input: ActivityInput)
     await prisma.activityLog.create({
       data: {
         tenantId,
-        actorId: user?.id ?? null,
-        actorEmail: user?.email ?? null,
-        actorRole: user?.role ?? null,
+        actorId: input.actor?.id ?? user?.id ?? null,
+        actorEmail: input.actor?.email ?? user?.email ?? null,
+        actorRole: input.actor?.role ?? user?.role ?? null,
         action: input.action,
         entityType: input.entityType ?? null,
         entityId: input.entityId ?? null,

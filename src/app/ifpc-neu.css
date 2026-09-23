@@ -1,0 +1,596 @@
+/*
+ * IFPC 2026 (apollo-medical) — soft "neu" surface system for the signed-in
+ * dashboard only. Scoped entirely under .ifpc-neu, which is applied by
+ * dashboard/dashboard-tenant-wrapper.tsx for that one tenant, so no other
+ * tenant and nothing outside /dashboard is affected.
+ *
+ * This restyles the existing markup's utility classes — it never changes
+ * structure, content or behaviour. Text colours stay dark on light surfaces:
+ * the usual failure of this style is unreadable low-contrast text, so depth
+ * comes from shadow, never from fading type.
+ */
+
+.ifpc-neu {
+  /* Cool, lightly tinted canvas — never pure white, never pure black. */
+  --background: oklch(0.945 0.013 247);
+  --foreground: oklch(0.26 0.03 255);
+  --card: oklch(0.977 0.007 247);
+  --card-foreground: oklch(0.26 0.03 255);
+  --popover: oklch(0.982 0.006 247);
+  --popover-foreground: oklch(0.26 0.03 255);
+  --muted: oklch(0.925 0.014 247);
+  --muted-foreground: oklch(0.49 0.025 252);
+  --border: oklch(0.90 0.014 247);
+  --input: oklch(0.935 0.012 247);
+  --radius: 1rem;
+
+  /* Elevation: light from the top-left, shadow to the bottom-right. */
+  --neu-lift: -5px -5px 12px oklch(1 0 0 / 0.85), 5px 7px 18px oklch(0.55 0.04 255 / 0.16);
+  --neu-lift-sm: -3px -3px 7px oklch(1 0 0 / 0.8), 3px 4px 10px oklch(0.55 0.04 255 / 0.14);
+  --neu-lift-lg: -8px -8px 20px oklch(1 0 0 / 0.9), 10px 14px 32px oklch(0.55 0.04 255 / 0.2);
+  --neu-hover: -6px -6px 16px oklch(1 0 0 / 0.92), 8px 12px 26px oklch(0.55 0.04 255 / 0.22);
+  --neu-inset: inset 2px 3px 6px oklch(0.55 0.04 255 / 0.16), inset -2px -2px 6px oklch(1 0 0 / 0.9);
+
+  --neu-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* The "chosen" fill for segmented controls, toggles and checkboxes. It is
+     the body text colour, not a new hue, so brand teal stays reserved for
+     primary actions and never has to mean "selected" as well. */
+  --neu-ink: oklch(0.28 0.025 255);
+  --neu-ink-lift: -2px -2px 5px oklch(1 0 0 / 0.55), 3px 5px 12px oklch(0.25 0.03 255 / 0.32);
+
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* The page shells paint their own light gradient; the canvas owns it here. */
+.ifpc-neu .min-h-screen {
+  background: var(--background);
+}
+
+.ifpc-neu main {
+  background: transparent;
+}
+
+/* ── Surfaces ─────────────────────────────────────────────────────────── */
+
+/* Anything that reads as a panel: soft, borderless, floating. */
+.ifpc-neu .bg-white,
+.ifpc-neu .bg-background,
+.ifpc-neu .bg-card,
+.ifpc-neu .bg-white\/80,
+.ifpc-neu .bg-white\/70,
+.ifpc-neu .bg-white\/50 {
+  background: var(--card);
+  border-color: transparent;
+  box-shadow: var(--neu-lift);
+}
+
+/* Brand-gradient banners are dark surfaces. The soft highlight is light coming
+   from the canvas, so inside them tiles keep their plain flat drop shadow —
+   otherwise a white tile reads as a glowing halo. */
+.ifpc-neu [style*="linear-gradient"] .bg-white {
+  background: oklch(1 0 0);
+}
+.ifpc-neu [style*="linear-gradient"] .shadow-sm,
+.ifpc-neu [style*="linear-gradient"] .shadow,
+.ifpc-neu [style*="linear-gradient"] .shadow-md,
+.ifpc-neu [style*="linear-gradient"] .shadow-lg,
+.ifpc-neu [style*="linear-gradient"] .shadow-xl,
+.ifpc-neu [style*="linear-gradient"] .shadow-2xl {
+  box-shadow: 0 8px 16px -6px oklch(0.2 0.02 255 / 0.25);
+}
+
+/* Rounder corners on panels, matching the reference's softness. Everything
+   becomes a squircle; nothing keeps the default rounded-rectangle look. */
+.ifpc-neu .rounded-2xl { border-radius: 1.5rem; }
+.ifpc-neu .rounded-xl { border-radius: 1.125rem; }
+.ifpc-neu .rounded-lg { border-radius: 0.875rem; }
+.ifpc-neu .rounded-md { border-radius: 0.8rem; }
+.ifpc-neu .rounded-sm { border-radius: 0.5rem; }
+
+/* Tailwind's flat shadows are replaced by the two-light-source version. */
+.ifpc-neu .shadow-sm { box-shadow: var(--neu-lift-sm); }
+.ifpc-neu .shadow,
+.ifpc-neu .shadow-md { box-shadow: var(--neu-lift); }
+.ifpc-neu .shadow-lg,
+.ifpc-neu .shadow-xl,
+.ifpc-neu .shadow-2xl { box-shadow: var(--neu-lift-lg); }
+
+/* Hard hairlines fight the soft depth; keep them only where they separate rows. */
+.ifpc-neu .border,
+.ifpc-neu .border-2 {
+  border-color: transparent;
+}
+.ifpc-neu .border-b,
+.ifpc-neu .border-t,
+.ifpc-neu .divide-y > * + * {
+  border-color: oklch(0.90 0.014 247);
+}
+
+/* Muted wells (icon tiles, chips, subtle fills) read as gently pressed. */
+.ifpc-neu .bg-muted,
+.ifpc-neu .bg-slate-50,
+.ifpc-neu .bg-slate-100 {
+  background: var(--muted);
+}
+
+/* Cards that respond to pointer: a small, quick lift. Never animate layout. */
+.ifpc-neu .hover\:shadow-md,
+.ifpc-neu .hover\:shadow-lg,
+.ifpc-neu .hover\:shadow-xl,
+.ifpc-neu .hover\:shadow-2xl {
+  transition: box-shadow 180ms var(--neu-ease), transform 180ms var(--neu-ease);
+}
+.ifpc-neu .hover\:shadow-md:hover,
+.ifpc-neu .hover\:shadow-lg:hover,
+.ifpc-neu .hover\:shadow-xl:hover,
+.ifpc-neu .hover\:shadow-2xl:hover {
+  box-shadow: var(--neu-hover);
+  transform: translateY(-2px);
+}
+
+/* ── Sidebar: a light floating rail ───────────────────────────────────── */
+
+/* Detached, like the reference: the rail floats on the canvas. Width is
+   untouched, so the existing content offsets still clear it; the small inset
+   is given back as extra padding on main (visual only, below).
+
+   Depth, not paint. A flat wash of brand colour reads as a sheet laid over
+   the UI, so the rail is built in layers instead: a near-neutral panel a
+   half-step lighter than the canvas at the top, falling away toward the
+   bottom, with the brand hue pooled low and left at a chroma low enough that
+   you read it as light rather than as a colour. */
+.ifpc-neu aside.fixed {
+  background:
+    radial-gradient(120% 55% at 0% 100%, oklch(0.88 0.055 208 / 0.30), transparent 70%),
+    radial-gradient(90% 40% at 100% 0%, oklch(1 0 0 / 0.55), transparent 65%),
+    linear-gradient(176deg, oklch(0.982 0.005 250), oklch(0.944 0.013 244) 55%, oklch(0.928 0.018 236));
+  border: 1px solid oklch(0.915 0.012 244);
+  border-radius: 1.75rem;
+  /* Float shadow, a top highlight for the raised edge, and a faint inner
+     bottom shade so the panel has a near side and a far side. */
+  box-shadow:
+    var(--neu-lift-lg),
+    inset 0 1px 0 oklch(1 0 0 / 0.95),
+    inset 0 -18px 28px -22px oklch(0.45 0.05 240 / 0.5);
+}
+@media (min-width: 1024px) {
+  .ifpc-neu aside.fixed {
+    top: 14px;
+    left: 14px;
+    height: calc(100vh - 28px);
+  }
+  /* Keep content clear of the floated rail — padding only, no layout logic. */
+  .ifpc-neu main.lg\:pl-64 { padding-left: calc(16rem + 22px); }
+  .ifpc-neu main.lg\:pl-\[72px\] { padding-left: calc(72px + 22px); }
+  /* The header spans from the rail's right edge. */
+  .ifpc-neu header.fixed.lg\:left-64 { left: calc(16rem + 22px); }
+  .ifpc-neu header.fixed.lg\:left-\[72px\] { left: calc(72px + 22px); }
+}
+
+/* The seam. The markup already carries a 1px accent line down the rail's
+   right edge; on a detached, rounded rail that line poked past the corners,
+   so it is inset and moved out into the gap where the separation actually
+   reads. A slow pulse travels it — one pass every 7.5s, far too slow to pull
+   the eye, but it keeps the edge alive rather than drawn on. */
+.ifpc-neu aside.fixed > .absolute.w-\[1px\] {
+  top: 9%;
+  height: 82%;
+  width: 2px;
+  border-radius: 2px;
+  overflow: hidden;
+  /* Overrides the inline brand gradient on the element itself. */
+  background: linear-gradient(
+    180deg,
+    transparent,
+    oklch(0.80 0.028 238 / 0.65) 14%,
+    oklch(0.80 0.028 238 / 0.65) 86%,
+    transparent
+  ) !important;
+}
+
+.ifpc-neu aside.fixed > .absolute.w-\[1px\]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 26%;
+  border-radius: 2px;
+  background: linear-gradient(180deg, transparent, oklch(0.60 0.115 208 / 0.9), transparent);
+  animation: ifpc-neu-seam 7.5s linear infinite;
+}
+
+@keyframes ifpc-neu-seam {
+  0% { transform: translateY(-100%); opacity: 0; }
+  14% { opacity: 1; }
+  86% { opacity: 1; }
+  100% { transform: translateY(360%); opacity: 0; }
+}
+
+@media (min-width: 1024px) {
+  /* Out into the gap between the rail and the content it separates. */
+  .ifpc-neu aside.fixed > .absolute.w-\[1px\] { right: -11px; }
+}
+
+/* ── Rail hierarchy ───────────────────────────────────────────────────── */
+
+/* Section labels are signposts, not items: quieter, wider, further from the
+   rows above so each group reads as its own block. */
+.ifpc-neu aside.fixed .tracking-\[0\.15em\] {
+  letter-spacing: 0.17em;
+  color: oklch(0.555 0.018 250);
+  margin-bottom: 0.5rem;
+}
+
+/* Rows get room to breathe; the rail is the calmest surface on screen. */
+.ifpc-neu aside.fixed nav a,
+.ifpc-neu aside.fixed nav button {
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+
+/* The brand block sits on its own shelf rather than behind a hard rule. */
+.ifpc-neu aside.fixed .border-b {
+  border-bottom-color: transparent;
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.8), 0 2px 6px -4px oklch(0.45 0.05 240 / 0.45);
+}
+
+/* Every white-on-dark class in the rail, re-tuned for a light surface.
+   All eight are covered; none may be left white or it disappears. */
+.ifpc-neu aside.fixed .text-white { color: oklch(0.27 0.03 255); }
+.ifpc-neu aside.fixed .text-white\/80 { color: oklch(0.36 0.03 255); }
+.ifpc-neu aside.fixed .text-white\/70 { color: oklch(0.42 0.028 255); }
+.ifpc-neu aside.fixed .text-white\/60 { color: oklch(0.47 0.025 253); }
+.ifpc-neu aside.fixed .text-white\/50 { color: oklch(0.52 0.023 253); }
+.ifpc-neu aside.fixed .text-white\/40 { color: oklch(0.54 0.023 253); }
+.ifpc-neu aside.fixed .text-white\/30,
+.ifpc-neu aside.fixed .text-white\/25 { color: oklch(0.58 0.021 253); }
+
+/* The hover variants matter just as much: on a dark rail hovering brightened
+   text to white, which on the light rail erases it against the pill. */
+.ifpc-neu aside.fixed .hover\:text-white:hover,
+.ifpc-neu aside.fixed .group:hover .group-hover\:text-white {
+  color: oklch(0.22 0.03 255);
+}
+.ifpc-neu aside.fixed .group:hover .group-hover\:text-white\/80 {
+  color: oklch(0.30 0.03 255);
+}
+.ifpc-neu aside.fixed .hover\:text-white\/60:hover {
+  color: oklch(0.42 0.028 255);
+}
+
+/* Washes tuned for a dark rail become wells carved into the light one. */
+.ifpc-neu aside.fixed .bg-white\/5,
+.ifpc-neu aside.fixed .bg-white\/10,
+.ifpc-neu aside.fixed .bg-white\/20,
+.ifpc-neu aside.fixed .bg-white\/\[0\.04\],
+.ifpc-neu aside.fixed .bg-white\/\[0\.06\] {
+  background: oklch(0.55 0.04 255 / 0.08);
+}
+.ifpc-neu aside.fixed .hover\:bg-white\/5:hover,
+.ifpc-neu aside.fixed .hover\:bg-white\/10:hover,
+.ifpc-neu aside.fixed .hover\:bg-white\/\[0\.06\]:hover,
+.ifpc-neu aside.fixed .hover\:bg-white\/\[0\.1\]:hover,
+.ifpc-neu aside.fixed .hover\:bg-white\/\[0\.12\]:hover {
+  background: oklch(0.55 0.04 255 / 0.12);
+}
+.ifpc-neu aside.fixed .border-white\/\[0\.06\],
+.ifpc-neu aside.fixed .border-white\/\[0\.08\],
+.ifpc-neu aside.fixed .border-white\/10,
+.ifpc-neu aside.fixed .border-white\/20 {
+  border-color: oklch(0.885 0.017 250);
+}
+
+/* Nav rows: hovering raises a light pill out of the deeper rail. */
+.ifpc-neu aside.fixed a,
+.ifpc-neu aside.fixed button {
+  transition: background-color 160ms var(--neu-ease), color 160ms var(--neu-ease), box-shadow 160ms var(--neu-ease), transform 160ms var(--neu-ease);
+}
+/* The second selector only outranks the well wash above; same declarations. */
+.ifpc-neu aside.fixed nav a:hover,
+.ifpc-neu aside.fixed nav a.hover\:bg-white\/\[0\.06\]:hover {
+  background: oklch(0.982 0.008 248);
+  box-shadow: var(--neu-lift-sm);
+}
+
+/* Selected row. The dark-rail original painted a brand wash behind a brand
+   icon wearing a brand glow — on a light rail those three blend into each
+   other. The wash and the glow go; a lifted near-white pill carries the
+   state, so the brand icon and bar read at full strength against it.
+   These two override inline styles on the element itself, hence !important. */
+.ifpc-neu aside.fixed nav a[style*="linear-gradient"] {
+  background: oklch(0.992 0.004 248) !important;
+  box-shadow: var(--neu-lift-sm);
+}
+.ifpc-neu aside.fixed nav a[style*="linear-gradient"] svg {
+  filter: none !important;
+}
+
+/* Popovers and tooltips in the rail were dark slate for a dark rail; on the
+   light one they become light too, so the text mappings above stay correct. */
+.ifpc-neu aside.fixed .bg-slate-800 {
+  background: var(--popover);
+  box-shadow: var(--neu-lift);
+}
+
+/* The brand mark and avatar keep their own colours but gain the soft edge. */
+.ifpc-neu aside.fixed .rounded-full.bg-white {
+  box-shadow: var(--neu-lift-sm);
+}
+
+/* ── Header ───────────────────────────────────────────────────────────── */
+
+/* The one piece of real glass: content scrolls under it and stays legible. */
+.ifpc-neu header.fixed {
+  background: oklch(0.955 0.011 247 / 0.72);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  border-bottom-color: transparent;
+  box-shadow: 0 6px 20px oklch(0.55 0.04 255 / 0.09);
+}
+
+/* ── Controls ─────────────────────────────────────────────────────────── */
+
+/* Buttons: soft squircles that sit above the surface and press into it.
+   Brand colour is untouched — it stays the one accent, carried by the
+   primary actions, while everything else is tone and elevation. */
+.ifpc-neu button,
+.ifpc-neu [role="button"],
+.ifpc-neu a[class*="inline-flex"][class*="rounded"] {
+  transition: box-shadow 180ms var(--neu-ease), transform 180ms var(--neu-ease), background-color 180ms var(--neu-ease);
+}
+
+/* Filled actions — brand gradient, primary, destructive. The default lift's
+   white highlight would halo against a saturated fill, so these get a plain
+   coloured drop shadow instead. */
+.ifpc-neu button[class*="bg-gradient"],
+.ifpc-neu a[class*="bg-gradient"],
+.ifpc-neu button.bg-primary,
+.ifpc-neu a.bg-primary,
+.ifpc-neu button.bg-destructive {
+  box-shadow: 3px 6px 16px oklch(0.25 0.03 255 / 0.22);
+}
+.ifpc-neu button[class*="bg-gradient"]:hover:not(:disabled),
+.ifpc-neu a[class*="bg-gradient"]:hover,
+.ifpc-neu button.bg-primary:hover:not(:disabled),
+.ifpc-neu a.bg-primary:hover,
+.ifpc-neu button.bg-destructive:hover:not(:disabled) {
+  box-shadow: 4px 9px 22px oklch(0.25 0.03 255 / 0.3);
+  transform: translateY(-1px);
+}
+
+/* Outline and secondary become raised light squircles; the hairline goes. */
+.ifpc-neu button.border-input,
+.ifpc-neu a.border-input,
+.ifpc-neu button.bg-secondary {
+  border-color: transparent;
+  background: var(--card);
+  box-shadow: var(--neu-lift-sm);
+}
+.ifpc-neu button.border-input:hover:not(:disabled),
+.ifpc-neu button.bg-secondary:hover:not(:disabled) {
+  box-shadow: var(--neu-hover);
+  transform: translateY(-1px);
+}
+
+/* Ghost buttons stay flush until touched, then a light pill rises under.
+   Outline carries hover:bg-accent too, and would otherwise take this weaker
+   hover instead of its own. */
+.ifpc-neu button.hover\:bg-accent:hover:not(:disabled):not(.border-input) {
+  background: var(--card);
+  box-shadow: var(--neu-lift-sm);
+}
+
+/* Everything presses in. Each variant is named so the pressed state outranks
+   its own hover state — a bare button:active would lose to them. */
+.ifpc-neu button:active:not(:disabled),
+.ifpc-neu [role="button"]:active,
+.ifpc-neu button[class*="bg-gradient"]:active:not(:disabled),
+.ifpc-neu button.bg-primary:active:not(:disabled),
+.ifpc-neu button.bg-destructive:active:not(:disabled),
+.ifpc-neu button.border-input:active:not(:disabled),
+.ifpc-neu button.bg-secondary:active:not(:disabled),
+.ifpc-neu button.hover\:bg-accent:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Unfilled buttons also sink into the surface. */
+.ifpc-neu button.border-input:active:not(:disabled),
+.ifpc-neu button.bg-secondary:active:not(:disabled),
+.ifpc-neu button.hover\:bg-accent:active:not(:disabled) {
+  box-shadow: var(--neu-inset);
+}
+
+/* Nothing to press: a disabled button lies flat on the surface. */
+.ifpc-neu button:disabled {
+  box-shadow: none;
+  transform: none;
+}
+
+/* Inputs read as wells carved into the surface. */
+.ifpc-neu input:not([type="checkbox"]):not([type="radio"]),
+.ifpc-neu textarea,
+.ifpc-neu select,
+.ifpc-neu [role="combobox"] {
+  background: var(--input);
+  border-color: transparent;
+  box-shadow: var(--neu-inset);
+  transition: box-shadow 160ms var(--neu-ease);
+}
+.ifpc-neu input:focus-visible,
+.ifpc-neu textarea:focus-visible,
+.ifpc-neu select:focus-visible,
+.ifpc-neu [role="combobox"]:focus-visible {
+  box-shadow: var(--neu-inset), 0 0 0 3px oklch(0.55 0.12 200 / 0.28);
+  outline: none;
+}
+
+/* ── Choosing: segmented controls, toggles, checkboxes ────────────────── */
+
+/* One vocabulary for every "pick one of these" control: a light raised track,
+   the chosen option a solid ink squircle lifted off it, everything else flat.
+   Driven entirely by the data-state attributes Radix already writes. */
+
+@keyframes ifpc-neu-pop {
+  from { transform: scale(0.92); }
+  60% { transform: scale(1.03); }
+  to { transform: scale(1); }
+}
+
+/* Track */
+.ifpc-neu [role="tablist"] {
+  background: var(--card);
+  border-color: transparent;
+  border-radius: 999px;
+  padding: 5px;
+  box-shadow: var(--neu-lift);
+}
+
+/* Options */
+.ifpc-neu [role="tab"] {
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  transition: background-color 220ms var(--neu-ease), color 220ms var(--neu-ease),
+              box-shadow 220ms var(--neu-ease), transform 220ms var(--neu-ease);
+}
+.ifpc-neu [role="tab"]:hover:not([data-state="active"]) {
+  background: var(--muted);
+  color: var(--foreground);
+}
+.ifpc-neu [role="tab"][data-state="active"] {
+  background: var(--neu-ink);
+  color: oklch(0.99 0 0);
+  box-shadow: var(--neu-ink-lift);
+  animation: ifpc-neu-pop 260ms var(--neu-ease);
+}
+.ifpc-neu [role="tab"]:active:not([data-state="active"]) {
+  transform: scale(0.97);
+}
+
+/* The events page's grid/list pair — the same track, sized for icons. */
+.ifpc-neu .border.rounded-lg.p-1 {
+  background: var(--card);
+  border-color: transparent;
+  border-radius: 1.1rem;
+  box-shadow: var(--neu-lift);
+}
+.ifpc-neu .border.rounded-lg.p-1 > .bg-secondary {
+  background: var(--neu-ink);
+  color: oklch(0.99 0 0);
+  border-radius: 0.8rem;
+  box-shadow: var(--neu-ink-lift);
+  animation: ifpc-neu-pop 260ms var(--neu-ease);
+}
+
+/* Checkbox: a well when empty, an ink squircle when ticked. */
+.ifpc-neu [role="checkbox"] {
+  border-radius: 0.4rem;
+  border-color: transparent;
+  background: var(--muted);
+  box-shadow: var(--neu-inset);
+  transition: background-color 200ms var(--neu-ease), box-shadow 200ms var(--neu-ease);
+}
+.ifpc-neu [role="checkbox"][data-state="checked"],
+.ifpc-neu [role="checkbox"][data-state="indeterminate"] {
+  background: var(--neu-ink);
+  color: oklch(0.99 0 0);
+  box-shadow: var(--neu-ink-lift);
+  animation: ifpc-neu-pop 240ms var(--neu-ease);
+}
+
+/* Radio: same idea, round. */
+.ifpc-neu [role="radio"] {
+  border-color: transparent;
+  background: var(--muted);
+  box-shadow: var(--neu-inset);
+  transition: background-color 200ms var(--neu-ease), box-shadow 200ms var(--neu-ease);
+}
+.ifpc-neu [role="radio"][data-state="checked"] {
+  background: var(--neu-ink);
+  color: oklch(0.99 0 0);
+  box-shadow: var(--neu-ink-lift);
+  animation: ifpc-neu-pop 240ms var(--neu-ease);
+}
+
+/* Switch: the track is the well, the thumb the lifted piece. */
+.ifpc-neu [role="switch"] {
+  box-shadow: var(--neu-inset);
+  transition: background-color 220ms var(--neu-ease);
+}
+.ifpc-neu [role="switch"][data-state="checked"] {
+  background: var(--neu-ink);
+}
+.ifpc-neu [role="switch"] > span {
+  background: oklch(0.99 0 0);
+  box-shadow: var(--neu-lift-sm);
+  transition: transform 260ms var(--neu-ease);
+}
+
+/* Keyboard focus stays obvious everywhere, not just on inputs. */
+.ifpc-neu a:focus-visible,
+.ifpc-neu button:focus-visible {
+  outline: 2px solid oklch(0.55 0.12 200 / 0.55);
+  outline-offset: 2px;
+}
+
+/* ── Overlays and tables ──────────────────────────────────────────────── */
+
+.ifpc-neu [role="dialog"] {
+  border-radius: 1.5rem;
+  border-color: transparent;
+  box-shadow: var(--neu-lift-lg);
+}
+
+/* A panel inside a panel is flat — stacked elevation reads as mud. */
+.ifpc-neu .bg-white .bg-white,
+.ifpc-neu .bg-white .bg-card,
+.ifpc-neu .bg-card .bg-white,
+.ifpc-neu .bg-card .bg-card {
+  box-shadow: none;
+}
+
+.ifpc-neu table { border-collapse: separate; border-spacing: 0; }
+.ifpc-neu thead th {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.ifpc-neu tbody tr {
+  transition: background-color 150ms var(--neu-ease);
+}
+.ifpc-neu tbody tr:hover {
+  background: oklch(0.55 0.04 255 / 0.05);
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────── */
+
+/* Each view settles in rather than snapping. Ends on transform: none, so it
+   never leaves a containing block behind for fixed children. */
+@keyframes ifpc-neu-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.ifpc-neu main > * {
+  animation: ifpc-neu-rise 320ms var(--neu-ease) both;
+}
+
+/* Skeletons belong to the same surface family. */
+.ifpc-neu .animate-pulse {
+  background: var(--muted);
+}
+
+/* Respect people who don't want movement. */
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-neu *,
+  .ifpc-neu *::before,
+  .ifpc-neu *::after {
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+  }
+  .ifpc-neu .hover\:shadow-md:hover,
+  .ifpc-neu .hover\:shadow-lg:hover,
+  .ifpc-neu .hover\:shadow-xl:hover,
+  .ifpc-neu .hover\:shadow-2xl:hover {
+    transform: none;
+  }
+}

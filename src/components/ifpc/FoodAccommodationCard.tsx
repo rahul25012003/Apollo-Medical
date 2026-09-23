@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Utensils, Building2, Loader2, CheckCircle2 } from "lucide-react";
+import { Utensils, Building2, Loader2, CheckCircle2, Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { type ChoicesWindow, OPEN_FOREVER, formatClosesAt } from "@/lib/ifpc-deadline";
+import "./food-preference.css";
 import { toast } from "sonner";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { VENUE_TRAVEL } from "@/content/ifpc-2026";
@@ -23,6 +26,8 @@ export function FoodAccommodationCard({ eventId }: { eventId: string }) {
     const [hotel, setHotel] = useState<string | null>(null);
     const [pickedHotel, setPickedHotel] = useState("");
     const [savingHotel, setSavingHotel] = useState(false);
+    // Food stays changeable until registration closes, like every other choice.
+    const [foodWindow, setFoodWindow] = useState<ChoicesWindow>(OPEN_FOREVER);
 
     useEffect(() => {
         if (status !== "authenticated") return;
@@ -38,7 +43,10 @@ export function FoodAccommodationCard({ eventId }: { eventId: string }) {
                     fetch("/api/users/me/food-preference").then((r) => r.json()),
                     fetch("/api/users/me/accommodation").then((r) => r.json()),
                 ]).then(([pref, acc]) => {
-                    if (pref.success) setPreference(pref.data.preference);
+                    if (pref.success) {
+                        setPreference(pref.data.preference);
+                        if (pref.data.choices) setFoodWindow(pref.data.choices);
+                    }
                     if (acc.success) setHotel(acc.data.choice);
                 });
             })
@@ -110,19 +118,30 @@ export function FoodAccommodationCard({ eventId }: { eventId: string }) {
                             <Utensils className="w-4 h-4 text-muted-foreground" />
                             <p className="text-sm font-medium">Food Preference</p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                             {(["VEG", "NON_VEG"] as const).map((p) => (
-                                <Button
+                                <button
                                     key={p}
-                                    size="sm"
-                                    variant={preference === p ? "default" : "outline"}
-                                    disabled={confirmed !== true || saving !== null}
+                                    type="button"
+                                    className={cn("ifpc-food", p === "NON_VEG" && "ifpc-food--nonveg")}
+                                    data-selected={preference === p}
+                                    aria-pressed={preference === p}
+                                    disabled={confirmed !== true || saving !== null || !foodWindow.open}
                                     onClick={() => select(p)}
                                 >
-                                    {saving === p ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : p === "VEG" ? "Vegetarian" : "Non-Vegetarian"}
-                                </Button>
+                                    {saving === p
+                                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                                        : <span className="ifpc-food-mark" aria-hidden="true" />}
+                                    {p === "VEG" ? "Vegetarian" : "Non-Vegetarian"}
+                                </button>
                             ))}
                         </div>
+                        {!foodWindow.open && (
+                            <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Lock className="h-3 w-3 shrink-0" />
+                                Final{formatClosesAt(foodWindow.closesAt) ? ` since ${formatClosesAt(foodWindow.closesAt)}` : ""}
+                            </p>
+                        )}
                     </div>
                     <div className="p-4 rounded-lg border bg-muted/30">
                         <div className="flex items-center gap-2 mb-3">

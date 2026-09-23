@@ -16,14 +16,24 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const { page, limit, skip } = getPaginationParams(searchParams);
 
+  // ?prefix=interest. narrows the trail to delegate interest changes, which is
+  // what the event's Change Log shows; ?eventId scopes it to one event.
+  const prefix = searchParams.get("prefix");
+  const eventId = searchParams.get("eventId");
+  const where = {
+    tenantId: session.user.tenantId,
+    ...(prefix ? { action: { startsWith: prefix } } : {}),
+    ...(eventId ? { metadata: { path: ["eventId"], equals: eventId } } : {}),
+  };
+
   const [entries, total] = await Promise.all([
     prisma.activityLog.findMany({
-      where: { tenantId: session.user.tenantId },
+      where,
       orderBy: { createdAt: "desc" },
       skip,
       take: limit,
     }),
-    prisma.activityLog.count({ where: { tenantId: session.user.tenantId } }),
+    prisma.activityLog.count({ where }),
   ]);
 
   return paginatedResponse(entries, { page, limit, total });
