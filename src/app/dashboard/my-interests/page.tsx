@@ -14,7 +14,7 @@ import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Calendar, Clock, MapPin, CircleDot, ListChecks } from "lucide-react";
-import { EOI_CATEGORIES, EOI_CATEGORY_ORDER, eoiCategoryOf } from "@/lib/ifpc-eoi";
+import { EOI_CATEGORIES, EOI_CATEGORY_ORDER, eoiCategoryOf, INTEREST_CHANGED_EVENT } from "@/lib/ifpc-eoi";
 import type { EventSession } from "@/services/events";
 import { format, parseISO } from "date-fns";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
@@ -22,11 +22,11 @@ import { notFound } from "next/navigation";
 import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 const SESSION_TYPE_STYLES: Record<string, string> = {
-    WORKSHOP: "bg-emerald-100 text-emerald-700",
-    SEMINAR: "bg-blue-100 text-blue-700",
-    COMPETITION: "bg-purple-100 text-purple-700",
-    PANEL: "bg-indigo-100 text-indigo-700",
-    OTHER: "bg-slate-100 text-slate-700",
+    WORKSHOP: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    SEMINAR: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+    COMPETITION: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+    PANEL: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+    OTHER: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200",
 };
 
 export default function MyInterestsPage() {
@@ -60,6 +60,14 @@ export default function MyInterestsPage() {
         loadMine();
     }, [status, userId, ifpcCheck.isIfpc, loadMine]);
 
+    // Live refresh: pick up interest changes made anywhere (e.g. a speaker
+    // marked "Interested" on the event page), not just from buttons on this page.
+    useEffect(() => {
+        if (status !== "authenticated" || !ifpcCheck.isIfpc) return;
+        window.addEventListener(INTEREST_CHANGED_EVENT, loadMine);
+        return () => window.removeEventListener(INTEREST_CHANGED_EVENT, loadMine);
+    }, [status, ifpcCheck.isIfpc, loadMine]);
+
     // Only sessions with a capacity set take sign-ups ("Express Interest") —
     // same convention the public Scientific Programme page uses.
     const workshops = (event?.eventSessions || [])
@@ -90,11 +98,11 @@ export default function MyInterestsPage() {
                         <Badge className={cn("text-xs mb-1.5", SESSION_TYPE_STYLES[s.sessionType] || SESSION_TYPE_STYLES.OTHER)}>
                             {s.sessionType}
                         </Badge>
-                        <h4 className="font-semibold">{s.title}</h4>
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100">{s.title}</h4>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                         {showDate && (
-                            <span className="flex items-center gap-1 font-medium text-slate-700">
+                            <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
                                 <Calendar className="h-3.5 w-3.5" />
                                 {s.sessionDate ? format(parseISO(s.sessionDate.slice(0, 10)), "EEE, d MMM") : "Date to be announced"}
                             </span>
@@ -112,7 +120,7 @@ export default function MyInterestsPage() {
     );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
             <Sidebar />
             <Header title="My Interests" subtitle="Express interest in workshops and sessions for your event" />
             <main
@@ -149,10 +157,10 @@ export default function MyInterestsPage() {
                                 return (
                                     <section key={cat}>
                                         <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-                                            <h3 className="font-bold text-lg">{rule.label}</h3>
+                                            <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">{rule.label}</h3>
                                             <span className={cn(
                                                 "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
-                                                rule.single ? "bg-amber-50 text-amber-800 border border-amber-200" : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                                rule.single ? "bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/50" : "bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50"
                                             )}>
                                                 {rule.single ? <CircleDot className="h-3.5 w-3.5" /> : <ListChecks className="h-3.5 w-3.5" />}
                                                 {rule.rule}

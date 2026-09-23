@@ -30,7 +30,7 @@ export default function CampusTourPage() {
     const tourSession = event?.eventSessions?.find((s) => s.title.toLowerCase().includes("campus tour"));
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
             <Sidebar />
             <Header title="Campus Tour" subtitle="NIMHANS guided campus tour sign-up" />
             <main
@@ -60,7 +60,7 @@ export default function CampusTourPage() {
                                         <Landmark className="h-6 w-6" />
                                     </span>
                                     <div className="flex-1">
-                                        <h2 className="text-xl font-bold text-slate-900">{tourItem?.title || tourSession.title}</h2>
+                                        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{tourItem?.title || tourSession.title}</h2>
                                         <p className="text-muted-foreground mt-2 leading-relaxed">{tourItem?.text}</p>
                                         {tourSession.startTime && (
                                             <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-3">

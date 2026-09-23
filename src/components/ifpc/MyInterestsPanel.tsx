@@ -26,7 +26,7 @@ export function MyInterestsPanel({ data, loading }: { data: MyInterests | null; 
         <Card className="border-0 shadow-sm">
             <CardContent className="p-5">
                 <div className="flex items-center justify-between gap-2 mb-4">
-                    <h3 className="font-bold flex items-center gap-2">
+                    <h3 className="font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
                         <Heart className="h-4 w-4 text-emerald-600" /> Your interests
                     </h3>
                     {!loading && <Badge className="bg-emerald-100 text-emerald-700">{total}</Badge>}
@@ -34,15 +34,15 @@ export function MyInterestsPanel({ data, loading }: { data: MyInterests | null; 
 
                 {loading ? (
                     <div className="space-y-2" aria-hidden>
-                        {[0, 1, 2].map((i) => <div key={i} className="h-10 rounded-lg bg-slate-100 animate-pulse" />)}
+                        {[0, 1, 2].map((i) => <div key={i} className="h-10 rounded-lg bg-slate-100 dark:bg-slate-700/50 animate-pulse" />)}
                     </div>
                 ) : (
                     <div className="space-y-5">
                         <Group title="Sessions & workshops" icon={<CheckCircle2 className="h-3.5 w-3.5" />} empty="Tap “I’d like to attend” on any session to add it here.">
                             {data?.sessions.map((s) => (
-                                <li key={s.id} className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-2.5">
-                                    <p className="text-sm font-medium text-slate-900 leading-snug">{s.title}</p>
-                                    <p className="text-[11px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-2">
+                                <li key={s.id} className="rounded-lg border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-900/15 p-2.5">
+                                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">{s.title}</p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-2">
                                         <span>{s.sessionType}</span>
                                         {s.sessionDate && <span>{format(parseISO(s.sessionDate), "d MMM")}</span>}
                                         {s.startTime && <span className="inline-flex items-center gap-0.5"><Clock className="h-3 w-3" />{s.startTime}{s.endTime ? `–${s.endTime}` : ""}</span>}
@@ -54,21 +54,21 @@ export function MyInterestsPanel({ data, loading }: { data: MyInterests | null; 
 
                         <Group title="Speakers" icon={<Mic2 className="h-3.5 w-3.5" />} empty="Mark speakers as “Interested” on the event page.">
                             {data?.speakers.map((s) => (
-                                <li key={s.id} className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-2.5">
-                                    <p className="text-sm font-medium text-slate-900">{s.name}</p>
-                                    {s.designation && <p className="text-[11px] text-slate-500 mt-0.5">{s.designation}</p>}
+                                <li key={s.id} className="rounded-lg border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-900/15 p-2.5">
+                                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{s.name}</p>
+                                    {s.designation && <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{s.designation}</p>}
                                 </li>
                             ))}
                         </Group>
 
                         <div className="grid grid-cols-1 gap-2 text-sm">
-                            <p className="flex items-center gap-2 text-slate-600">
-                                <Utensils className="h-3.5 w-3.5 text-slate-400" />
-                                Food: <span className="font-medium text-slate-900">{data?.foodPreference === "NON_VEG" ? "Non-Vegetarian" : data?.foodPreference === "VEG" ? "Vegetarian" : "Not chosen"}</span>
+                            <p className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                <Utensils className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                                Food: <span className="font-medium text-slate-900 dark:text-slate-100">{data?.foodPreference === "NON_VEG" ? "Non-Vegetarian" : data?.foodPreference === "VEG" ? "Vegetarian" : "Not chosen"}</span>
                             </p>
-                            <p className="flex items-start gap-2 text-slate-600">
-                                <Hotel className="h-3.5 w-3.5 text-slate-400 mt-0.5" />
-                                <span>Stay: <span className="font-medium text-slate-900">{stayText(data)}</span></span>
+                            <p className="flex items-start gap-2 text-slate-600 dark:text-slate-300">
+                                <Hotel className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 mt-0.5" />
+                                <span>Stay: <span className="font-medium text-slate-900 dark:text-slate-100">{stayText(data)}</span></span>
                             </p>
                             <Link href="/dashboard/accommodation" className="text-xs font-medium text-primary hover:underline">Choose accommodation</Link>
                         </div>
@@ -83,8 +83,8 @@ function Group({ title, icon, empty, children }: { title: string; icon: React.Re
     const hasItems = !!children && children.length > 0;
     return (
         <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">{icon}{title}</p>
-            {hasItems ? <ul className="space-y-2">{children}</ul> : <p className="text-xs text-slate-400">{empty}</p>}
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">{icon}{title}</p>
+            {hasItems ? <ul className="space-y-2">{children}</ul> : <p className="text-xs text-slate-400 dark:text-slate-500">{empty}</p>}
         </div>
     );
 }

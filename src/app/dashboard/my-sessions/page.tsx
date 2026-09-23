@@ -60,12 +60,12 @@ interface EventAssignment {
 }
 
 const SESSION_TYPE_STYLES: Record<string, { badge: string; icon: string }> = {
-    KEYNOTE: { badge: "bg-blue-100 text-blue-700", icon: "🎤" },
-    PLENARY: { badge: "bg-indigo-100 text-indigo-700", icon: "🏛️" },
-    WORKSHOP: { badge: "bg-emerald-100 text-emerald-700", icon: "🔬" },
-    PANEL: { badge: "bg-purple-100 text-purple-700", icon: "👥" },
-    BREAK: { badge: "bg-amber-100 text-amber-700", icon: "☕" },
-    OTHER: { badge: "bg-slate-100 text-slate-700", icon: "📋" },
+    KEYNOTE: { badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", icon: "🎤" },
+    PLENARY: { badge: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300", icon: "🏛️" },
+    WORKSHOP: { badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300", icon: "🔬" },
+    PANEL: { badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300", icon: "👥" },
+    BREAK: { badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300", icon: "☕" },
+    OTHER: { badge: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200", icon: "📋" },
 };
 
 export default function MySessionsPage() {
@@ -104,7 +104,7 @@ export default function MySessionsPage() {
     const isEmpty = sessions.length === 0 && events.length === 0;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
             <Sidebar />
             <Header title="My Sessions" subtitle="Sessions you are speaking at" />
             <main className={cn(

@@ -38,7 +38,7 @@ function RuleChip({ rule }: { rule: SelectionRule }) {
       title={rule.single ? `${rule.label}: only one can be chosen — a new choice replaces the old one` : `${rule.label}: choose as many as you like`}
       className={
         "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border " +
-        (rule.single ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-emerald-50 text-emerald-800 border-emerald-200")
+        (rule.single ? "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/50" : "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50")
       }
     >
       {rule.single ? <CircleDot className="h-3.5 w-3.5" /> : <ListChecks className="h-3.5 w-3.5" />}
@@ -182,7 +182,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
   }
 
   const seats = (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-3 py-1">
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/60 rounded-full px-3 py-1">
       <Users className="h-3.5 w-3.5" />
       {typeof capacity === "number" ? `${count}/${capacity} seats filled` : `${count} interested`}
     </span>

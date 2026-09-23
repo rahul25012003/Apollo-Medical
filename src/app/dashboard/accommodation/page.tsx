@@ -174,7 +174,7 @@ export default function AccommodationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
       <Sidebar />
       <Header title="Accommodation" subtitle="Hotels near the conference venue" />
       <main
