@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, notFound } from "next/navigation";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
+import { useTenant } from "@/lib/tenant/context";
 
 export { IFPC_TENANT_SLUG };
 
@@ -27,12 +28,19 @@ export function useIfpcGuard(): string {
  * Dashboard pages: is the signed-in user's tenant IFPC (apollo-medical)?
  * Other tenants keep their original dashboard; while the tenant is still
  * loading, `loading` is true and callers should render nothing tenant-specific.
+ *
+ * Reads the tenant already resolved by TenantProvider (server-hydrated for
+ * every role except SUPER_ADMIN, see dashboard/layout.tsx) instead of a
+ * second, redundant client-side tenant lookup — that second lookup's own
+ * loading window used to force isIfpc to false for a moment on every page
+ * load, flashing the non-IFPC sidebar/header (missing menu items, a generic
+ * search bar) before flipping back to the correct one.
  */
 export function useIsIfpcDashboard(): { isIfpc: boolean; loading: boolean } {
-  const { effectiveTenantId, sessionLoading } = useTenantFilter();
-  const check = useIsIfpcTenantId(sessionLoading ? undefined : effectiveTenantId);
-  const loading = sessionLoading || check.loading;
-  return { isIfpc: !loading && check.isIfpc, loading };
+  const { sessionLoading } = useTenantFilter();
+  const { tenant, isLoading: tenantLoading } = useTenant();
+  const loading = sessionLoading || tenantLoading;
+  return { isIfpc: !loading && tenant.slug === IFPC_TENANT_SLUG, loading };
 }
 
 // tenantId -> slug, and eventId -> tenant slug, fetched once per page load.
