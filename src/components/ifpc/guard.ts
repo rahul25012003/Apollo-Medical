@@ -118,6 +118,38 @@ function ifpcSoleEventId(tenantId: string): Promise<string | null> {
 }
 
 /**
+ * IFPC (apollo-medical) only: is the signed-in delegate a speaker or
+ * chairperson? "My Sessions" (their own presenting/chairing schedule) only
+ * makes sense for them — a plain delegate has nothing to show there.
+ * True if either their registration says so, or they already have session
+ * data under the Speaker record matching their email (covers the case
+ * where a chairperson was added as a session speaker without their
+ * registration's role being updated to match).
+ * Defaults to false while resolving, so the sidebar item never flashes on
+ * and then disappears.
+ */
+export function useIsIfpcSpeakerOrChair(): boolean {
+  const { isIfpc } = useIsIfpcDashboard();
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!isIfpc) { setShow(false); return; }
+    let cancelled = false;
+    Promise.all([
+      fetch("/api/users/me/speaker-sessions").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/api/users/me/registrations").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([speakerJson, regsJson]) => {
+      if (cancelled) return;
+      const hasSpeakerData = !!speakerJson?.success && ((speakerJson.data?.sessions?.length ?? 0) > 0 || (speakerJson.data?.events?.length ?? 0) > 0);
+      const regs: { participantRole?: string | null }[] = Array.isArray(regsJson?.data) ? regsJson.data : [];
+      const hasSpeakerOrChairRole = regs.some((r) => r.participantRole === "SPEAKER" || r.participantRole === "CHAIRPERSON");
+      setShow(hasSpeakerData || hasSpeakerOrChairRole);
+    });
+    return () => { cancelled = true; };
+  }, [isIfpc]);
+  return show;
+}
+
+/**
  * Where "Browse Events" should point: straight to the event page for IFPC
  * (apollo-medical), which only ever has one event; the usual list otherwise,
  * and always for every other tenant.

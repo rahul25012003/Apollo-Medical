@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store";
 import { useSession, signOut } from "next-auth/react";
 import { useTenant } from "@/lib/tenant/context";
-import { useIsIfpcDashboard, useBrowseEventsHref } from "@/components/ifpc/guard";
+import { useIsIfpcDashboard, useIsIfpcSpeakerOrChair, useBrowseEventsHref } from "@/components/ifpc/guard";
 import {
     LayoutDashboard,
     Calendar,
@@ -111,6 +111,7 @@ const menuItems = [
         icon: Mic2,
         roles: ["ATTENDEE"] as UserRole[],
         group: "Main",
+        speakerOrChairOnly: true,
     },
     {
         title: "My Interests",
@@ -365,11 +366,16 @@ export function Sidebar() {
     const { isIfpc } = useIsIfpcDashboard();
     // IFPC: registered delegates go straight to their event page.
     const browseEventsHref = useBrowseEventsHref();
+    // IFPC: "My Sessions" only for delegates who are actually a speaker or chairperson.
+    const isSpeakerOrChair = useIsIfpcSpeakerOrChair();
 
     // Filter menu items based on user role + tenant module config
     const filteredMenuItems = menuItems.filter((item) => {
         // IFPC (apollo-medical) delegate pages; hidden for every other tenant
         if (item.ifpcOnly && !isIfpc) return false;
+
+        // IFPC only: hide "My Sessions" from delegates who aren't a speaker/chairperson
+        if (item.speakerOrChairOnly && isIfpc && !isSpeakerOrChair) return false;
 
         // Role check first
         if (!item.roles.includes(userRole)) return false;
