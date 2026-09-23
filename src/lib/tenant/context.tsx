@@ -13,7 +13,10 @@ import { defaultTenantConfig, mergeTenantConfig } from "./defaults";
 // ---------------------------------------------------------------------------
 // Theme helpers (shared by both cache-restore and live application)
 // ---------------------------------------------------------------------------
-const THEME_CACHE_KEY = "icms_tenant_theme";
+// Scoped per tenant (id or slug) — a single shared key would let one
+// tenant's cached colors flash on screen for a different tenant on first
+// paint, before the real fetch for the CURRENT tenant resolves.
+const themeCacheKey = (scope: string) => `icms_tenant_theme:${scope}`;
 
 function hexToHSL(hex: string): { h: number; s: number; l: number } {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -67,13 +70,13 @@ function applyThemeToDOM(theme: TenantTheme) {
   root.style.setProperty("--accent-hex", theme.accentColor);
 }
 
-function cacheTheme(theme: TenantTheme) {
-  try { localStorage.setItem(THEME_CACHE_KEY, JSON.stringify(theme)); } catch { /* noop */ }
+function cacheTheme(theme: TenantTheme, scope: string) {
+  try { localStorage.setItem(themeCacheKey(scope), JSON.stringify(theme)); } catch { /* noop */ }
 }
 
-function getCachedTheme(): TenantTheme | null {
+function getCachedTheme(scope: string): TenantTheme | null {
   try {
-    const raw = localStorage.getItem(THEME_CACHE_KEY);
+    const raw = localStorage.getItem(themeCacheKey(scope));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed?.primaryColor && parsed?.secondaryColor && parsed?.accentColor) return parsed;
@@ -126,10 +129,12 @@ export function TenantProvider({
   const [error, setError] = useState<string | null>(null);
   const themeApplied = useRef(false);
 
-  // Restore cached theme IMMEDIATELY on first mount (before any paint)
-  // This eliminates the flash between default CSS and tenant colors.
+  // Restore cached theme IMMEDIATELY on first mount (before any paint) —
+  // only ever the CURRENT tenant's own cached theme (see themeCacheKey),
+  // so this can never flash a different tenant's colors on screen.
+  const cacheScope = tenantSlug || tenantId;
   if (!themeApplied.current && typeof window !== "undefined") {
-    const cached = initialConfig?.theme || getCachedTheme();
+    const cached = initialConfig?.theme || (cacheScope ? getCachedTheme(cacheScope) : null);
     if (cached) {
       applyThemeToDOM(cached);
       themeApplied.current = true;
@@ -254,11 +259,11 @@ export function TenantProvider({
 
   // Apply theme CSS variables whenever tenant changes & persist to cache
   useEffect(() => {
-    if (tenant?.theme) {
+    if (tenant?.theme && cacheScope) {
       applyThemeToDOM(tenant.theme);
-      cacheTheme(tenant.theme);
+      cacheTheme(tenant.theme, cacheScope);
     }
-  }, [tenant?.theme]);
+  }, [tenant?.theme, cacheScope]);
 
   // Update favicon and title from tenant branding — works on ALL pages
   useEffect(() => {

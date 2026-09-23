@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
 import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
@@ -46,6 +47,8 @@ const SESSION_TYPE_META: Record<string, { label: string; color: string; bg: stri
 const typeMeta = (t: string) => SESSION_TYPE_META[t] ?? SESSION_TYPE_META.OTHER;
 
 function DayWiseSchedule({ sessions, eventStart }: { sessions: EventSession[]; eventStart: string }) {
+  // Interest sign-up only for signed-in delegates — never shown to a signed-out home page visitor.
+  const { status } = useSession();
   // "Day N" counts from the conference's first day, so it matches the programme structure above.
   const dayNumber = (d: string) => differenceInCalendarDays(parseISO(d), parseISO(eventStart.slice(0, 10))) + 1;
   const days = Array.from(new Set(sessions.filter((s) => s.sessionDate).map((s) => s.sessionDate!.slice(0, 10)))).sort();
@@ -126,7 +129,7 @@ function DayWiseSchedule({ sessions, eventStart }: { sessions: EventSession[]; e
                     </div>
                     <h4 className="mt-2 text-lg font-bold leading-snug text-[#12112B]">{s.title}</h4>
                     {s.description && <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{s.description}</p>}
-                    {s.capacity != null && (
+                    {s.capacity != null && status === "authenticated" && (
                       <div className="mt-4 border-t border-slate-100 pt-4">
                         <ExpressInterestButton sessionId={s.id} />
                       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
 import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
 import { CampusPhotoSlideshow } from "@/components/ifpc/CampusPhotoSlideshow";
@@ -12,6 +13,7 @@ import { Landmark, Clock } from "lucide-react";
 // with the real interest sign-up (the "NIMHANS Campus Tour" EventSession
 // seeded alongside the other bookable sessions/workshops).
 export function CampusTourSection() {
+  const { status } = useSession();
   const { event, loading } = useIfpcEvent();
   const tourItem = HIGHLIGHTS.delegateExperience.items.find((it) =>
     it.title.toLowerCase().includes("campus tour")
@@ -42,7 +44,7 @@ export function CampusTourSection() {
               </p>
             )}
             <div className="mt-4">
-              {!loading && tourSession && <ExpressInterestButton sessionId={tourSession.id} />}
+              {!loading && tourSession && status === "authenticated" && <ExpressInterestButton sessionId={tourSession.id} />}
             </div>
           </div>
         </div>
