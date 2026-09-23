@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Printer, CreditCard } from "lucide-react";
+import { Loader2, CreditCard } from "lucide-react";
 import { CONFERENCE } from "@/content/ifpc-2026";
 
 interface IdCardRegistration {
@@ -56,7 +56,7 @@ export function IdCardModal({ open, onOpenChange }: { open: boolean; onOpenChang
                     </div>
                 ) : (
                     <>
-                        <div id="dashboard-id-card" className="bg-white rounded-xl border-2 border-teal-100 shadow-sm overflow-hidden mx-auto w-full max-w-[280px]">
+                        <div className="bg-white rounded-xl border-2 border-teal-100 shadow-sm overflow-hidden mx-auto w-full max-w-[280px]">
                             <div className="bg-slate-900 text-white text-center py-2.5">
                                 <p className="text-[10px] uppercase tracking-widest text-teal-300">{CONFERENCE.shortName}</p>
                             </div>
@@ -86,25 +86,12 @@ export function IdCardModal({ open, onOpenChange }: { open: boolean; onOpenChang
                     </>
                 )}
 
-                <DialogFooter className="print:hidden">
-                    {reg && (
-                        <Button type="button" variant="outline" onClick={() => window.print()} className="gap-1.5">
-                            <Printer className="h-3.5 w-3.5" /> Print
-                        </Button>
-                    )}
+                <DialogFooter>
                     <DialogClose asChild>
                         <Button type="button" variant="ghost">Cancel</Button>
                     </DialogClose>
                 </DialogFooter>
             </DialogContent>
-
-            <style jsx global>{`
-                @media print {
-                    body * { visibility: hidden; }
-                    #dashboard-id-card, #dashboard-id-card * { visibility: visible; }
-                    #dashboard-id-card { position: fixed; top: 40px; left: 50%; transform: translateX(-50%); }
-                }
-            `}</style>
         </Dialog>
     );
 }

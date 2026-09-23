@@ -69,6 +69,30 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
 
 const bodySchema = z.object({ speakerId: z.string().min(1) });
 
+// DELETE /api/events/[id]/speaker-interest?speakerId=xxx — the signed-in
+// delegate withdraws their own interest in a speaker.
+export const DELETE = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
+  // IFPC (apollo-medical) only — this route doesn't exist for other tenants.
+  if (!(await isIfpcEvent((await context!.params).id))) return Errors.notFound("Page");
+
+  const session = await auth();
+  if (!session) return Errors.unauthorized();
+
+  const { id: eventId } = await context!.params;
+  const speakerId = new URL(request.url).searchParams.get("speakerId");
+  if (!speakerId) return Errors.badRequest("speakerId is required");
+
+  const { count: removed } = await prisma.speakerInterest.deleteMany({
+    where: { speakerId, eventId, email: session.user.email.toLowerCase() },
+  });
+
+  const counts = await countsFor(eventId);
+  return successResponse(
+    { speakerId, count: counts[speakerId] ?? 0, removed: removed > 0 },
+    removed ? "Removed from your interests" : "It wasn't in your interests"
+  );
+});
+
 // POST /api/events/[id]/speaker-interest — signed-in delegate marks "Interested"
 // in one of this event's speakers. Idempotent per person/speaker/event.
 export const POST = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
