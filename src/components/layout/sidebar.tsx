@@ -24,7 +24,6 @@ import {
     Brain,
     Menu,
     X,
-    User,
     BookOpen,
     Shield,
     QrCode,
@@ -227,13 +226,6 @@ const menuItems = [
         href: "/dashboard/organization",
         icon: Building2,
         roles: ["ADMIN"] as UserRole[],
-        group: "System",
-    },
-    {
-        title: "Profile",
-        href: "/dashboard/profile",
-        icon: User,
-        roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER", "CERTIFICATE_MANAGER", "ATTENDEE"] as UserRole[],
         group: "System",
     },
     {

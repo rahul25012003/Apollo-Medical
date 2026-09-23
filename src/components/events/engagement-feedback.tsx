@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { eventsService } from "@/services/events";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
-import { Star, MessageSquare, RefreshCw, CheckCircle2, Download } from "lucide-react";
+import { Star, MessageSquare, RefreshCw, CheckCircle2, Download, ArrowLeft } from "lucide-react";
 
 export type FeedbackQuestionType = "rating" | "text" | "mcq" | "yesno";
 
@@ -39,6 +39,8 @@ interface FeedbackResponseData {
 }
 
 interface EngagementFeedbackProps {
+  /** Shows a Back button on the submitted view. */
+  onBack?: () => void;
   engagement: FeedbackEngagement;
   eventId: string;
   isAdmin: boolean;
@@ -117,7 +119,7 @@ function ChoiceButtons({ choices, value, onChange }: { choices: string[]; value?
   );
 }
 
-export function EngagementFeedback({ engagement, eventId, isAdmin }: EngagementFeedbackProps) {
+export function EngagementFeedback({ engagement, eventId, isAdmin, onBack }: EngagementFeedbackProps) {
   const [responses, setResponses] = useState<FeedbackResponseData[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -300,19 +302,52 @@ export function EngagementFeedback({ engagement, eventId, isAdmin }: EngagementF
     );
   }
 
-  // Attendee View: Already submitted
+  // Attendee View: already submitted — their own answers, read only.
   if (hasSubmitted) {
+    const mine = responses[0]?.response?.answers ?? {};
+    const answered = (q: FeedbackQuestion) => mine[q.text];
     return (
       <div className="space-y-4">
-        <div className="flex flex-col items-center justify-center py-8">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
-            <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/40 dark:bg-emerald-900/15">
+          <CheckCircle2 className="h-5 w-5 flex-none text-emerald-600 dark:text-emerald-400" />
+          <div className="min-w-0">
+            <p className="font-semibold text-emerald-900 dark:text-emerald-200">Feedback already submitted</p>
+            <p className="text-sm text-emerald-800/80 dark:text-emerald-300/80">Thank you — here&apos;s what you sent. It can&apos;t be changed.</p>
           </div>
-          <h3 className="text-lg font-semibold">Thank You!</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Your feedback has been submitted successfully.
-          </p>
         </div>
+
+        <div className="space-y-3">
+          {questions.map((q) => {
+            const value = answered(q);
+            const given = value !== undefined && value !== "" && value !== 0;
+            return (
+              <div key={q.text} className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{q.text}</p>
+                {!given ? (
+                  <p className="mt-1.5 text-sm italic text-muted-foreground">Not answered</p>
+                ) : q.type === "rating" ? (
+                  <div className="mt-2 flex items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        className={cn("h-5 w-5", n <= Number(value) ? "fill-amber-400 text-amber-400" : "text-slate-300 dark:text-slate-600")}
+                      />
+                    ))}
+                    <span className="ml-1 text-sm font-semibold text-slate-700 dark:text-slate-200">{Number(value)}/5</span>
+                  </div>
+                ) : (
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{String(value)}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {onBack && (
+          <Button variant="outline" onClick={onBack} className="gap-1.5">
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Button>
+        )}
       </div>
     );
   }

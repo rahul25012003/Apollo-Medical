@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { Bell, Search, ChevronDown, Settings, User, LogOut, HelpCircle, Loader2, Ticket, Award, Calendar, Users, CheckCircle2, QrCode } from "lucide-react";
+import { Bell, Search, ChevronDown, Settings, User, LogOut, HelpCircle, Loader2, Ticket, Award, Calendar, Users, CheckCircle2, QrCode, ArrowLeft } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DarkModeToggle } from "@/components/ui/dark-mode-toggle";
 import {
@@ -18,6 +18,7 @@ import { useUIStore } from "@/store";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
 import { useTenant } from "@/lib/tenant/context";
 import { useBrowseEventsHref, useIsIfpcDashboard } from "@/components/ifpc/guard";
 import { useMySelections, useUpNextMessages } from "@/components/ifpc/useMySelections";
@@ -90,6 +91,10 @@ const headerAccentMap: Record<string, string> = {
 
 export function Header({ title, subtitle }: HeaderProps) {
     const { sidebarCollapsed } = useUIStore();
+    const router = useRouter();
+    const pathname = usePathname();
+    // Every page below the dashboard home gets a way back to where they came from.
+    const showBack = !!pathname && pathname !== "/dashboard";
     const [searchOpen, setSearchOpen] = React.useState(false);
     const [idCardOpen, setIdCardOpen] = React.useState(false);
     const { data: session, status } = useSession();
@@ -175,8 +180,20 @@ export function Header({ title, subtitle }: HeaderProps) {
 
             <div className="flex items-center justify-between h-full px-4 lg:px-6">
                 {/* Left side */}
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                     <MobileMenuButton />
+                    {showBack && (
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            aria-label="Go back"
+                            title="Go back"
+                            className="flex items-center gap-1.5 p-2 rounded-xl hover:bg-muted/80 transition-all duration-200 text-muted-foreground hover:text-foreground"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                            <span className="hidden sm:inline text-sm font-medium">Back</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Right side */}

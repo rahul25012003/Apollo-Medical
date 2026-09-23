@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { EngagementFeedback } from "@/components/events/engagement-feedback";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { IfpcEvent } from "@/components/ifpc/useIfpcEvent";
@@ -12,6 +13,7 @@ type Engagement = Parameters<typeof EngagementFeedback>[0]["engagement"];
  * then one per session (a FEEDBACK engagement linked to that session).
  */
 export function IfpcFeedbackForms({ event }: { event: IfpcEvent }) {
+  const router = useRouter();
   const forms = (event.engagements || [])
     .filter((e) => e.type === "FEEDBACK" && e.isActive)
     .sort((a, b) => Number(!!a.sessionId) - Number(!!b.sessionId));
@@ -43,7 +45,7 @@ export function IfpcFeedbackForms({ event }: { event: IfpcEvent }) {
           </Select>
         </div>
       )}
-      <EngagementFeedback key={active.id} engagement={active as unknown as Engagement} eventId={event.id} isAdmin={false} />
+      <EngagementFeedback key={active.id} engagement={active as unknown as Engagement} eventId={event.id} isAdmin={false} onBack={() => router.back()} />
     </div>
   );
 }

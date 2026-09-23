@@ -24,6 +24,18 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
+// Accounts created from a registration only ever store the full name, so
+// first/last are empty — fall back to splitting the full name, otherwise
+// the edit form shows blanks for someone whose name the app clearly knows.
+function formFromUser(u: { firstName?: string | null; lastName?: string | null; name?: string | null; phone?: string | null }) {
+    const parts = (u.name || "").trim().split(/\s+/).filter(Boolean);
+    return {
+        firstName: u.firstName || parts[0] || "",
+        lastName: u.lastName || (parts.length > 1 ? parts.slice(1).join(" ") : ""),
+        phone: u.phone || "",
+    };
+}
+
 export default function ProfilePage() {
     // Change Password is IFPC (apollo-medical) only.
     const { isIfpc } = useIsIfpcDashboard();
@@ -58,11 +70,7 @@ export default function ProfilePage() {
                 const response = await usersService.getProfile();
                 if (response.success && response.data) {
                     setUser(response.data);
-                    setForm({
-                        firstName: response.data.firstName || "",
-                        lastName: response.data.lastName || "",
-                        phone: response.data.phone || "",
-                    });
+                    setForm(formFromUser(response.data));
                 }
             } catch (error) {
                 console.error("Failed to fetch profile:", error);
@@ -130,11 +138,7 @@ export default function ProfilePage() {
     const handleCancel = () => {
         // Reset form to current user values
         if (user) {
-            setForm({
-                firstName: user.firstName || "",
-                lastName: user.lastName || "",
-                phone: user.phone || "",
-            });
+            setForm(formFromUser(user));
         }
         setIsEditing(false);
     };

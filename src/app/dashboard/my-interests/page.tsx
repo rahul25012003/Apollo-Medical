@@ -129,11 +129,12 @@ export default function MyInterestsPage() {
                     sidebarCollapsed ? "lg:pl-[72px]" : "lg:pl-64"
                 )}
             >
-                <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto grid gap-6 lg:grid-cols-[1fr_320px] items-start">
-                    <aside className="lg:order-2 lg:sticky lg:top-20">
+                <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto grid gap-6 lg:grid-cols-[340px_1fr] items-start">
+                    <aside className="lg:order-1 lg:sticky lg:top-20">
                         <MyInterestsPanel data={mine} loading={mineLoading} />
                     </aside>
-                    <div className="lg:order-1 min-w-0">
+                    <div className="lg:order-2 min-w-0">
+                        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">More Interests</h2>
                     {loading ? (
                         <div className="flex justify-center py-20"><AiimsLoader /></div>
                     ) : !isIfpc ? (
