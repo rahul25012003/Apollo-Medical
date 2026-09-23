@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { auth } from "@/lib/auth";
 import { SplashScreen } from "@/components/splash-screen";
 import { PwaRegister } from "@/components/ifpc/PwaRegister";
 import "./globals.css";
@@ -68,11 +69,12 @@ const IFPC_SITE = process.env.DEFAULT_TENANT_SLUG === "apollo-medical";
 const CAPTURE_INSTALL_PROMPT =
   'window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__ifpcInstallPrompt=e;window.dispatchEvent(new Event("ifpc-installable"));});';
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
   return (
     <html lang="en" suppressHydrationWarning {...(IFPC_SITE ? { "data-ifpc-pwa": "global" } : {})}>
       {IFPC_SITE && (
@@ -85,7 +87,7 @@ export default function RootLayout({
       )}
       <body className={`${jakarta.className} ${jakarta.variable}`} suppressHydrationWarning>
         <SplashScreen />
-        <Providers>{children}</Providers>
+        <Providers session={session}>{children}</Providers>
         {IFPC_SITE && <PwaRegister global />}
       </body>
     </html>
