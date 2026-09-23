@@ -30,7 +30,6 @@ type InstallPromptEvent = Event & { prompt: () => Promise<void> | void; userChoi
 type IfpcWindow = Window & { __ifpcInstallPrompt?: InstallPromptEvent | null };
 
 const DISMISS_KEY = "ifpc-pwa-dismissed-at";
-const INSTALLED_KEY = "ifpc-pwa-installed";
 const DISMISS_FOR_MS = 3 * 24 * 60 * 60 * 1000;
 // Full-screen tools where a floating banner would get in the way.
 const HIDDEN_ON = /\/(scan|scanner)(\/|$)|\/badge(\/|$)/;
@@ -61,11 +60,14 @@ export function PwaRegister({ global = false }: { global?: boolean }) {
 
   useEffect(() => {
     if (!active) return;
+    // Read live every time, never a stored flag — a stored "installed"
+    // flag would keep hiding this forever after the person uninstalls the
+    // app to test the flow again, since nothing would ever clear it.
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as { standalone?: boolean }).standalone === true;
-    setInstalled(standalone || readStore(INSTALLED_KEY) === "1");
-    const onInstalled = () => { writeStore(INSTALLED_KEY, "1"); close(); };
+    setInstalled(standalone);
+    const onInstalled = () => close();
     window.addEventListener("appinstalled", onInstalled);
 
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -170,7 +172,6 @@ export function PwaRegister({ global = false }: { global?: boolean }) {
     const { outcome } = await prompt.userChoice;
     (window as IfpcWindow).__ifpcInstallPrompt = null;
     setInstallPrompt(null);
-    if (outcome === "accepted") writeStore(INSTALLED_KEY, "1");
     close();
   }
 
