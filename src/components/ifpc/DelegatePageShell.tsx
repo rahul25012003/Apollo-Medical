@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LifeBuoy } from "lucide-react";
+import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import { useTenant } from "@/lib/tenant/context";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
@@ -25,6 +26,7 @@ export function DelegatePageShell({
   const { tenant } = useTenant();
   const accent = tenant?.theme?.primaryColor || "#2582A1";
   const home = `/t/${IFPC_TENANT_SLUG}`;
+  const onHelp = usePathname()?.endsWith("/help");
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -36,9 +38,17 @@ export function DelegatePageShell({
               <span className="block text-xs text-slate-500">{title}</span>
             </span>
           </Link>
-          <Link href={home} className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
-            <ArrowLeft className="h-4 w-4" /> Home
-          </Link>
+          <div className="flex items-center gap-2">
+            {/* Emergency numbers stay one tap away from every venue page. */}
+            {!onHelp && (
+              <Link href={`${home}/help`} className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-700 ring-1 ring-red-200 hover:bg-red-100">
+                <LifeBuoy className="h-4 w-4" /> Help
+              </Link>
+            )}
+            <Link href={home} className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
+              <ArrowLeft className="h-4 w-4" /> Home
+            </Link>
+          </div>
         </div>
       </header>
 

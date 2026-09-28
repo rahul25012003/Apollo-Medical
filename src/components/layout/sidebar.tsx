@@ -39,6 +39,7 @@ import {
     Home,
     CalendarClock,
     Map as MapIcon,
+    LifeBuoy,
 } from "lucide-react";
 import { eventsService, Event } from "@/services/events";
 
@@ -137,6 +138,14 @@ const menuItems = [
         ifpcOnly: true,
         href: "/t/apollo-medical/route-map",
         icon: MapIcon,
+        roles: ["ATTENDEE", "ADMIN", "SUPER_ADMIN", "EVENT_MANAGER"] as UserRole[],
+        group: "Main",
+    },
+    {
+        title: "Help Line",
+        ifpcOnly: true,
+        href: "/t/apollo-medical/help",
+        icon: LifeBuoy,
         roles: ["ATTENDEE", "ADMIN", "SUPER_ADMIN", "EVENT_MANAGER"] as UserRole[],
         group: "Main",
     },

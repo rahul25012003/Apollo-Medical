@@ -501,6 +501,22 @@ export const ORGANISING_COMMITTEE = {
 };
 
 // ---------------------------------------------------------------------------
+// HELP LINE / EMERGENCY
+// ---------------------------------------------------------------------------
+
+// National numbers, valid anywhere in India. `dial` is what the phone calls.
+export const HELPLINE = {
+  emergency: [
+    { id: "police", label: "Police", number: "112", dial: "112", alt: "or 100", note: "National emergency number" },
+    { id: "ambulance", label: "Ambulance", number: "108", dial: "108", alt: "", note: "Emergency medical services" },
+    { id: "fire", label: "Fire Brigade", number: "101", dial: "101", alt: "", note: "Fire and rescue" },
+    { id: "telemanas", label: "Tele-MANAS", number: "14416", dial: "14416", alt: "or 1-800-891-4416", note: "Free, 24x7 mental health support" },
+  ],
+  // Required wording — keep verbatim.
+  firstAid: "First Aid Kit is available at the reception. Please contact organizing team.",
+};
+
+// ---------------------------------------------------------------------------
 // CONTACT
 // ---------------------------------------------------------------------------
 
