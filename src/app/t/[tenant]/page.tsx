@@ -1893,13 +1893,32 @@ export default function TenantHomePage() {
         const carouselCards = carouselEvts.map(mapToCard);
 
         return (
-          <section id="events" className="pt-6 pb-10 lg:pt-8 lg:pb-16 relative overflow-hidden bg-slate-900">
+          <section
+            id="events"
+            className={cn("pt-6 pb-10 lg:pt-8 lg:pb-16 relative overflow-hidden", tenantSlug !== "apollo-medical" && "bg-slate-900")}
+            style={tenantSlug === "apollo-medical" ? { backgroundColor: "#12112B" } : undefined}
+          >
+            {/* IFPC: the hero's photo and navy wash carry on behind the event
+                card. Mirrored so its top edge meets the hero's bottom edge, and
+                softened so it reads as atmosphere, not a second photo. */}
+            {tenantSlug === "apollo-medical" && (
+              <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+                <img
+                  src={hero.bgImage || "/ifpc/convention-centre.jpg"}
+                  alt=""
+                  className="absolute -inset-6 w-[calc(100%+3rem)] h-[calc(100%+3rem)] max-w-none object-cover"
+                  style={{ objectPosition: "22% bottom", transform: "scaleY(-1)", filter: "blur(10px)" }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(115deg, rgba(18,17,43,0.82) 0%, rgba(30,58,95,0.68) 48%, rgba(18,17,43,0.8) 100%)" }} />
+              </div>
+            )}
             {/* Dark decorative bg */}
-            <div className="absolute inset-0 pointer-events-none">
+            {tenantSlug !== "apollo-medical" && <div className="absolute inset-0 pointer-events-none">
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
               <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-emerald-500/5 blur-3xl" />
               <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-slate-700/30 blur-3xl" />
-            </div>
+            </div>}
 
             <div className="container mx-auto px-4 lg:px-8 relative z-10">
               {/* Section header */}
@@ -1940,8 +1959,8 @@ export default function TenantHomePage() {
               {/* STATIC FEATURED EVENT CARD */}
               {featuredCard && (
                 <div className="mb-8">
-                  <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-3 ml-1">Featured Event</p>
-                  <EventCard event={featuredCard} variant={tenantSlug === "apollo-medical" ? "ifpc" : "list"} themeColor={theme.primaryColor} hrefPrefix="" darkBg />
+                  {tenantSlug !== "apollo-medical" && <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-3 ml-1">Featured Event</p>}
+                  <EventCard event={featuredCard} variant={tenantSlug === "apollo-medical" ? "ifpc" : "list"} featured themeColor={theme.primaryColor} hrefPrefix="" darkBg />
                 </div>
               )}
 

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IfpcCard } from "@/components/ifpc/IfpcCard";
-import { SessionTypeIcon, sessionStats } from "@/components/ifpc/session-card-parts";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -22,7 +20,6 @@ import {
     Building2,
     User,
     CheckCircle2,
-    Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
@@ -279,16 +276,33 @@ export default function EventDetailsPage() {
                         {event.eventSpeakers && event.eventSpeakers.length > 0 && (
                             <div className="bg-background rounded-xl border p-6">
                                 <h2 className="text-lg font-semibold mb-4">Speakers</h2>
-                                <div className="grid gap-4">
+                                <div className="grid sm:grid-cols-2 gap-4">
                                     {event.eventSpeakers.map(({ speaker }) => (
-                                        <IfpcCard
-                                            key={speaker.id}
-                                            avatar={speaker.photo ? <img src={speaker.photo} alt={speaker.name} /> : <User className="h-7 w-7" />}
-                                            title={speaker.name}
-                                            tagline={speaker.designation || undefined}
-                                            meta={speaker.institution ? [{ icon: Building2, text: speaker.institution }] : undefined}
-                                            action={<SpeakerInterestButton speakerId={speaker.id} state={speakerInterest} />}
-                                        />
+                                        <div key={speaker.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                                {speaker.photo ? (
+                                                    <img
+                                                        src={speaker.photo}
+                                                        alt={speaker.name}
+                                                        className="w-12 h-12 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <User className="w-6 h-6 text-primary" />
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="font-medium">{speaker.name}</p>
+                                                {speaker.designation && (
+                                                    <p className="text-xs text-muted-foreground">{speaker.designation}</p>
+                                                )}
+                                                {speaker.institution && (
+                                                    <p className="text-xs text-muted-foreground">{speaker.institution}</p>
+                                                )}
+                                                <div className="mt-1.5">
+                                                    <SpeakerInterestButton speakerId={speaker.id} state={speakerInterest} />
+                                                </div>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -318,24 +332,31 @@ export default function EventDetailsPage() {
                                                 <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">{day.label}</span>
                                                 {day.date && <span className="text-xs text-muted-foreground">{day.date}</span>}
                                             </div>
-                                            <div className="space-y-4">
+                                            <div className="space-y-2">
                                                 {[...day.items!].sort((a, b) => (a.startTime || "").padStart(5, "0").localeCompare((b.startTime || "").padStart(5, "0"))).map(session => (
-                                                    <IfpcCard
-                                                        key={session.id}
-                                                        avatar={<SessionTypeIcon type={session.sessionType} title={session.title} />}
-                                                        title={session.title}
-                                                        tagline={session.description ? <span className="line-clamp-2">{session.description}</span> : undefined}
-                                                        meta={(() => {
-                                                            const spks = [...(session.sessionSpeakers || []).map(ss => ss.speaker.name), ...(session.speaker ? [session.speaker.name] : [])];
-                                                            return [
-                                                                { icon: Tag, text: session.sessionType.charAt(0) + session.sessionType.slice(1).toLowerCase() },
-                                                                ...(session.hall ? [{ icon: MapPin, text: session.hall.name }] : []),
-                                                                ...(spks.length ? [{ icon: Users, text: spks.join(", ") }] : []),
-                                                            ];
-                                                        })()}
-                                                        stats={sessionStats(session)}
-                                                        action={session.capacity != null ? <ExpressInterestButton sessionId={session.id} /> : undefined}
-                                                    />
+                                                    <div key={session.id} className="p-3 rounded-lg bg-muted/50 border">
+                                                        <div className="flex items-start gap-3">
+                                                            {session.startTime && (
+                                                                <div className="text-xs font-medium text-muted-foreground min-w-[55px]">
+                                                                    {session.startTime}
+                                                                    {session.endTime && <div>{session.endTime}</div>}
+                                                                </div>
+                                                            )}
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-medium text-sm">{session.title}</p>
+                                                                {(() => {
+                                                                    const spks = [...(session.sessionSpeakers || []).map(ss => ss.speaker.name), ...(session.speaker ? [session.speaker.name] : [])];
+                                                                    return spks.length > 0 ? <p className="text-xs text-muted-foreground mt-0.5">{spks.join(", ")}</p> : null;
+                                                                })()}
+                                                                {session.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{session.description}</p>}
+                                                                {session.capacity != null && (
+                                                                    <div className="mt-2">
+                                                                        <ExpressInterestButton sessionId={session.id} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 ))}
                                             </div>
                                         </div>

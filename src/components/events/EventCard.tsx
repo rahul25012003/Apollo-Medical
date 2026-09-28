@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { IfpcCard } from "@/components/ifpc/IfpcCard";
+import "@/components/ifpc/ifpc-event-feature.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -14,7 +14,6 @@ import {
   Users,
   Eye,
   Zap,
-  Tag,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,8 +54,10 @@ export interface EventCardData {
 
 interface EventCardProps {
   event: EventCardData;
-  /** "ifpc": the IFPC listing card, used only on the IFPC site. */
+  /** "ifpc": the IFPC featured-event banner, used only on the IFPC site. */
   variant?: "grid" | "list" | "ifpc";
+  /** ifpc only: show the "Featured Event" eyebrow inside the card. */
+  featured?: boolean;
   themeColor?: string;
   hrefPrefix?: string;
   darkBg?: boolean;
@@ -104,7 +105,7 @@ function fmtMoney(amount: number, currency: string) {
   return `${sym}${Number(amount).toLocaleString()}`;
 }
 
-export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hrefPrefix = "", darkBg = false }: EventCardProps) {
+export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hrefPrefix = "", darkBg = false, featured = false }: EventCardProps) {
   const router = useRouter();
   const reg = getRegStatus(event);
   const slotsLeft = Math.max(0, event.capacity - event.registrations);
@@ -114,41 +115,102 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
   const registerHref = `${hrefPrefix}/events/${event.id}/register`;
   const isOpen = reg.kind === "open" || reg.kind === "closing";
 
-  // IFPC listing card: the same data as the other variants, laid out as the
-  // IFPC card (photo right, fading into white). Other tenants never pass it.
+  // IFPC: the "Featured Event" banner design. Same data and actions as the
+  // list variant below (status, type, dates, time, venue, fill, price,
+  // Details, Register), only laid out differently. Other tenants never pass it.
   if (variant === "ifpc") {
+    const words = event.title.trim().split(/\s+/);
+    const lead = words.length >= 3 ? words.slice(0, -2).join(" ") : "";
+    const tail = words.length >= 3 ? words.slice(-2) : words;
+    const fmtLong = (iso: string) => new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
     return (
-      <IfpcCard
-        href={detailHref}
-        image={event.image}
-        imageAlt={event.title}
-        avatar={
-          <span className="flex flex-col items-center leading-none text-slate-800">
-            <span className="text-xl font-bold">{dateBadge.day}</span>
-            <span className="mt-0.5 text-[10px] font-semibold tracking-wider text-slate-500">{dateBadge.month}</span>
-          </span>
-        }
-        title={event.title}
-        tagline={event.shortDescription ? <span className="line-clamp-2">{event.shortDescription}</span> : undefined}
-        meta={[
-          { icon: MapPin, text: event.location },
-          { icon: Tag, text: typeLabel(event.type) },
-          ...(event.startTime ? [{ icon: Clock, text: `${event.startTime} IST` }] : []),
-          ...(event.cmeCredits ? [{ icon: Award, text: `${event.cmeCredits} CME` }] : []),
-        ]}
-        stats={[
-          { value: `${event.registrations}/${event.capacity}`, label: "registered" },
-          { value: slotsLeft, label: "spots left" },
-          { value: fmtMoney(event.price, event.currency), label: "price" },
-        ]}
-        footer={
-          <span className="inline-flex items-center gap-2 font-medium">
-            <span className="h-2 w-2 rounded-full" style={{ background: themeColor }} aria-hidden="true" />
-            {reg.label}
-          </span>
-        }
-        action={isOpen ? <Link href={registerHref} className="ifpc-card-pill">Register</Link> : undefined}
-      />
+      <article className="ifpc-feat" onClick={() => router.push(detailHref)}>
+        <div className="ifpc-feat-card">
+          <div className="ifpc-feat-art" aria-hidden="true">
+            {event.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={event.image} alt="" loading="lazy" decoding="async" />
+            )}
+          </div>
+          <span className="ifpc-feat-curve ifpc-feat-curve--a" aria-hidden="true" />
+          <span className="ifpc-feat-curve ifpc-feat-curve--b" aria-hidden="true" />
+
+          <div className="ifpc-feat-body">
+            {featured && <p className="ifpc-feat-eyebrow"><span className="ifpc-feat-dot" />Featured Event</p>}
+
+            <div className="ifpc-feat-tags">
+              <div className="ifpc-feat-date">
+                <span>{dateBadge.month}</span>
+                <strong>{dateBadge.day}</strong>
+              </div>
+              <span className={cn("ifpc-feat-pill ifpc-feat-status", `is-${reg.kind}`)}>
+                <span className="ifpc-feat-dot" />{reg.label}
+              </span>
+              <span className="ifpc-feat-pill">
+                <Users aria-hidden="true" />{typeLabel(event.type)}
+              </span>
+              {(event.cmeCredits ?? 0) > 0 && (
+                <span className="ifpc-feat-pill"><Award aria-hidden="true" />{event.cmeCredits} CME</span>
+              )}
+            </div>
+
+            <h3 className="ifpc-feat-title">
+              {lead && <span className="ifpc-feat-title-lead">{lead}</span>}
+              <span className="ifpc-feat-title-main">
+                {tail.map((w, i) => (
+                  <React.Fragment key={i}>
+                    {i > 0 && " "}
+                    <span className={/\d/.test(w) ? "ifpc-feat-accent" : undefined}>{w}</span>
+                  </React.Fragment>
+                ))}
+              </span>
+            </h3>
+
+            {event.shortDescription && <p className="ifpc-feat-desc">{event.shortDescription}</p>}
+
+            <ul className="ifpc-feat-meta">
+              <li>
+                <Calendar aria-hidden="true" />
+                <span>{fmtLong(event.startDate)}{event.endDate ? ` – ${fmtLong(event.endDate)}` : ""}</span>
+              </li>
+              {event.startTime && (
+                <li><Clock aria-hidden="true" /><span>{event.startTime} IST</span></li>
+              )}
+              <li><MapPin aria-hidden="true" /><span>{event.location}</span></li>
+              <li><Users aria-hidden="true" /><span>{event.registrations}/{event.capacity} registered</span></li>
+            </ul>
+
+            <div className="ifpc-feat-fill">
+              <span className="ifpc-feat-fill-label">{Math.round(fillPct)}% filled</span>
+              <div className="ifpc-feat-fill-row">
+                <div className="ifpc-feat-bar"><span style={{ width: `${fillPct}%` }} /></div>
+                <span className={cn("ifpc-feat-left", fillPct >= 90 ? "is-red" : fillPct >= 70 ? "is-amber" : "")}>
+                  {slotsLeft <= 0 ? "Registration Closed" : `${slotsLeft} spots left`}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="ifpc-feat-cta">
+            <span className="ifpc-feat-price">{fmtMoney(event.price, event.currency)}</span>
+            <span className="ifpc-feat-sep" aria-hidden="true" />
+            <Link href={detailHref} onClick={e => e.stopPropagation()} className="ifpc-feat-btn">
+              <Eye aria-hidden="true" />Details
+            </Link>
+            {isOpen ? (
+              <Link href={registerHref} onClick={e => e.stopPropagation()} className="ifpc-feat-btn ifpc-feat-btn--primary">
+                Register<ArrowRight aria-hidden="true" />
+              </Link>
+            ) : reg.kind === "upcoming" ? (
+              <span className="ifpc-feat-btn is-static"><Clock aria-hidden="true" />{reg.label}</span>
+            ) : reg.kind === "closed" ? (
+              <span className="ifpc-feat-btn is-static is-muted">Registration Closed</span>
+            ) : reg.kind === "ended" ? (
+              <span className="ifpc-feat-btn is-static is-muted">Event Ended</span>
+            ) : null}
+          </div>
+        </div>
+      </article>
     );
   }
 

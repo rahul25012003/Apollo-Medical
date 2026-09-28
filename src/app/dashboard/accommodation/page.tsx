@@ -12,8 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Utensils, Info, CheckCircle2, Loader2, BedDouble, Lock, Pencil, X, BadgeCheck, CircleSlash, Hotel } from "lucide-react";
-import { IfpcCard } from "@/components/ifpc/IfpcCard";
+import { MapPin, Utensils, Info, CheckCircle2, Loader2, BedDouble, Lock, Pencil, X, BadgeCheck, CircleSlash } from "lucide-react";
 import { IFPC_TENANT_SLUG, ACCOMMODATION_SHARING, sharingLabel } from "@/lib/ifpc-constants";
 import { VENUE_TRAVEL, REGISTRATION } from "@/content/ifpc-2026";
 import { type ChoicesWindow, OPEN_FOREVER, formatClosesAt } from "@/lib/ifpc-deadline";
@@ -405,38 +404,39 @@ export default function AccommodationPage() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="grid sm:grid-cols-2 gap-3">
                           {grouped[tier].map((hotel) => {
                             const isSelected = choice === hotel.name;
                             return (
-                              <IfpcCard
+                              <div
                                 key={hotel.name}
-                                className={cn(isSelected && "ifpc-card--selected")}
-                                avatar={<Hotel className="h-7 w-7" />}
-                                title={hotel.name}
-                                stats={[
-                                  { value: hotel.distance, label: "from venue" },
-                                  { value: hotel.price, label: "price range" },
-                                ]}
-                                action={
-                                  <button
-                                    type="button"
-                                    className="ifpc-card-pill"
-                                    disabled={!open || saving === hotel.name}
-                                    onClick={() => selectHotel(hotel.name)}
-                                  >
-                                    {saving === hotel.name ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : isSelected ? (
-                                      <><CheckCircle2 className="h-4 w-4 text-emerald-600" /> Selected</>
-                                    ) : choice ? (
-                                      "Change to this"
-                                    ) : (
-                                      "I'll stay here"
-                                    )}
-                                  </button>
-                                }
-                              />
+                                className={cn(
+                                  "p-3 rounded-lg border flex items-center justify-between gap-3",
+                                  isSelected ? "border-emerald-400 bg-emerald-50" : "bg-white dark:bg-slate-900"
+                                )}
+                              >
+                                <div className="min-w-0">
+                                  <p className="font-medium text-sm">{hotel.name}</p>
+                                  <p className="text-xs text-muted-foreground">{hotel.distance} from venue · {hotel.price}</p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant={isSelected ? "outline" : "default"}
+                                  disabled={!open || saving === hotel.name}
+                                  onClick={() => selectHotel(hotel.name)}
+                                  className="shrink-0"
+                                >
+                                  {saving === hotel.name ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : isSelected ? (
+                                    <span className="flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Selected</span>
+                                  ) : choice ? (
+                                    "Change to this"
+                                  ) : (
+                                    "I'll stay here"
+                                  )}
+                                </Button>
+                              </div>
                             );
                           })}
                         </div>

@@ -43,6 +43,7 @@ import { DelegateSchedule } from "@/components/ifpc/MyEventsCard";
 import { MyInterests, stayText } from "@/components/ifpc/MyInterestsPanel";
 import { useMySelections, useUpNextMessages } from "@/components/ifpc/useMySelections";
 import { NotificationsModal } from "@/components/ifpc/NotificationsModal";
+import "@/components/ifpc/ifpc-dash-cards.css";
 
 interface UpcomingEvent {
     id: string;
@@ -384,7 +385,7 @@ export default function DashboardPage() {
                     <HeroGreeting />
 
                     {/* Quick Stats Row */}
-                    <div className={cn("grid gap-4 mb-6", isIfpc ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4" : isSpeaker ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-3")}>
+                    <div className={cn("grid gap-4 mb-6", isIfpc && "ifpc-dash-cards", isIfpc ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4" : isSpeaker ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-3")}>
                         {isIfpc ? (
                             /* Notifications — replaces Browse Events since IFPC only has one event */
                             <button type="button" onClick={() => setNotificationsOpen(true)} className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left">
@@ -654,7 +655,7 @@ export default function DashboardPage() {
                 <HeroGreeting />
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className={cn("grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6", isIfpc && "ifpc-dash-cards")}>
                     {statCards.map((stat, i) => (
                         <div key={i} className="group relative bg-white rounded-2xl border-2 border-slate-100 hover:border-slate-200 p-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                             <div className="absolute top-0 left-0 right-0 h-[3px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: `linear-gradient(to right, ${stat.color1}, ${stat.color2})` }} />
@@ -678,7 +679,7 @@ export default function DashboardPage() {
                 {/* Two-column: Events + Registrations */}
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
                     {/* Upcoming Events */}
-                    <div className="lg:col-span-3 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 overflow-hidden">
+                    <div className={cn("lg:col-span-3 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 overflow-hidden", isIfpc && "ifpc-dash-panel")}>
                         <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-lg text-white shadow-md" style={{ background: "linear-gradient(135deg, #3b82f6, #06b6d4)" }}>
@@ -724,7 +725,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Recent Registrations */}
-                    <div className="lg:col-span-2 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 overflow-hidden">
+                    <div className={cn("lg:col-span-2 rounded-2xl bg-white dark:bg-slate-800/80 border-2 border-slate-100 dark:border-slate-700 overflow-hidden", isIfpc && "ifpc-dash-panel")}>
                         <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-lg text-white shadow-md" style={{ background: "linear-gradient(135deg, #8b5cf6, #a855f7)" }}>

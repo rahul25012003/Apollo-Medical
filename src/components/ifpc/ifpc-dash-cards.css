@@ -1,0 +1,107 @@
+/*
+ * IFPC main dashboard: the stat cards (with their mini bar graphs) and the
+ * Upcoming Events / Recent Registrations panels in the same card design as
+ * the Reports cards: white card, soft brand wash fading in from the right,
+ * round icon avatar, pill link. Look only. The page adds .ifpc-dash-cards
+ * and .ifpc-dash-panel for IFPC alone. Selectors carry .rounded-2xl so they
+ * outrank the dashboard's .ifpc-neu surface rules.
+ */
+
+.ifpc-dash-cards > .rounded-2xl,
+.ifpc-neu .ifpc-dash-cards > .rounded-2xl,
+.ifpc-dash-panel.rounded-2xl,
+.ifpc-neu .ifpc-dash-panel.rounded-2xl {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid rgb(15 23 42 / 0.08);
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 10px 30px -18px rgb(15 23 42 / 0.25);
+}
+.ifpc-dash-cards > .rounded-2xl:hover,
+.ifpc-neu .ifpc-dash-cards > .rounded-2xl:hover {
+  border-color: rgb(15 23 42 / 0.1);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05), 0 18px 40px -20px rgb(15 23 42 / 0.35);
+}
+
+/* The picture side: the brand wash, fading into the white card. */
+.ifpc-dash-cards > .rounded-2xl::before,
+.ifpc-dash-panel.rounded-2xl::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 40%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 70% at 85% 20%, rgb(37 130 161 / 0.26), transparent 70%),
+    radial-gradient(80% 70% at 95% 95%, rgb(253 185 49 / 0.26), transparent 70%),
+    linear-gradient(160deg, #eef6f8, #fbf6ea);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.45) 35%, #000 70%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.45) 35%, #000 70%);
+}
+/* Panels are tall lists: the wash stays behind their header. */
+.ifpc-dash-panel.rounded-2xl::before {
+  bottom: auto;
+  height: 140px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.45) 35%, #000 70%), linear-gradient(180deg, #000 30%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.45) 35%, #000 70%), linear-gradient(180deg, #000 30%, transparent 100%);
+  mask-composite: intersect;
+}
+
+/* Icon tiles become round avatars; each keeps its own colour. */
+.ifpc-dash-cards > .rounded-2xl [style*="linear-gradient(135deg"],
+.ifpc-dash-panel > :first-child [style*="linear-gradient(135deg"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  flex: none;
+  padding: 0;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px #fff, 0 8px 18px -8px rgb(15 23 42 / 0.35);
+}
+.ifpc-dash-panel > :first-child [style*="linear-gradient(135deg"] { width: 44px; height: 44px; }
+
+/* The mini bar graph: a little more present, rounded bars. */
+.ifpc-dash-cards > .rounded-2xl .h-5 > div {
+  opacity: 0.35;
+  border-radius: 4px 4px 2px 2px;
+}
+.ifpc-dash-cards > .rounded-2xl:hover .h-5 > div { opacity: 0.6; }
+
+/* Panel headers: no rule under them, "View all" as the white pill. */
+.ifpc-dash-panel > :first-child { border-bottom-color: transparent; padding: 22px 22px 14px; }
+.ifpc-dash-panel > :first-child h2 { font-size: 18px; font-weight: 600; color: #111827; }
+.ifpc-dash-panel > :first-child > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 14px -6px rgb(15 23 42 / 0.35);
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ifpc-dash-panel > :first-child > a:hover { color: #111827; transform: translateY(-1px); box-shadow: 0 8px 20px -8px rgb(15 23 42 / 0.4); }
+.ifpc-dash-panel > :first-child > a:active { transform: scale(0.97); }
+
+@media (max-width: 639px) {
+  .ifpc-dash-cards > .rounded-2xl::before,
+  .ifpc-dash-panel.rounded-2xl::before {
+    inset: 0 0 auto 0;
+    height: 90px;
+    -webkit-mask-image: linear-gradient(180deg, #000 20%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 20%, transparent 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-dash-panel > :first-child > a { transition: none; }
+  .ifpc-dash-panel > :first-child > a:hover { transform: none; }
+}
