@@ -73,6 +73,9 @@ export async function GET(
           orderBy: { tier: "asc" },
         },
         eventSessions: {
+          // Unpublished means not public — including sessions retired from
+          // the selectable programme.
+          where: { isPublished: true },
           include: {
             speaker: {
               select: {

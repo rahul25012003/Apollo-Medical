@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Users, Loader2, CheckCircle2, Heart, CircleDot, ListChecks, Lock } from "lucide-react";
+import { Users, Loader2, CheckCircle2, Heart, CircleDot, ListChecks, Lock, Clock } from "lucide-react";
 import { InterestToggle, INTEREST_BUTTON_CLASS } from "./InterestToggle";
 import { formatClosesAt } from "@/lib/ifpc-deadline";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,8 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
   const [rule, setRule] = useState<SelectionRule | null>(null);
   // Null until the server tells us; choices stay open until registration closes.
   const [closedOn, setClosedOn] = useState<string | null | undefined>(undefined);
+  // Title of a pick this one would clash with in time, if any.
+  const [clash, setClash] = useState<string | null>(null);
   // Bumped when any interest on the page changes — a pick-one swap clears another button's selection.
   const [refreshTick, setRefreshTick] = useState(0);
   useEffect(() => {
@@ -108,6 +110,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
       .then((json) => {
         if (!json.success) return;
         setIsInterested(json.data.isInterested);
+        setClash(json.data.clash ?? null);
         const w = json.data.choices;
         setClosedOn(w && !w.open ? (formatClosesAt(w.closesAt) ?? "") : null);
       })
@@ -199,6 +202,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
     // Once registration closes the choice is final, so the control stops
     // offering an action it cannot carry out and says why instead.
     const closed = typeof closedOn === "string";
+    const clashes = !isInterested && !!clash;
     return (
       <div className="flex items-center gap-3 flex-wrap">
         {seats}
@@ -206,12 +210,17 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
         <InterestToggle
           selected={isInterested}
           pending={submitting}
-          disabled={closed || (isFull && !isInterested) || checkingMine}
-          label={isFull ? "Session Full" : "I'd like to attend"}
+          disabled={closed || clashes || (isFull && !isInterested) || checkingMine}
+          label={clashes ? "Time clash" : isFull ? "Session Full" : "I'd like to attend"}
           selectedLabel="You're interested"
           onSelect={selectAsLoggedIn}
           onRemove={closed ? undefined : removeAsLoggedIn}
         />
+        {clashes && !closed && (
+          <span className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+            <Clock className="h-3 w-3 shrink-0" /> Same time as {clash}
+          </span>
+        )}
         {closed && (
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <Lock className="h-3 w-3" /> Final{closedOn ? ` since ${closedOn}` : ""}

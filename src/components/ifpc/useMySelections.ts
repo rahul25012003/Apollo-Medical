@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EOI_CATEGORIES, INTEREST_CHANGED_EVENT, eoiCategoryOf, sessionStartsAt, upNextMessages, type UpNextMessage } from "@/lib/ifpc-eoi";
+import { INTEREST_CHANGED_EVENT, eoiCategoryOf, eoiRule, sessionStartsAt, upNextMessages, type UpNextMessage } from "@/lib/ifpc-eoi";
 
 export interface MySessionInterest {
   sessionId: string;
@@ -35,7 +35,7 @@ export function useMySelections(enabled = true) {
           const rows: MySessionInterest[] = json.success ? json.data.sessions : [];
           setItems(sortSelections(rows.map((s) => {
             const cat = eoiCategoryOf(s);
-            return { ...s, label: cat ? EOI_CATEGORIES[cat].label : s.sessionType.charAt(0) + s.sessionType.slice(1).toLowerCase(), startsAt: sessionStartsAt(s) };
+            return { ...s, label: cat ? eoiRule(cat).label : s.sessionType.charAt(0) + s.sessionType.slice(1).toLowerCase(), startsAt: sessionStartsAt(s) };
           })));
         })
         .catch(() => setItems((prev) => prev ?? []));

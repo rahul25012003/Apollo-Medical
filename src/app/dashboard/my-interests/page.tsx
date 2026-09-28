@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Calendar, Clock, MapPin, CircleDot, ListChecks, Lock, Info } from "lucide-react";
 import { formatClosesAt } from "@/lib/ifpc-deadline";
-import { EOI_CATEGORIES, EOI_CATEGORY_ORDER, eoiCategoryOf, INTEREST_CHANGED_EVENT } from "@/lib/ifpc-eoi";
+import { eoiCategoryOf, eoiRule, sortEoiCategories, INTEREST_CHANGED_EVENT } from "@/lib/ifpc-eoi";
 import type { EventSession } from "@/services/events";
 import { format, parseISO } from "date-fns";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
@@ -81,11 +81,12 @@ export default function MyInterestsPage() {
             return (a.sessionOrder ?? 0) - (b.sessionOrder ?? 0);
         });
 
-    // Tour / yoga / morning & afternoon workshops each follow a selection rule;
-    // everything else stays grouped by day as before.
-    const groups = EOI_CATEGORY_ORDER
-        .map((cat) => ({ cat, sessions: workshops.filter((s) => eoiCategoryOf(s) === cat) }))
-        .filter((g) => g.sessions.length > 0);
+    // Each workshop slot (Day n Morning/Afternoon), yoga and the campus tour
+    // follow a selection rule, in programme order; everything else stays
+    // grouped by day as before.
+    const groups = sortEoiCategories(
+        Array.from(new Set(workshops.map((s) => eoiCategoryOf(s)).filter((c): c is string => c !== null)))
+    ).map((cat) => ({ cat, sessions: workshops.filter((s) => eoiCategoryOf(s) === cat) }));
     const others = workshops.filter((s) => !eoiCategoryOf(s));
     const days = Array.from(
         new Set(others.filter((s) => s.sessionDate).map((s) => s.sessionDate!.slice(0, 10)))
@@ -163,11 +164,18 @@ export default function MyInterestsPage() {
                     ) : (
                         <div className="space-y-8">
                             {groups.map(({ cat, sessions }) => {
-                                const rule = EOI_CATEGORIES[cat];
+                                const rule = eoiRule(cat);
+                                // Workshop slots carry their date; show it under the heading.
+                                const slotDate = cat.startsWith("workshop:") ? cat.split(":")[1] : null;
                                 return (
                                     <section key={cat}>
                                         <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-                                            <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">{rule.label}</h3>
+                                            <div>
+                                                <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">{rule.label}</h3>
+                                                {slotDate && slotDate !== "tba" && (
+                                                    <p className="text-xs text-muted-foreground">{format(parseISO(slotDate), "EEEE, d MMMM")}</p>
+                                                )}
+                                            </div>
                                             <span className={cn(
                                                 "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
                                                 rule.single ? "bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/50" : "bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50"

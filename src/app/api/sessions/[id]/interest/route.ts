@@ -7,11 +7,30 @@ import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
 import { isIfpcEvent } from "@/lib/ifpc-tenant";
-import { EOI_CATEGORIES, eoiCategoryOf } from "@/lib/ifpc-eoi";
+import { eoiCategoryOf, eoiRule, sessionsOverlap } from "@/lib/ifpc-eoi";
 import { choicesWindow, closedMessage } from "@/lib/ifpc-deadline";
 import { logActivity } from "@/lib/activity-log";
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+type SlotSession = { id: string; title: string; sessionType: string | null; sessionDate: Date | null; startTime: string | null; endTime: string | null };
+
+/**
+ * The delegate's existing pick that would put them in two places at once —
+ * e.g. the morning campus tour against a morning workshop on the same day.
+ * A pick in the target's own pick-one group is not a clash: choosing the
+ * target replaces it.
+ */
+async function findClash(eventId: string, email: string, target: SlotSession): Promise<SlotSession | null> {
+  const picks = await prisma.sessionInterest.findMany({
+    // Retired (unpublished) picks can't be seen any more, so they never block.
+    where: { email, sessionId: { not: target.id }, session: { eventId, isPublished: true } },
+    select: { session: { select: { id: true, title: true, sessionType: true, sessionDate: true, startTime: true, endTime: true } } },
+  });
+  const group = eoiCategoryOf(target);
+  const replaces = (x: SlotSession) => group !== null && eoiRule(group).single && eoiCategoryOf(x) === group;
+  return picks.map((p) => p.session).find((x) => !replaces(x) && sessionsOverlap(x, target)) ?? null;
+}
 
 const rateLimiter = createRateLimiter("session-interest", { maxRequests: 10, windowSeconds: 60 });
 
@@ -30,13 +49,13 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
 
   const eventSession = await prisma.eventSession.findUnique({
     where: { id: sessionId },
-    select: { id: true, capacity: true, title: true, sessionType: true, startTime: true, event: { select: { id: true, tenantId: true } } },
+    select: { id: true, capacity: true, title: true, sessionType: true, sessionDate: true, startTime: true, endTime: true, event: { select: { id: true, tenantId: true } } },
   });
   if (!eventSession) return Errors.notFound("Session");
 
   const count = await prisma.sessionInterest.count({ where: { sessionId } });
   const category = eoiCategoryOf(eventSession);
-  const rule = category ? { category, ...EOI_CATEGORIES[category] } : null;
+  const rule = category ? { category, ...eoiRule(category) } : null;
 
   const { searchParams } = new URL(request.url);
   if (searchParams.get("list") === "1") {
@@ -65,6 +84,7 @@ export const GET = withErrorHandler(async (request: NextRequest, context?: Route
       count,
       isInterested: !!mine,
       rule,
+      clash: mine ? null : (await findClash(eventSession.event.id, session.user.email.toLowerCase(), eventSession))?.title ?? null,
       choices: choicesWindow(window?.registrationDeadline),
     });
   }
@@ -131,7 +151,7 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   const eventSession = await prisma.eventSession.findUnique({
     where: { id: sessionId },
     select: {
-      id: true, capacity: true, eventId: true, title: true, sessionType: true, startTime: true,
+      id: true, capacity: true, eventId: true, title: true, sessionType: true, sessionDate: true, startTime: true, endTime: true,
       event: { select: { registrationDeadline: true, tenantId: true } },
     },
   });
@@ -140,13 +160,13 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   const choices = choicesWindow(eventSession.event.registrationDeadline);
   if (!choices.open) return Errors.forbidden(closedMessage(choices.closesAt));
 
-  // Pick-one categories (campus tour day, morning workshop, afternoon workshop):
-  // the other sessions in the same category, which this choice would replace.
+  // Pick-one groups (a workshop slot, the campus tour): the other sessions in
+  // the same group, which this choice would replace.
   const category = eoiCategoryOf(eventSession);
-  const siblings = category && EOI_CATEGORIES[category].single
+  const siblings = category && eoiRule(category).single
     ? (await prisma.eventSession.findMany({
         where: { eventId: eventSession.eventId, id: { not: sessionId } },
-        select: { id: true, title: true, sessionType: true, startTime: true },
+        select: { id: true, title: true, sessionType: true, sessionDate: true, startTime: true },
       })).filter((x) => eoiCategoryOf(x) === category)
     : [];
 
@@ -157,6 +177,12 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   if (!parsed.success) return Errors.validationError(parsed.error);
 
   const email = parsed.data.email.toLowerCase();
+
+  const clash = await findClash(eventSession.eventId, email, eventSession);
+  if (clash) {
+    return Errors.conflict(`That's at the same time as "${clash.title}", which you've already chosen. Remove that one first.`);
+  }
+
   // Only the signed-in owner of this email may swap a pick-one choice; an
   // anonymous submission can never remove anyone's existing selection.
   const authSession = siblings.length ? await auth() : null;
@@ -221,7 +247,7 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
     return Errors.conflict("This session is full");
   }
   if (outcome === "conflict") {
-    const label = EOI_CATEGORIES[category!].label;
+    const label = eoiRule(category!).label;
     return Errors.conflict(`A ${label} choice is already recorded for this email (only one allowed). Sign in to change it.`);
   }
 
@@ -232,7 +258,7 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   await logActivity(authSession, {
     action: replaced.length ? "interest.change" : "interest.add",
     summary: replaced.length
-      ? `${parsed.data.name} switched ${EOI_CATEGORIES[category!].label} to "${eventSession.title}"`
+      ? `${parsed.data.name} switched ${eoiRule(category!).label} to "${eventSession.title}"`
       : `${parsed.data.name} is interested in "${eventSession.title}"`,
     entityType: "EventSession",
     entityId: sessionId,
@@ -253,7 +279,7 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
 
   return successResponse(
     { capacity: eventSession.capacity, count, replaced, category },
-    replaced.length ? `Switched your ${EOI_CATEGORIES[category!].label} choice` : "Interest registered",
+    replaced.length ? `Switched your ${eoiRule(category!).label} choice` : "Interest registered",
     201
   );
 });

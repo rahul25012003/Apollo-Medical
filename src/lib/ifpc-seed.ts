@@ -11,6 +11,7 @@
  */
 
 import type { PrismaClient } from "@prisma/client";
+import { syncIfpcProgramme } from "./ifpc-programme";
 
 const d = (s: string) => new Date(s);
 
@@ -211,6 +212,7 @@ export async function seedIfpc2026(prisma: PrismaClient) {
         );
       }
     }
+    for (const line of await syncIfpcProgramme(prisma, existingEvent.id)) console.log(line);
     console.log("\nDone.");
     return;
   }
@@ -270,25 +272,8 @@ export async function seedIfpc2026(prisma: PrismaClient) {
   console.log("Speakers linked to event.\n");
 
   // Sessions — programme structure + the seat-limited Workshop/Seminar listings
-  await prisma.eventSession.create({ data: {
-    eventId: event.id, title: "Pre-Conference Workshops",
-    description: "Hands-on workshops led by national and international experts, offering interactive sessions designed to bridge psychiatry and the justice system effectively.",
-    sessionType: "WORKSHOP", sessionDate: d("2026-11-02"), startTime: "09:00", endTime: "17:00",
-    sessionOrder: 1, status: "scheduled", isPublished: true, capacity: 100,
-  }});
 
-  await prisma.eventSession.create({ data: {
-    eventId: event.id, title: "Morning Yoga Sessions",
-    description: "Complimentary sessions offered daily by the Department of Integrative Medicine, NIMHANS, 6:30–7:30 AM, at the Yoga Hall, Department of Integrative Medicine, throughout the conference. Comfortable, loose-fitting clothing recommended; practiced barefoot; mats provided.",
-    sessionType: "SEMINAR", sessionDate: d("2026-11-02"), startTime: "06:30", endTime: "07:30",
-    sessionOrder: 2, status: "scheduled", isPublished: true, capacity: 30,
-  }});
 
-  await prisma.eventSession.create({ data: {
-    eventId: event.id, title: "NIMHANS Campus Tour",
-    description: "A guided, approximately 2-hour tour of the historic NIMHANS campus, showcasing its legacy and state-of-the-art clinical, academic, and research facilities. Enquire at the Registration Desk for schedule and available slots.",
-    sessionType: "SEMINAR", sessionOrder: 3, status: "scheduled", isPublished: true, capacity: 40,
-  }});
 
   await prisma.eventSession.create({ data: {
     eventId: event.id, title: "Scientific Sessions — Day 2",
@@ -317,7 +302,10 @@ export async function seedIfpc2026(prisma: PrismaClient) {
     sessionType: "OTHER", sessionDate: d("2026-11-05"), startTime: "09:00", endTime: "17:00",
     sessionOrder: 7, status: "scheduled", isPublished: true,
   }});
-  console.log("Sessions created (incl. capacity-limited Workshop/Seminar listings).\n");
+  console.log("Sessions created.");
+
+  // Selectable programme: Audi 1-3 workshops, daily yoga, campus tour slots.
+  for (const line of await syncIfpcProgramme(prisma, event.id)) console.log(line);
 
   // Delegate feedback — sessions, workshops, overall experience
   await prisma.eventEngagement.create({ data: {
