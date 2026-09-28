@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { ArrowLeft, LifeBuoy } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import type { LucideIcon } from "lucide-react";
 import { useTenant } from "@/lib/tenant/context";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
@@ -27,6 +28,19 @@ export function DelegatePageShell({
   const accent = tenant?.theme?.primaryColor || "#2582A1";
   const home = `/t/${IFPC_TENANT_SLUG}`;
   const onHelp = usePathname()?.endsWith("/help");
+  const router = useRouter();
+  const { status } = useSession();
+  // Signed in, Back returns to the page you came from inside the app. If this
+  // page is the one the browser first loaded (a fresh tab, a scanned QR, a
+  // reload) there is no earlier in-app page — the tab's history would lead
+  // off the site, to a blank or new-tab page — so it goes to the dashboard.
+  // history.length can't tell those apart; the document's own URL can.
+  const goBack = () => {
+    const entry = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    const arrivedInApp = !!entry && new URL(entry.name).pathname !== window.location.pathname;
+    if (arrivedInApp) router.back();
+    else router.push("/dashboard");
+  };
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -45,9 +59,15 @@ export function DelegatePageShell({
                 <LifeBuoy className="h-4 w-4" /> Help
               </Link>
             )}
-            <Link href={home} className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
-              <ArrowLeft className="h-4 w-4" /> Home
-            </Link>
+            {status === "authenticated" ? (
+              <button type="button" onClick={goBack} className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
+            ) : (
+              <Link href={home} className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
+                <ArrowLeft className="h-4 w-4" /> Home
+              </Link>
+            )}
           </div>
         </div>
       </header>
