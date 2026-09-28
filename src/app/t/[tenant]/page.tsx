@@ -60,6 +60,7 @@ import { sponsorsService, Sponsor } from "@/services/sponsors";
 import { HOME as IFPC_HOME, CTA_LINKS as IFPC_CTA, CONFERENCE } from "@/content/ifpc-2026";
 import { AboutExtendedSection } from "@/components/ifpc/sections/AboutExtendedSection";
 import { IfpcAboutSection } from "@/components/ifpc/sections/IfpcAboutSection";
+import "@/components/ifpc/ifpc-hero.css";
 import { HighlightsSection } from "@/components/ifpc/sections/HighlightsSection";
 import { SpeakersSection } from "@/components/ifpc/sections/SpeakersSection";
 import { ScientificProgrammeSection } from "@/components/ifpc/sections/ScientificProgrammeSection";
@@ -508,55 +509,58 @@ interface IfpcHeroProps {
   yearlyStats?: { events?: string | number; attendees?: string | number; speakers?: string | number } | null;
 }
 
-const IFPC_STATUS_STYLE: Record<string, React.CSSProperties> = {
-  open: { background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 4px 20px rgba(16,185,129,0.4)" },
-  soon: { background: "linear-gradient(135deg, #f59e0b, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.4)" },
-  upcoming: { background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", boxShadow: "0 4px 20px rgba(29,78,216,0.4)" },
-  closed: { background: "rgba(71,85,105,0.85)" },
-};
-
 const IFPC_HOSTS = [
   { src: "/ifpc/nimhans-logo.png", alt: "NIMHANS logo", name: "NIMHANS, Bengaluru" },
   { src: "/ifpc/ranzcp-logo.png", alt: "RANZCP logo", name: "RANZCP" },
 ];
 
-// IFPC 2026 hero: conference identity first (theme, name, dates, venue, hosts);
-// the Convention Centre photo sits behind a navy wash as atmosphere only.
+// IFPC 2026 hero: conference identity first (theme, name, dates, venue, hosts)
+// over an original dusk illustration of the Convention Centre; styles in
+// src/components/ifpc/ifpc-hero.css.
 function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
   const status = nextEvent?.startDate ? ifpcRegistrationStatus(nextEvent) : null;
   const showCountdown = !!nextEvent?.startDate && new Date(nextEvent.startDate) > new Date();
 
+  // The original dusk illustration replaces the default photo; an image an
+  // admin has chosen themselves still wins.
+  const bgImage = !hero.bgImage || hero.bgImage === "/ifpc/convention-centre.jpg" ? "/ifpc/hero-convention-dusk.svg" : hero.bgImage;
+  const themeWords = CONFERENCE.theme.split(" ");
+  const themeLead = themeWords.slice(0, -1).join(" ");
+  const themeLast = themeWords[themeWords.length - 1];
+
   return (
-    <section id="hero" className="relative overflow-hidden lg:min-h-[calc(100vh-5.5rem)] flex items-center" style={{ backgroundColor: "#12112B" }}>
-      <img
-        src={hero.bgImage || "/ifpc/convention-centre.jpg"}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ objectPosition: "22% center" }}
-        loading="eager"
-      />
-      <div className="absolute inset-0" style={{ background: "linear-gradient(115deg, rgba(18,17,43,0.82) 0%, rgba(30,58,95,0.68) 48%, rgba(18,17,43,0.8) 100%)" }} />
+    <section id="hero" className="ifpc-hero relative overflow-hidden lg:min-h-[calc(100vh-5.5rem)] flex items-center">
+      <img src={bgImage} alt="" className="ifpc-hero-bg" loading="eager" />
+      <div className="ifpc-hero-shade" aria-hidden="true" />
+      <svg className="ifpc-hero-print" viewBox="0 0 200 240" fill="none" aria-hidden="true">
+        {Array.from({ length: 11 }, (_, i) => {
+          const rx = 16 + i * 8.5, ry = 20 + i * 10;
+          return <path key={i} d={`M${100 - rx},${122 + i * 1.5} C${100 - rx},${122 - ry * 1.15} ${100 + rx},${122 - ry * 1.15} ${100 + rx},${122 + i * 1.5} ${i % 3 === 1 ? "" : `S${100 + rx * 0.7},${122 + ry * 0.95} ${100 + rx * 0.2},${122 + ry}`}`} />;
+        })}
+      </svg>
+      <span className="ifpc-hero-streak ifpc-hero-streak--a" aria-hidden="true" />
+      <span className="ifpc-hero-streak ifpc-hero-streak--b" aria-hidden="true" />
+      <span className="ifpc-hero-streak ifpc-hero-streak--c" aria-hidden="true" />
+      {Array.from({ length: 6 }, (_, i) => <span key={i} className="ifpc-hero-spark" style={{ "--s": i, left: `${4 + i * 11}%`, top: `${14 + ((i * 37) % 70)}%` } as React.CSSProperties} aria-hidden="true" />)}
 
       <div className="container mx-auto px-4 lg:px-8 relative z-10 py-12 sm:py-16 lg:py-20">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-          <div className="lg:col-span-7 text-center lg:text-left hero-stagger-1">
+          <div className="lg:col-span-7 xl:col-span-6 text-center lg:text-left hero-stagger-1">
             <div className="lg:hidden mb-6 flex items-center justify-center gap-3">
               {IFPC_HOSTS.map((h) => (
-                <div key={h.src} className="h-14 w-14 sm:h-16 sm:w-16 rounded-xl bg-white p-1.5 shadow-lg flex items-center justify-center flex-none">
+                <div key={h.src} className="ifpc-hero-logo h-14 w-14 sm:h-16 sm:w-16 p-1.5 flex-none">
                   <img src={h.src} alt={h.alt} className="max-h-full max-w-full object-contain" />
                 </div>
               ))}
             </div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-400/10 px-4 py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em] text-emerald-300">
-              Conference Theme
+            <p className="ifpc-hero-chip">Conference Theme</p>
+            <p className="ifpc-hero-theme">
+              {themeLead}{themeLead && " "}<span>{themeLast}</span>
             </p>
-            <p className="mt-4 text-[40px] sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[0.95] text-emerald-300">
-              {CONFERENCE.theme}
-            </p>
-            <h1 className="mt-6 text-2xl sm:text-3xl lg:text-[40px] font-extrabold leading-[1.15] tracking-tight text-white text-balance">
+            <h1 className="ifpc-hero-name text-balance">
               International Forensic Psychiatry Conference (IFPC) 2026
             </h1>
-            <p className="mt-4 text-base lg:text-lg italic text-white/75 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+            <p className="ifpc-hero-tag">
               a global gathering advancing forensic psychiatry knowledge and practice.
             </p>
             <div className="lg:hidden mt-5 space-y-2 text-white">
@@ -564,82 +568,71 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
               <p className="flex items-center justify-center gap-2 text-base font-bold"><MapPin className="h-5 w-5 flex-none text-emerald-300" />{CONFERENCE.venueName}, {CONFERENCE.city}</p>
             </div>
 
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
-              <Link href="/events">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto rounded-full px-9 h-13 text-base font-bold transition-all hover:-translate-y-0.5 group bg-emerald-500 hover:bg-emerald-600 text-white border-0"
-                  style={{ boxShadow: "0 10px 40px rgba(16,185,129,0.35)" }}
-                >
-                  {hasEvents ? "Browse Events" : "Explore Events"}
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-5 justify-center lg:justify-start">
+              <Link href="/events" className="ifpc-hero-btn ifpc-hero-btn--primary group">
+                <Calendar className="h-5 w-5" aria-hidden="true" />
+                {hasEvents ? "Browse Events" : "Explore Events"}
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
               </Link>
-              <a href="#about">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full px-9 h-13 text-base font-semibold border-2 bg-white/5 border-white/30 text-white hover:bg-white/15 hover:text-white">
-                  Learn More
-                </Button>
+              <a href="#about" className="ifpc-hero-btn ifpc-hero-btn--ghost group">
+                Learn More
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
               </a>
             </div>
 
             {status && (
-              <div className="mt-6">
-                <span
-                  className={cn("inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-extrabold text-white", status.flash && "animate-flash")}
-                  style={IFPC_STATUS_STYLE[status.kind]}
-                >
-                  <span className="h-2.5 w-2.5 rounded-full bg-white flex-none" />
+              <div className="mt-7">
+                <span className={cn("ifpc-hero-status", `is-${status.kind}`, status.flash && "animate-flash")}>
+                  <span className="ifpc-hero-status-dot" />
                   {status.text}
                 </span>
               </div>
             )}
           </div>
 
-          <div className={cn("lg:col-span-5 hero-stagger-2", !showCountdown && "hidden lg:block")}>
-            <div className="rounded-3xl border border-white/15 bg-white/[0.07] backdrop-blur-md p-6 sm:p-8 shadow-2xl">
-              <div className="hidden lg:block">
-              <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-white/60">Hosted by</p>
-              <div className="mt-4 flex items-start justify-center gap-4 sm:gap-6">
+          <div className={cn("lg:col-span-5 xl:col-span-4 xl:col-start-9 hero-stagger-2 space-y-5", !showCountdown && "hidden lg:block")}>
+            <div className="ifpc-hero-glass hidden lg:block p-6 xl:p-7">
+              <p className="ifpc-hero-hosted">Hosted by</p>
+              <div className="mt-5 flex items-start justify-center gap-6 xl:gap-10">
                 {IFPC_HOSTS.map((h) => (
                   <div key={h.src} className="text-center">
-                    <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-white p-2.5 shadow-lg flex items-center justify-center flex-none">
+                    <div className="ifpc-hero-logo h-24 w-24 p-3 mx-auto">
                       <img src={h.src} alt={h.alt} className="max-h-full max-w-full object-contain" />
                     </div>
-                    <p className="mt-2 text-xs sm:text-sm font-semibold text-white/90">{h.name}</p>
+                    <p className="mt-3 text-sm font-bold text-white">{h.name}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="my-6 h-px bg-white/15" />
+              <div className="my-6 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
 
               <dl className="space-y-5">
                 <div className="flex items-start gap-4">
-                  <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-emerald-400/15 text-emerald-300"><Calendar className="h-5 w-5" /></span>
+                  <span className="ifpc-hero-badge"><Calendar className="h-5 w-5" /></span>
                   <div>
-                    <dt className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">Dates</dt>
-                    <dd className="text-xl sm:text-2xl font-extrabold text-white">{CONFERENCE.dates}</dd>
+                    <dt className="ifpc-hero-label">Dates</dt>
+                    <dd className="text-xl font-extrabold text-white whitespace-nowrap">{CONFERENCE.dates}</dd>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-emerald-400/15 text-emerald-300"><MapPin className="h-5 w-5" /></span>
+                  <span className="ifpc-hero-badge"><MapPin className="h-5 w-5" /></span>
                   <div>
-                    <dt className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">Venue</dt>
-                    <dd className="text-lg sm:text-xl font-extrabold leading-snug text-white">{CONFERENCE.venueName}</dd>
-                    <dd className="text-sm text-white/70">{CONFERENCE.city}, India</dd>
+                    <dt className="ifpc-hero-label">Venue</dt>
+                    <dd className="text-[17px] font-extrabold leading-snug tracking-tight text-white">{CONFERENCE.venueName}</dd>
+                    <dd className="text-sm text-white/75">{CONFERENCE.city}, India</dd>
                   </div>
                 </div>
               </dl>
-              </div>
-
-              {showCountdown && (
-                <div className="lg:mt-6 lg:border-t border-white/15 lg:pt-6 text-center">
-                  <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">Conference begins in</p>
-                  <div className="flex justify-center">
-                    <CountdownTimer targetDate={nextEvent!.startDate} theme={theme} bgDark hideSeconds />
-                  </div>
-                </div>
-              )}
             </div>
+
+            {showCountdown && (
+              <div className="ifpc-hero-glass ifpc-hero-count px-5 py-5 text-center">
+                <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-white/85">Conference begins in</p>
+                <div className="flex justify-center">
+                  <CountdownTimer targetDate={nextEvent!.startDate} theme={theme} bgDark hideSeconds />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
