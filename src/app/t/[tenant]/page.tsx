@@ -59,6 +59,7 @@ import { getEventImage, getEffectiveEventStatus } from "@/lib/event-utils";
 import { sponsorsService, Sponsor } from "@/services/sponsors";
 import { HOME as IFPC_HOME, CTA_LINKS as IFPC_CTA, CONFERENCE } from "@/content/ifpc-2026";
 import { AboutExtendedSection } from "@/components/ifpc/sections/AboutExtendedSection";
+import { IfpcAboutSection } from "@/components/ifpc/sections/IfpcAboutSection";
 import { HighlightsSection } from "@/components/ifpc/sections/HighlightsSection";
 import { SpeakersSection } from "@/components/ifpc/sections/SpeakersSection";
 import { ScientificProgrammeSection } from "@/components/ifpc/sections/ScientificProgrammeSection";
@@ -2921,7 +2922,14 @@ export default function TenantHomePage() {
       )}
 
       {/* About Section */}
-      {sections.about && (
+      {sections.about && tenantSlug === "apollo-medical" && (
+        <IfpcAboutSection
+          title={about.title}
+          description={about.description}
+          features={(about.features || []).map((f) => ({ title: f.title, description: f.description, Icon: iconMap[f.icon] || Award }))}
+        />
+      )}
+      {sections.about && tenantSlug !== "apollo-medical" && (
         <section id="about" className="py-16 lg:py-24 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%)" }} data-scroll-reveal>
           {/* Light decorative dots */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "radial-gradient(#475569 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
