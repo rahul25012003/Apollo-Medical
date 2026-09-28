@@ -233,6 +233,14 @@ export async function middleware(request: NextRequest) {
         return withCorsHeaders(NextResponse.rewrite(url), request);
       }
 
+      // Conference schedule and its printable QR poster. The printed QR
+      // encodes /schedule, so this short path must keep working.
+      if (pathname === "/schedule" || pathname.startsWith("/schedule/")) {
+        const url = request.nextUrl.clone();
+        url.pathname = `/t/${tenantSlug}${pathname}`;
+        return withCorsHeaders(NextResponse.rewrite(url), request);
+      }
+
       // For gallery pages on tenant domains
       if (pathname === "/gallery") {
         const url = request.nextUrl.clone();

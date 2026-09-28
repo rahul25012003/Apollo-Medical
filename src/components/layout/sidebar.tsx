@@ -37,6 +37,7 @@ import {
     MapPinned,
     History,
     Home,
+    CalendarClock,
 } from "lucide-react";
 import { eventsService, Event } from "@/services/events";
 
@@ -118,6 +119,16 @@ const menuItems = [
         href: "/dashboard/my-interests",
         icon: Heart,
         roles: ["ATTENDEE"] as UserRole[],
+        group: "Main",
+    },
+    {
+        // The public schedule page the printed QR codes open. Linked by its
+        // /t/ path, which resolves both at the site root and on local dev.
+        title: "Schedule",
+        ifpcOnly: true,
+        href: "/t/apollo-medical/schedule",
+        icon: CalendarClock,
+        roles: ["ATTENDEE", "ADMIN", "SUPER_ADMIN", "EVENT_MANAGER"] as UserRole[],
         group: "Main",
     },
     {

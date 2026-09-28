@@ -32,7 +32,7 @@ type IfpcWindow = Window & { __ifpcInstallPrompt?: InstallPromptEvent | null };
 const DISMISS_KEY = "ifpc-pwa-dismissed-at";
 const DISMISS_FOR_MS = 3 * 24 * 60 * 60 * 1000;
 // Full-screen tools where a floating banner would get in the way.
-const HIDDEN_ON = /\/(scan|scanner)(\/|$)|\/badge(\/|$)/;
+const HIDDEN_ON = /\/(scan|scanner)(\/|$)|\/badge(\/|$)|\/schedule\/qr(\/|$)/;
 
 function readStore(key: string) {
   try { return window.localStorage.getItem(key); } catch { return null; }
