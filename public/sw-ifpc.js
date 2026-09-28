@@ -5,7 +5,7 @@
 
 // The tenant is served at "/" in production (DEFAULT_TENANT_SLUG) and at
 // "/t/apollo-medical" locally, so the shell covers both.
-const CACHE_NAME = "ifpc-2026-v5";
+const CACHE_NAME = "ifpc-2026-v6";
 const SHELL_URL = self.registration.scope.endsWith("/t/apollo-medical")
   ? "/t/apollo-medical"
   : "/";
@@ -14,9 +14,12 @@ const APP_SHELL = [
   "/manifest-ifpc.json",
   "/manifest-ifpc-root.json",
   "/ifpc/nimhans-logo.png",
-  "/ifpc/nimhans-icon-192.png",
-  "/ifpc/nimhans-icon-512.png",
-  "/ifpc/nimhans-icon-180.png",
+  "/ifpc/ifpc-icon-192.png",
+  "/ifpc/ifpc-icon-512.png",
+  "/ifpc/ifpc-icon-180.png",
+  "/ifpc/ifpc-icon-maskable-192.png",
+  "/ifpc/ifpc-icon-maskable-512.png",
+  "/ifpc/ifpc-favicon-48.png",
   "/ifpc/ranzcp-logo.png",
   "/ifpc/convention-centre.jpg",
 ];

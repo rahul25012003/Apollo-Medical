@@ -109,7 +109,7 @@ export function PwaRegister({ global = false }: { global?: boolean }) {
       // (the raw logo file is 375x364 — not square, which iOS renders oddly).
       const appleIcon = document.createElement("link");
       appleIcon.rel = "apple-touch-icon";
-      appleIcon.href = "/ifpc/nimhans-icon-180.png";
+      appleIcon.href = "/ifpc/ifpc-icon-180.png";
       added.push(appleIcon);
       added.forEach((el) => document.head.appendChild(el));
     }

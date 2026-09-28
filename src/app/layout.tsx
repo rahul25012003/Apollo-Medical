@@ -81,7 +81,7 @@ export default async function RootLayout({
         <head>
           <link rel="manifest" href="/manifest-ifpc-root.json" />
           <meta name="theme-color" content="#1e3a5f" />
-          <link rel="apple-touch-icon" sizes="180x180" href="/ifpc/nimhans-icon-180.png" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/ifpc/ifpc-icon-180.png" />
           <script dangerouslySetInnerHTML={{ __html: CAPTURE_INSTALL_PROMPT }} />
         </head>
       )}

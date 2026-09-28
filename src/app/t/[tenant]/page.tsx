@@ -1351,12 +1351,23 @@ export default function TenantHomePage() {
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex h-16 lg:h-20 items-center justify-between">
             <Link href={`/t/${tenantSlug}`} className="flex items-center gap-2 group flex-shrink-0">
+              {tenantSlug === "apollo-medical" ? (
+                // The IFPC 2026 conference emblem, same image as the app icon.
+                <img
+                  src="/ifpc/ifpc-icon-192.png"
+                  alt="IFPC 2026 emblem"
+                  width={40}
+                  height={40}
+                  className="h-9 w-9 lg:h-10 lg:w-10 rounded-xl object-cover shadow-md ring-1 ring-slate-200 flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
+                />
+              ) : (
               <div
                 className="h-8 w-8 lg:h-9 lg:w-9 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
                 style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
               >
                 <GraduationCap className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
               </div>
+              )}
               <span className="font-bold text-sm lg:text-lg tracking-tight hidden sm:block max-w-[140px] lg:max-w-[220px] truncate">{tenantSlug === "apollo-medical" ? "IFPC" : branding.name}</span>
             </Link>
 

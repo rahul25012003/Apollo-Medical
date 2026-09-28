@@ -65,7 +65,7 @@ export async function seedIfpc2026(prisma: PrismaClient) {
       shortName: "IFPC 2026",
       tagline: "Bridging the Gap",
       // Official NIMHANS logo, sourced from forensicpsychiatry.in
-      favicon: "/ifpc/nimhans-logo.png",
+      favicon: "/ifpc/ifpc-favicon-48.png",
       email: "fpnimhans@gmail.com",
       phone: "+91 7760504068",
       address: "NIMHANS Convention Centre, Hosur Road",

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { dbToTenantConfig } from "@/lib/tenant/types";
 import { notFound } from "next/navigation";
 import { TenantLayoutClient } from "./tenant-layout-client";
@@ -65,8 +66,16 @@ export async function generateMetadata({
   return {
     title: { absolute: tenant.name },
     description: tenant.tagline || `${tenant.name} - Conference Portal`,
-    icons: tenant.favicon
-      ? [{ rel: "icon", url: tenant.favicon }]
-      : undefined,
+    // IFPC 2026 uses its conference emblem everywhere it has an icon. Set in
+    // code rather than read from the tenant row, so the live site changes with
+    // the deploy instead of waiting on a database edit.
+    icons: tenantSlug === IFPC_TENANT_SLUG
+      ? [
+          { rel: "icon", url: "/ifpc/ifpc-favicon-48.png", sizes: "48x48", type: "image/png" },
+          { rel: "apple-touch-icon", url: "/ifpc/ifpc-icon-180.png", sizes: "180x180" },
+        ]
+      : tenant.favicon
+        ? [{ rel: "icon", url: tenant.favicon }]
+        : undefined,
   };
 }
