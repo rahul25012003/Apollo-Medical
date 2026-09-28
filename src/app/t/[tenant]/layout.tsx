@@ -72,7 +72,7 @@ export async function generateMetadata({
     icons: tenantSlug === IFPC_TENANT_SLUG
       ? [
           { rel: "icon", url: "/ifpc/ifpc-favicon-48.png", sizes: "48x48", type: "image/png" },
-          { rel: "apple-touch-icon", url: "/ifpc/ifpc-icon-180.png", sizes: "180x180" },
+          { rel: "apple-touch-icon", url: "/ifpc/ifpc-app-180.png", sizes: "180x180" },
         ]
       : tenant.favicon
         ? [{ rel: "icon", url: tenant.favicon }]
