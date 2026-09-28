@@ -1,27 +1,91 @@
 /*
- * IFPC home hero: the original dusk illustration of the Convention Centre
- * under a deep-navy wash, a glowing fingerprint behind the theme, green-teal
- * light streaks and sparks, and glass panels for the hosts and countdown.
+ * IFPC home hero: the Convention Centre photo graded to dusk under a
+ * deep-navy wash, and glass panels for the hosts and countdown.
  */
 
 .ifpc-hero {
   --hero-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --teal: #2dd4bf;
-  --green: #22c55e;
   isolation: isolate;
-  background-color: #060d2a;
+  /* Dusk sky the photo rises into. */
+  background:
+    radial-gradient(45% 55% at 62% 18%, rgb(88 70 190 / 0.45), transparent 70%),
+    radial-gradient(40% 35% at 55% 62%, rgb(255 140 90 / 0.28), transparent 70%),
+    linear-gradient(180deg, #040a24 0%, #0a1442 40%, #1c1d5e 68%, #33245f 100%);
 }
 
 /* ── Scene ────────────────────────────────────────────────────────────── */
 
-.ifpc-hero-bg {
+.ifpc-hero-photo {
   position: absolute;
-  inset: 0;
   z-index: -3;
+  left: 33%;
+  bottom: 0;
+  width: 92%;
+  aspect-ratio: 1440 / 593;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 13%), linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.6) 18%, #000 36%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 13%), linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.6) 18%, #000 36%);
+  mask-composite: intersect;
+  animation: ifpc-hero-rise 1.6s var(--hero-ease) both;
+}
+@keyframes ifpc-hero-rise {
+  from { opacity: 0; translate: 0 24px; }
+}
+.ifpc-hero-photo img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 62%;
+  filter: saturate(1.12) brightness(0.8) contrast(1.08);
+}
+/* Dusk grade: indigo sky, warm ground light. */
+.ifpc-hero-photo::before,
+.ifpc-hero-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ifpc-hero-photo::before {
+  background: linear-gradient(180deg, #3b3aa8 0%, #5b56c8 35%, #b9a6e6 60%, #ffffff 80%);
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+}
+.ifpc-hero-photo::after {
+  background:
+    radial-gradient(60% 55% at 22% 62%, rgb(255 170 90 / 0.55), transparent 70%),
+    linear-gradient(180deg, transparent 50%, rgb(255 150 80 / 0.25) 75%, rgb(10 14 40 / 0.55) 100%);
+  mix-blend-mode: soft-light;
+}
+
+/* Warm light spilling from the lobby and the glass rotunda. */
+.ifpc-hero-glow {
+  position: absolute;
+  z-index: 1;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgb(255 196 120 / 0.8), rgb(255 140 60 / 0.3) 55%, transparent);
+  filter: blur(4px);
+  animation: ifpc-hero-breathe 6s ease-in-out infinite alternate;
+}
+.ifpc-hero-glow--door { left: 7%; top: 50%; width: 24%; height: 22%; }
+.ifpc-hero-glow--rotunda { left: 28%; top: 34%; width: 16%; height: 32%; animation-delay: -3s; }
+@keyframes ifpc-hero-breathe {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+.ifpc-hero-lamp {
+  position: absolute;
+  z-index: 1;
+  width: 1.6%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #fff4d6, rgb(255 200 110 / 0.75) 35%, transparent);
+  box-shadow: 0 0 26px 10px rgb(255 170 80 / 0.45);
+  mix-blend-mode: screen;
+  pointer-events: none;
 }
 
 /* Deep navy on the text side, clearing towards the building; darker floor. */
@@ -30,35 +94,11 @@
   inset: 0;
   z-index: -2;
   background:
-    linear-gradient(90deg, rgb(4 10 38 / 0.9) 0%, rgb(6 16 52 / 0.72) 26%, rgb(8 22 64 / 0.28) 44%, transparent 58%, transparent 80%, rgb(4 10 38 / 0.3) 100%),
-    linear-gradient(180deg, rgb(4 10 38 / 0.35) 0%, transparent 20%, transparent 74%, rgb(3 8 30 / 0.55) 100%);
+    linear-gradient(90deg, rgb(4 10 38 / 0.85) 0%, rgb(6 16 52 / 0.55) 26%, rgb(8 22 64 / 0.12) 42%, transparent 52%, transparent 84%, rgb(4 10 38 / 0.3) 100%),
+    linear-gradient(180deg, transparent 0%, transparent 80%, rgb(3 8 30 / 0.55) 100%);
 }
 
-/* A fingerprint whorl glowing behind the theme line. */
-.ifpc-hero-print {
-  position: absolute;
-  z-index: -1;
-  left: max(-60px, calc(50% - 780px));
-  top: 6%;
-  width: min(520px, 60vw);
-  opacity: 0.55;
-  pointer-events: none;
-  filter: drop-shadow(0 0 6px rgb(56 189 248 / 0.6));
-  -webkit-mask-image: radial-gradient(closest-side, #000 45%, transparent 100%);
-  mask-image: radial-gradient(closest-side, #000 45%, transparent 100%);
-}
-.ifpc-hero-print path {
-  stroke: rgb(56 189 248 / 0.4);
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-dasharray: 420;
-  stroke-dashoffset: 420;
-  animation: ifpc-hero-print 2.8s var(--hero-ease) forwards;
-}
-.ifpc-hero-print path:nth-child(odd) { stroke: rgb(45 212 191 / 0.34); animation-delay: 0.25s; }
-@keyframes ifpc-hero-print { to { stroke-dashoffset: 0; } }
-
-/* Light streaks sweeping up from the lower corners. */
+/* A light streak rising from the lower right corner. */
 .ifpc-hero-streak {
   position: absolute;
   z-index: -1;
@@ -70,32 +110,10 @@
   transform-origin: left center;
   animation: ifpc-hero-streak 7s ease-in-out infinite;
 }
-.ifpc-hero-streak--a { left: -8%; bottom: 16%; width: 58%; rotate: -14deg; }
-.ifpc-hero-streak--b { left: -6%; bottom: 9%; width: 46%; rotate: -9deg; height: 2px; opacity: 0.7; animation-delay: -2.5s; }
 .ifpc-hero-streak--c { right: -6%; bottom: 6%; width: 38%; rotate: -24deg; transform-origin: right center; animation-delay: -4s; }
 @keyframes ifpc-hero-streak {
   0%, 100% { opacity: 0.55; filter: brightness(0.9); }
   50% { opacity: 1; filter: brightness(1.25); }
-}
-
-/* Sparks: a few glowing points that breathe. */
-.ifpc-hero-spark {
-  --s: 0;
-  position: absolute;
-  z-index: -1;
-  width: 4px;
-  height: 4px;
-  border-radius: 999px;
-  background: #7dd3fc;
-  box-shadow: 0 0 8px 2px rgb(56 189 248 / 0.6);
-  animation: ifpc-hero-spark 4s ease-in-out infinite;
-  animation-delay: calc(var(--s) * -0.55s);
-  pointer-events: none;
-}
-.ifpc-hero-spark:nth-child(3n) { background: #86efac; box-shadow: 0 0 10px 3px rgb(34 197 94 / 0.7); }
-@keyframes ifpc-hero-spark {
-  0%, 100% { opacity: 0.2; scale: 0.6; }
-  50% { opacity: 1; scale: 1; }
 }
 
 /* ── Text side ────────────────────────────────────────────────────────── */
@@ -310,17 +328,68 @@
 }
 
 @media (max-width: 1023px) {
-  .ifpc-hero-bg { object-position: 48% 62%; }
+  .ifpc-hero-photo { left: 4vw; width: 200vw; }
   .ifpc-hero-shade {
     background:
-      linear-gradient(180deg, rgb(4 10 38 / 0.78) 0%, rgb(6 16 52 / 0.6) 55%, rgb(3 8 30 / 0.8) 100%);
+      linear-gradient(180deg, rgb(4 10 38 / 0.2) 0%, rgb(6 16 52 / 0.1) 50%, rgb(3 8 30 / 0.55) 100%);
   }
-  .ifpc-hero-print { left: 50%; translate: -50% 0; top: 2%; }
   .ifpc-hero-btn { min-height: 54px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ifpc-hero-streak, .ifpc-hero-spark, .ifpc-hero-chip::after, .ifpc-hero-status-dot { animation: none; }
-  .ifpc-hero-print path { animation: none; stroke-dashoffset: 0; }
+  .ifpc-hero-photo, .ifpc-hero-glow, .ifpc-hero-streak, .ifpc-hero-chip::after, .ifpc-hero-status-dot { animation: none; }
   .ifpc-hero-btn { transition: none; }
+}
+
+/* ── Floating glass top bar (home page header, IFPC only) ─────────────── */
+
+/* The bar floats over the hero: the header takes no height of its own. */
+.ifpc-topbar {
+  margin-bottom: -96px;
+  padding: 14px 0 0;
+  background: transparent;
+  pointer-events: none;
+}
+.ifpc-topbar-wrap {
+  padding: 0 clamp(10px, 2.2vw, 32px);
+}
+.ifpc-topbar-bar {
+  pointer-events: auto;
+  height: 72px;
+  padding: 0 12px 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.7);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.9), rgb(236 243 255 / 0.82));
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 12px 36px -14px rgb(4 10 38 / 0.55),
+    0 0 0 1px rgb(15 23 42 / 0.04);
+  backdrop-filter: blur(18px) saturate(1.4);
+}
+.ifpc-topbar-bar > a:first-child span { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: #0b1437; max-width: none; }
+.ifpc-topbar-logo {
+  background: #fff;
+  box-shadow: 0 0 0 3px #fff, 0 6px 16px -6px rgb(4 10 38 / 0.45);
+}
+.ifpc-topbar-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 999px;
+  background: linear-gradient(95deg, #0e7490 0%, #0d9488 45%, #10b981 100%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 10px 24px -10px rgb(13 148 136 / 0.8), inset 0 1px 0 rgb(255 255 255 / 0.3);
+  transition: transform 200ms var(--hero-ease, ease), box-shadow 200ms ease;
+}
+.ifpc-topbar-login:hover { transform: translateY(-1px); box-shadow: 0 14px 30px -10px rgb(13 148 136 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.3); }
+.ifpc-topbar-login:active { transform: scale(0.97); }
+.ifpc-topbar-login:focus-visible { outline: 3px solid #5eead4; outline-offset: 3px; }
+@media (max-width: 639px) {
+  .ifpc-topbar { margin-bottom: -80px; padding-top: 10px; }
+  .ifpc-topbar-bar { height: 60px; padding: 0 8px; }
+  .ifpc-topbar-login { height: 44px; padding: 0 18px; font-size: 15px; }
 }

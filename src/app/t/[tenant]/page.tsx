@@ -14,6 +14,7 @@ import {
   Users,
   Award,
   ArrowRight,
+  User,
   ArrowLeft,
   Phone,
   Mail,
@@ -515,35 +516,33 @@ const IFPC_HOSTS = [
 ];
 
 // IFPC 2026 hero: conference identity first (theme, name, dates, venue, hosts)
-// over an original dusk illustration of the Convention Centre; styles in
-// src/components/ifpc/ifpc-hero.css.
+// over the Convention Centre photo; styles in src/components/ifpc/ifpc-hero.css.
 function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
   const status = nextEvent?.startDate ? ifpcRegistrationStatus(nextEvent) : null;
   const showCountdown = !!nextEvent?.startDate && new Date(nextEvent.startDate) > new Date();
 
-  // The original dusk illustration replaces the default photo; an image an
-  // admin has chosen themselves still wins.
-  const bgImage = !hero.bgImage || hero.bgImage === "/ifpc/convention-centre.jpg" ? "/ifpc/hero-convention-dusk.svg" : hero.bgImage;
+  const bgImage = hero.bgImage || "/ifpc/convention-centre.jpg";
   const themeWords = CONFERENCE.theme.split(" ");
   const themeLead = themeWords.slice(0, -1).join(" ");
   const themeLast = themeWords[themeWords.length - 1];
 
   return (
-    <section id="hero" className="ifpc-hero relative overflow-hidden lg:min-h-[calc(100vh-5.5rem)] flex items-center">
-      <img src={bgImage} alt="" className="ifpc-hero-bg" loading="eager" />
+    <section id="hero" className="ifpc-hero relative overflow-hidden lg:min-h-screen flex items-center">
+      {/* The photo is a wide panorama with the entrance at its far left; it is
+          placed so the entrance and rotunda sit between the text and the
+          panels, graded to dusk, with warm light at the lobby and lamps. */}
+      <div className="ifpc-hero-photo" aria-hidden="true">
+        <img src={bgImage} alt="" loading="eager" />
+        <span className="ifpc-hero-glow ifpc-hero-glow--door" />
+        <span className="ifpc-hero-glow ifpc-hero-glow--rotunda" />
+        {[[28.5, 51], [25.2, 55], [31.8, 57.5], [62.8, 47]].map(([x, y], i) => (
+          <span key={i} className="ifpc-hero-lamp" style={{ left: `${x}%`, top: `${y}%` }} />
+        ))}
+      </div>
       <div className="ifpc-hero-shade" aria-hidden="true" />
-      <svg className="ifpc-hero-print" viewBox="0 0 200 240" fill="none" aria-hidden="true">
-        {Array.from({ length: 11 }, (_, i) => {
-          const rx = 16 + i * 8.5, ry = 20 + i * 10;
-          return <path key={i} d={`M${100 - rx},${122 + i * 1.5} C${100 - rx},${122 - ry * 1.15} ${100 + rx},${122 - ry * 1.15} ${100 + rx},${122 + i * 1.5} ${i % 3 === 1 ? "" : `S${100 + rx * 0.7},${122 + ry * 0.95} ${100 + rx * 0.2},${122 + ry}`}`} />;
-        })}
-      </svg>
-      <span className="ifpc-hero-streak ifpc-hero-streak--a" aria-hidden="true" />
-      <span className="ifpc-hero-streak ifpc-hero-streak--b" aria-hidden="true" />
       <span className="ifpc-hero-streak ifpc-hero-streak--c" aria-hidden="true" />
-      {Array.from({ length: 6 }, (_, i) => <span key={i} className="ifpc-hero-spark" style={{ "--s": i, left: `${4 + i * 11}%`, top: `${14 + ((i * 37) % 70)}%` } as React.CSSProperties} aria-hidden="true" />)}
 
-      <div className="container mx-auto px-4 lg:px-8 relative z-10 py-12 sm:py-16 lg:py-20">
+      <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-28 pb-12 sm:pt-32 sm:pb-16 lg:pt-36 lg:pb-20">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           <div className="lg:col-span-7 xl:col-span-6 text-center lg:text-left hero-stagger-1">
             <div className="lg:hidden mb-6 flex items-center justify-center gap-3">
@@ -1341,9 +1340,9 @@ export default function TenantHomePage() {
           tUrl={tUrl}
         />
       ) : (
-      <header className={cn("sticky top-0 z-50 transition-all duration-500", scrolled ? "bg-white/90 backdrop-blur-2xl shadow-xl shadow-slate-900/5 border-b border-slate-200/50 py-0" : "bg-white/60 backdrop-blur-xl border-b border-transparent py-1")}>
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex h-16 lg:h-20 items-center justify-between">
+      <header className={cn("sticky top-0 z-50 transition-all duration-500", tenantSlug === "apollo-medical" ? "ifpc-topbar" : scrolled ? "bg-white/90 backdrop-blur-2xl shadow-xl shadow-slate-900/5 border-b border-slate-200/50 py-0" : "bg-white/60 backdrop-blur-xl border-b border-transparent py-1")}>
+        <div className={tenantSlug === "apollo-medical" ? "ifpc-topbar-wrap" : "container mx-auto px-4 lg:px-8"}>
+          <div className={cn("flex items-center justify-between", tenantSlug === "apollo-medical" ? "ifpc-topbar-bar" : "h-16 lg:h-20")}>
             <Link href={`/t/${tenantSlug}`} className="flex items-center gap-2 group flex-shrink-0">
               {tenantSlug === "apollo-medical" ? (
                 // The IFPC 2026 conference emblem, same image as the app icon.
@@ -1352,7 +1351,7 @@ export default function TenantHomePage() {
                   alt="IFPC 2026 emblem"
                   width={40}
                   height={40}
-                  className="h-9 w-9 lg:h-10 lg:w-10 rounded-xl object-cover shadow-md ring-1 ring-slate-200 flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
+                  className="ifpc-topbar-logo h-10 w-10 lg:h-12 lg:w-12 rounded-full object-cover flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
                 />
               ) : (
               <div
@@ -1375,7 +1374,7 @@ export default function TenantHomePage() {
                 Every other tenant keeps the original nav below, untouched. */}
             {tenantSlug === "apollo-medical" && (
               <div className="hidden xl:flex flex-1 justify-center min-w-0 px-4">
-                <IfpcBottomNav groups={ifpcNavSections} placement="top" accentFrom={theme.primaryColor} accentTo={theme.secondaryColor} />
+                <IfpcBottomNav groups={ifpcNavSections} placement="top" accentFrom="#0f766e" accentTo="#22c55e" />
               </div>
             )}
 
@@ -1413,6 +1412,13 @@ export default function TenantHomePage() {
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
+              {tenantSlug === "apollo-medical" ? (
+                <Link href={tUrl('/auth/login')} className="ifpc-topbar-login group">
+                  <User className="h-4 w-4" aria-hidden="true" />
+                  Login
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                </Link>
+              ) : (
               <Link href={tUrl('/auth/login')}>
                 <Button
                   className="text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 text-xs sm:text-sm px-4 sm:px-6"
@@ -1421,6 +1427,7 @@ export default function TenantHomePage() {
                   Login
                 </Button>
               </Link>
+              )}
             </div>
           </div>
 
