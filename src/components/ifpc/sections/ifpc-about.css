@@ -240,15 +240,48 @@
 
 /* ── Feature cards ────────────────────────────────────────────────────── */
 
+@property --active {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #7c3aed;
+}
+@property --ring-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* The row's stage: a colour glow behind the cards takes the selected
+   card's accent and glides to it. */
+.ifpc-about-stage {
+  position: relative;
+  isolation: isolate;
+  transition: --active 700ms var(--ease);
+}
+.ifpc-about-stage-glow {
+  position: absolute;
+  z-index: -1;
+  top: 18%;
+  left: calc(var(--ai, 2) * 20% - 4%);
+  width: 28%;
+  height: 72%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--active) 42%, transparent), transparent);
+  filter: blur(34px);
+  pointer-events: none;
+  transition: left 700ms var(--ease);
+}
+
 .ifpc-about-cards {
+  --card-w: min(300px, 76vw);
   display: flex;
   gap: 16px;
   margin: 0 -16px;
-  padding: 22px 16px 26px;
+  padding: 26px calc(50% + 16px - var(--card-w) / 2) 34px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  scroll-padding-inline: 16px;
   scrollbar-width: none;
+  overscroll-behavior-x: contain;
 }
 .ifpc-about-cards::-webkit-scrollbar { display: none; }
 @media (min-width: 1024px) {
@@ -268,7 +301,7 @@
   isolation: isolate;
   overflow: hidden;
   display: flex;
-  flex: 0 0 min(300px, 82%);
+  flex: 0 0 var(--card-w);
   flex-direction: column;
   min-height: 360px;
   padding: 26px 24px 24px;
@@ -280,8 +313,35 @@
     0 1px 2px rgb(15 27 77 / 0.04),
     0 22px 44px -30px rgb(30 41 90 / 0.45);
   backdrop-filter: blur(14px);
-  scroll-snap-align: start;
+  scroll-snap-align: center;
+  outline: none;
   transition: translate 450ms var(--ease), scale 450ms var(--ease), box-shadow 450ms var(--ease), background 450ms var(--ease), border-color 450ms var(--ease);
+}
+
+/* Narrow screens: depth follows the swipe. --p is the card's signed distance
+   from the centre in card widths, --ap its size (both set from the scroll). */
+@media (max-width: 1023px) {
+  .ifpc-about-card {
+    backdrop-filter: none;
+    background: linear-gradient(170deg, #fff, rgb(255 255 255 / 0.86));
+    transform:
+      perspective(1100px)
+      rotateY(calc(var(--p, 0) * -18deg))
+      scale(calc(1 - min(var(--ap, 0), 1.5) * 0.1));
+    translate: 0 calc((1 - min(var(--ap, 0), 1)) * -10px);
+    opacity: calc(1 - min(var(--ap, 0), 1.5) * 0.38);
+    transform-origin: 50% 60%;
+    transition: box-shadow 450ms var(--ease), background 450ms var(--ease), border-color 450ms var(--ease);
+    cursor: pointer;
+  }
+  .ifpc-about-card.is-active { cursor: default; }
+  /* The row runs edge to edge so neighbours peek in from the screen sides. */
+  .ifpc-about-cards {
+    margin-inline: calc(50% - 50vw);
+    padding-inline: calc(50vw - var(--card-w) / 2);
+  }
+  .ifpc-about-card:focus-visible { box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 45%, transparent); }
+  .ifpc-about-stage-glow { left: 50%; translate: -50% 0; width: min(420px, 80%); }
 }
 
 /* The accent wave in the lower corner. */
@@ -314,6 +374,33 @@
   border-top: 1.5px solid color-mix(in oklab, var(--accent) 45%, #fff);
   transform: rotate(-12deg);
   opacity: 0.8;
+  transition: transform 900ms var(--ease);
+}
+
+/* Light that sweeps across a card as it is selected. */
+.ifpc-about-shine {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / 0.75) 48%, rgb(255 255 255 / 0.2) 56%, transparent 68%);
+  translate: -130% 0;
+}
+
+/* A light that runs round the selected card's edge. */
+.ifpc-about-ring {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  padding: 1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(from var(--ring-angle), transparent 0 55%, color-mix(in oklab, var(--accent) 60%, #fff) 72%, var(--accent) 80%, transparent 92%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0;
+  transition: opacity 500ms var(--ease);
 }
 
 .ifpc-about-card-top {
@@ -341,6 +428,7 @@
   transition: width 450ms var(--ease);
 }
 .ifpc-about-icon {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -362,6 +450,16 @@
   height: 34px;
   stroke-width: 1.7;
   filter: drop-shadow(0 3px 4px color-mix(in oklab, var(--accent) 35%, transparent));
+}
+/* Ripple that rings out of the icon on selection. */
+.ifpc-about-icon::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .ifpc-about-card h3 {
@@ -386,6 +484,7 @@
   width: 44px;
   height: 44px;
   margin-top: auto;
+  overflow: hidden;
   border-radius: 999px;
   border: 1.5px solid var(--accent);
   background: rgb(255 255 255 / 0.7);
@@ -394,47 +493,65 @@
 }
 .ifpc-about-arrow svg { width: 18px; height: 18px; transition: translate 350ms var(--ease); }
 
-/* Raised card: the middle one until the pointer picks another. */
-.ifpc-about-card:hover,
-.ifpc-about-cards:not(:has(.ifpc-about-card:hover)) > .ifpc-about-card:nth-child(3) {
+/* ── The selected card ────────────────────────────────────────────────── */
+
+.ifpc-about-card.is-active {
   border-color: color-mix(in oklab, var(--accent) 30%, #fff);
   background:
     radial-gradient(90% 55% at 20% 0%, color-mix(in oklab, var(--accent) 26%, #fff), transparent 75%),
-    linear-gradient(170deg, rgb(255 255 255 / 0.95), rgb(255 255 255 / 0.78));
+    linear-gradient(170deg, rgb(255 255 255 / 0.97), rgb(255 255 255 / 0.82));
   box-shadow:
     inset 0 1px 0 #fff,
     0 0 0 1px color-mix(in oklab, var(--accent) 12%, transparent),
     0 34px 60px -28px color-mix(in oklab, var(--accent) 60%, transparent);
 }
 @media (min-width: 1024px) {
-  .ifpc-about-card:hover,
-  .ifpc-about-cards:not(:has(.ifpc-about-card:hover)) > .ifpc-about-card:nth-child(3) {
-    translate: 0 -14px;
-    scale: 1.03;
-  }
+  .ifpc-about-card.is-active { translate: 0 -14px; scale: 1.03; }
 }
-.ifpc-about-card:hover .ifpc-about-icon,
-.ifpc-about-cards:not(:has(.ifpc-about-card:hover)) > .ifpc-about-card:nth-child(3) .ifpc-about-icon {
+.is-active .ifpc-about-icon {
   transform: translateY(-3px) rotate(-5deg);
   box-shadow:
     inset 0 2px 0 #fff,
     inset 0 -8px 16px color-mix(in oklab, var(--accent) 18%, transparent),
     0 20px 34px -14px color-mix(in oklab, var(--accent) 80%, transparent);
+  animation: ifpc-about-icon-pop 720ms var(--ease);
 }
-.ifpc-about-card:hover::after,
-.ifpc-about-cards:not(:has(.ifpc-about-card:hover)) > .ifpc-about-card:nth-child(3)::after {
-  transform: translate(-6%, -8%) scale(1.1);
-  opacity: 1;
-}
-.ifpc-about-card:hover .ifpc-about-num::after,
-.ifpc-about-cards:not(:has(.ifpc-about-card:hover)) > .ifpc-about-card:nth-child(3) .ifpc-about-num::after { width: 34px; }
-.ifpc-about-card:hover .ifpc-about-arrow,
-.ifpc-about-cards:not(:has(.ifpc-about-card:hover)) > .ifpc-about-card:nth-child(3) .ifpc-about-arrow {
+.is-active .ifpc-about-icon::after { animation: ifpc-about-ripple 900ms ease-out 120ms; }
+.ifpc-about-card.is-active::after { transform: translate(-6%, -8%) scale(1.12); opacity: 1; }
+.ifpc-about-card.is-active::before { transform: rotate(-18deg) translateY(-6%); }
+.is-active .ifpc-about-num::after { width: 34px; }
+.is-active .ifpc-about-arrow {
   background: var(--accent);
   color: #fff;
   box-shadow: 0 10px 20px -8px color-mix(in oklab, var(--accent) 80%, transparent);
 }
-.ifpc-about-card:hover .ifpc-about-arrow svg { translate: 3px 0; }
+.is-active .ifpc-about-arrow svg { animation: ifpc-about-arrow-in 650ms var(--ease) 180ms backwards; }
+.is-active .ifpc-about-shine { animation: ifpc-about-shine 1100ms var(--ease) 120ms; }
+.is-active .ifpc-about-ring { opacity: 1; animation: ifpc-about-ring-spin 4.5s linear infinite; }
+@media (hover: hover) {
+  .ifpc-about-card.is-active:hover .ifpc-about-arrow svg { translate: 3px 0; }
+}
+
+@keyframes ifpc-about-icon-pop {
+  0% { transform: scale(0.82) rotate(8deg); }
+  55% { transform: scale(1.14) rotate(-9deg); }
+  100% { transform: translateY(-3px) rotate(-5deg); }
+}
+@keyframes ifpc-about-ripple {
+  from { opacity: 0.75; transform: scale(0.95); }
+  to { opacity: 0; transform: scale(1.65); }
+}
+@keyframes ifpc-about-arrow-in {
+  from { translate: -22px 0; opacity: 0; }
+  to { translate: 0 0; opacity: 1; }
+}
+@keyframes ifpc-about-shine {
+  from { translate: -130% 0; }
+  to { translate: 130% 0; }
+}
+@keyframes ifpc-about-ring-spin {
+  to { --ring-angle: 360deg; }
+}
 
 /* ── Swipe hint and dots (narrow screens) ─────────────────────────────── */
 
@@ -486,25 +603,33 @@
   70% { opacity: 0; transform: translateY(7px); }
   100% { opacity: 0; transform: translateY(0); }
 }
-.ifpc-about-dots { display: flex; align-items: center; gap: 6px; }
-.ifpc-about-dots button {
+.ifpc-about-dots { display: flex; align-items: center; gap: 7px; }
+/* The site's touch rule (min 44px buttons) would turn these into big
+   circles; each dot keeps a large invisible tap area via ::before instead. */
+.ifpc-about .ifpc-about-dots button {
   position: relative;
   width: 8px;
   height: 8px;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: #c7d2fe;
-  transition: width 350ms var(--ease), background-color 350ms var(--ease);
+  background: color-mix(in oklab, var(--c) 28%, #fff);
+  transition: width 450ms var(--ease), background-color 450ms var(--ease), box-shadow 450ms var(--ease);
 }
 /* Bigger touch target without a bigger dot. */
 .ifpc-about-dots button::before {
   content: "";
   position: absolute;
-  inset: -10px -4px;
+  inset: -12px -4px;
 }
 .ifpc-about-dots button::after { display: none; }
-.ifpc-about-dots button[aria-current="true"] { width: 22px; background: #3b82f6; }
+.ifpc-about .ifpc-about-dots button[aria-current="true"] {
+  width: 28px;
+  background: linear-gradient(90deg, var(--c), color-mix(in oklab, var(--c) 60%, #fff));
+  box-shadow: 0 0 12px color-mix(in oklab, var(--c) 60%, transparent);
+}
 
 /* ── Entrance ─────────────────────────────────────────────────────────── */
 
@@ -521,9 +646,10 @@
 .ifpc-about.is-in .ifpc-about-art-net path { animation: ifpc-about-draw 1800ms var(--ease) 600ms forwards; }
 .ifpc-about.is-in .ifpc-about-art-net circle { animation: ifpc-about-fade 600ms var(--ease) 1600ms forwards; }
 
+/* No "to": each element rises into its own resting state (for swiped
+   cards, that includes their depth). */
 @keyframes ifpc-about-rise {
   from { opacity: 0; transform: translateY(28px); }
-  to { opacity: 1; transform: none; }
 }
 @keyframes ifpc-about-pop {
   from { opacity: 0; transform: scale(0.9); }
@@ -553,6 +679,6 @@
   .ifpc-about .ifpc-about-card { opacity: 1; }
   .ifpc-about-art-net path { stroke-dashoffset: 0; }
   .ifpc-about-art-net circle { opacity: 1; }
-  .ifpc-about-card:hover,
-  .ifpc-about-cards:not(:has(.ifpc-about-card:hover)) > .ifpc-about-card:nth-child(3) { translate: none; scale: none; }
+  .ifpc-about .ifpc-about-card { transform: none; translate: none; scale: none; }
+  .ifpc-about-shine { display: none; }
 }
