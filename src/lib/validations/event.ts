@@ -112,7 +112,21 @@ export const createEventSchema = z.object({
   pricingCategories: z.array(pricingCategorySchema).optional(),
 });
 
-export const updateEventSchema = createEventSchema.partial();
+// Updates must only touch the fields that were sent. `.partial()` alone is not
+// enough: in Zod 4 an optional field that has a `.default()` still produces the
+// default when absent, so a body of just { registrationDeadline } came back
+// with isPublished=false, status=DRAFT, capacity=100, timezone=UTC… and the
+// handler wrote all of it. Strip the top-level defaults, then make everything
+// optional. (Defaults nested inside a supplied pricing category still apply —
+// those describe a new row, which is what they are for.)
+export const updateEventSchema = z.object(
+  Object.fromEntries(
+    Object.entries(createEventSchema.shape).map(([key, field]) => [
+      key,
+      (field instanceof z.ZodDefault ? field.unwrap() : field).optional(),
+    ])
+  )
+) as unknown as ReturnType<typeof createEventSchema.partial>;
 
 export const eventQuerySchema = z.object({
   page: z.string().optional(),
