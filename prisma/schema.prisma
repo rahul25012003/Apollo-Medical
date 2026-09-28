@@ -519,6 +519,7 @@ model Event {
   quizzes              Quiz[]
   pricingCategories    EventPricing[]
   engagements          EventEngagement[]
+  delegateFeedback     DelegateFeedback[]
   halls                EventHall[]
   zones                EventZone[]
   scanLogs             ScanLog[]
@@ -1308,4 +1309,29 @@ model ActivityLog {
   @@index([tenantId, createdAt])
   @@index([entityType, entityId])
   @@map("activity_logs")
+}
+
+// IFPC structured feedback: one row per delegate per rated thing.
+//   kind "food":       key "<YYYY-MM-DD>:lunch|dinner", vegRating / nonVegRating
+//   kind "workshop":   key = EventSession id, rating + comment
+//   kind "scientific": key "plenary-1".."plenary-4", "session-1", "session-2", rating + comment
+// Submitted once; the unique key makes a second submission a no-op.
+model DelegateFeedback {
+  id           String   @id @default(cuid())
+  eventId      String
+  email        String
+  name         String?
+  kind         String
+  key          String
+  vegRating    Int?
+  nonVegRating Int?
+  rating       Int?
+  comment      String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, email, kind, key])
+  @@index([eventId, kind])
+  @@map("delegate_feedback")
 }

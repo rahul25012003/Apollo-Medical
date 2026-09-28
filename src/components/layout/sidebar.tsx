@@ -230,6 +230,14 @@ const menuItems = [
         group: "Management",
     },
     {
+        title: "Feedback Results",
+        ifpcOnly: true,
+        href: "/dashboard/feedback-results",
+        icon: BarChart3,
+        roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
+        group: "Management",
+    },
+    {
         title: "Food Menu",
         ifpcOnly: true,
         href: "/dashboard/food-menu",
