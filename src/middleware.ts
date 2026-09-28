@@ -235,7 +235,7 @@ export async function middleware(request: NextRequest) {
 
       // At-the-venue delegate pages, served at the root. The printed QR
       // encodes /schedule, so these short paths must keep working.
-      if (["/schedule", "/route-map", "/help"].some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+      if (["/schedule", "/route-map", "/help", "/food-menu"].some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
         const url = request.nextUrl.clone();
         url.pathname = `/t/${tenantSlug}${pathname}`;
         return withCorsHeaders(NextResponse.rewrite(url), request);

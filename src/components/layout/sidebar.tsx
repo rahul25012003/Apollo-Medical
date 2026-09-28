@@ -40,6 +40,7 @@ import {
     CalendarClock,
     Map as MapIcon,
     LifeBuoy,
+    UtensilsCrossed,
 } from "lucide-react";
 import { eventsService, Event } from "@/services/events";
 
@@ -150,6 +151,14 @@ const menuItems = [
         group: "Main",
     },
     {
+        title: "Food Menu",
+        ifpcOnly: true,
+        href: "/t/apollo-medical/food-menu",
+        icon: UtensilsCrossed,
+        roles: ["ATTENDEE"] as UserRole[],
+        group: "Main",
+    },
+    {
         title: "Campus Tour",
         ifpcOnly: true,
         href: "/dashboard/campus-tour",
@@ -217,6 +226,14 @@ const menuItems = [
         title: "Reports",
         href: "/dashboard/reports",
         icon: BarChart3,
+        roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
+        group: "Management",
+    },
+    {
+        title: "Food Menu",
+        ifpcOnly: true,
+        href: "/dashboard/food-menu",
+        icon: UtensilsCrossed,
         roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER"] as UserRole[],
         group: "Management",
     },

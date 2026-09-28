@@ -150,6 +150,10 @@ export interface TenantSettings {
   defaultTimezone: string;
 }
 
+/** IFPC daily menus: lunch and dinner, each split into veg and non-veg. */
+export type FoodMeal = { veg: string[]; nonVeg: string[]; link?: string };
+export type FoodMenus = { days: { date: string; lunch: FoodMeal; dinner: FoodMeal }[] };
+
 export interface TenantConfig {
   id: string;
   slug: string;
@@ -181,6 +185,7 @@ export interface TenantConfig {
   researchItems?: ResearchItem[];
   /** IFPC: admin-editable campus points/routes; undefined = use built-in defaults */
   campusLocations?: { points: { id: string; label: string; note?: string; address?: string; mapUrl?: string }[]; routes?: { from: string; to: string; note?: string }[] };
+  foodMenus?: FoodMenus;
 
   // Settings
   settings: TenantSettings;
@@ -232,6 +237,7 @@ export interface TenantModel {
   faqs: unknown | null; // JSON
   researchItems: unknown | null; // JSON
   campusLocations: unknown | null; // JSON
+  foodMenus?: unknown | null; // JSON
   footerText: string | null;
   copyrightText: string | null;
   isActive: boolean;
@@ -329,6 +335,7 @@ export function dbToTenantConfig(tenant: TenantModel): TenantConfig {
     faqs: (tenant.faqs as FAQItem[]) || undefined,
     researchItems: (tenant.researchItems as ResearchItem[]) || undefined,
     campusLocations: (tenant.campusLocations as TenantConfig["campusLocations"]) || undefined,
+    foodMenus: (tenant.foodMenus as FoodMenus | null) || undefined,
 
     footer: {
       text: tenant.footerText || undefined,

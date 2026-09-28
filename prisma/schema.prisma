@@ -193,6 +193,7 @@ model Tenant {
   // Location & Directions (IFPC): {points: [{id,label,note,address,mapUrl}], routes: [{from,to,note}]}.
   // Null = use the built-in defaults from src/content/ifpc-2026.ts.
   campusLocations   Json?
+  foodMenus         Json?              // IFPC: {days:[{date, lunch:{veg[], nonVeg[], link}, dinner:{...}}]}
 
   // Ongoing Research Config
   researchItems     Json?              // Array of [{id, icon, title, description, status}]
