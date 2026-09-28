@@ -5,7 +5,8 @@ import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { format, parseISO } from "date-fns";
-import { CalendarDays, Clock, MapPin, CheckCircle2, QrCode, LogIn, ArrowLeft, Loader2 } from "lucide-react";
+import { CalendarDays, Clock, MapPin, CheckCircle2, QrCode, LogIn, Loader2, Map as MapIcon } from "lucide-react";
+import { DelegatePageShell } from "@/components/ifpc/DelegatePageShell";
 import { useTenant } from "@/lib/tenant/context";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { conferenceDay, eoiCategoryOf, eoiRule } from "@/lib/ifpc-eoi";
@@ -83,34 +84,22 @@ export default function SchedulePage() {
   const isAdmin = signedIn && ADMIN_ROLES.has((auth?.user as { role?: string } | undefined)?.role ?? "");
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4">
-          <Link href={`/t/${tenantSlug}`} className="flex min-w-0 items-center gap-2.5">
-            <img src="/ifpc/ifpc-icon-192.png" alt="" width={36} height={36} className="h-9 w-9 rounded-lg object-cover ring-1 ring-slate-200" />
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-bold text-slate-900">IFPC 2026</span>
-              <span className="block text-xs text-slate-500">Conference schedule</span>
-            </span>
+    <DelegatePageShell
+      title="Schedule"
+      icon={CalendarDays}
+      actions={
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/t/${tenantSlug}/route-map`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <MapIcon className="h-4 w-4" /> Route map
           </Link>
-          <Link href={`/t/${tenantSlug}`} className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
-            <ArrowLeft className="h-4 w-4" /> Home
-          </Link>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl px-4 pb-16 pt-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-            <CalendarDays className="h-5 w-5" style={{ color: accent }} /> Schedule
-          </h1>
           {isAdmin && (
             <Link href={`/t/${tenantSlug}/schedule/qr`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
               <QrCode className="h-4 w-4" /> Print QR poster
             </Link>
           )}
         </div>
-
+      }
+    >
         {loading ? (
           <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
         ) : days.length === 0 ? (
@@ -211,7 +200,6 @@ export default function SchedulePage() {
             )}
           </>
         )}
-      </main>
-    </div>
+    </DelegatePageShell>
   );
 }

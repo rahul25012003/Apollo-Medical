@@ -187,7 +187,7 @@ export const HIGHLIGHTS = {
     title: "Delegate Experience",
     items: [
       { title: "NIMHANS Campus Tour", text: "A guided tour of the historic NIMHANS campus, showcasing its legacy and state-of-the-art clinical, academic, and research facilities." },
-      { title: "Morning Yoga Sessions", text: "Complimentary sessions offered daily by the Department of Integrative Medicine, NIMHANS, from 6:30 AM to 7:30 AM throughout the conference." },
+      { title: "Morning Yoga Sessions", text: "Complimentary sessions by the Department of Integrative Medicine, NIMHANS, from 7:00 AM to 8:00 AM on Day 2, Day 3 and Day 4 (3–5 November). Sign up for any or all of them from your dashboard." },
       { title: "Two-Day Cultural Programme", text: "Included with delegate registration." },
       { title: "Networking Dinner & Official Conference Dinners", text: "Two official dinners included with registration, offering informal networking with peers." },
       { title: "Awards", text: "Prizes for Best Oral Presentation and Best ePoster announced at the Closing Ceremony." },
@@ -571,7 +571,7 @@ export const CAMPUS_POINTS = {
   },
   yogaCentre: {
     label: "Yoga Hall — Dept. of Integrative Medicine",
-    note: "Daily 6:30–7:30 AM morning yoga, offered by the Department of Integrative Medicine.",
+    note: "Morning yoga, 7:00–8:00 AM on Day 2, 3 and 4 (3–5 November), offered by the Department of Integrative Medicine.",
     address: "NIMHANS Integrated Centre for Yoga (NICY), NIMHANS, Hombegowda Nagar, Bengaluru, Karnataka 560029",
     mapUrl: "https://maps.google.com/?cid=759596108814515556",
   },

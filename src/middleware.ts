@@ -233,9 +233,9 @@ export async function middleware(request: NextRequest) {
         return withCorsHeaders(NextResponse.rewrite(url), request);
       }
 
-      // Conference schedule and its printable QR poster. The printed QR
-      // encodes /schedule, so this short path must keep working.
-      if (pathname === "/schedule" || pathname.startsWith("/schedule/")) {
+      // At-the-venue delegate pages, served at the root. The printed QR
+      // encodes /schedule, so these short paths must keep working.
+      if (["/schedule", "/route-map"].some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
         const url = request.nextUrl.clone();
         url.pathname = `/t/${tenantSlug}${pathname}`;
         return withCorsHeaders(NextResponse.rewrite(url), request);
