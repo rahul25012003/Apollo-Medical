@@ -1,14 +1,19 @@
-import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
+import { Section } from "@/components/ifpc/IfpcShell";
+import { Reveal } from "@/components/ifpc/design/Reveal";
+import "./ifpc-bridges.css";
 import { ABOUT } from "@/content/ifpc-2026";
 
-/** An arch bridge spanning the gap between the two sides of each theme pair. */
-function BridgeGlyph({ color }: { color: string }) {
+/** An arch bridge spanning the gap between the two sides of each theme pair;
+ *  a light runs across it when the card is hovered or focused. */
+function BridgeGlyph() {
   return (
-    <svg viewBox="0 0 56 28" className="h-7 w-14 flex-none" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-      <path d="M2 21h52" />
-      <path d="M7 21C15 5 41 5 49 21" />
-      <path d="M17 21v-8.5M28 21v-12M39 21v-8.5" strokeWidth="1.6" />
-      <path d="M2 21v5M54 21v5" />
+    <svg viewBox="0 0 120 44" className="ifpc-bridge-glyph" fill="none" aria-hidden="true">
+      <path className="ifpc-bridge-deck" d="M4 34h112" />
+      <path className="ifpc-bridge-arch" d="M14 34C32 6 88 6 106 34" />
+      <path className="ifpc-bridge-hangers" d="M32 34v-15M46 34v-20.5M60 34v-22.5M74 34v-20.5M88 34v-15" />
+      <path className="ifpc-bridge-light" d="M14 34C32 6 88 6 106 34" />
+      <circle className="ifpc-bridge-end" cx="4" cy="34" r="3" />
+      <circle className="ifpc-bridge-end" cx="116" cy="34" r="3" />
     </svg>
   );
 }
@@ -21,31 +26,34 @@ function BridgeGlyph({ color }: { color: string }) {
 export function AboutExtendedSection() {
   return (
     <>
-      <Section tint>
-        <SectionTitle title="The Theme Invites Dialogue That Bridges" />
-        <div className="grid sm:grid-cols-2 gap-4 sm:[&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:mx-auto sm:[&>*:last-child:nth-child(odd)]:w-[calc(50%-0.5rem)]">
-          {ABOUT.theme.bridges.map((b, i) => {
-            const [pair, ...rest] = b.split(" — ");
-            const [left, right] = pair.split(" and ");
-            return (
-              <div key={i} className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 sm:p-5">
-                {right ? (
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">
-                    <span className="text-right text-sm font-bold leading-snug text-[#1e3a5f]">{left}<span className="sr-only"> and </span></span>
-                    <BridgeGlyph color={i % 2 ? "#1e3a5f" : "#4B2FE5"} />
-                    <span className="text-left text-sm font-bold leading-snug text-[#1e3a5f]">{right}</span>
-                  </div>
-                ) : (
-                  <p className="text-sm font-bold text-[#1e3a5f]">{pair}</p>
-                )}
-                {rest.length > 0 && (
-                  <p className="mt-3 border-t border-slate-100 pt-3 text-center text-sm leading-relaxed opacity-70">{rest.join(" — ")}</p>
-                )}
-              </div>
-            );
-          })}
+      <section className="ifpc-v2 ifpc-bridges">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <Reveal>
+            <h2 className="ifpc-bridges-title">The Theme Invites Dialogue That <span>Bridges</span></h2>
+          </Reveal>
+          <div className="ifpc-bridges-grid">
+            {ABOUT.theme.bridges.map((b, i) => {
+              const [pair, ...rest] = b.split(" — ");
+              const [left, right] = pair.split(" and ");
+              return (
+                <Reveal key={i} delayMs={(i % 3) * 90} className="ifpc-bridge-card">
+                  <span className="ifpc-bridge-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                  {right ? (
+                    <div className="ifpc-bridge-pair">
+                      <span className="ifpc-bridge-left">{left}<span className="sr-only"> and </span></span>
+                      <BridgeGlyph />
+                      <span className="ifpc-bridge-right">{right}</span>
+                    </div>
+                  ) : (
+                    <p className="ifpc-bridge-left">{pair}</p>
+                  )}
+                  {rest.length > 0 && <p className="ifpc-bridge-desc">{rest.join(" — ")}</p>}
+                </Reveal>
+              );
+            })}
+          </div>
         </div>
-      </Section>
+      </section>
 
       <Section>
         <div className="flex items-center gap-4 mb-8">

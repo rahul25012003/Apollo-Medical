@@ -62,6 +62,7 @@ import { HOME as IFPC_HOME, CTA_LINKS as IFPC_CTA, CONFERENCE } from "@/content/
 import { AboutExtendedSection } from "@/components/ifpc/sections/AboutExtendedSection";
 import { IfpcAboutSection } from "@/components/ifpc/sections/IfpcAboutSection";
 import "@/components/ifpc/ifpc-hero.css";
+import "@/components/ifpc/ifpc-theme.css";
 import { HighlightsSection } from "@/components/ifpc/sections/HighlightsSection";
 import { SpeakersSection } from "@/components/ifpc/sections/SpeakersSection";
 import { ScientificProgrammeSection } from "@/components/ifpc/sections/ScientificProgrammeSection";
@@ -74,7 +75,6 @@ import { OrganisingCommitteeSection } from "@/components/ifpc/sections/Organisin
 import { FeedbackSection } from "@/components/ifpc/sections/FeedbackSection";
 import { PwaRegister } from "@/components/ifpc/PwaRegister";
 import { Reveal } from "@/components/ifpc/design/Reveal";
-import { Swirl, Blob } from "@/components/ifpc/design/Decor";
 import "@/components/ifpc/design/tokens.css";
 
 // IFPC 2026 visual redesign ("v2"): reverted — the site renders with the
@@ -3052,9 +3052,8 @@ export default function TenantHomePage() {
       {/* "Bridging the Gap" — IFPC 2026 (apollo-medical) only: announcements,
           theme, host institutions, closing CTA. No other tenant is affected. */}
       {tenantSlug === "apollo-medical" && (
-        <section className="ifpc-v2 relative overflow-hidden py-16 lg:py-24 bg-white">
-          <Blob className="-top-20 -right-20" color="#1e3a5f" />
-          <div className="container mx-auto px-4 lg:px-8 max-w-5xl relative z-10">
+        <section className="ifpc-v2 ifpc-theme-section relative overflow-hidden py-16 lg:py-28">
+          <div className="container mx-auto px-4 lg:px-8 max-w-6xl relative z-10">
             {ifpcAnnouncements.length > 0 && (
               <Reveal className="ifpc-v2 v2-card mb-12 p-5 lg:p-6" style={{ background: "#FFF7DB" }}>
                 <div className="flex items-center gap-2 mb-3">
@@ -3072,23 +3071,48 @@ export default function TenantHomePage() {
               </Reveal>
             )}
 
-            <div className="space-y-4 max-w-3xl mx-auto mb-14">
-              {IFPC_HOME.theme.paragraphs.map((p, i) => (
-                <p key={i} className="opacity-70 leading-relaxed text-center lg:text-left">{p}</p>
-              ))}
-            </div>
+            {/* The theme, as two cards joined by a bridge of light. */}
+            <Reveal className="ifpc-theme mb-16 lg:mb-20">
+              <span className="ifpc-theme-quote" aria-hidden="true">&ldquo;</span>
+              <svg className="ifpc-theme-bridge" viewBox="0 0 1000 140" preserveAspectRatio="none" fill="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="ifpcBridge" x1="0" x2="1">
+                    <stop offset="0" stopColor="#14b8a6" />
+                    <stop offset=".5" stopColor="#22c55e" />
+                    <stop offset="1" stopColor="#06b6d4" />
+                  </linearGradient>
+                </defs>
+                <path className="ifpc-theme-bridge-glow" d="M250,132 C390,8 610,8 750,132" />
+                <path className="ifpc-theme-bridge-line" d="M250,132 C390,8 610,8 750,132" />
+              </svg>
+              <div className="ifpc-theme-cols">
+                {IFPC_HOME.theme.paragraphs.map((p, i) => (
+                  <div key={i} className="ifpc-theme-card" style={{ "--i": i } as React.CSSProperties}>
+                    <span className="ifpc-theme-pin" aria-hidden="true" />
+                    <p>{p}</p>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
 
-            <Reveal className="ifpc-v2 relative overflow-hidden rounded-[28px] text-center py-14 px-6" style={{ background: "#CCFF33" }}>
-              <Swirl className="absolute -bottom-10 -left-10 opacity-40" stroke="#0a0a0a" />
-              <h3 className="text-[#0a0a0a] text-2xl lg:text-3xl font-extrabold mb-3 relative z-10">{IFPC_HOME.closing.title}</h3>
-              <p className="text-[#0a0a0a]/80 max-w-xl mx-auto mb-8 relative z-10">{IFPC_HOME.closing.text}</p>
-              <div className="flex flex-wrap items-center justify-center gap-3 relative z-10">
-                <a href="#registration">
-                  <Button size="lg" className="v2-btn-dark rounded-full h-12 px-8">{IFPC_CTA.registerNow.label}</Button>
-                </a>
-                <a href="#programme">
-                  <Button size="lg" variant="outline" className="v2-btn-outline-dark rounded-full h-12 px-8">{IFPC_CTA.viewProgramme.label}</Button>
-                </a>
+            {/* Closing call: the venue at dusk behind glass. */}
+            <Reveal className="ifpc-cta">
+              <img src="/ifpc/convention-centre.jpg" alt="" className="ifpc-cta-photo" loading="lazy" decoding="async" />
+              <span className="ifpc-cta-shade" aria-hidden="true" />
+              <span className="ifpc-cta-ring" aria-hidden="true" />
+              <div className="relative z-10 text-center px-6 py-16 sm:py-20">
+                <h3 className="ifpc-cta-title">{IFPC_HOME.closing.title}</h3>
+                <p className="ifpc-cta-text">{IFPC_HOME.closing.text}</p>
+                <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                  <a href="#registration" className="ifpc-hero-btn ifpc-hero-btn--primary group w-full sm:w-auto">
+                    {IFPC_CTA.registerNow.label}
+                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                  </a>
+                  <a href="#programme" className="ifpc-hero-btn ifpc-hero-btn--ghost group w-full sm:w-auto">
+                    {IFPC_CTA.viewProgramme.label}
+                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                  </a>
+                </div>
               </div>
             </Reveal>
           </div>

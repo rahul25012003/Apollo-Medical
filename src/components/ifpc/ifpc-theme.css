@@ -1,0 +1,218 @@
+/*
+ * IFPC home, after About: the conference theme as two cards joined by a
+ * bridge of light, then the closing call over the venue at dusk.
+ * Entrance effects key off Reveal's .v2-in.
+ */
+
+.ifpc-theme-section {
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  background:
+    radial-gradient(40% 50% at 12% 20%, rgb(20 184 166 / 0.08), transparent 70%),
+    radial-gradient(40% 50% at 88% 30%, rgb(34 197 94 / 0.07), transparent 70%),
+    linear-gradient(180deg, #f8faff 0%, #ffffff 45%, #f4f7fb 100%);
+}
+
+/* ── The theme ────────────────────────────────────────────────────────── */
+
+.ifpc-theme {
+  position: relative;
+  padding-top: 122px;
+}
+.ifpc-theme-quote {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  translate: -50% 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 220px;
+  line-height: 1;
+  color: #14b8a6;
+  opacity: 0.1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* The arc spans from the first card's centre to the second's. */
+.ifpc-theme-bridge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 130px;
+  overflow: visible;
+  pointer-events: none;
+}
+.ifpc-theme-bridge path {
+  stroke-linecap: round;
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  vector-effect: non-scaling-stroke;
+}
+.ifpc-theme-bridge-line { stroke: url(#ifpcBridge); stroke-width: 3; }
+.ifpc-theme-bridge-glow { stroke: #2dd4bf; stroke-width: 10; opacity: 0.18; filter: blur(4px); }
+.v2-in .ifpc-theme-bridge path { animation: ifpc-theme-draw 1.8s var(--ease) 0.35s forwards; }
+@keyframes ifpc-theme-draw { to { stroke-dashoffset: 0; } }
+
+.ifpc-theme-cols {
+  display: grid;
+  gap: 24px;
+}
+@media (min-width: 768px) {
+  .ifpc-theme-cols { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+
+.ifpc-theme-card {
+  position: relative;
+  padding: 40px 32px 32px;
+  border-radius: 28px;
+  border: 1px solid rgb(15 23 42 / 0.06);
+  background: linear-gradient(170deg, rgb(255 255 255 / 0.95), rgb(255 255 255 / 0.8));
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 24px 50px -30px rgb(15 40 80 / 0.35);
+  backdrop-filter: blur(10px);
+  transition: translate 450ms var(--ease), box-shadow 450ms var(--ease);
+}
+.ifpc-theme-card:hover {
+  translate: 0 -4px;
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 32px 60px -30px rgb(13 148 136 / 0.45);
+}
+/* Where the bridge lands on each card. */
+.ifpc-theme-pin {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid #14b8a6;
+  box-shadow: 0 0 0 5px rgb(20 184 166 / 0.14), 0 0 16px rgb(20 184 166 / 0.5);
+}
+.ifpc-theme-card:nth-child(2) .ifpc-theme-pin { border-color: #06b6d4; box-shadow: 0 0 0 5px rgb(6 182 212 / 0.14), 0 0 16px rgb(6 182 212 / 0.5); }
+.ifpc-theme-card p {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.85;
+  color: #334155;
+}
+.ifpc-theme-card:first-child p::first-line { font-weight: 600; color: #0f172a; }
+
+.ifpc-theme .ifpc-theme-card { opacity: 0; translate: 0 26px; }
+.ifpc-theme.v2-in .ifpc-theme-card {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 800ms var(--ease) calc(var(--i) * 140ms + 100ms), translate 800ms var(--ease) calc(var(--i) * 140ms + 100ms), box-shadow 450ms var(--ease);
+}
+.ifpc-theme.v2-in .ifpc-theme-card:hover { translate: 0 -4px; transition-delay: 0s; }
+
+@media (max-width: 767px) {
+  .ifpc-theme { padding-top: 12px; }
+  .ifpc-theme-bridge { display: none; }
+  .ifpc-theme-quote { font-size: 150px; top: -46px; }
+  .ifpc-theme-card { padding: 34px 22px 24px; }
+  .ifpc-theme-card p { font-size: 15.5px; }
+  /* The link between the stacked cards. */
+  .ifpc-theme-card + .ifpc-theme-card::after {
+    content: "";
+    position: absolute;
+    top: -26px;
+    left: 50%;
+    width: 2px;
+    height: 18px;
+    margin-left: -1px;
+    background: linear-gradient(180deg, #22c55e, #06b6d4);
+  }
+}
+
+/* ── Closing call ─────────────────────────────────────────────────────── */
+
+.ifpc-cta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 32px;
+  background: #07102e;
+  box-shadow: 0 40px 80px -40px rgb(4 10 38 / 0.8);
+}
+.ifpc-cta-photo {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 20% 58%;
+  filter: saturate(1.1) brightness(0.72) contrast(1.08);
+  scale: 1.04;
+  transition: scale 1.6s var(--ease, ease);
+}
+.ifpc-cta:hover .ifpc-cta-photo { scale: 1.09; }
+/* Dusk grade, darker at the centre so the words stand out. */
+.ifpc-cta-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(60% 80% at 50% 50%, rgb(4 10 38 / 0.72), rgb(4 10 38 / 0.35) 75%),
+    linear-gradient(180deg, rgb(40 40 140 / 0.55) 0%, rgb(20 25 80 / 0.35) 50%, rgb(255 140 80 / 0.18) 100%);
+}
+/* Light running round the edge. */
+@property --cta-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.ifpc-cta-ring {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  padding: 1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(from var(--cta-angle), transparent 0 60%, rgb(45 212 191 / 0.9) 75%, rgb(34 197 94) 82%, transparent 92%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: ifpc-cta-spin 7s linear infinite;
+}
+@keyframes ifpc-cta-spin { to { --cta-angle: 360deg; } }
+
+.ifpc-cta-title {
+  margin: 0 auto;
+  max-width: 22ch;
+  font-size: clamp(30px, 4vw, 52px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-shadow: 0 6px 30px rgb(0 0 0 / 0.4);
+}
+.ifpc-cta-text {
+  margin: 16px auto 0;
+  max-width: 36rem;
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.6;
+  color: rgb(255 255 255 / 0.85);
+}
+
+.ifpc-cta .relative > * { opacity: 0; translate: 0 18px; }
+.ifpc-cta.v2-in .relative > * {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 800ms var(--ease, ease), translate 800ms var(--ease, ease);
+}
+.ifpc-cta.v2-in .relative > :nth-child(2) { transition-delay: 120ms; }
+.ifpc-cta.v2-in .relative > :nth-child(3) { transition-delay: 240ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-theme-bridge path { animation: none !important; stroke-dashoffset: 0; }
+  .ifpc-theme .ifpc-theme-card, .ifpc-cta .relative > * { opacity: 1; translate: none; transition: none; }
+  .ifpc-cta-ring { animation: none; }
+  .ifpc-cta-photo { transition: none; }
+}
