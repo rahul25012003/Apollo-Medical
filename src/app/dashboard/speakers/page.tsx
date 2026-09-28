@@ -53,6 +53,8 @@ import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { speakersService, Speaker } from "@/services/speakers";
 import { useConfirmDialog, useAlertDialog } from "@/components/ui/confirm-dialog";
 import { useTenantFilter } from "@/hooks/use-tenant-filter";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
+import { IfpcCard } from "@/components/ifpc/IfpcCard";
 
 // Display speaker type
 interface DisplaySpeaker {
@@ -81,6 +83,7 @@ interface DisplaySpeaker {
 
 export default function SpeakersPage() {
     const { tenantFilterParams, effectiveTenantId, sessionLoading } = useTenantFilter();
+    const { isIfpc } = useIsIfpcDashboard();
     const [speakers, setSpeakers] = useState<DisplaySpeaker[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -845,31 +848,10 @@ export default function SpeakersPage() {
                         </Tabs>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filteredSpeakers.map((speaker, index) => (
-                                <div
-                                    key={speaker.id}
-                                    className="card-premium rounded-xl overflow-hidden animate-fadeIn hover:shadow-xl hover:-translate-y-1 hover:border-teal-200/30 transition-all duration-400"
-                                    style={{ animationDelay: `${index * 0.05}s` }}
-                                >
-                                    <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500" />
-                                    <div className="p-4">
-                                    <div className="flex items-start gap-3">
-                                        <Avatar className="h-14 w-14 ring-2 ring-white shadow-md">
-                                            <AvatarImage src={speaker.photo || undefined} />
-                                            <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                                                {getInitials(speaker.name)}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="flex-1 min-w-0">
-                                                    <h3 className="font-semibold truncate">{speaker.name}</h3>
-                                                    <p className="text-sm text-muted-foreground truncate">
-                                                        {speaker.designation || "Speaker"}
-                                                    </p>
-                                                </div>
-                                                <DropdownMenu>
+                        <div className={isIfpc ? "grid gap-4 xl:grid-cols-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
+                            {filteredSpeakers.map((speaker, index) => {
+                                const menu = (
+<DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" size="icon" className="h-8 w-8">
                                                             <MoreHorizontal className="h-4 w-4" />
@@ -912,6 +894,53 @@ export default function SpeakersPage() {
                                                         )}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
+                                );
+                                // IFPC: the same speaker, the same menu, in the IFPC card layout.
+                                if (isIfpc) return (
+                                    <IfpcCard
+                                        key={speaker.id}
+                                        avatar={speaker.photo
+                                            ? <img src={speaker.photo} alt="" />
+                                            : <span className="text-base font-semibold text-slate-600">{getInitials(speaker.name)}</span>}
+                                        title={speaker.name}
+                                        tagline={speaker.designation || "Speaker"}
+                                        meta={[
+                                            ...(speaker.institution ? [{ icon: Building2, text: speaker.institution }] : []),
+                                            ...(speaker.events.length > 0 ? [{ icon: Calendar, text: <>{speaker.events[0].title}{speaker.events[0].topic && <> · {speaker.events[0].topic}</>} · {speaker.events[0].startDate}{speaker.eventCount > 1 && <> · +{speaker.eventCount - 1} more</>}</> }] : []),
+                                        ]}
+                                        stats={[{ value: speaker.eventCount, label: `event${speaker.eventCount !== 1 ? "s" : ""}` }]}
+                                        footer={
+                                            <Badge variant={speaker.isActive ? "default" : "secondary"} className="text-xs">
+                                                {speaker.isActive ? "Active" : "Inactive"}
+                                            </Badge>
+                                        }
+                                        corner={menu}
+                                    />
+                                );
+                                return (
+                                <div
+                                    key={speaker.id}
+                                    className="card-premium rounded-xl overflow-hidden animate-fadeIn hover:shadow-xl hover:-translate-y-1 hover:border-teal-200/30 transition-all duration-400"
+                                    style={{ animationDelay: `${index * 0.05}s` }}
+                                >
+                                    <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500" />
+                                    <div className="p-4">
+                                    <div className="flex items-start gap-3">
+                                        <Avatar className="h-14 w-14 ring-2 ring-white shadow-md">
+                                            <AvatarImage src={speaker.photo || undefined} />
+                                            <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                                                {getInitials(speaker.name)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-semibold truncate">{speaker.name}</h3>
+                                                    <p className="text-sm text-muted-foreground truncate">
+                                                        {speaker.designation || "Speaker"}
+                                                    </p>
+                                                </div>
+                                                {menu}
                                             </div>
                                         </div>
                                     </div>
@@ -955,7 +984,8 @@ export default function SpeakersPage() {
                                     </div>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {filteredSpeakers.length === 0 && (

@@ -9,11 +9,13 @@ import { cn } from "@/lib/utils";
 import { useTenant } from "@/lib/tenant/context";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { ExpressInterestButton } from "@/components/ifpc/ExpressInterestButton";
+import { IfpcCard } from "@/components/ifpc/IfpcCard";
+import { SessionTypeIcon, sessionStats } from "@/components/ifpc/session-card-parts";
 import { MyInterestsPanel, type MyInterests } from "@/components/ifpc/MyInterestsPanel";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Calendar, Clock, MapPin, CircleDot, ListChecks, Lock, Info } from "lucide-react";
+import { Heart, Calendar, MapPin, CircleDot, ListChecks, Lock, Info, Tag } from "lucide-react";
 import { formatClosesAt } from "@/lib/ifpc-deadline";
 import { eoiCategoryOf, eoiRule, sortEoiCategories, INTEREST_CHANGED_EVENT } from "@/lib/ifpc-eoi";
 import type { EventSession } from "@/services/events";
@@ -93,32 +95,19 @@ export default function MyInterestsPage() {
     );
 
     const sessionCard = (s: EventSession, showDate: boolean) => (
-        <Card key={s.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
-                    <div>
-                        <Badge className={cn("text-xs mb-1.5", SESSION_TYPE_STYLES[s.sessionType] || SESSION_TYPE_STYLES.OTHER)}>
-                            {s.sessionType}
-                        </Badge>
-                        <h4 className="font-semibold text-slate-900 dark:text-slate-100">{s.title}</h4>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                        {showDate && (
-                            <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
-                                <Calendar className="h-3.5 w-3.5" />
-                                {s.sessionDate ? format(parseISO(s.sessionDate.slice(0, 10)), "EEE, d MMM") : "Date to be announced"}
-                            </span>
-                        )}
-                        {s.startTime && <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{s.startTime}{s.endTime ? `–${s.endTime}` : ""}</span>}
-                        {s.hall && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{s.hall.name}</span>}
-                    </div>
-                </div>
-                {s.description && (
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{s.description}</p>
-                )}
-                <ExpressInterestButton sessionId={s.id} onInterested={loadMine} showRule={false} />
-            </CardContent>
-        </Card>
+        <IfpcCard
+            key={s.id}
+            avatar={<SessionTypeIcon type={s.sessionType} title={s.title} />}
+            title={s.title}
+            tagline={s.description ? <span className="line-clamp-2">{s.description}</span> : undefined}
+            meta={[
+                { icon: Tag, text: s.sessionType.charAt(0) + s.sessionType.slice(1).toLowerCase() },
+                ...(showDate ? [{ icon: Calendar, text: s.sessionDate ? format(parseISO(s.sessionDate.slice(0, 10)), "EEE, d MMM") : "Date to be announced" }] : []),
+                ...(s.hall ? [{ icon: MapPin, text: s.hall.name }] : []),
+            ]}
+            stats={sessionStats(s)}
+            action={<ExpressInterestButton sessionId={s.id} onInterested={loadMine} showRule={false} />}
+        />
     );
 
     return (

@@ -1941,21 +1941,21 @@ export default function TenantHomePage() {
               {featuredCard && (
                 <div className="mb-8">
                   <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-3 ml-1">Featured Event</p>
-                  <EventCard event={featuredCard} variant="list" themeColor={theme.primaryColor} hrefPrefix="" darkBg />
+                  <EventCard event={featuredCard} variant={tenantSlug === "apollo-medical" ? "ifpc" : "list"} themeColor={theme.primaryColor} hrefPrefix="" darkBg />
                 </div>
               )}
 
               {/* Remaining events — adaptive layout */}
               {carouselCards.length === 1 && (
                 <div>
-                  <EventCard event={carouselCards[0]} variant="list" themeColor={theme.primaryColor} hrefPrefix="" darkBg />
+                  <EventCard event={carouselCards[0]} variant={tenantSlug === "apollo-medical" ? "ifpc" : "list"} themeColor={theme.primaryColor} hrefPrefix="" darkBg />
                 </div>
               )}
 
               {carouselCards.length === 2 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {carouselCards.map(card => (
-                    <EventCard key={card.id} event={card} variant="grid" themeColor={theme.primaryColor} hrefPrefix="" darkBg />
+                    <EventCard key={card.id} event={card} variant={tenantSlug === "apollo-medical" ? "ifpc" : "grid"} themeColor={theme.primaryColor} hrefPrefix="" darkBg />
                   ))}
                 </div>
               )}
@@ -1987,7 +1987,7 @@ export default function TenantHomePage() {
                   >
                     {carouselCards.map(card => (
                       <div key={card.id} style={evtCardW > 0 ? { minWidth: `${evtCardW}px`, maxWidth: `${evtCardW}px` } : { flex: `0 0 calc(${100 / evtItemsPerView}% - ${evtGap * (evtItemsPerView - 1) / evtItemsPerView}px)` }}>
-                        <EventCard event={card} variant="grid" themeColor={theme.primaryColor} hrefPrefix="" darkBg />
+                        <EventCard event={card} variant={tenantSlug === "apollo-medical" ? "ifpc" : "grid"} themeColor={theme.primaryColor} hrefPrefix="" darkBg />
                       </div>
                     ))}
                   </div>

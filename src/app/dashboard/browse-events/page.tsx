@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { IfpcCard } from "@/components/ifpc/IfpcCard";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
@@ -28,6 +29,7 @@ import {
     ChevronDown,
     SlidersHorizontal,
     CheckCircle2,
+    Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
@@ -308,6 +310,57 @@ export default function BrowseEventsPage() {
                             const isNotOpenYet = opens && now < opens;
                             const isDeadlinePassed = deadline && now > deadline;
                             const isRegClosed = isPastEvent || isDeadlinePassed;
+
+                            // IFPC: the same event, the same rules for what can be done, in the
+                            // IFPC card layout. Every other tenant keeps the markup below.
+                            if (isIfpc) {
+                                const price = Number(event.price) > 0 ? `${event.currency === "INR" ? "₹" : event.currency + " "}${Number(event.price).toLocaleString()}` : "Free";
+                                return (
+                                    <IfpcCard
+                                        key={event.id}
+                                        href={`/dashboard/browse-events/${event.id}`}
+                                        avatar={
+                                            <span className="flex flex-col items-center leading-none text-slate-800">
+                                                <span className="text-xl font-bold">{format(eventDate, "d")}</span>
+                                                <span className="mt-0.5 text-[10px] font-semibold tracking-wider text-slate-500">{format(eventDate, "MMM").toUpperCase()}</span>
+                                            </span>
+                                        }
+                                        title={event.title}
+                                        tagline={event.description ? <span className="line-clamp-2">{event.description}</span> : undefined}
+                                        meta={[
+                                            { icon: Tag, text: event.type },
+                                            ...(event.category ? [{ icon: Tag, text: event.category }] : []),
+                                            { icon: Calendar, text: <>{format(eventDate, "MMM d, yyyy")}{event.endDate !== event.startDate && <> - {format(new Date(event.endDate), "MMM d, yyyy")}</>}</> },
+                                            ...(event.startTime ? [{ icon: Clock, text: <>{event.startTime}{event.endTime && <> - {event.endTime}</>}</> }] : []),
+                                            ...(event.city ? [{ icon: MapPin, text: event.city }] : []),
+                                            ...(event.cmeCredits && event.cmeCredits > 0 ? [{ icon: Award, text: `${event.cmeCredits} CME` }] : []),
+                                        ]}
+                                        stats={[{ value: price, label: "price" }]}
+                                        footer={<span className={cn("inline-flex items-center gap-1.5 font-medium", availability.color)}><Users className="h-4 w-4" />{availability.text}</span>}
+                                        action={
+                                            registeredEventIds.has(event.id) ? (
+                                                <Button size="sm" variant="outline" disabled className="gap-2 text-green-700 border-green-200 bg-green-50">
+                                                    <CheckCircle2 className="w-4 h-4" />
+                                                    Already Registered
+                                                </Button>
+                                            ) : isNotOpenYet ? (
+                                                <Button size="sm" variant="outline" disabled className="gap-2 text-blue-700 border-blue-200 bg-blue-50">
+                                                    Opens {opens!.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                                </Button>
+                                            ) : isRegClosed || isSoldOut ? (
+                                                <Button size="sm" variant="outline" disabled className="gap-2 text-red-700 border-red-200 bg-red-50">
+                                                    Registration Closed
+                                                </Button>
+                                            ) : !isPastEvent ? (
+                                                <Link href={`/dashboard/browse-events/${event.id}/register`} className="ifpc-card-pill">
+                                                    <Ticket className="w-4 h-4" />
+                                                    Register
+                                                </Link>
+                                            ) : undefined
+                                        }
+                                    />
+                                );
+                            }
 
                             return (
                                 <div

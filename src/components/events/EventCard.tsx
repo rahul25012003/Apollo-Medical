@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { IfpcCard } from "@/components/ifpc/IfpcCard";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -13,6 +14,7 @@ import {
   Users,
   Eye,
   Zap,
+  Tag,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,7 +55,8 @@ export interface EventCardData {
 
 interface EventCardProps {
   event: EventCardData;
-  variant?: "grid" | "list";
+  /** "ifpc": the IFPC listing card, used only on the IFPC site. */
+  variant?: "grid" | "list" | "ifpc";
   themeColor?: string;
   hrefPrefix?: string;
   darkBg?: boolean;
@@ -110,6 +113,44 @@ export function EventCard({ event, variant = "grid", themeColor = "#0f766e", hre
   const detailHref = `${hrefPrefix}/events/${event.id}`;
   const registerHref = `${hrefPrefix}/events/${event.id}/register`;
   const isOpen = reg.kind === "open" || reg.kind === "closing";
+
+  // IFPC listing card: the same data as the other variants, laid out as the
+  // IFPC card (photo right, fading into white). Other tenants never pass it.
+  if (variant === "ifpc") {
+    return (
+      <IfpcCard
+        href={detailHref}
+        image={event.image}
+        imageAlt={event.title}
+        avatar={
+          <span className="flex flex-col items-center leading-none text-slate-800">
+            <span className="text-xl font-bold">{dateBadge.day}</span>
+            <span className="mt-0.5 text-[10px] font-semibold tracking-wider text-slate-500">{dateBadge.month}</span>
+          </span>
+        }
+        title={event.title}
+        tagline={event.shortDescription ? <span className="line-clamp-2">{event.shortDescription}</span> : undefined}
+        meta={[
+          { icon: MapPin, text: event.location },
+          { icon: Tag, text: typeLabel(event.type) },
+          ...(event.startTime ? [{ icon: Clock, text: `${event.startTime} IST` }] : []),
+          ...(event.cmeCredits ? [{ icon: Award, text: `${event.cmeCredits} CME` }] : []),
+        ]}
+        stats={[
+          { value: `${event.registrations}/${event.capacity}`, label: "registered" },
+          { value: slotsLeft, label: "spots left" },
+          { value: fmtMoney(event.price, event.currency), label: "price" },
+        ]}
+        footer={
+          <span className="inline-flex items-center gap-2 font-medium">
+            <span className="h-2 w-2 rounded-full" style={{ background: themeColor }} aria-hidden="true" />
+            {reg.label}
+          </span>
+        }
+        action={isOpen ? <Link href={registerHref} className="ifpc-card-pill">Register</Link> : undefined}
+      />
+    );
+  }
 
   const statusBgGradient =
     reg.kind === "open" ? "linear-gradient(135deg, #10b981, #059669)" :

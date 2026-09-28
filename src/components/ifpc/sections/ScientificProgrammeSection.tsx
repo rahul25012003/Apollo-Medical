@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { IfpcCard } from "@/components/ifpc/IfpcCard";
+import { sessionStats } from "@/components/ifpc/session-card-parts";
 import { useSession } from "next-auth/react";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
@@ -118,23 +120,18 @@ function DayWiseSchedule({ sessions, eventStart }: { sessions: EventSession[]; e
                 </div>
                 <div className="relative">
                   <span className="hidden sm:block absolute -left-[21px] top-5 h-3 w-3 rounded-full ring-4 ring-white" style={{ background: m.color }} aria-hidden="true" />
-                  <article className="rounded-2xl border border-slate-200 border-l-4 bg-white p-4 sm:p-5 shadow-sm" style={{ borderLeftColor: m.color }}>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider" style={{ color: m.color, background: m.bg }}>
-                        <m.Icon className="h-3.5 w-3.5" /> {m.label}
-                      </span>
-                      {s.hall && (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600"><MapPin className="h-3.5 w-3.5" />{s.hall.name}</span>
-                      )}
-                    </div>
-                    <h4 className="mt-2 text-lg font-bold leading-snug text-[#12112B]">{s.title}</h4>
-                    {s.description && <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{s.description}</p>}
-                    {s.capacity != null && status === "authenticated" && (
-                      <div className="mt-4 border-t border-slate-100 pt-4">
-                        <ExpressInterestButton sessionId={s.id} />
-                      </div>
-                    )}
-                  </article>
+                  <IfpcCard
+                    avatar={<m.Icon className="h-7 w-7" style={{ color: m.color }} aria-hidden="true" />}
+                    title={s.title}
+                    tagline={s.description || undefined}
+                    meta={[
+                      { icon: m.Icon, text: m.label },
+                      ...(s.hall ? [{ icon: MapPin, text: s.hall.name }] : []),
+                    ]}
+                    // The time is already in the timeline column on the left.
+                    stats={sessionStats(s).filter((x) => x.label === "duration")}
+                    action={s.capacity != null && status === "authenticated" ? <ExpressInterestButton sessionId={s.id} /> : undefined}
+                  />
                 </div>
               </li>
             );

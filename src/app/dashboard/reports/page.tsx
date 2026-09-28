@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
+import { useIsIfpcDashboard } from "@/components/ifpc/guard";
+import "@/components/ifpc/ifpc-report-cards.css";
 import { eventsService, Event } from "@/services/events";
 import {
   reportsService,
@@ -159,7 +161,7 @@ function StatCard({ icon: Icon, label, value, subtext, color }: {
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl border bg-white/50 dark:bg-slate-800/50">
+    <div className="report-stat flex items-center gap-4 p-4 rounded-xl border bg-white/50 dark:bg-slate-800/50">
       <div className={cn("p-3 rounded-xl bg-gradient-to-br", colorMap[color])}>
         <Icon className="w-5 h-5" />
       </div>
@@ -254,11 +256,11 @@ function RegistrationAnalytics({ data }: { data: RegistrationReport | null }) {
   const maxRole = Math.max(...data.roleBreakdown.map((r) => r.count), 1);
 
   return (
-    <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+    <Card className="report-card border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20">
+            <div className="report-icon p-2.5 rounded-xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20">
               <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
@@ -269,6 +271,7 @@ function RegistrationAnalytics({ data }: { data: RegistrationReport | null }) {
           <Button
             variant="outline"
             size="sm"
+            className="report-export"
             onClick={() => {
               downloadCsv(
                 "registrations-report.csv",
@@ -415,11 +418,11 @@ function RevenueAnalytics({ data }: { data: RevenueReport | null }) {
   const maxDaily = Math.max(...data.dailyRevenue.map((d) => d.amount), 1);
 
   return (
-    <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+    <Card className="report-card border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20">
+            <div className="report-icon p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20">
               <IndianRupee className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
@@ -430,6 +433,7 @@ function RevenueAnalytics({ data }: { data: RevenueReport | null }) {
           <Button
             variant="outline"
             size="sm"
+            className="report-export"
             onClick={() => {
               downloadCsv(
                 "revenue-report.csv",
@@ -445,7 +449,7 @@ function RevenueAnalytics({ data }: { data: RevenueReport | null }) {
       </CardHeader>
       <CardContent>
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="report-stats grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard icon={IndianRupee} label="Total Revenue" value={`₹${data.totalRevenue.toLocaleString()}`} color="emerald" />
           <StatCard icon={CheckCircle2} label="Paid" value={`₹${data.totalPaid.toLocaleString()}`} color="teal" />
           <StatCard icon={Clock} label="Pending" value={`₹${data.totalPending.toLocaleString()}`} color="amber" />
@@ -508,11 +512,11 @@ function AttendanceAnalytics({ data }: { data: AttendanceReport | null }) {
   ];
 
   return (
-    <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+    <Card className="report-card border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20">
+            <div className="report-icon p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20">
               <UserCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
@@ -523,6 +527,7 @@ function AttendanceAnalytics({ data }: { data: AttendanceReport | null }) {
           <Button
             variant="outline"
             size="sm"
+            className="report-export"
             onClick={() => {
               downloadCsv(
                 "attendance-report.csv",
@@ -605,11 +610,11 @@ function CertificateAnalytics({ data }: { data: CertificateReport | null }) {
   const maxType = Math.max(...data.typeBreakdown.map((t) => t.count), 1);
 
   return (
-    <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+    <Card className="report-card border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20">
+            <div className="report-icon p-2.5 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20">
               <Award className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
@@ -620,6 +625,7 @@ function CertificateAnalytics({ data }: { data: CertificateReport | null }) {
           <Button
             variant="outline"
             size="sm"
+            className="report-export"
             onClick={() => {
               downloadCsv(
                 "certificates-report.csv",
@@ -694,6 +700,7 @@ export default function ReportsPage() {
   const [revenueData, setRevenueData] = useState<RevenueReport | null>(null);
   const [attendanceData, setAttendanceData] = useState<AttendanceReport | null>(null);
   const [certificateData, setCertificateData] = useState<CertificateReport | null>(null);
+  const { isIfpc } = useIsIfpcDashboard();
 
   useEffect(() => {
     async function fetchEvents() {
@@ -778,7 +785,7 @@ export default function ReportsPage() {
             <AiimsLoader size="lg" />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className={cn("space-y-6", isIfpc && "ifpc-reports")}>
             <RegistrationAnalytics data={registrationData} />
             <RevenueAnalytics data={revenueData} />
             <AttendanceAnalytics data={attendanceData} />
