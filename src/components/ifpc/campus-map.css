@@ -19,8 +19,11 @@
   box-shadow: inset 0 1px 0 #fff, 0 22px 50px -34px rgb(15 40 80 / 0.5);
 }
 .ifpc-cm-map svg { display: block; width: 100%; height: auto; border-radius: 18px; }
-.ifpc-cm-pin { cursor: pointer; transition: transform 250ms var(--ease); }
-.ifpc-cm-pin:hover { transform: translateY(-2px); }
+/* `translate`, not `transform`: each pin is placed by its SVG transform
+   attribute, which a CSS transform would replace, sending the pin to the
+   map's corner on hover and back again (the flicker). */
+.ifpc-cm-pin { cursor: pointer; transition: translate 250ms var(--ease); }
+.ifpc-cm-pin:hover { translate: 0 -2px; }
 .ifpc-cm-route { stroke-dashoffset: 0; animation: ifpc-cm-march 1.4s linear infinite; }
 @keyframes ifpc-cm-march { to { stroke-dashoffset: -26; } }
 
