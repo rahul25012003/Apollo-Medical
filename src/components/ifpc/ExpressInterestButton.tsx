@@ -1,22 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Users, Loader2, CheckCircle2, Heart, CircleDot, ListChecks, Lock, Clock } from "lucide-react";
+import { Users, Heart, CircleDot, ListChecks, Lock, Clock } from "lucide-react";
 import { InterestToggle, INTEREST_BUTTON_CLASS } from "./InterestToggle";
 import { formatClosesAt } from "@/lib/ifpc-deadline";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import { toast } from "sonner";
 import { INTEREST_CHANGED_EVENT } from "@/lib/ifpc-eoi";
 
@@ -56,7 +46,8 @@ function RuleChip({ rule }: { rule: SelectionRule }) {
  *
  * Logged-in delegates get a one-click flow (no name/email form — their
  * account already has that) and see whether they're already on the list.
- * Signed-out visitors get the original name/email/phone dialog.
+ * Signed-out visitors see the seat counter and a way to log in: an interest
+ * always belongs to a delegate's account.
  */
 export function ExpressInterestButton({ sessionId, initialCount, initialCapacity, onInterested, showRule = true }: Props) {
   const { data: authSession } = useSession();
@@ -64,12 +55,7 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
 
   const [count, setCount] = useState(initialCount ?? 0);
   const [capacity, setCapacity] = useState<number | null | undefined>(initialCapacity);
-  const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [isInterested, setIsInterested] = useState(false);
   const [checkingMine, setCheckingMine] = useState(isLoggedIn);
   const [rule, setRule] = useState<SelectionRule | null>(null);
@@ -120,29 +106,21 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
 
   const isFull = typeof capacity === "number" && count >= capacity;
 
-  async function submit(nameOverride?: string, emailOverride?: string): Promise<boolean> {
-    const submitName = nameOverride ?? name;
-    const submitEmail = emailOverride ?? email;
-    if (!submitName.trim() || !submitEmail.trim()) {
-      toast.error("Please enter your name and email");
-      return false;
-    }
+  // Show the selected state immediately; undo it if saving fails. The server
+  // takes the name and email from the signed-in account.
+  async function selectAsLoggedIn() {
+    setIsInterested(true);
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/sessions/${sessionId}/interest`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: submitName, email: submitEmail, phone: phone || undefined }),
-      });
+      const res = await fetch(`/api/sessions/${sessionId}/interest`, { method: "POST" });
       const json = await res.json();
       if (!res.ok || !json.success) {
         toast.error(json?.error?.message || "Could not register your interest");
-        return false;
+        setIsInterested(false);
+        return;
       }
       setCount(json.data.count);
       setCapacity(json.data.capacity);
-      setDone(true);
-      setIsInterested(true);
       const replaced: string[] = json.data.replaced ?? [];
       toast.success(
         json.data.alreadyRegistered
@@ -153,20 +131,12 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
       );
       window.dispatchEvent(new Event(INTEREST_CHANGED_EVENT));
       onInterested?.();
-      return true;
     } catch {
       toast.error("Something went wrong. Please try again.");
-      return false;
+      setIsInterested(false);
     } finally {
       setSubmitting(false);
     }
-  }
-
-  // Show the selected state immediately; undo it if saving fails.
-  async function selectAsLoggedIn() {
-    setIsInterested(true);
-    const ok = await submit(authSession!.user!.name || "", authSession!.user!.email || "");
-    if (!ok) setIsInterested(false);
   }
 
   async function removeAsLoggedIn() {
@@ -230,54 +200,20 @@ export function ExpressInterestButton({ sessionId, initialCount, initialCapacity
     );
   }
 
+  // Signed out: nothing is saved without an account, so the button leads to sign-in.
   return (
     <div className="flex items-center gap-3 flex-wrap">
       {seats}
       {showRule && rule && <RuleChip rule={rule} />}
-
-      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setDone(false); }}>
-        <DialogTrigger asChild>
-          <button type="button" className={INTEREST_BUTTON_CLASS} disabled={isFull}>
-            <Heart className="h-4 w-4" /> {isFull ? "Session Full" : "I'd like to attend"}
-          </button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-sm">
-          {done ? (
-            <div className="py-6 text-center">
-              <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
-              <p className="font-semibold text-slate-900">You're on the list!</p>
-              <p className="text-sm text-slate-500 mt-1">We've noted your interest in this session.</p>
-              <Button size="sm" className="mt-4" onClick={() => setOpen(false)}>Close</Button>
-            </div>
-          ) : (
-            <>
-              <DialogHeader>
-                <DialogTitle>Express Interest</DialogTitle>
-                <DialogDescription>Let us know you'd like to attend — this reserves you a spot on the interest list.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3 py-2">
-                <div>
-                  <Label htmlFor="ei-name">Full Name</Label>
-                  <Input id="ei-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Dr. Jane Doe" />
-                </div>
-                <div>
-                  <Label htmlFor="ei-email">Email</Label>
-                  <Input id="ei-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" />
-                </div>
-                <div>
-                  <Label htmlFor="ei-phone">Phone (optional)</Label>
-                  <Input id="ei-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 90000 00000" />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={() => submit()} disabled={submitting} className="w-full">
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm Interest"}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      {isFull ? (
+        <button type="button" className={INTEREST_BUTTON_CLASS} disabled>
+          <Heart className="h-4 w-4" /> Session Full
+        </button>
+      ) : (
+        <Link href={`/auth/login?tenant=${IFPC_TENANT_SLUG}`} className={INTEREST_BUTTON_CLASS} title="Log in to express interest">
+          <Heart className="h-4 w-4" /> Interested? Log in
+        </Link>
+      )}
     </div>
   );
 }

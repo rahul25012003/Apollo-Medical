@@ -3,9 +3,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth, canAccess } from "@/lib/auth";
 import { isTenantOwner } from "@/lib/tenant-scope";
-import { successResponse, Errors, withErrorHandler, parseBody } from "@/lib/api-utils";
+import { successResponse, Errors, withErrorHandler } from "@/lib/api-utils";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
-import { z } from "zod";
 import { isIfpcEvent } from "@/lib/ifpc-tenant";
 import { eoiCategoryOf, eoiRule, sessionsOverlap } from "@/lib/ifpc-eoi";
 import { choicesWindow, closedMessage } from "@/lib/ifpc-deadline";
@@ -33,12 +32,6 @@ async function findClash(eventId: string, email: string, target: SlotSession): P
 }
 
 const rateLimiter = createRateLimiter("session-interest", { maxRequests: 10, windowSeconds: 60 });
-
-const interestSchema = z.object({
-  name: z.string().min(1).max(200),
-  email: z.string().email(),
-  phone: z.string().max(30).optional(),
-});
 
 // GET /api/sessions/[id]/interest — public seat counter; ?list=1 (auth) returns the roster
 export const GET = withErrorHandler(async (request: NextRequest, context?: RouteContext) => {
@@ -147,6 +140,13 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   const rl = rateLimiter.check(getClientIp(request));
   if (!rl.allowed) return Errors.badRequest(rl.message);
 
+  // Signed-in delegates only: an interest belongs to the account making it,
+  // never to a name and email typed in by a signed-out visitor.
+  const authSession = await auth();
+  if (!authSession?.user?.email) return Errors.unauthorized("Please log in to express interest");
+  const email = authSession.user.email.toLowerCase();
+  const name = authSession.user.name || email;
+
   const { id: sessionId } = await context!.params;
   const eventSession = await prisma.eventSession.findUnique({
     where: { id: sessionId },
@@ -170,30 +170,17 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
       })).filter((x) => eoiCategoryOf(x) === category)
     : [];
 
-  const body = await parseBody(request);
-  if (!body) return Errors.badRequest("Invalid request body");
-
-  const parsed = interestSchema.safeParse(body);
-  if (!parsed.success) return Errors.validationError(parsed.error);
-
-  const email = parsed.data.email.toLowerCase();
-
   const clash = await findClash(eventSession.eventId, email, eventSession);
   if (clash) {
     return Errors.conflict(`That's at the same time as "${clash.title}", which you've already chosen. Remove that one first.`);
   }
-
-  // Only the signed-in owner of this email may swap a pick-one choice; an
-  // anonymous submission can never remove anyone's existing selection.
-  const authSession = siblings.length ? await auth() : null;
-  const canReplace = !!authSession && authSession.user.email.toLowerCase() === email;
 
   // Serializable transaction: the duplicate check, capacity check, and
   // insert must be atomic, or concurrent submissions near the last seat can
   // all pass the count check before any of them commits, overselling
   // capacity. Postgres aborts one side of a genuine conflict with a
   // serialization failure, which we treat below as "someone else took it."
-  let outcome: "ok" | "duplicate" | "full" | "conflict";
+  let outcome: "ok" | "duplicate" | "full";
   let replaced: string[] = [];
   try {
     outcome = await prisma.$transaction(
@@ -206,9 +193,6 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
         const previous = siblings.length
           ? await tx.sessionInterest.findMany({ where: { email, sessionId: { in: siblings.map((x) => x.id) } }, select: { sessionId: true } })
           : [];
-        if (previous.length && !canReplace) {
-          return "conflict" as const;
-        }
 
         // Capacity before removing the old choice, so a full session never costs the delegate their current one.
         if (eventSession.capacity != null) {
@@ -222,7 +206,7 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
         }
 
         await tx.sessionInterest.create({
-          data: { sessionId, name: parsed.data.name, email, phone: parsed.data.phone },
+          data: { sessionId, name, email },
         });
         return "ok" as const;
       },
@@ -246,11 +230,6 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   if (outcome === "full") {
     return Errors.conflict("This session is full");
   }
-  if (outcome === "conflict") {
-    const label = eoiRule(category!).label;
-    return Errors.conflict(`A ${label} choice is already recorded for this email (only one allowed). Sign in to change it.`);
-  }
-
   const count = await prisma.sessionInterest.count({ where: { sessionId } });
 
   // Every change is recorded against the account that made it, so the admin
@@ -258,12 +237,12 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
   await logActivity(authSession, {
     action: replaced.length ? "interest.change" : "interest.add",
     summary: replaced.length
-      ? `${parsed.data.name} switched ${eoiRule(category!).label} to "${eventSession.title}"`
-      : `${parsed.data.name} is interested in "${eventSession.title}"`,
+      ? `${name} switched ${eoiRule(category!).label} to "${eventSession.title}"`
+      : `${name} is interested in "${eventSession.title}"`,
     entityType: "EventSession",
     entityId: sessionId,
     tenantId: eventSession.event.tenantId,
-    actor: { email, role: authSession?.user?.role ?? "DELEGATE" },
+    actor: { email, role: authSession.user.role ?? "DELEGATE" },
     metadata: {
       kind: "session",
       sessionTitle: eventSession.title,
@@ -272,7 +251,7 @@ export const POST = withErrorHandler(async (request: NextRequest, context?: Rout
       status: "interested",
       replaced: replaced.filter(Boolean),
       eventId: eventSession.eventId,
-      delegateName: parsed.data.name,
+      delegateName: name,
     },
     request,
   });
