@@ -1,9 +1,13 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const isStandalone = process.env.NEXT_STANDALONE === "true";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Pin the project root: a stray package-lock.json in a parent folder
+  // otherwise makes Next/Turbopack treat that whole folder as the root.
+  turbopack: { root: path.resolve(".") },
   // standalone only for VPS/Docker (set NEXT_STANDALONE=true). Render/Vercel use standard output.
   ...(isStandalone ? { output: "standalone" } : {}),
   // Skip TS/ESLint re-check during build (already verified clean)
