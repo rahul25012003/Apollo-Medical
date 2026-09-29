@@ -246,3 +246,71 @@
 }
 @media (min-width: 1024px) { .ifpc-lg-back--m { display: none; } }
 .ifpc-lg-form button[role="checkbox"] { min-width: 0; min-height: 0; width: 18px; height: 18px; }
+
+/* ── Fit to the screen: sizes follow the viewport (width and height) ──── */
+
+.ifpc-lg { --u: min(1vw, 1.75vh); }
+@media (min-width: 1024px) {
+  .ifpc-lg { height: 100svh; min-height: 0; overflow: hidden; }
+  .ifpc-lg-left-inner {
+    position: relative;
+    gap: clamp(8px, calc(var(--u) * 1.4), 22px);
+    padding: calc(var(--u) * 3.2 + 56px) clamp(28px, calc(var(--u) * 4.4), 72px) clamp(20px, calc(var(--u) * 3), 48px);
+  }
+  /* Back to Home pinned top-left, level with the card's top area. */
+  .ifpc-lg-left-inner > .ifpc-lg-back { position: absolute; top: clamp(16px, calc(var(--u) * 2.4), 40px); left: clamp(28px, calc(var(--u) * 4.4), 72px); }
+  .ifpc-lg-brand { margin-top: 0; gap: calc(var(--u) * 1.2); }
+  .ifpc-lg-logo { width: clamp(44px, calc(var(--u) * 4.6), 76px); height: clamp(44px, calc(var(--u) * 4.6), 76px); }
+  .ifpc-lg-brand p { font-size: clamp(14px, calc(var(--u) * 1.25), 20px); max-width: 26em; }
+  .ifpc-lg-title { font-size: clamp(28px, calc(var(--u) * 4), 72px); max-width: 16em; }
+  .ifpc-lg-year { font-size: clamp(16px, calc(var(--u) * 1.6), 28px); padding: 0.3em 0.9em; }
+  .ifpc-lg-year svg { width: 1em; height: 1em; }
+  .ifpc-lg-lead { font-size: clamp(14px, calc(var(--u) * 1.2), 20px); max-width: 28em; }
+  .ifpc-lg-feats { gap: calc(var(--u) * 0.9); margin-top: 0; }
+  .ifpc-lg-feats > div { width: clamp(92px, calc(var(--u) * 8.6), 150px); padding: calc(var(--u) * 1.1) 8px; gap: calc(var(--u) * 0.6); }
+  .ifpc-lg-feats span { width: clamp(34px, calc(var(--u) * 3.4), 56px); height: clamp(34px, calc(var(--u) * 3.4), 56px); }
+  .ifpc-lg-feats p { font-size: clamp(11.5px, calc(var(--u) * 0.95), 15px); }
+
+  .ifpc-lg-right { gap: clamp(10px, calc(var(--u) * 1.4), 24px); padding: clamp(16px, calc(var(--u) * 2.4), 48px); }
+  .ifpc-lg-card { max-width: clamp(380px, calc(var(--u) * 34), 560px); padding: clamp(20px, calc(var(--u) * 2.8), 48px); }
+  .ifpc-lg-h { margin-top: calc(var(--u) * 1.1); font-size: clamp(26px, calc(var(--u) * 2.8), 44px); }
+  .ifpc-lg-sub { font-size: clamp(13px, calc(var(--u) * 1.05), 17px); }
+  .ifpc-lg-form { gap: clamp(10px, calc(var(--u) * 1.4), 22px); margin-top: clamp(14px, calc(var(--u) * 1.8), 30px); }
+  .ifpc-lg .ifpc-lg-input { height: clamp(42px, calc(var(--u) * 4), 58px); }
+  .ifpc-lg .ifpc-lg-submit { height: clamp(44px, calc(var(--u) * 4.2), 60px); }
+  .ifpc-lg-label, .ifpc-lg-forgot { margin-bottom: calc(var(--u) * 0.6); }
+  .ifpc-lg-new { margin-top: clamp(12px, calc(var(--u) * 1.8), 28px); padding-top: clamp(10px, calc(var(--u) * 1.5), 22px); }
+  .ifpc-lg-foot img { height: clamp(24px, calc(var(--u) * 2.6), 38px); }
+}
+
+/* Phones: the card and footer fit the first screen. */
+@media (max-width: 1023px) {
+  .ifpc-lg-right { padding-top: clamp(12px, 3svh, 24px); gap: clamp(10px, 2svh, 20px); }
+  .ifpc-lg-card { margin-top: clamp(24px, 9svh, 110px); padding: clamp(18px, 3svh, 28px) 22px; }
+  .ifpc-lg-h { margin-top: clamp(8px, 1.6svh, 16px); }
+  .ifpc-lg-form { gap: clamp(10px, 2svh, 18px); margin-top: clamp(12px, 2.4svh, 24px); }
+  .ifpc-lg .ifpc-lg-input, .ifpc-lg .ifpc-lg-submit { height: clamp(44px, 6.4svh, 54px); }
+  .ifpc-lg-new { margin-top: clamp(12px, 2.4svh, 24px); padding-top: clamp(10px, 2svh, 20px); }
+  .ifpc-lg-foot { text-align: center; }
+  .ifpc-lg-foot img { height: 28px; }
+}
+@media (max-width: 1023px) and (max-height: 720px) {
+  .ifpc-lg-card { margin-top: 8px; padding: 16px 20px; }
+  .ifpc-lg-h { font-size: 26px; margin-top: 8px; }
+  .ifpc-lg-new { margin-top: 10px; padding-top: 10px; }
+  .ifpc-lg-foot { gap: 2px; }
+  .ifpc-lg-foot img { height: 22px; }
+}
+@media (min-width: 1024px) {
+  .ifpc-lg-photo {
+    right: 0;
+    width: 80%;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 35%, #000 78%, transparent 100%), linear-gradient(180deg, transparent 0%, #000 25%, #000 85%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000 35%, #000 78%, transparent 100%), linear-gradient(180deg, transparent 0%, #000 25%, #000 85%, transparent 100%);
+  }
+  .ifpc-lg-veil {
+    background:
+      linear-gradient(90deg, #f4f8ff 0%, rgb(244 248 255 / 0.94) 40%, rgb(244 248 255 / 0.4) 62%, transparent 82%),
+      radial-gradient(50% 40% at 20% 10%, rgb(191 219 254 / 0.6), transparent 70%);
+  }
+}
