@@ -534,9 +534,6 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
         <img src={bgImage} alt="" loading="eager" />
       </div>
       <div className="ifpc-hero-shade" aria-hidden="true" />
-      {/* The venue again, soft and pale, behind the text side (its far wing,
-          so the entrance never appears twice). */}
-      <div className="ifpc-hero-base" aria-hidden="true"><img src={bgImage} alt="" /></div>
 
       <div className="ifpc-hero-inner relative z-10">
         <div className="ifpc-hero-grid grid lg:grid-cols-12 items-center">
