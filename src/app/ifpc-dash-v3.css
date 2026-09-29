@@ -1,0 +1,489 @@
+/*
+ * IFPC 2026 signed-in dashboard — the light "sky glass" design (reference:
+ * event dashboard mock). Loaded after ifpc-neu.css and scoped under
+ * .ifpc-neu.ifpc-v3 (two classes) so it outranks the neu rules. Visual only:
+ * no structure, content or behaviour changes.
+ */
+
+.ifpc-neu.ifpc-v3 {
+  --background: #f3f7fe;
+  --foreground: #0b1a4a;
+  --card: #ffffff;
+  --card-foreground: #0b1a4a;
+  --popover: #ffffff;
+  --popover-foreground: #0b1a4a;
+  --muted: #f1f5fc;
+  --muted-foreground: #5b6785;
+  --border: #e3e9f5;
+  --input: #f4f7fd;
+  --radius: 1.1rem;
+
+  /* One soft light, from above: crisp and airy instead of embossed. */
+  --neu-lift: 0 1px 2px rgb(15 23 42 / 0.04), 0 14px 34px -22px rgb(15 40 80 / 0.35);
+  --neu-lift-sm: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 20px -14px rgb(15 40 80 / 0.3);
+  --neu-lift-lg: 0 1px 2px rgb(15 23 42 / 0.05), 0 26px 56px -30px rgb(15 40 80 / 0.45);
+  --neu-hover: 0 1px 2px rgb(15 23 42 / 0.05), 0 22px 46px -24px rgb(37 99 235 / 0.4);
+  --neu-inset: inset 0 1px 2px rgb(15 23 42 / 0.06);
+  --neu-ink: #1d4ed8;
+  --neu-ink-lift: 0 10px 22px -10px rgb(37 99 235 / 0.7);
+
+  --v3-grad: linear-gradient(95deg, #0ea5e9 0%, #2563eb 40%, #4f46e5 75%, #7c3aed 100%);
+  --v3-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  background:
+    radial-gradient(40% 35% at 100% 0%, rgb(219 234 254 / 0.9), transparent 70%),
+    radial-gradient(35% 40% at 0% 100%, rgb(237 233 254 / 0.7), transparent 70%),
+    #f3f7fe;
+  color: var(--foreground);
+}
+.ifpc-neu.ifpc-v3 .min-h-screen { background: transparent; }
+
+/* Cards: white, 1px hairline, soft shadow. */
+.ifpc-neu.ifpc-v3 :is(.bg-white, .bg-card, .bg-background, .bg-white\/80, .bg-white\/70, .bg-white\/50) {
+  background: #fff;
+  border-color: rgb(15 23 42 / 0.06);
+  box-shadow: var(--neu-lift);
+}
+.ifpc-neu.ifpc-v3 :is(.rounded-2xl) { border-radius: 1.4rem; }
+.ifpc-neu.ifpc-v3 :is(.rounded-xl) { border-radius: 1.05rem; }
+.ifpc-neu.ifpc-v3 .border,
+.ifpc-neu.ifpc-v3 .border-2 { border-color: rgb(15 23 42 / 0.07); }
+.ifpc-neu.ifpc-v3 :is(.bg-muted, .bg-slate-50, .bg-slate-100) { background: #f1f5fc; }
+
+/* ── Sidebar: a white glass rail ──────────────────────────────────────── */
+
+.ifpc-neu.ifpc-v3 aside.fixed {
+  background:
+    radial-gradient(90% 40% at 0% 100%, rgb(219 234 254 / 0.7), transparent 70%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid rgb(15 23 42 / 0.06);
+  box-shadow: 0 30px 60px -36px rgb(15 40 80 / 0.45);
+}
+.ifpc-neu.ifpc-v3 aside.fixed nav a[style*="linear-gradient"] {
+  background: var(--v3-grad) !important;
+  box-shadow: 0 12px 24px -12px rgb(37 99 235 / 0.7);
+}
+.ifpc-neu.ifpc-v3 aside.fixed nav a[style*="linear-gradient"] :is(span, svg, p) { color: #fff !important; }
+.ifpc-neu.ifpc-v3 aside.fixed nav a { transition: background-color 200ms var(--v3-ease), translate 200ms var(--v3-ease); }
+.ifpc-neu.ifpc-v3 aside.fixed nav a:not([style*="linear-gradient"]):hover { background: #eef4ff; translate: 2px 0; }
+
+/* ── Header: white glass bar ──────────────────────────────────────────── */
+
+.ifpc-neu.ifpc-v3 header.fixed {
+  background: rgb(255 255 255 / 0.8);
+  box-shadow: 0 1px 0 rgb(15 23 42 / 0.05), 0 10px 30px -24px rgb(15 40 80 / 0.4);
+}
+.ifpc-neu.ifpc-v3 header.fixed button:hover { background: #eef4ff; }
+
+/* ── Page header (DashboardLayout) ────────────────────────────────────── */
+
+.ifpc-neu.ifpc-v3 .section-heading {
+  font-size: clamp(26px, 2.4vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0b1a4a;
+}
+.ifpc-neu.ifpc-v3 .section-heading .v3-accent {
+  color: #2563eb;
+  background: var(--v3-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.ifpc-neu.ifpc-v3 .page-transition { animation: v3-rise 520ms var(--v3-ease) both; }
+@keyframes v3-rise { from { opacity: 0; translate: 0 14px; } }
+
+/* ── Tabs: a white pill bar, the active tab a gradient pill ───────────── */
+
+.ifpc-neu.ifpc-v3 [role="tablist"] {
+  height: auto;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgb(15 23 42 / 0.06);
+  box-shadow: var(--neu-lift);
+}
+.ifpc-neu.ifpc-v3 [role="tab"] {
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-weight: 500;
+  color: #475569;
+  background: transparent;
+  box-shadow: none;
+  transition: background-color 200ms var(--v3-ease), color 200ms var(--v3-ease), box-shadow 200ms var(--v3-ease);
+}
+.ifpc-neu.ifpc-v3 [role="tab"]:hover { background: #eef4ff; color: #1d4ed8; }
+.ifpc-neu.ifpc-v3 [role="tab"][data-state="active"] {
+  background: var(--v3-grad);
+  color: #fff;
+  box-shadow: 0 10px 22px -10px rgb(37 99 235 / 0.8);
+}
+.ifpc-neu.ifpc-v3 [role="tab"][data-state="active"] svg { color: #fff; }
+.ifpc-neu.ifpc-v3 [role="tabpanel"][data-state="active"] { animation: v3-rise 380ms var(--v3-ease) both; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+
+.ifpc-neu.ifpc-v3 button.bg-primary,
+.ifpc-neu.ifpc-v3 a.bg-primary,
+.ifpc-neu.ifpc-v3 button[class*="bg-teal-"],
+.ifpc-neu.ifpc-v3 button[class*="bg-emerald-6"] {
+  background: var(--v3-grad);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 12px 24px -12px rgb(37 99 235 / 0.8);
+}
+.ifpc-neu.ifpc-v3 button.bg-primary:hover:not(:disabled),
+.ifpc-neu.ifpc-v3 a.bg-primary:hover { box-shadow: 0 16px 30px -12px rgb(37 99 235 / 0.9); transform: translateY(-1px); }
+.ifpc-neu.ifpc-v3 :is(button.border-input, a.border-input, button.bg-secondary) {
+  background: #fff;
+  border-color: rgb(15 23 42 / 0.1);
+  border-radius: 999px;
+  box-shadow: var(--neu-lift-sm);
+}
+.ifpc-neu.ifpc-v3 :is(button.border-input, button.bg-secondary):hover:not(:disabled) {
+  border-color: rgb(37 99 235 / 0.4);
+  color: #1d4ed8;
+  box-shadow: var(--neu-hover);
+}
+
+/* ── Inputs ───────────────────────────────────────────────────────────── */
+
+.ifpc-neu.ifpc-v3 :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select, [role="combobox"]) {
+  background: #f6f9fe;
+  border: 1px solid rgb(15 23 42 / 0.08);
+  border-radius: 14px;
+  box-shadow: none;
+  transition: border-color 200ms var(--v3-ease), box-shadow 200ms var(--v3-ease), background-color 200ms var(--v3-ease);
+}
+.ifpc-neu.ifpc-v3 :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select, [role="combobox"]):focus {
+  background: #fff;
+  border-color: rgb(37 99 235 / 0.5);
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 0.12);
+  outline: none;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────── */
+
+.ifpc-neu.ifpc-v3 thead tr { background: #f4f7fd; }
+.ifpc-neu.ifpc-v3 thead th { color: #475569; font-weight: 700; letter-spacing: 0.04em; }
+.ifpc-neu.ifpc-v3 tbody tr { transition: background-color 180ms var(--v3-ease); }
+.ifpc-neu.ifpc-v3 tbody tr:hover { background: #f5f8ff; }
+
+/* ── Cards that respond to the pointer ────────────────────────────────── */
+
+.ifpc-neu.ifpc-v3 :is(.hover\:shadow-md, .hover\:shadow-lg, .hover\:shadow-xl):hover {
+  box-shadow: var(--neu-hover);
+  transform: translateY(-3px);
+}
+
+/* Menus and dialogs pick up the same surface. */
+.ifpc-neu.ifpc-v3 :is([role="menu"], [role="dialog"], [role="listbox"]) {
+  border-radius: 20px;
+  border: 1px solid rgb(15 23 42 / 0.06);
+  box-shadow: 0 30px 60px -30px rgb(15 40 80 / 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-neu.ifpc-v3 .page-transition,
+  .ifpc-neu.ifpc-v3 [role="tabpanel"][data-state="active"] { animation: none; }
+  .ifpc-neu.ifpc-v3 * { transition: none !important; }
+}
+
+/* Tab bars that wrap onto two rows keep a soft rectangle. */
+.ifpc-neu.ifpc-v3 [role="tablist"].flex-wrap { border-radius: 26px; }
+
+/* ── Event hero (admin event page) ────────────────────────────────────── */
+
+.v3-hero {
+  position: relative;
+  display: grid;
+  gap: 24px;
+  align-items: center;
+  padding: clamp(20px, 2.6vw, 36px);
+  border-radius: 28px;
+  background:
+    radial-gradient(50% 70% at 0% 0%, rgb(219 234 254 / 0.9), transparent 70%),
+    linear-gradient(180deg, #ffffff, #f7faff);
+  border: 1px solid rgb(15 23 42 / 0.06);
+  box-shadow: 0 30px 60px -40px rgb(15 40 80 / 0.5);
+  overflow: hidden;
+  animation: v3-rise 600ms var(--v3-ease) both;
+}
+@media (min-width: 1100px) { .v3-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); } }
+.v3-hero-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.v3-hero-chips > * { border-radius: 999px; padding: 4px 12px; font-weight: 600; letter-spacing: 0.04em; }
+.v3-hero-title {
+  margin: 16px 0 0;
+  font-size: clamp(30px, 3.2vw, 52px);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  color: #0b1a4a;
+}
+.v3-hero-title span {
+  color: #2563eb;
+  background: var(--v3-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.v3-hero-desc { margin: 14px 0 0; max-width: 40rem; font-size: 15px; line-height: 1.7; color: #475569; }
+.v3-hero-facts { display: flex; flex-wrap: wrap; gap: 14px 28px; margin-top: 22px; }
+.v3-hero-facts > div { display: flex; align-items: center; gap: 14px; }
+.v3-hero-facts > div + div { padding-left: 28px; border-left: 1px solid rgb(15 23 42 / 0.1); }
+.v3-hero-facts p { margin: 0; font-size: 15.5px; font-weight: 700; color: #0b1a4a; }
+.v3-hero-facts p + p { margin-top: 2px; font-size: 13px; font-weight: 500; color: #64748b; }
+.v3-hero-ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: #eaf1ff;
+  color: #2563eb;
+  box-shadow: inset 0 0 0 1px rgb(37 99 235 / 0.1);
+}
+.v3-hero-ic svg { width: 22px; height: 22px; }
+
+/* The photo in an angled frame, the stats floating on it. */
+.v3-hero-art { position: relative; min-height: 320px; }
+.v3-hero-photo {
+  position: absolute;
+  inset: 0 0 0 0;
+  border-radius: 28px;
+  background-size: cover;
+  background-position: center;
+  clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%);
+  box-shadow: 0 30px 60px -30px rgb(15 40 80 / 0.6);
+  animation: v3-zoom 22s ease-in-out infinite alternate;
+}
+.v3-hero-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.55), transparent 35%), linear-gradient(0deg, rgb(11 26 74 / 0.25), transparent 50%);
+}
+@keyframes v3-zoom { to { background-size: 112%; } }
+.v3-hero-stats {
+  position: absolute;
+  right: clamp(12px, 2vw, 24px);
+  top: 50%;
+  translate: 0 -50%;
+  width: min(290px, 80%);
+  padding: 18px;
+  border-radius: 22px;
+  background: rgb(255 255 255 / 0.94);
+  border: 1px solid rgb(255 255 255 / 0.9);
+  box-shadow: 0 30px 60px -28px rgb(15 40 80 / 0.55);
+  backdrop-filter: blur(12px);
+  animation: v3-float 6s ease-in-out infinite alternate;
+}
+@keyframes v3-float { to { translate: 0 calc(-50% - 8px); } }
+.v3-hero-stat { display: flex; align-items: center; gap: 12px; }
+.v3-hero-stat .v3-hero-ic { width: 44px; height: 44px; }
+.v3-hero-stat-l { margin: 0; font-size: 13px; font-weight: 600; color: #475569; }
+.v3-hero-stat-v { margin: 1px 0 0; font-size: 24px; font-weight: 800; color: #0b1a4a; }
+.v3-hero-stat-n { margin: 6px 0 0; font-size: 12.5px; color: #2563eb; }
+.v3-hero-bar { height: 8px; margin-top: 12px; border-radius: 999px; background: #e3ecfb; overflow: hidden; }
+.v3-hero-bar span { display: block; min-width: 8px; height: 100%; border-radius: inherit; background: var(--v3-grad); }
+.v3-hero-stat--rev {
+  align-items: flex-start;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ecfdf5, #f0fdf4);
+}
+.v3-hero-stat--rev .v3-hero-ic { background: #d1fae5; color: #059669; }
+.v3-hero-stat--rev .v3-hero-stat-l { color: #047857; }
+.v3-hero-stat--rev .v3-hero-stat-v { color: #065f46; }
+.v3-hero-stat--rev .v3-hero-stat-n { color: #059669; margin-top: 2px; }
+
+@media (max-width: 1099px) {
+  .v3-hero-art { min-height: 0; display: grid; gap: 14px; }
+  .v3-hero-photo { position: relative; height: 220px; clip-path: none; }
+  .v3-hero-stats { position: static; translate: none; width: auto; animation: none; }
+}
+@media (max-width: 639px) {
+  .v3-hero-facts > div + div { padding-left: 0; border-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3-hero, .v3-hero-photo, .v3-hero-stats { animation: none; }
+}
+@media (min-width: 1100px) {
+  .v3-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); align-items: stretch; padding-right: 0; padding-top: 0; padding-bottom: 0; }
+  .v3-hero-text { padding: clamp(24px, 2.6vw, 40px) 0; }
+  .v3-hero-art { min-height: 420px; margin: 0; }
+  .v3-hero-photo { border-radius: 0 28px 28px 0; clip-path: polygon(16% 0, 100% 0, 100% 100%, 0 100%); }
+  .v3-hero-facts { flex-wrap: nowrap; }
+  .v3-hero-facts > div { min-width: 0; }
+}
+.v3-hero-facts { flex-wrap: wrap !important; }
+.v3-hero-facts p { white-space: nowrap; }
+
+/* ── Interests tab ────────────────────────────────────────────────────── */
+
+.ifpc-neu.ifpc-v3 .v3-int { border-radius: 26px; }
+.v3-int-title { display: flex; align-items: center; gap: 16px; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #0b1a4a; }
+.v3-int-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4f46e5;
+  box-shadow: inset 0 0 0 1px rgb(79 70 229 / 0.12);
+}
+.v3-int-icon svg { width: 28px; height: 28px; }
+.v3-int-desc { margin-left: 76px; font-size: 14.5px; }
+.v3-int-exports { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-top: 14px; margin-left: 76px; }
+.v3-int-exports-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #475569; }
+.v3-int-exports-label svg { width: 15px; height: 15px; }
+.v3-int-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--tone) 8%, #fff);
+  border: 1px solid color-mix(in oklab, var(--tone) 16%, transparent);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: color-mix(in oklab, var(--tone) 70%, #0b1a4a);
+  transition: translate 220ms var(--v3-ease), box-shadow 220ms var(--v3-ease);
+}
+.v3-int-export span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tone) 16%, #fff);
+  color: var(--tone);
+}
+.v3-int-export svg { width: 17px; height: 17px; }
+.v3-int-export:hover { translate: 0 -2px; box-shadow: 0 14px 26px -16px color-mix(in oklab, var(--tone) 70%, transparent); }
+.ifpc-neu.ifpc-v3 .v3-int-search input { height: 52px; border-radius: 999px; font-size: 15px; }
+@media (max-width: 639px) {
+  .v3-int-desc, .v3-int-exports { margin-left: 0; }
+  .v3-int-title { font-size: 20px; }
+  .v3-int-icon { width: 48px; height: 48px; }
+}
+.v3-int-search > svg { z-index: 1; }
+.v3-hero-facts > div + div { border-left: 0; padding-left: 0; }
+
+/* Teal/cyan gradient action buttons join the one brand gradient. */
+.ifpc-neu.ifpc-v3 :is(button, a)[class*="from-teal-"],
+.ifpc-neu.ifpc-v3 :is(button, a)[class*="from-emerald-"] {
+  background: var(--v3-grad);
+  border-radius: 999px;
+  box-shadow: 0 12px 24px -12px rgb(37 99 235 / 0.8);
+}
+.ifpc-neu.ifpc-v3 :is(button, a)[class*="from-teal-"]:hover,
+.ifpc-neu.ifpc-v3 :is(button, a)[class*="from-emerald-"]:hover { transform: translateY(-1px); }
+
+/* Page banners in violet/purple take the brand gradient too. */
+.ifpc-neu.ifpc-v3 .bg-gradient-to-br.from-violet-600 {
+  background: radial-gradient(60% 90% at 100% 0%, rgb(129 140 248 / 0.55), transparent 70%), var(--v3-grad);
+}
+
+/* Fields on coloured banners stay glass so their white text reads. */
+.ifpc-neu.ifpc-v3 [class*="bg-gradient"] :is([role="combobox"], input:not([type="checkbox"]):not([type="radio"]), select) {
+  background: rgb(255 255 255 / 0.18);
+  border-color: rgb(255 255 255 / 0.35);
+  color: #fff;
+}
+
+/* ── Sidebar polish ───────────────────────────────────────────────────── */
+
+/* No thin edge lines: the rail's seam and the active item's side bar. */
+.ifpc-neu.ifpc-v3 aside.fixed > .absolute.w-\[1px\] { display: none; }
+.ifpc-neu.ifpc-v3 aside.fixed nav a > span.absolute.w-\[3px\] { display: none; }
+
+/* Rail: roomier, with a soft glow in the lower corner. */
+.ifpc-neu.ifpc-v3 aside.fixed {
+  background:
+    radial-gradient(100% 30% at 0% 100%, rgb(191 219 254 / 0.55), transparent 70%),
+    radial-gradient(80% 25% at 100% 0%, rgb(237 233 254 / 0.6), transparent 70%),
+    #fff;
+  border-radius: 28px;
+}
+/* Items: rounded pills with an icon tile. */
+.ifpc-neu.ifpc-v3 aside.fixed nav a {
+  border-radius: 16px;
+  font-weight: 500;
+}
+.ifpc-neu.ifpc-v3 aside.fixed nav a svg { transition: transform 250ms var(--v3-ease); }
+.ifpc-neu.ifpc-v3 aside.fixed nav a:not([style*="linear-gradient"]):hover svg { transform: scale(1.12); color: #2563eb; }
+.ifpc-neu.ifpc-v3 aside.fixed nav a[style*="linear-gradient"] {
+  font-weight: 600;
+  animation: v3-pop 420ms var(--v3-ease);
+}
+@keyframes v3-pop { from { scale: 0.96; opacity: 0.6; } }
+/* Section labels. */
+.ifpc-neu.ifpc-v3 aside.fixed .tracking-\[0\.15em\] { color: #94a3b8; font-weight: 700; }
+/* Brand block at the top. */
+.ifpc-neu.ifpc-v3 aside.fixed > div:first-of-type .border-b { border-color: rgb(15 23 42 / 0.06); }
+
+/* ── Dashboard home cards ─────────────────────────────────────────────── */
+
+/* Greeting banner in the brand gradient, with a slow light sweep. */
+.ifpc-neu.ifpc-v3 .v3-greet {
+  background:
+    radial-gradient(60% 90% at 100% 0%, rgb(129 140 248 / 0.55), transparent 70%),
+    radial-gradient(50% 80% at 0% 100%, rgb(14 165 233 / 0.45), transparent 70%),
+    var(--v3-grad) !important;
+  border-radius: 28px;
+  box-shadow: 0 30px 60px -32px rgb(37 99 235 / 0.7);
+}
+.ifpc-neu.ifpc-v3 .v3-greet::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 0.18) 50%, transparent 65%);
+  translate: -100% 0;
+  animation: v3-sweep 7s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes v3-sweep { 0%, 60% { translate: -100% 0; } 100% { translate: 100% 0; } }
+
+/* Stat cards and panels: the teal/gold wash becomes blue/violet. */
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards > .rounded-2xl::before,
+.ifpc-neu.ifpc-v3 .ifpc-dash-panel.rounded-2xl::before {
+  background:
+    radial-gradient(90% 70% at 85% 20%, rgb(96 165 250 / 0.28), transparent 70%),
+    radial-gradient(80% 70% at 95% 95%, rgb(167 139 250 / 0.28), transparent 70%),
+    linear-gradient(160deg, #eef4ff, #f5f0ff);
+}
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards > .rounded-2xl { border-radius: 24px; transition: transform 300ms var(--v3-ease), box-shadow 300ms var(--v3-ease); }
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards > .rounded-2xl:hover { transform: translateY(-4px); box-shadow: 0 26px 50px -28px rgb(37 99 235 / 0.55); }
+/* The figure itself in the brand gradient. */
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards > .rounded-2xl p.text-2xl,
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards > .rounded-2xl p.text-3xl,
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards > .rounded-2xl .text-4xl {
+  background: linear-gradient(95deg, #0b1a4a 20%, #2563eb 70%, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+/* Mini bar graphs rise in. */
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards .h-5 > div { transform-origin: bottom; animation: v3-bar 700ms var(--v3-ease) both; }
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards .h-5 > div:nth-child(2) { animation-delay: 60ms; }
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards .h-5 > div:nth-child(3) { animation-delay: 120ms; }
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards .h-5 > div:nth-child(4) { animation-delay: 180ms; }
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards .h-5 > div:nth-child(5) { animation-delay: 240ms; }
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards .h-5 > div:nth-child(6) { animation-delay: 300ms; }
+.ifpc-neu.ifpc-v3 .ifpc-dash-cards .h-5 > div:nth-child(7) { animation-delay: 360ms; }
+@keyframes v3-bar { from { scale: 1 0; } }
+/* "View all" and quick-action tiles. */
+.ifpc-neu.ifpc-v3 .ifpc-dash-panel > :first-child > a:hover { background: var(--v3-grad); color: #fff; }
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-neu.ifpc-v3 .v3-greet::after, .ifpc-neu.ifpc-v3 .ifpc-dash-cards .h-5 > div { animation: none; }
+}

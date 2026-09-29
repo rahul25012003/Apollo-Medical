@@ -78,6 +78,9 @@ import {
     ScanLine,
     Camera,
     Heart,
+    Home,
+    UserRound,
+    Mic,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiimsLoader } from "@/components/ui/aiims-loader";
@@ -350,6 +353,31 @@ export default function EventDetailPage() {
             setPublishDialogOpen(true);
         }
     };
+
+    // Keep the registrations count and capacity live: re-read them every 20s
+    // and when the tab regains focus, without reloading the rest of the page.
+    useEffect(() => {
+        let alive = true;
+        const refresh = async () => {
+            try {
+                const response = await eventsService.getById(eventId);
+                if (!alive || !response.success || !response.data) return;
+                const e = response.data;
+                const count = e._count?.registrations || 0;
+                setEvent(prev => prev ? { ...prev, registrations: count, capacity: e.capacity, revenue: count * Number(e.price) } : prev);
+            } catch { /* keep the last values */ }
+        };
+        const id = setInterval(refresh, 20000);
+        const onFocus = () => { if (document.visibilityState === "visible") refresh(); };
+        document.addEventListener("visibilitychange", onFocus);
+        window.addEventListener("focus", onFocus);
+        return () => {
+            alive = false;
+            clearInterval(id);
+            document.removeEventListener("visibilitychange", onFocus);
+            window.removeEventListener("focus", onFocus);
+        };
+    }, [eventId]);
 
     // Fetch event from API
     useEffect(() => {
@@ -1092,7 +1120,67 @@ export default function EventDetailPage() {
                     </div>
                 </div>
 
-                {/* Event Header Card */}
+                {/* Event Header — IFPC: the hero layout (same data) */}
+                {isIfpc ? (() => {
+                    const words = event.title.split(" ");
+                    const cut = Math.ceil(words.length / 3);
+                    return (
+                    <section className="v3-hero">
+                        <div className="v3-hero-text">
+                            <div className="v3-hero-chips">
+                                <Badge variant="outline" className={cn("text-xs", statusConfig.className)}>
+                                    <StatusIcon className="w-3 h-3 mr-1" />
+                                    {statusConfig.label}
+                                </Badge>
+                                <Badge variant="secondary">{event.type}</Badge>
+                                {event.category && <Badge variant="outline">{event.category}</Badge>}
+                                {event.cmeCredits && event.cmeCredits > 0 && (
+                                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                        <Award className="w-3 h-3 mr-1" />
+                                        {event.cmeCredits} CME Credits
+                                    </Badge>
+                                )}
+                            </div>
+                            <h1 className="v3-hero-title">{words.slice(0, cut).join(" ")} <span>{words.slice(cut).join(" ")}</span></h1>
+                            <p className="v3-hero-desc">{event.description}</p>
+                            <div className="v3-hero-facts">
+                                <div>
+                                    <span className="v3-hero-ic"><Calendar /></span>
+                                    <div><p>{event.date}</p><p>{event.time}</p></div>
+                                </div>
+                                <div>
+                                    <span className="v3-hero-ic"><MapPin /></span>
+                                    <div><p>{event.location}</p><p>{event.city}</p></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="v3-hero-art">
+                            <div className="v3-hero-photo" style={{ backgroundImage: `url(${getEventImage(event.bannerImage, null, event.type)})` }} />
+                            <div className="v3-hero-stats">
+                                <div className="v3-hero-stat">
+                                    <span className="v3-hero-ic"><Users /></span>
+                                    <div>
+                                        <p className="v3-hero-stat-l">Registrations</p>
+                                        <p className="v3-hero-stat-v">{event.registrations}/{event.capacity}</p>
+                                    </div>
+                                </div>
+                                <div className="v3-hero-bar"><span style={{ width: `${Math.min(capacityPercentage, 100)}%` }} /></div>
+                                <p className="v3-hero-stat-n">{capacityPercentage}% filled</p>
+                                <div className="v3-hero-stat v3-hero-stat--rev">
+                                    <span className="v3-hero-ic"><TrendingUp /></span>
+                                    <div>
+                                        <p className="v3-hero-stat-l">Revenue</p>
+                                        <p className="v3-hero-stat-v">₹{event.revenue.toLocaleString()}</p>
+                                        {event.registrations > 0 && (
+                                            <p className="v3-hero-stat-n">Avg: ₹{Math.round(event.revenue / event.registrations).toLocaleString()}/registration</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    );
+                })() : (
                 <Card className="overflow-hidden">
                     {/* Banner Image */}
                     <div
@@ -1180,17 +1268,18 @@ export default function EventDetailPage() {
                         </div>
                     </CardContent>
                 </Card>
+                )}
 
                 {/* Tabs */}
                 <Tabs defaultValue="overview" className="space-y-6">
                     <TabsList className="flex flex-wrap gap-1 w-full lg:w-auto">
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="registrations">Registration</TabsTrigger>
+                        <TabsTrigger value="overview" className="gap-1.5">{isIfpc && <Home className="h-3.5 w-3.5" />}Overview</TabsTrigger>
+                        <TabsTrigger value="registrations" className="gap-1.5">{isIfpc && <UserRound className="h-3.5 w-3.5" />}Registration</TabsTrigger>
                         <TabsTrigger value="venues" className="gap-1.5">
                             <Building2 className="h-3.5 w-3.5" />
                             Venues & Halls
                         </TabsTrigger>
-                        <TabsTrigger value="speakers">Speakers</TabsTrigger>
+                        <TabsTrigger value="speakers" className="gap-1.5">{isIfpc && <Mic className="h-3.5 w-3.5" />}Speakers</TabsTrigger>
                         <TabsTrigger value="scientific-program" className="gap-1.5">
                             <Mic2 className="h-3.5 w-3.5" />
                             Scientific Program

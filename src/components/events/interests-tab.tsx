@@ -241,37 +241,38 @@ export function InterestsTab({ eventId }: { eventId: string }) {
     }
 
     return (
-        <Card>
+        <Card className="v3-int">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Heart className="h-5 w-5 text-rose-600" />
+                <CardTitle className="v3-int-title">
+                    <span className="v3-int-icon" aria-hidden="true"><Heart /></span>
                     Interests & Preferences
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="v3-int-desc">
                     Everything delegates have expressed interest in for this event, linked to their registration
                 </CardDescription>
-                <div className="flex flex-wrap items-center gap-2 pt-2">
-                    <span className="text-xs font-medium text-muted-foreground">Download (Excel/CSV):</span>
-                    {EXPORTS.map((x) => (
+                <div className="v3-int-exports">
+                    <span className="v3-int-exports-label"><Download aria-hidden="true" /> Download (Excel/CSV):</span>
+                    {EXPORTS.map((x, i) => (
                         <a
                             key={x.type}
                             href={`/api/events/${eventId}/exports?type=${x.type}`}
                             download
-                            className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+                            className="v3-int-export"
+                            style={{ "--tone": ["#7c3aed", "#16a34a", "#ea580c", "#db2777", "#0d9488"][i % 5] } as React.CSSProperties}
                         >
-                            <Download className="h-3.5 w-3.5" /> {x.label}
+                            <span aria-hidden="true"><Download /></span> {x.label}
                         </a>
                     ))}
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="relative v3-int-search">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search by name or email..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9"
+                        className="pl-11"
                     />
                 </div>
 

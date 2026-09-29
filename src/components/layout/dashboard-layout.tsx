@@ -43,7 +43,10 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
                     {/* Premium Page Header */}
                     <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                         <div>
-                            <h1 className="section-heading">{title}</h1>
+                            <h1 className="section-heading">
+                                {/* Last word wrapped so the IFPC design can colour it; same text. */}
+                                {title.includes(" ") ? <>{title.slice(0, title.lastIndexOf(" ") + 1)}<span className="v3-accent">{title.slice(title.lastIndexOf(" ") + 1)}</span></> : title}
+                            </h1>
                             {subtitle && (
                                 <p className="text-sm text-slate-500 mt-1.5 max-w-2xl">{subtitle}</p>
                             )}

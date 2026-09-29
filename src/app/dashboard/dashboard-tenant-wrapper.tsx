@@ -6,6 +6,7 @@ import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import type { TenantConfig } from "@/lib/tenant/types";
 import "../ifpc-neu.css";
 import "@/components/ifpc/ifpc-platform.css";
+import "../ifpc-dash-v3.css";
 
 export function DashboardTenantWrapper({
     children,
@@ -21,7 +22,7 @@ export function DashboardTenantWrapper({
 
     return (
         <TenantProvider tenantId={effectiveTenantId} initialConfig={initialConfig ?? undefined}>
-            <div className={neu ? "ifpc-neu" : undefined}>{children}</div>
+            <div className={neu ? "ifpc-neu ifpc-v3" : undefined}>{children}</div>
         </TenantProvider>
     );
 }

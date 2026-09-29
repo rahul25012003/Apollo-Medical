@@ -270,7 +270,7 @@ export default function DashboardPage() {
     // ========== HERO GREETING (shared between all roles) ==========
     const HeroGreeting = () => (
         <div
-            className="relative overflow-hidden rounded-2xl p-6 sm:p-8 lg:p-10 mb-6"
+            className="v3-greet relative overflow-hidden rounded-2xl p-6 sm:p-8 lg:p-10 mb-6"
             style={{ background: `linear-gradient(135deg, ${accent.color1}, ${accent.color2})` }}
         >
             {/* Decorative elements */}
