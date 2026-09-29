@@ -1,0 +1,457 @@
+/*
+ * IFPC home: Scientific Highlights, Pre-Conference Workshops, Delegate
+ * Experience, Speakers and About NIMHANS in the light reference style:
+ * soft sky-white bands, navy titles ending in a blue-violet gradient word,
+ * white cards with coloured number badges and pastel icon tiles.
+ */
+
+.ifpc-sx {
+  --navy: #0b1a4a;
+  --ink: #475569;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(56px, 8vw, 104px) 0;
+  color: var(--navy);
+}
+.ifpc-sx--sky {
+  background:
+    radial-gradient(40% 50% at 0% 0%, rgb(219 234 254 / 0.8), transparent 70%),
+    radial-gradient(35% 45% at 100% 100%, rgb(237 233 254 / 0.7), transparent 70%),
+    linear-gradient(180deg, #f5f8ff 0%, #f8faff 100%);
+}
+.ifpc-sx--soft {
+  background:
+    radial-gradient(40% 50% at 100% 0%, rgb(219 234 254 / 0.6), transparent 70%),
+    radial-gradient(35% 45% at 0% 100%, rgb(204 251 241 / 0.45), transparent 70%),
+    #fbfcff;
+}
+.ifpc-sx-wrap {
+  width: 100%;
+  max-width: min(94vw, 1320px);
+  margin: 0 auto;
+  padding: 0 clamp(16px, 3vw, 32px);
+}
+
+.ifpc-sx-title {
+  margin: 0;
+  font-size: clamp(32px, 4.2vw, 56px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  color: var(--navy);
+}
+.ifpc-sx-title span {
+  color: #4f46e5;
+  background: linear-gradient(95deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.ifpc-sx-lead {
+  margin: 16px 0 0;
+  max-width: 34rem;
+  font-size: clamp(15px, 1.2vw, 17px);
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.ifpc-sx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease), border-color 220ms var(--ease), color 220ms var(--ease);
+}
+.ifpc-sx-btn svg { width: 18px; height: 18px; }
+.ifpc-sx-btn--primary {
+  margin-top: 24px;
+  color: #fff;
+  background: linear-gradient(95deg, #2563eb 0%, #4f46e5 60%, #6d28d9 100%);
+  box-shadow: 0 14px 30px -14px rgb(79 70 229 / 0.75);
+}
+.ifpc-sx-btn--primary:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -14px rgb(79 70 229 / 0.85); }
+.ifpc-sx-btn--ghost {
+  color: #3730a3;
+  border: 1.5px solid rgb(79 70 229 / 0.45);
+  background: rgb(255 255 255 / 0.9);
+}
+.ifpc-sx-btn--ghost:hover { transform: translateY(-2px); border-color: #4f46e5; }
+.ifpc-sx-btn:active { transform: scale(0.97); }
+.ifpc-sx-btn:focus-visible { outline: 3px solid rgb(79 70 229 / 0.4); outline-offset: 3px; }
+
+/* Shared card look. */
+.ifpc-hl-item > div,
+.ifpc-dx-card > div,
+.ifpc-pre {
+  border: 1px solid rgb(15 23 42 / 0.06);
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgb(15 23 42 / 0.04), 0 18px 40px -30px rgb(15 40 80 / 0.4);
+  backdrop-filter: blur(10px);
+}
+
+/* ── Scientific Highlights ────────────────────────────────────────────── */
+
+.ifpc-hl {
+  display: grid;
+  gap: clamp(28px, 4vw, 56px);
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .ifpc-hl { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+}
+.ifpc-hl-photo {
+  position: relative;
+  margin-top: clamp(24px, 3vw, 40px);
+  overflow: hidden;
+  border-radius: 24px;
+  box-shadow: 0 30px 60px -34px rgb(15 40 80 / 0.55);
+}
+.ifpc-hl-photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  object-position: 25% 50%;
+  transition: transform 1.2s var(--ease);
+}
+.ifpc-hl-photo:hover img { transform: scale(1.04); }
+.ifpc-hl-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgb(11 26 74 / 0.55) 100%);
+  pointer-events: none;
+}
+.ifpc-hl-photo span {
+  position: absolute;
+  z-index: 1;
+  left: 20px;
+  bottom: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 10px rgb(0 0 0 / 0.4);
+}
+
+.ifpc-hl-list { display: grid; gap: 12px; }
+.ifpc-hl-item > div {
+  --tone: #4f46e5;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  transition: translate 300ms var(--ease), box-shadow 300ms var(--ease), border-color 300ms var(--ease);
+}
+.ifpc-hl-item > div:hover {
+  translate: 4px 0;
+  border-color: color-mix(in oklab, var(--tone) 30%, transparent);
+  box-shadow: inset 0 1px 0 #fff, 0 22px 44px -28px color-mix(in oklab, var(--tone) 55%, transparent);
+}
+.ifpc-hl-num {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background: linear-gradient(150deg, color-mix(in oklab, var(--tone) 80%, #fff), var(--tone));
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 8px 18px -8px color-mix(in oklab, var(--tone) 80%, transparent);
+}
+.ifpc-hl-icon,
+.ifpc-dx-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tone) 12%, #fff);
+  color: var(--tone);
+}
+.ifpc-hl-icon { width: 46px; height: 46px; }
+.ifpc-hl-icon svg { width: 22px; height: 22px; }
+.ifpc-hl-item p { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.45; color: var(--navy); }
+.ifpc-hl-chev {
+  width: 30px;
+  height: 30px;
+  padding: 7px;
+  border-radius: 999px;
+  background: #f1f5fd;
+  color: #64748b;
+  transition: background-color 250ms var(--ease), color 250ms var(--ease);
+}
+.ifpc-hl-item > div:hover .ifpc-hl-chev { background: var(--tone); color: #fff; }
+
+/* ── Pre-Conference Workshops ─────────────────────────────────────────── */
+
+.ifpc-pre {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 2.4vw, 28px);
+  margin-top: clamp(28px, 4vw, 48px);
+  padding: clamp(18px, 2.4vw, 28px) clamp(18px, 3vw, 36px);
+  border-radius: 28px;
+  background:
+    radial-gradient(60% 120% at 0% 50%, rgb(224 231 255 / 0.8), transparent 70%),
+    rgb(255 255 255 / 0.92);
+}
+.ifpc-pre-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: clamp(60px, 6vw, 84px);
+  height: clamp(60px, 6vw, 84px);
+  border-radius: 999px;
+  background: linear-gradient(150deg, #818cf8, #4f46e5 60%, #6d28d9);
+  color: #fff;
+  box-shadow: 0 0 0 8px rgb(224 231 255 / 0.9), 0 14px 30px -12px rgb(79 70 229 / 0.7);
+}
+.ifpc-pre-icon svg { width: 44%; height: 44%; }
+.ifpc-pre-title { margin: 0; font-size: 12.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #4f46e5; }
+.ifpc-pre-text { margin: 6px 0 0; font-size: 15px; line-height: 1.6; color: var(--navy); }
+.ifpc-pre-note { margin: 6px 0 0; font-size: 13px; color: #64748b; }
+.ifpc-pre-note a { color: #4f46e5; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── Delegate Experience ──────────────────────────────────────────────── */
+
+.ifpc-dx-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: clamp(28px, 3.4vw, 44px);
+}
+@media (min-width: 768px) {
+  .ifpc-dx-grid { grid-template-columns: 1fr 1fr; }
+}
+.ifpc-dx-card > div {
+  --tone: #4f46e5;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 100%;
+  padding: 20px 24px;
+  border-radius: 22px;
+  transition: translate 300ms var(--ease), box-shadow 300ms var(--ease), border-color 300ms var(--ease);
+}
+.ifpc-dx-card > div:hover {
+  translate: 0 -3px;
+  border-color: color-mix(in oklab, var(--tone) 28%, transparent);
+  box-shadow: inset 0 1px 0 #fff, 0 26px 50px -30px color-mix(in oklab, var(--tone) 55%, transparent);
+}
+.ifpc-dx-icon {
+  width: 72px;
+  height: 72px;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tone) 14%, transparent);
+  transition: transform 400ms var(--ease);
+}
+.ifpc-dx-icon svg { width: 32px; height: 32px; }
+.ifpc-dx-card > div:hover .ifpc-dx-icon { transform: scale(1.06) rotate(-5deg); }
+.ifpc-dx-card h3 { margin: 0; font-size: 17px; font-weight: 700; color: var(--navy); }
+.ifpc-dx-card p { margin: 6px 0 0; font-size: 14px; line-height: 1.6; color: var(--ink); }
+
+.ifpc-sx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: clamp(24px, 3vw, 36px);
+}
+.ifpc-sx-actions .ifpc-sx-btn { margin-top: 0; }
+
+/* ── Speakers ─────────────────────────────────────────────────────────── */
+
+.ifpc-sp-grid {
+  display: grid;
+  gap: 18px;
+  margin-top: clamp(28px, 3.4vw, 44px);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+@media (min-width: 1100px) {
+  .ifpc-sp-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.ifpc-sp-card > div {
+  --tone: #4f46e5;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 20px 18px;
+  border-radius: 24px;
+  border: 1px solid rgb(255 255 255 / 0.9);
+  background:
+    radial-gradient(90% 60% at 80% 0%, color-mix(in oklab, var(--tone) 18%, #fff), transparent 72%),
+    linear-gradient(180deg, #fff, rgb(255 255 255 / 0.9));
+  box-shadow: inset 0 1px 0 #fff, 0 18px 40px -30px rgb(15 40 80 / 0.45);
+  transition: translate 300ms var(--ease), box-shadow 300ms var(--ease);
+}
+.ifpc-sp-card > div:hover {
+  translate: 0 -4px;
+  box-shadow: inset 0 1px 0 #fff, 0 28px 54px -30px color-mix(in oklab, var(--tone) 55%, transparent);
+}
+/* A soft blob behind the portrait. */
+.ifpc-sp-card > div::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  margin-left: -75px;
+  border-radius: 46% 54% 58% 42% / 48% 40% 60% 52%;
+  background: color-mix(in oklab, var(--tone) 16%, #fff);
+  z-index: 0;
+}
+.ifpc-sp-photo {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 128px;
+  height: 128px;
+  margin: 8px auto 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 4px #fff, 0 14px 30px -14px rgb(15 40 80 / 0.5);
+  color: var(--tone);
+}
+.ifpc-sp-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 800ms var(--ease); }
+.ifpc-sp-card > div:hover .ifpc-sp-photo img { transform: scale(1.06); }
+.ifpc-sp-photo svg { width: 44px; height: 44px; }
+.ifpc-sp-card h3 { position: relative; margin: 0; font-size: 16px; font-weight: 700; line-height: 1.3; color: var(--navy); }
+.ifpc-sp-role { margin: 4px 0 0; font-size: 13.5px; color: var(--ink); }
+.ifpc-sp-inst { margin: 2px 0 0; font-size: 12.5px; color: #94a3b8; }
+.ifpc-sp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+.ifpc-sp-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--tone);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #fff;
+}
+.ifpc-sp-note { margin: 32px 0 0; text-align: center; font-size: 14px; font-style: italic; color: #94a3b8; }
+
+/* ── About NIMHANS ────────────────────────────────────────────────────── */
+
+.ifpc-nm {
+  display: grid;
+  gap: clamp(28px, 4vw, 56px);
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .ifpc-nm { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  .ifpc-nm-photos { position: sticky; top: 110px; }
+}
+.ifpc-nm-head { display: flex; align-items: center; gap: 18px; }
+.ifpc-nm-head img {
+  width: clamp(56px, 5vw, 72px);
+  height: clamp(56px, 5vw, 72px);
+  flex: none;
+  padding: 6px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 10px 24px -14px rgb(15 40 80 / 0.5);
+  object-fit: contain;
+}
+.ifpc-nm-body {
+  position: relative;
+  margin-top: clamp(22px, 3vw, 34px);
+  padding-left: 26px;
+  display: grid;
+  gap: 16px;
+}
+/* A thin line down the history. */
+.ifpc-nm-body::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2563eb, #7c3aed 60%, rgb(124 58 237 / 0.1));
+}
+.ifpc-nm-body p { margin: 0; font-size: 15.5px; line-height: 1.8; color: var(--ink); }
+.ifpc-nm-body p.ifpc-nm-lead { font-size: clamp(17px, 1.4vw, 19px); font-weight: 500; line-height: 1.7; color: var(--navy); }
+
+.ifpc-nm-photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.ifpc-nm-photos figure {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow: 0 24px 50px -32px rgb(15 40 80 / 0.6);
+}
+.ifpc-nm-photos figure.ifpc-nm-main { grid-column: 1 / -1; }
+.ifpc-nm-photos img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  transition: transform 1.2s var(--ease);
+}
+.ifpc-nm-photos .ifpc-nm-main img { aspect-ratio: 16 / 9; }
+.ifpc-nm-photos figure:hover img { transform: scale(1.05); }
+.ifpc-nm-photos figure::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgb(11 26 74 / 0.6) 100%);
+  pointer-events: none;
+}
+.ifpc-nm-photos figcaption {
+  position: absolute;
+  z-index: 1;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+}
+
+/* ── Phones ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 639px) {
+  .ifpc-hl-item > div { grid-template-columns: auto minmax(0, 1fr); gap: 12px; padding: 12px 14px; }
+  .ifpc-hl-icon, .ifpc-hl-chev { display: none; }
+  .ifpc-hl-num { width: 40px; height: 40px; font-size: 15px; }
+  .ifpc-hl-item p { font-size: 14px; }
+  .ifpc-pre { flex-direction: column; align-items: flex-start; }
+  .ifpc-dx-card > div { padding: 16px; gap: 14px; }
+  .ifpc-dx-icon { width: 56px; height: 56px; }
+  .ifpc-dx-icon svg { width: 26px; height: 26px; }
+  .ifpc-sx-actions { justify-content: stretch; }
+  .ifpc-sx-actions .ifpc-sx-btn { flex: 1 1 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-sx *, .ifpc-sx *::before { transition: none !important; }
+  .ifpc-hl-item > div:hover, .ifpc-dx-card > div:hover, .ifpc-sp-card > div:hover { translate: none; }
+}

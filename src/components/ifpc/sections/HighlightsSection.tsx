@@ -1,14 +1,31 @@
 "use client";
 
-import Link from "next/link";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
-import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
-import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/ifpc/design/Reveal";
 import { HIGHLIGHTS, CTA_LINKS } from "@/content/ifpc-2026";
-import { Sparkles, ArrowRight, Tent } from "lucide-react";
+import {
+  ArrowRight, ChevronRight, CalendarDays, FileText,
+  Mic2, Layers, ClipboardList, Users, Globe2, Handshake, TrendingUp,
+  Landmark, Flower2, Music, UtensilsCrossed, Award, BadgeCheck, ScrollText,
+} from "lucide-react";
 import { format } from "date-fns";
+import "./ifpc-sections.css";
 
-const BADGE_COLORS = ["#4B2FE5", "#1e3a5f", "#CCFF33"];
+// One accent per row, in order (decoration only).
+const TONES = ["#7c3aed", "#2563eb", "#16a34a", "#ea580c", "#db2777", "#4f46e5", "#0d9488"];
+const HIGHLIGHT_ICONS = [Mic2, Layers, ClipboardList, Users, Globe2, Handshake, TrendingUp];
+const EXPERIENCE_ICONS = [Landmark, Flower2, Music, UtensilsCrossed, Award, BadgeCheck, ScrollText];
+
+/** Last word of a title in the brand gradient. */
+function Title({ text }: { text: string }) {
+  const words = text.split(" ");
+  const last = words.pop();
+  return (
+    <h2 className="ifpc-sx-title">
+      {words.join(" ")} <span>{last}</span>
+    </h2>
+  );
+}
 
 export function HighlightsSection() {
   const { event } = useIfpcEvent();
@@ -16,71 +33,90 @@ export function HighlightsSection() {
 
   return (
     <>
-      <Section>
-        <div className="grid lg:grid-cols-12 gap-2 lg:gap-12">
-          <div className="lg:col-span-4">
-            <SectionTitle title={HIGHLIGHTS.scientific.title} subtitle={HIGHLIGHTS.intro} />
-            <a
-              href={CTA_LINKS.viewProgramme.href}
-              className="-mt-4 mb-8 lg:mb-0 inline-flex items-center gap-2 rounded-full border-2 border-[#4B2FE5] px-5 py-2.5 text-sm font-bold text-[#4B2FE5] transition-colors hover:bg-[#4B2FE5] hover:text-white"
-            >
-              {CTA_LINKS.viewProgramme.label} <ArrowRight className="h-4 w-4" />
+      <section className="ifpc-v2 ifpc-sx ifpc-sx--sky">
+        <div className="ifpc-sx-wrap">
+          <div className="ifpc-hl">
+            <div className="ifpc-hl-intro">
+              <Reveal>
+                <Title text={HIGHLIGHTS.scientific.title} />
+                <p className="ifpc-sx-lead">{HIGHLIGHTS.intro}</p>
+                <a href={CTA_LINKS.viewProgramme.href} className="ifpc-sx-btn ifpc-sx-btn--primary">
+                  {CTA_LINKS.viewProgramme.label} <ArrowRight aria-hidden="true" />
+                </a>
+              </Reveal>
+              <Reveal delayMs={120} className="ifpc-hl-photo">
+                <img src="/ifpc/campus/convention-centre.jpg" alt="NIMHANS Convention Centre" loading="lazy" />
+                <span>NIMHANS Convention Centre</span>
+              </Reveal>
+            </div>
+
+            <div className="ifpc-hl-list" role="list">
+              {HIGHLIGHTS.scientific.items.map((item, i) => {
+                const Icon = HIGHLIGHT_ICONS[i % HIGHLIGHT_ICONS.length];
+                return (
+                  <Reveal key={i} delayMs={i * 60} className="ifpc-hl-item">
+                    <div role="listitem" style={{ "--tone": TONES[i % TONES.length] } as React.CSSProperties}>
+                      <span className="ifpc-hl-num">{String(i + 1).padStart(2, "0")}</span>
+                      <span className="ifpc-hl-icon" aria-hidden="true"><Icon /></span>
+                      <p>{item}</p>
+                      <ChevronRight className="ifpc-hl-chev" aria-hidden="true" />
+                    </div>
+                  </Reveal>
+                );
+              })}
+            </div>
+          </div>
+
+          {event?.startDate && !hasEnded && (
+            <Reveal className="ifpc-pre">
+              <span className="ifpc-pre-icon" aria-hidden="true"><CalendarDays /></span>
+              <div>
+                <p className="ifpc-pre-title">{HIGHLIGHTS.preConference.title}</p>
+                <p className="ifpc-pre-text">
+                  Hands-on workshops on {format(new Date(event.startDate), "d MMMM yyyy")}, led by national and international experts, offering interactive sessions designed to bridge psychiatry and the justice system effectively.
+                </p>
+                <p className="ifpc-pre-note">
+                  Seat availability for individual workshops is tracked live on the{" "}
+                  <a href="#programme">Scientific Programme</a> section below.
+                </p>
+              </div>
+            </Reveal>
+          )}
+        </div>
+      </section>
+
+      <section className="ifpc-v2 ifpc-sx ifpc-sx--soft">
+        <div className="ifpc-sx-wrap">
+          <Reveal>
+            <Title text={HIGHLIGHTS.delegateExperience.title} />
+          </Reveal>
+          <div className="ifpc-dx-grid">
+            {HIGHLIGHTS.delegateExperience.items.map((item, i) => {
+              const Icon = EXPERIENCE_ICONS[i % EXPERIENCE_ICONS.length];
+              return (
+                <Reveal key={item.title} delayMs={(i % 2) * 90} className="ifpc-dx-card">
+                  <div style={{ "--tone": TONES[i % TONES.length] } as React.CSSProperties}>
+                    <span className="ifpc-dx-icon" aria-hidden="true"><Icon /></span>
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>{item.text}</p>
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+
+          <div className="ifpc-sx-actions">
+            <a href="#registration" className="ifpc-sx-btn ifpc-sx-btn--primary">
+              <CalendarDays aria-hidden="true" /> {CTA_LINKS.registerNow.label} <ArrowRight aria-hidden="true" />
+            </a>
+            <a href="#programme" className="ifpc-sx-btn ifpc-sx-btn--ghost">
+              <FileText aria-hidden="true" /> {CTA_LINKS.viewProgramme.label} <ArrowRight aria-hidden="true" />
             </a>
           </div>
-          <ol className="lg:col-span-8 divide-y divide-slate-200 border-y border-slate-200">
-            {HIGHLIGHTS.scientific.items.map((item, i) => (
-              <li key={i} className="flex gap-4 sm:gap-6 py-5">
-                <span className="w-9 sm:w-11 flex-none text-2xl sm:text-3xl font-extrabold tabular-nums leading-none text-[#4B2FE5]">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <p className="text-[15px] sm:text-base leading-relaxed opacity-80">{item}</p>
-              </li>
-            ))}
-          </ol>
         </div>
-      </Section>
-
-      {event?.startDate && !hasEnded && (
-        <Section tint>
-          <div className="rounded-2xl bg-slate-900 text-white p-8 max-w-3xl mx-auto">
-            <p className="text-xs font-semibold uppercase tracking-widest text-amber-300 mb-2">{HIGHLIGHTS.preConference.title}</p>
-            <p className="text-slate-200 leading-relaxed">
-              Hands-on workshops on {format(new Date(event.startDate), "d MMMM yyyy")}, led by national and international experts, offering interactive sessions designed to bridge psychiatry and the justice system effectively.
-            </p>
-            <p className="text-xs text-slate-400 mt-3">
-              Seat availability for individual workshops is tracked live on the{" "}
-              <a href="#programme" className="text-amber-300 underline underline-offset-2">Scientific Programme</a> section below.
-            </p>
-          </div>
-        </Section>
-      )}
-
-      <Section>
-        <SectionTitle title={HIGHLIGHTS.delegateExperience.title} />
-        <div className="grid sm:grid-cols-2 gap-5">
-          {HIGHLIGHTS.delegateExperience.items.map((item, i) => (
-            <div
-              key={item.title}
-              className={`rounded-xl border border-slate-200 bg-white shadow-sm relative p-5 pt-6 ${i % 4 === 1 ? "" : i % 4 === 3 ? "" : ""}`}
-            >
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white absolute -top-3 -left-3" style={{ background: BADGE_COLORS[i % BADGE_COLORS.length] }}>
-                <Sparkles className="h-4 w-4" />
-              </span>
-              <h3 className="font-bold pl-2 mb-1.5">{item.title}</h3>
-              <p className="text-sm opacity-70 leading-relaxed pl-2">{item.text}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
-          <Button asChild size="lg" className="h-12 px-8 text-base">
-            <a href="#registration">{CTA_LINKS.registerNow.label} <ArrowRight className="ml-2 h-4 w-4 inline" /></a>
-          </Button>
-          <Button asChild size="lg" variant="outline" className="h-12 px-8 text-base">
-            <a href="#programme">{CTA_LINKS.viewProgramme.label}</a>
-          </Button>
-        </div>
-      </Section>
+      </section>
     </>
   );
 }

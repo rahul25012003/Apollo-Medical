@@ -1,6 +1,6 @@
-import { Section } from "@/components/ifpc/IfpcShell";
 import { Reveal } from "@/components/ifpc/design/Reveal";
 import "./ifpc-bridges.css";
+import "./ifpc-sections.css";
 import { ABOUT } from "@/content/ifpc-2026";
 
 /** An arch bridge spanning the gap between the two sides of each theme pair;
@@ -55,17 +55,42 @@ export function AboutExtendedSection() {
         </div>
       </section>
 
-      <Section>
-        <div className="flex items-center gap-4 mb-8">
-          <img src="/ifpc/nimhans-logo.png" alt="NIMHANS" className="h-16 w-16 object-contain flex-none rounded-2xl border border-black/5 p-1 bg-white" />
-          <h2 className="text-[26px] sm:text-[32px] font-extrabold tracking-tight leading-tight">{ABOUT.nimhans.title}</h2>
+      {/* About NIMHANS: the text beside original photos of the campus. */}
+      <section className="ifpc-v2 ifpc-sx ifpc-sx--soft">
+        <div className="ifpc-sx-wrap ifpc-nm">
+          <div className="ifpc-nm-text">
+            <Reveal>
+              <div className="ifpc-nm-head">
+                <img src="/ifpc/nimhans-logo.png" alt="NIMHANS" />
+                <h2 className="ifpc-sx-title">
+                  {ABOUT.nimhans.title.split(" ")[0]} <span>{ABOUT.nimhans.title.split(" ").slice(1).join(" ")}</span>
+                </h2>
+              </div>
+            </Reveal>
+            <div className="ifpc-nm-body">
+              {ABOUT.nimhans.paragraphs.map((p, i) => (
+                <Reveal key={i} delayMs={i * 80}>
+                  <p className={i === 0 ? "ifpc-nm-lead" : undefined}>{p}</p>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+          <Reveal delayMs={120} className="ifpc-nm-photos">
+            <figure className="ifpc-nm-main">
+              <img src="/ifpc/campus/administrative-block.jpg" alt="NIMHANS Administrative Block" loading="lazy" />
+              <figcaption>NIMHANS Administrative Block</figcaption>
+            </figure>
+            <figure>
+              <img src="/ifpc/campus/convention-centre-entrance.jpg" alt="Convention Centre entrance" loading="lazy" />
+              <figcaption>Convention Centre entrance</figcaption>
+            </figure>
+            <figure>
+              <img src="/ifpc/campus/convention-centre-night.jpg" alt="The Convention Centre by night" loading="lazy" />
+              <figcaption>The Convention Centre by night</figcaption>
+            </figure>
+          </Reveal>
         </div>
-        <div className="space-y-4 max-w-3xl">
-          {ABOUT.nimhans.paragraphs.map((p, i) => (
-            <p key={i} className="opacity-75 leading-relaxed">{p}</p>
-          ))}
-        </div>
-      </Section>
+      </section>
     </>
   );
 }
