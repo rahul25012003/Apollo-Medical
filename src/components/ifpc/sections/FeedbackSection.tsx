@@ -3,35 +3,54 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
-import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
+import { Reveal } from "@/components/ifpc/design/Reveal";
 import { IfpcFeedbackForms } from "@/components/ifpc/IfpcFeedbackForms";
-import { Button } from "@/components/ui/button";
-import { Loader2, LogIn } from "lucide-react";
+import { Loader2, LogIn, MessageSquareHeart, Star, ArrowRight } from "lucide-react";
 
 export function FeedbackSection({ tenantSlug }: { tenantSlug: string }) {
   const { event, loading } = useIfpcEvent();
   const { status } = useSession();
+  const signedIn = status === "authenticated";
 
   return (
-    <Section tint>
-      <SectionTitle title="Share Your Feedback" subtitle="Tell us about your experience with sessions, workshops, and the conference overall — it helps us improve every year." />
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm max-w-xl mx-auto p-6 sm:p-8">
-        {loading || status === "loading" ? (
-          <div className="flex justify-center py-8 opacity-40"><Loader2 className="h-6 w-6 animate-spin" /></div>
-        ) : status !== "authenticated" ? (
-          <div className="text-center py-6">
-            <p className="font-semibold">Log in to share your feedback</p>
-            <p className="text-sm opacity-60 mt-2">Feedback is linked to your delegate account so we can follow up if needed.</p>
-            <Button asChild className="h-11 px-6 mt-5">
-              <Link href={`/auth/login?tenant=${tenantSlug}`}><LogIn className="mr-2 h-4 w-4" /> Log In</Link>
-            </Button>
+    <section className="ifpc-v2 ifpc-fb">
+      <div className="ifpc-fb-wrap">
+        <Reveal className="ifpc-fb-banner">
+          <span className="ifpc-fb-icon" aria-hidden="true"><MessageSquareHeart /></span>
+          <div className="ifpc-fb-body">
+            <h2 className="ifpc-fb-title">Share Your <span>Feedback</span></h2>
+            <p className="ifpc-fb-lead">Tell us about your experience with sessions, workshops, and the conference overall — it helps us improve every year.</p>
+            {loading || status === "loading" ? (
+              <div className="ifpc-fb-loading"><Loader2 className="animate-spin" /></div>
+            ) : !signedIn ? (
+              <div className="ifpc-fb-login">
+                <p className="ifpc-fb-login-title">Log in to share your feedback</p>
+                <p className="ifpc-fb-login-text">Feedback is linked to your delegate account so we can follow up if needed.</p>
+                <Link href={`/auth/login?tenant=${tenantSlug}`} className="ifpc-fb-btn">
+                  <LogIn aria-hidden="true" /> Log In <ArrowRight aria-hidden="true" />
+                </Link>
+              </div>
+            ) : !event?.id ? (
+              <p className="ifpc-fb-login-text">Feedback isn&apos;t open yet — please check back closer to the conference.</p>
+            ) : null}
           </div>
-        ) : event?.id ? (
-          <IfpcFeedbackForms event={event} />
-        ) : (
-          <p className="text-sm opacity-55 text-center">Feedback isn&apos;t open yet — please check back closer to the conference.</p>
+          {/* A feedback card with stars (decoration only). */}
+          <div className="ifpc-fb-art" aria-hidden="true">
+            <div className="ifpc-fb-art-card">
+              <span className="ifpc-fb-art-bubble"><MessageSquareHeart /></span>
+              <span className="ifpc-fb-art-stars">{[0, 1, 2, 3, 4].map((i) => <Star key={i} />)}</span>
+              <span className="ifpc-fb-art-line" />
+              <span className="ifpc-fb-art-line ifpc-fb-art-line--short" />
+            </div>
+          </div>
+        </Reveal>
+
+        {signedIn && event?.id && !loading && (
+          <Reveal delayMs={100} className="ifpc-fb-forms">
+            <IfpcFeedbackForms event={event} />
+          </Reveal>
         )}
       </div>
-    </Section>
+    </section>
   );
 }

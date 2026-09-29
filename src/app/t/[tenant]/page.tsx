@@ -51,6 +51,11 @@ import {
   Home as HomeIcon,
   CalendarDays,
   MessageSquare,
+  UserCheck,
+  IndianRupee,
+  Mic2,
+  CloudSun,
+  Headphones,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
@@ -63,6 +68,7 @@ import { AboutExtendedSection } from "@/components/ifpc/sections/AboutExtendedSe
 import { IfpcAboutSection } from "@/components/ifpc/sections/IfpcAboutSection";
 import "@/components/ifpc/ifpc-hero.css";
 import "@/components/ifpc/ifpc-theme.css";
+import "@/components/ifpc/ifpc-footer.css";
 import { HighlightsSection } from "@/components/ifpc/sections/HighlightsSection";
 import { SpeakersSection } from "@/components/ifpc/sections/SpeakersSection";
 import { ScientificProgrammeSection } from "@/components/ifpc/sections/ScientificProgrammeSection";
@@ -194,49 +200,69 @@ function adaptiveGrid(count: number, maxCols: 2 | 3 | 4 = 3): string {
 
 
 
-function IfpcFAQSectionV2({ faqs }: { faqs: { question: string; answer: string }[] }) {
+// A small icon per question, in order (decoration only).
+const IFPC_FAQ_ICONS = [CalendarDays, Users, Sparkles, UserCheck, Ticket, IndianRupee, Mic2, Award, CloudSun, HelpCircle];
+
+function IfpcFAQSectionV2({ faqs }: { faqs: { question: string; answer: string; category?: string }[] }) {
   const [openIndex, setOpenIndex] = useState<number | string | null>(null);
   if (faqs.length === 0) return null;
 
+  // Grouped by category where the admin has set one (as on other tenants).
+  const groupOrder: string[] = [];
+  const groups = new Map<string, { faq: (typeof faqs)[number]; index: number }[]>();
+  faqs.forEach((faq, index) => {
+    const key = faq.category || "";
+    if (!groups.has(key)) { groups.set(key, []); groupOrder.push(key); }
+    groups.get(key)!.push({ faq, index });
+  });
+  const isGrouped = groupOrder.some((k) => k !== "");
+
   return (
-    <section id="faq" className="ifpc-v2 relative py-16 lg:py-24 bg-white">
-      <div className="container mx-auto px-4 lg:px-8 relative z-10">
-        <div className="text-center mb-12">
-          <p className="v2-eyebrow justify-center mb-4" style={{ color: "#4B2FE5" }}>FAQ</p>
-          <h2 className="text-[28px] lg:text-[40px] font-extrabold tracking-tight">Frequently Asked Questions</h2>
-        </div>
+    <section id="faq" className="ifpc-v2 ifpc-fq">
+      <div className="ifpc-fq-wrap">
+        <Reveal>
+          <p className="ifpc-fq-chip"><HelpCircle aria-hidden="true" /> FAQ</p>
+          <h2 className="ifpc-fq-title">Frequently Asked <span>Questions</span></h2>
+          <p className="ifpc-fq-lead">Find answers to common questions about our organization and events</p>
+        </Reveal>
 
-        <div className="max-w-3xl mx-auto space-y-3">
-          {faqs.map((faq, index) => {
-            const isOpen = openIndex === index;
-            return (
-              <Reveal key={index} delayMs={(index % 6) * 40} className={cn("ifpc-v2 v2-card overflow-hidden", isOpen && "ring-2 ring-[#4B2FE5]")}>
-                <button
-                  type="button"
-                  aria-expanded={isOpen}
-                  onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="w-full flex items-center justify-between p-5 sm:p-6 text-left gap-4"
-                >
-                  <span className="font-bold">{faq.question}</span>
-                  <span className={cn("v2-icon-btn h-8 w-8", isOpen && "rotate-180")} style={isOpen ? { background: "#CCFF33", color: "#0a0a0a" } : { background: "#12112B" }}>
-                    <ChevronDown className="h-4 w-4" />
-                  </span>
-                </button>
-                <div className={cn("faq-content", isOpen && "faq-content--open")}>
-                  <div>
-                    <p className="px-5 sm:px-6 pb-5 sm:pb-6 opacity-70 leading-relaxed">{faq.answer}</p>
+        <div className="ifpc-fq-grid">
+          <div className="ifpc-fq-list">
+            {groupOrder.map((category) => (
+            <div key={category || "_uncategorized"} className="ifpc-fq-group">
+            {isGrouped && category && <h3 className="ifpc-fq-cat">{category}</h3>}
+            {groups.get(category)!.map(({ faq, index }) => {
+              const isOpen = openIndex === index;
+              const Icon = IFPC_FAQ_ICONS[index % IFPC_FAQ_ICONS.length];
+              return (
+                <Reveal key={index} delayMs={(index % 6) * 40} className="ifpc-fq-item">
+                  <div data-open={isOpen}>
+                    <button type="button" aria-expanded={isOpen} onClick={() => setOpenIndex(isOpen ? null : index)}>
+                      <span className="ifpc-fq-num">{String(index + 1).padStart(2, "0")}</span>
+                      <span className="ifpc-fq-icon" aria-hidden="true"><Icon /></span>
+                      <span className="ifpc-fq-q">{faq.question}</span>
+                      <span className="ifpc-fq-chev" aria-hidden="true"><ChevronDown /></span>
+                    </button>
+                    <div className={cn("faq-content", isOpen && "faq-content--open")}>
+                      <div>
+                        <p className="ifpc-fq-a">{faq.answer}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </Reveal>
-            );
-          })}
-        </div>
+                </Reveal>
+              );
+            })}
+            </div>
+            ))}
+          </div>
 
-        <div className="text-center mt-12">
-          <p className="opacity-50 mb-3">Still have questions?</p>
-          <a href="#contact" className="v2-pill-secondary h-11 px-6 text-sm inline-flex">
-            <Mail className="h-4 w-4 mr-2" /> Get in Touch
-          </a>
+          <Reveal delayMs={120} className="ifpc-fq-help">
+            <span className="ifpc-fq-help-icon" aria-hidden="true"><Headphones /></span>
+            <p className="ifpc-fq-help-title">Still have questions?</p>
+            <a href="#contact" className="ifpc-fq-help-btn">
+              <Mail aria-hidden="true" /> Get in Touch <ArrowRight aria-hidden="true" />
+            </a>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -3137,12 +3163,11 @@ export default function TenantHomePage() {
         // Grid column count adapts — center 1, expand for more
         const gridCols = adaptiveGrid(contactCards.length, 4);
 
-        const isV2 = IFPC_V2_DESIGN && tenantSlug === "apollo-medical";
+        const isV2 = tenantSlug === "apollo-medical";
         return (
         <section
           id="contact"
-          className={cn("relative overflow-hidden", isV2 ? "ifpc-v2 py-16 lg:py-24" : "py-16 lg:py-24 bg-white")}
-          style={isV2 ? { background: "#F1F1F6" } : undefined}
+          className={cn("relative overflow-hidden", isV2 ? "ifpc-v2 ifpc-ct2 py-16 lg:py-24" : "py-16 lg:py-24 bg-white")}
           data-scroll-reveal={isV2 ? undefined : true}
         >
 
@@ -3160,7 +3185,7 @@ export default function TenantHomePage() {
                   Contact
                 </Badge>
               )}
-              <h2 className={cn("font-extrabold mb-4 tracking-tight", isV2 ? "text-[28px] lg:text-[40px]" : "text-2xl lg:text-4xl")}>Get In Touch</h2>
+              <h2 className={cn("font-extrabold mb-4 tracking-tight", isV2 ? "ifpc-ct2-title" : "text-2xl lg:text-4xl")}>{isV2 ? <>Get In <span>Touch</span></> : "Get In Touch"}</h2>
               <p className={cn("max-w-2xl mx-auto", isV2 ? "opacity-60" : "text-muted-foreground")}>
                 Have questions? We&apos;d love to hear from you.
               </p>
@@ -3292,7 +3317,7 @@ export default function TenantHomePage() {
       })()}
 
       {/* FAQ Section */}
-      {(sections.faq !== false) && (IFPC_V2_DESIGN && tenantSlug === "apollo-medical" ? <IfpcFAQSectionV2 faqs={faqs} /> : <FAQSection theme={theme} faqs={faqs} />)}
+      {(sections.faq !== false) && (tenantSlug === "apollo-medical" ? <IfpcFAQSectionV2 faqs={faqs} /> : <FAQSection theme={theme} faqs={faqs} />)}
 
       {/* Feedback — IFPC 2026 (apollo-medical) only */}
       {tenantSlug === "apollo-medical" && (
@@ -3300,161 +3325,254 @@ export default function TenantHomePage() {
       )}
 
       {/* Footer */}
-      <footer className={cn("text-white relative overflow-hidden mb-16 md:mb-0", IFPC_V2_DESIGN && tenantSlug === "apollo-medical" && "ifpc-v2")}>
-        {/* Smooth wavy transition into footer */}
-        <div className="relative h-14 md:h-20 bg-white">
-          <svg className="absolute bottom-0 left-0 right-0 w-full h-full" viewBox="0 0 1440 100" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-            <path d="M0,70 C240,100 480,40 720,65 C960,90 1200,35 1440,60 L1440,100 L0,100 Z" fill={tenantSlug === "apollo-medical" ? "#4B2FE5" : "#334155"} opacity="0.4" />
-            <path d="M0,80 C360,100 600,50 900,75 C1100,90 1300,55 1440,70 L1440,100 L0,100 Z" fill={tenantSlug === "apollo-medical" ? "#12112B" : "#1e293b"} />
-          </svg>
-        </div>
+      {tenantSlug === "apollo-medical" ? (
+      <footer className="ifpc-v2 ifpc-ft">
+        <div className="ifpc-ft-wrap">
+          <div className="ifpc-ft-grid">
+            <div>
+              <div className="ifpc-ft-brand">
+                <img src="/ifpc/ifpc-icon-192.png" alt="IFPC 2026 emblem" width={56} height={56} />
+                <div>
+                  <p className="ifpc-ft-name">{branding.name}</p>
+                  {branding.tagline && <p className="ifpc-ft-tag">{branding.tagline}</p>}
+                </div>
+              </div>
+              {footer.text && <p className="ifpc-ft-text">{footer.text}</p>}
+              {(social.facebook || social.twitter || social.linkedin || social.instagram || social.youtube) && (
+                <div className="ifpc-ft-social">
+                  {([
+                    social.facebook && { href: social.facebook, label: "Facebook", Icon: Facebook },
+                    social.twitter && { href: social.twitter, label: "Twitter", Icon: Twitter },
+                    social.linkedin && { href: social.linkedin, label: "LinkedIn", Icon: Linkedin },
+                    social.instagram && { href: social.instagram, label: "Instagram", Icon: Instagram },
+                    social.youtube && { href: social.youtube, label: "YouTube", Icon: Youtube },
+                  ].filter(Boolean) as { href: string; label: string; Icon: typeof Globe }[]).map((link) => (
+                    <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer" title={link.label} aria-label={link.label} data-brand={link.label}>
+                      <link.Icon />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
 
-        {/* Main footer */}
-        <div
-          className="py-10 pb-0 relative overflow-hidden"
-          style={{ background: tenantSlug === "apollo-medical" ? "#12112B" : "linear-gradient(160deg, #1e293b 0%, #334155 50%, #1e293b 100%)" }}
-        >
-          {/* Floating bubbles background */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute w-16 h-16 rounded-full bg-white/[0.07] -top-4 left-[10%] animate-[float_6s_ease-in-out_infinite]" />
-            <div className="absolute w-24 h-24 rounded-full bg-white/[0.05] top-12 right-[15%] animate-[float_8s_ease-in-out_infinite_1s]" />
-            <div className="absolute w-10 h-10 rounded-full bg-white/[0.08] top-1/3 left-[5%] animate-[float_7s_ease-in-out_infinite_2s]" />
-            <div className="absolute w-32 h-32 rounded-full bg-white/[0.04] -bottom-8 left-[20%] animate-[float_9s_ease-in-out_infinite_0.5s]" />
-            <div className="absolute w-20 h-20 rounded-full bg-white/[0.06] top-1/4 right-[8%] animate-[float_7s_ease-in-out_infinite_3s]" />
-            <div className="absolute w-14 h-14 rounded-full bg-white/[0.07] bottom-1/3 right-[25%] animate-[float_6s_ease-in-out_infinite_1.5s]" />
-            <div className="absolute w-8 h-8 rounded-full bg-white/[0.09] top-[60%] left-[40%] animate-[float_5s_ease-in-out_infinite_2.5s]" />
-            <div className="absolute w-28 h-28 rounded-full bg-white/[0.03] -top-10 right-[35%] animate-[float_10s_ease-in-out_infinite_4s]" />
-            <div className="absolute w-12 h-12 rounded-full bg-white/[0.08] bottom-[20%] left-[60%] animate-[float_6s_ease-in-out_infinite_3.5s]" />
-            <div className="absolute w-6 h-6 rounded-full bg-white/[0.10] top-[45%] right-[45%] animate-[float_5s_ease-in-out_infinite_1s]" />
+            <div>
+              <h4 className="ifpc-ft-head">Quick Links</h4>
+              <ul className="ifpc-ft-links">
+                {[
+                  sections.events && { href: "#events", label: "Events" },
+                  sections.gallery && { href: "#gallery", label: "Gallery" },
+                  sections.about && { href: "#about", label: "About" },
+                  { href: "#highlights", label: "Highlights" },
+                  { href: "#speakers", label: "Speakers" },
+                  { href: "#programme", label: "Scientific Programme" },
+                  { href: "#topics", label: "Topics" },
+                  { href: "#registration", label: "Registration" },
+                  { href: "#venue", label: "Venue & Travel" },
+                  { href: "#organising-committee", label: "Organising Committee" },
+                  sections.contact && { href: "#contact", label: "Contact" },
+                  { href: "#faq", label: "FAQ" },
+                  { href: "#feedback", label: "Feedback" },
+                ].filter(Boolean).map((link) => link && (
+                  <li key={link.label}>
+                    <a href={link.href}><ChevronRight aria-hidden="true" />{link.label}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="ifpc-ft-head">Contact</h4>
+              <ul className="ifpc-ft-contact">
+                {contact.email && (
+                  <li><Mail aria-hidden="true" /><a href={`mailto:${contact.email}`}>{contact.email}</a></li>
+                )}
+                {contact.phone && (
+                  <li><Phone aria-hidden="true" /><a href={`tel:${contact.phone}`}>{contact.phone}</a></li>
+                )}
+                {(contact.city || contact.country) && (
+                  <li><MapPin aria-hidden="true" /><span>{[contact.address, contact.city, contact.country].filter(Boolean).join(", ")}</span></li>
+                )}
+              </ul>
+            </div>
           </div>
 
-          <div className="container mx-auto px-4 lg:px-8 relative z-10">
-            {/* Top section — Brand + Quick Links + Contact */}
-            <div className="grid md:grid-cols-3 gap-10 lg:gap-16">
+          {hasSponsors && (
+            <div className="ifpc-ft-partners">
+              <p>Our Partners</p>
               <div>
-                <div className="flex items-center gap-3 mb-5">
-                  <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center border", tenantSlug === "apollo-medical" ? "border-transparent" : "bg-white/10 border-white/10")} style={tenantSlug === "apollo-medical" ? { background: "#CCFF33" } : undefined}>
-                    <GraduationCap className={cn("h-6 w-6", tenantSlug === "apollo-medical" ? "text-[#0a0a0a]" : "text-teal-400")} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xl tracking-tight">{branding.name}</p>
-                    {branding.tagline && <p className="text-sm text-white/60">{branding.tagline}</p>}
-                  </div>
-                </div>
-                {footer.text && <p className="text-white/60 text-sm leading-relaxed">{footer.text}</p>}
+                {sponsors.slice(0, 6).map((sp) => (
+                  <span key={sp.id}>{sp.logo ? <img src={sp.logo} alt={sp.name} /> : sp.name}</span>
+                ))}
+              </div>
+            </div>
+          )}
 
-                {/* Social links */}
-                {(social.facebook || social.twitter || social.linkedin || social.instagram || social.youtube) && (
-                  <div className="flex items-center gap-3 mt-5">
+          <div className="ifpc-ft-bottom">
+            <p>{footer.copyrightText?.trim().startsWith("©") ? footer.copyrightText : <>&copy; {new Date().getFullYear()} {footer.copyrightText || `${branding.name}. All rights reserved.`}</>}</p>
+            <a href="https://summitsolutions.in" target="_blank" rel="noopener noreferrer" className="ifpc-ft-powered">
+              <span>Powered by</span>
+              <img src="/summit-logo.png" alt="Summit Solutions" />
+            </a>
+          </div>
+        </div>
+      </footer>
+      ) : (
+      <footer className={cn("text-white relative overflow-hidden mb-16 md:mb-0", IFPC_V2_DESIGN && tenantSlug === "apollo-medical" && "ifpc-v2")}>
+          {/* Smooth wavy transition into footer */}
+          <div className="relative h-14 md:h-20 bg-white">
+            <svg className="absolute bottom-0 left-0 right-0 w-full h-full" viewBox="0 0 1440 100" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+              <path d="M0,70 C240,100 480,40 720,65 C960,90 1200,35 1440,60 L1440,100 L0,100 Z" fill={tenantSlug === "apollo-medical" ? "#4B2FE5" : "#334155"} opacity="0.4" />
+              <path d="M0,80 C360,100 600,50 900,75 C1100,90 1300,55 1440,70 L1440,100 L0,100 Z" fill={tenantSlug === "apollo-medical" ? "#12112B" : "#1e293b"} />
+            </svg>
+          </div>
+  
+          {/* Main footer */}
+          <div
+            className="py-10 pb-0 relative overflow-hidden"
+            style={{ background: tenantSlug === "apollo-medical" ? "#12112B" : "linear-gradient(160deg, #1e293b 0%, #334155 50%, #1e293b 100%)" }}
+          >
+            {/* Floating bubbles background */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute w-16 h-16 rounded-full bg-white/[0.07] -top-4 left-[10%] animate-[float_6s_ease-in-out_infinite]" />
+              <div className="absolute w-24 h-24 rounded-full bg-white/[0.05] top-12 right-[15%] animate-[float_8s_ease-in-out_infinite_1s]" />
+              <div className="absolute w-10 h-10 rounded-full bg-white/[0.08] top-1/3 left-[5%] animate-[float_7s_ease-in-out_infinite_2s]" />
+              <div className="absolute w-32 h-32 rounded-full bg-white/[0.04] -bottom-8 left-[20%] animate-[float_9s_ease-in-out_infinite_0.5s]" />
+              <div className="absolute w-20 h-20 rounded-full bg-white/[0.06] top-1/4 right-[8%] animate-[float_7s_ease-in-out_infinite_3s]" />
+              <div className="absolute w-14 h-14 rounded-full bg-white/[0.07] bottom-1/3 right-[25%] animate-[float_6s_ease-in-out_infinite_1.5s]" />
+              <div className="absolute w-8 h-8 rounded-full bg-white/[0.09] top-[60%] left-[40%] animate-[float_5s_ease-in-out_infinite_2.5s]" />
+              <div className="absolute w-28 h-28 rounded-full bg-white/[0.03] -top-10 right-[35%] animate-[float_10s_ease-in-out_infinite_4s]" />
+              <div className="absolute w-12 h-12 rounded-full bg-white/[0.08] bottom-[20%] left-[60%] animate-[float_6s_ease-in-out_infinite_3.5s]" />
+              <div className="absolute w-6 h-6 rounded-full bg-white/[0.10] top-[45%] right-[45%] animate-[float_5s_ease-in-out_infinite_1s]" />
+            </div>
+  
+            <div className="container mx-auto px-4 lg:px-8 relative z-10">
+              {/* Top section — Brand + Quick Links + Contact */}
+              <div className="grid md:grid-cols-3 gap-10 lg:gap-16">
+                <div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center border", tenantSlug === "apollo-medical" ? "border-transparent" : "bg-white/10 border-white/10")} style={tenantSlug === "apollo-medical" ? { background: "#CCFF33" } : undefined}>
+                      <GraduationCap className={cn("h-6 w-6", tenantSlug === "apollo-medical" ? "text-[#0a0a0a]" : "text-teal-400")} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-xl tracking-tight">{branding.name}</p>
+                      {branding.tagline && <p className="text-sm text-white/60">{branding.tagline}</p>}
+                    </div>
+                  </div>
+                  {footer.text && <p className="text-white/60 text-sm leading-relaxed">{footer.text}</p>}
+  
+                  {/* Social links */}
+                  {(social.facebook || social.twitter || social.linkedin || social.instagram || social.youtube) && (
+                    <div className="flex items-center gap-3 mt-5">
+                      {[
+                        social.facebook && { href: social.facebook, label: "Facebook" },
+                        social.twitter && { href: social.twitter, label: "Twitter" },
+                        social.linkedin && { href: social.linkedin, label: "LinkedIn" },
+                        social.instagram && { href: social.instagram, label: "Instagram" },
+                        social.youtube && { href: social.youtube, label: "YouTube" },
+                      ].filter(Boolean).map((link) => link && (
+                        <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer"
+                          className={cn("w-9 h-9 flex items-center justify-center transition-all duration-300", IFPC_V2_DESIGN && tenantSlug === "apollo-medical" ? "rounded-md v2-social-icon" : "rounded-lg bg-white/10 hover:bg-white/20 hover:scale-110 text-white/70 hover:text-white")}
+                          title={link.label}>
+                          <Globe className="h-4 w-4" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+  
+                <div>
+                  <h4 className="font-semibold mb-5 text-sm uppercase tracking-wider text-white/90">Quick Links</h4>
+                  <ul className="space-y-3 text-white/60">
                     {[
-                      social.facebook && { href: social.facebook, label: "Facebook" },
-                      social.twitter && { href: social.twitter, label: "Twitter" },
-                      social.linkedin && { href: social.linkedin, label: "LinkedIn" },
-                      social.instagram && { href: social.instagram, label: "Instagram" },
-                      social.youtube && { href: social.youtube, label: "YouTube" },
+                      sections.events && { href: "#events", label: "Events" },
+                      sections.gallery && { href: "#gallery", label: "Gallery" },
+                      sections.about && { href: "#about", label: "About" },
+                      tenantSlug === "apollo-medical" && { href: "#highlights", label: "Highlights" },
+                      tenantSlug === "apollo-medical" && { href: "#speakers", label: "Speakers" },
+                      tenantSlug === "apollo-medical" && { href: "#programme", label: "Scientific Programme" },
+                      tenantSlug === "apollo-medical" && { href: "#topics", label: "Topics" },
+                      tenantSlug === "apollo-medical" && { href: "#registration", label: "Registration" },
+                      tenantSlug === "apollo-medical" && { href: "#venue", label: "Venue & Travel" },
+                      tenantSlug === "apollo-medical" && { href: "#organising-committee", label: "Organising Committee" },
+                      sections.contact && { href: "#contact", label: "Contact" },
+                      { href: "#faq", label: "FAQ" },
+                      tenantSlug === "apollo-medical" && { href: "#feedback", label: "Feedback" },
                     ].filter(Boolean).map((link) => link && (
-                      <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer"
-                        className={cn("w-9 h-9 flex items-center justify-center transition-all duration-300", IFPC_V2_DESIGN && tenantSlug === "apollo-medical" ? "rounded-md v2-social-icon" : "rounded-lg bg-white/10 hover:bg-white/20 hover:scale-110 text-white/70 hover:text-white")}
-                        title={link.label}>
-                        <Globe className="h-4 w-4" />
-                      </a>
+                      <li key={link.label}>
+                        <a href={link.href} className="hover:text-white transition-colors duration-200 flex items-center gap-2 text-sm">
+                          <span className="w-1 h-1 rounded-full bg-white/40" />
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+  
+                <div>
+                  <h4 className="font-semibold mb-5 text-sm uppercase tracking-wider text-white/90">Contact</h4>
+                  <ul className="space-y-3 text-white/60 text-sm">
+                    {contact.email && (
+                      <li className="flex items-start gap-2.5">
+                        <Mail className="h-4 w-4 mt-0.5 text-white/50 flex-shrink-0" />
+                        <a href={`mailto:${contact.email}`} className="hover:text-white transition-colors break-all">{contact.email}</a>
+                      </li>
+                    )}
+                    {contact.phone && (
+                      <li className="flex items-start gap-2.5">
+                        <Phone className="h-4 w-4 mt-0.5 text-white/50 flex-shrink-0" />
+                        <a href={`tel:${contact.phone}`} className="hover:text-white transition-colors">{contact.phone}</a>
+                      </li>
+                    )}
+                    {(contact.city || contact.country) && (
+                      <li className="flex items-start gap-2.5">
+                        <MapPin className="h-4 w-4 mt-0.5 text-white/50 flex-shrink-0" />
+                        <span>{[contact.address, contact.city, contact.country].filter(Boolean).join(", ")}</span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+  
+              {/* Footer sponsor logos */}
+              {hasSponsors && (
+                <div className="border-t border-white/15 mt-10 py-8">
+                  <p className="text-xs text-white/40 text-center mb-4 uppercase tracking-wider">Our Partners</p>
+                  <div className="flex flex-wrap items-center justify-center gap-8">
+                    {sponsors.slice(0, 6).map((s) => (
+                      <div key={s.id} className="h-10 opacity-70 hover:opacity-100 transition-opacity">
+                        {s.logo ? <img src={s.logo} alt={s.name} className="h-full object-contain brightness-0 invert" /> : <span className="text-sm text-white/60">{s.name}</span>}
+                      </div>
                     ))}
                   </div>
-                )}
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-5 text-sm uppercase tracking-wider text-white/90">Quick Links</h4>
-                <ul className="space-y-3 text-white/60">
-                  {[
-                    sections.events && { href: "#events", label: "Events" },
-                    sections.gallery && { href: "#gallery", label: "Gallery" },
-                    sections.about && { href: "#about", label: "About" },
-                    tenantSlug === "apollo-medical" && { href: "#highlights", label: "Highlights" },
-                    tenantSlug === "apollo-medical" && { href: "#speakers", label: "Speakers" },
-                    tenantSlug === "apollo-medical" && { href: "#programme", label: "Scientific Programme" },
-                    tenantSlug === "apollo-medical" && { href: "#topics", label: "Topics" },
-                    tenantSlug === "apollo-medical" && { href: "#registration", label: "Registration" },
-                    tenantSlug === "apollo-medical" && { href: "#venue", label: "Venue & Travel" },
-                    tenantSlug === "apollo-medical" && { href: "#organising-committee", label: "Organising Committee" },
-                    sections.contact && { href: "#contact", label: "Contact" },
-                    { href: "#faq", label: "FAQ" },
-                    tenantSlug === "apollo-medical" && { href: "#feedback", label: "Feedback" },
-                  ].filter(Boolean).map((link) => link && (
-                    <li key={link.label}>
-                      <a href={link.href} className="hover:text-white transition-colors duration-200 flex items-center gap-2 text-sm">
-                        <span className="w-1 h-1 rounded-full bg-white/40" />
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-5 text-sm uppercase tracking-wider text-white/90">Contact</h4>
-                <ul className="space-y-3 text-white/60 text-sm">
-                  {contact.email && (
-                    <li className="flex items-start gap-2.5">
-                      <Mail className="h-4 w-4 mt-0.5 text-white/50 flex-shrink-0" />
-                      <a href={`mailto:${contact.email}`} className="hover:text-white transition-colors break-all">{contact.email}</a>
-                    </li>
-                  )}
-                  {contact.phone && (
-                    <li className="flex items-start gap-2.5">
-                      <Phone className="h-4 w-4 mt-0.5 text-white/50 flex-shrink-0" />
-                      <a href={`tel:${contact.phone}`} className="hover:text-white transition-colors">{contact.phone}</a>
-                    </li>
-                  )}
-                  {(contact.city || contact.country) && (
-                    <li className="flex items-start gap-2.5">
-                      <MapPin className="h-4 w-4 mt-0.5 text-white/50 flex-shrink-0" />
-                      <span>{[contact.address, contact.city, contact.country].filter(Boolean).join(", ")}</span>
-                    </li>
-                  )}
-                </ul>
-              </div>
-            </div>
-
-            {/* Footer sponsor logos */}
-            {hasSponsors && (
-              <div className="border-t border-white/15 mt-10 py-8">
-                <p className="text-xs text-white/40 text-center mb-4 uppercase tracking-wider">Our Partners</p>
-                <div className="flex flex-wrap items-center justify-center gap-8">
-                  {sponsors.slice(0, 6).map((s) => (
-                    <div key={s.id} className="h-10 opacity-70 hover:opacity-100 transition-opacity">
-                      {s.logo ? <img src={s.logo} alt={s.name} className="h-full object-contain brightness-0 invert" /> : <span className="text-sm text-white/60">{s.name}</span>}
-                    </div>
-                  ))}
                 </div>
+              )}
+  
+              {/* Bottom bar */}
+              <div className="border-t border-white/10 mt-8 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p className="text-xs text-white/50">
+                  &copy; {new Date().getFullYear()} {footer.copyrightText || `${branding.name}. All rights reserved.`}
+                </p>
+                <a href="https://summitsolutions.in" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:scale-105 transition-all duration-300">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Powered by</span>
+                  <div className="bg-white/95 rounded-lg px-4 py-2 shadow-lg group-hover:shadow-xl group-hover:bg-white transition-all">
+                    <img src="/summit-logo.png" alt="Summit Solutions" className="h-7 inline-block" />
+                  </div>
+                </a>
               </div>
-            )}
-
-            {/* Bottom bar */}
-            <div className="border-t border-white/10 mt-8 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-white/50">
-                &copy; {new Date().getFullYear()} {footer.copyrightText || `${branding.name}. All rights reserved.`}
-              </p>
-              <a href="https://summitsolutions.in" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 hover:scale-105 transition-all duration-300">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-white/40">Powered by</span>
-                <div className="bg-white/95 rounded-lg px-4 py-2 shadow-lg group-hover:shadow-xl group-hover:bg-white transition-all">
-                  <img src="/summit-logo.png" alt="Summit Solutions" className="h-7 inline-block" />
-                </div>
-              </a>
             </div>
           </div>
-        </div>
-        {tenantSlug === "apollo-medical" && (
-          <a
-            href="#hero"
-            aria-label="Scroll to top"
-            className="v2-icon-btn absolute right-6 bottom-24 md:bottom-28 h-11 w-11 shadow-lg"
-            style={{ background: "#CCFF33", color: "#0a0a0a" }}
-          >
-            <ArrowUp className="h-4 w-4" />
-          </a>
-        )}
-      </footer>
+          {tenantSlug === "apollo-medical" && (
+            <a
+              href="#hero"
+              aria-label="Scroll to top"
+              className="v2-icon-btn absolute right-6 bottom-24 md:bottom-28 h-11 w-11 shadow-lg"
+              style={{ background: "#CCFF33", color: "#0a0a0a" }}
+            >
+              <ArrowUp className="h-4 w-4" />
+            </a>
+          )}
+        </footer>
+      )}
 
       {/* Lightbox */}
       {/* Photo Lightbox */}
