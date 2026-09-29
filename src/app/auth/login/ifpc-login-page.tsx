@@ -200,7 +200,7 @@ function LoginPageInner() {
                 } : undefined}
             >
             {/* If no tenant branding loaded yet, use default mesh gradient */}
-            {!tenantBranding && <div className="absolute inset-0 login-mesh-bg" />}
+            {!tenantBranding && <div className="absolute inset-0 login-mesh-bg pointer-events-none" />}
                 {/* Animated orbs */}
                 <div className="absolute top-[10%] left-[15%] w-72 h-72 rounded-full bg-teal-500/20 blur-[100px] animate-orb-1" />
                 <div className="absolute bottom-[15%] right-[10%] w-96 h-96 rounded-full bg-blue-500/20 blur-[120px] animate-orb-2" />
@@ -345,7 +345,7 @@ function LoginPageInner() {
             {/* ===== RIGHT PANEL: Login Form ===== */}
             <div className="flex-1 flex flex-col min-h-screen relative bg-gradient-to-br from-slate-50/80 via-white to-teal-50/20">
                 {/* Mobile-only gradient background */}
-                <div className="absolute inset-0 lg:hidden login-mesh-bg login-noise opacity-[0.03]" />
+                <div className="absolute inset-0 lg:hidden login-mesh-bg login-noise opacity-[0.03] pointer-events-none" />
 
                 {/* Mobile header */}
                 <header className="lg:hidden p-4">

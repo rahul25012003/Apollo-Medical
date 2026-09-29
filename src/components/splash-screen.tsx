@@ -64,8 +64,16 @@ export function SplashScreen() {
       }
     }
 
+    // Opened as the installed app: keep the screen up long enough to read.
+    const standalone = window.matchMedia("(display-mode: standalone)").matches
+      || (window.navigator as { standalone?: boolean }).standalone === true;
+    const shownAt = Date.now();
+    const minVisibleMs = standalone ? 1600 : 0;
+
     function hide() {
       if (doneRef.current) return;
+      const wait = minVisibleMs - (Date.now() - shownAt);
+      if (wait > 0) { setTimeout(hide, wait); return; }
       doneRef.current = true;
       if (intervalRef.current) clearInterval(intervalRef.current);
       setProgress(100);
@@ -148,6 +156,7 @@ export function SplashScreen() {
         bar: "linear-gradient(90deg, #1e3a5f, #c9a227)",
         barGlow: "rgba(30,58,95,0.4)",
         name: "IFPC 2026",
+        title: "International Forensic Psychiatry Conference",
         subtitle: "Bridging the Gap",
       }
     : {
@@ -164,6 +173,7 @@ export function SplashScreen() {
         bar: "linear-gradient(90deg, #0d9488, #06b6d4)",
         barGlow: "rgba(13,148,136,0.4)",
         name: "CareNS",
+        title: "",
         subtitle: "Conference Management System",
       };
 
@@ -259,35 +269,36 @@ export function SplashScreen() {
             style={{
               position: "absolute",
               inset: "-6px",
-              borderRadius: "50%",
+              borderRadius: isApollo ? "36px" : "50%",
               padding: "2px",
               background: brand.ring,
-              animation: "sp-spin 4s linear infinite",
+              // A spinning ring suits the round logo; the square app tile keeps it still.
+              animation: isApollo ? "none" : "sp-spin 4s linear infinite",
             }}
           >
-            <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "#ffffff" }} />
+            <div style={{ width: "100%", height: "100%", borderRadius: isApollo ? "34px" : "50%", background: "#ffffff" }} />
           </div>
           {/* Logo circle */}
           <div
             style={{
               position: "relative",
-              width: "130px",
-              height: "130px",
-              borderRadius: "50%",
+              width: isApollo ? "140px" : "130px",
+              height: isApollo ? "140px" : "130px",
+              borderRadius: isApollo ? "30px" : "50%",
               background: "#ffffff",
               boxShadow: `0 20px 60px -15px ${brand.shadowColor}, 0 0 0 1px ${brand.orb1}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               overflow: "hidden",
-              padding: "16px",
+              padding: isApollo ? "0" : "16px",
             }}
           >
             {isApollo ? (
               <img
-                src="/ifpc/nimhans-logo.png"
-                alt="NIMHANS"
-                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                src="/ifpc/ifpc-app-512.png"
+                alt="IFPC 2026"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             ) : (
               <img
@@ -313,14 +324,28 @@ export function SplashScreen() {
             <h2
               style={{
                 margin: 0,
-                fontSize: "1.25rem",
-                fontWeight: 700,
-                color: "#0f172a",
+                fontSize: isApollo ? "1.6rem" : "1.25rem",
+                fontWeight: isApollo ? 800 : 700,
+                color: isApollo ? brand.primary : "#0f172a",
                 letterSpacing: "-0.03em",
               }}
             >
               {brand.name}
             </h2>
+            {brand.title && (
+              <p
+                style={{
+                  margin: "6px auto 0",
+                  maxWidth: "260px",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  lineHeight: 1.35,
+                  color: "#334155",
+                }}
+              >
+                {brand.title}
+              </p>
+            )}
             <p
               style={{
                 margin: "4px 0 0",
