@@ -69,6 +69,13 @@ export default function MyInterestsPage() {
         return () => window.removeEventListener(INTEREST_CHANGED_EVENT, loadMine);
     }, [status, ifpcCheck.isIfpc, loadMine]);
 
+    // Back from "Book Accommodation": land on the stay row they left from.
+    useEffect(() => {
+        if (!mineLoading && window.location.hash === "#stay") {
+            document.getElementById("stay")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+    }, [mineLoading]);
+
     // Only sessions with a capacity set take sign-ups ("Express Interest") —
     // same convention the public Scientific Programme page uses.
     const workshops = (event?.eventSessions || [])

@@ -43,6 +43,7 @@ import {
     UtensilsCrossed,
 } from "lucide-react";
 import { eventsService, Event } from "@/services/events";
+import { ifpcPublicHome } from "@/components/ifpc/inApp";
 
 // Define user roles
 type UserRole = "SUPER_ADMIN" | "ADMIN" | "EVENT_MANAGER" | "REGISTRATION_MANAGER" | "CERTIFICATE_MANAGER" | "ATTENDEE";
@@ -64,9 +65,10 @@ interface TenantSections {
 // Menu items with role-based access and optional tenant module key
 const menuItems = [
     {
-        // Redirects all logged-in users to the external conference site.
+        // Signed-in users stay inside the app: Home is their dashboard. Only
+        // Logout leads back to the public site.
         title: "Home",
-        href: "https://forensicpsychiatry.in",
+        href: "/dashboard",
         icon: Home,
         roles: ["SUPER_ADMIN", "ADMIN", "EVENT_MANAGER", "REGISTRATION_MANAGER", "CERTIFICATE_MANAGER", "ATTENDEE"] as UserRole[],
         group: "Main",
@@ -450,7 +452,10 @@ export function Sidebar() {
 
     // Handle logout — redirect to tenant login page (guaranteed to work on all environments)
     const handleLogout = () => {
-        if (tenantSlug) {
+        if (isIfpc && tenantSlug) {
+            // IFPC: Logout is the one way back to the public home page.
+            signOut({ callbackUrl: ifpcPublicHome() });
+        } else if (tenantSlug) {
             // Tenant user → go to that tenant's login page
             signOut({ callbackUrl: `/auth/login?tenant=${tenantSlug}` });
         } else {
@@ -696,10 +701,11 @@ export function Sidebar() {
                                 )}
                                 <ul className="space-y-0.5">
                                     {items.map((item) => {
-                                        const isActive = pathname === item.href ||
-                                            (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
+                                        // Home opens the same page as Dashboard; only Dashboard lights up.
+                                        const isActive = item.title !== "Home" && (pathname === item.href ||
+                                            (item.href !== "/dashboard" && pathname.startsWith(item.href + "/")));
                                         return (
-                                            <li key={item.href}>
+                                            <li key={item.title}>
                                                 <Link
                                                     href={item.href === "/dashboard/browse-events" ? browseEventsHref : item.href}
                                                     onClick={() => setSidebarOpen(false)}

@@ -17,7 +17,7 @@ import { IFPC_TENANT_SLUG, ACCOMMODATION_SHARING, sharingLabel } from "@/lib/ifp
 import { VENUE_TRAVEL, REGISTRATION } from "@/content/ifpc-2026";
 import { type ChoicesWindow, OPEN_FOREVER, formatClosesAt } from "@/lib/ifpc-deadline";
 import { toast } from "sonner";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { useIsIfpcDashboard } from "@/components/ifpc/guard";
 
 type Tier = "Budget" | "Mid-Range" | "Premium";
@@ -70,8 +70,17 @@ export default function AccommodationPage() {
   if (!ifpcCheck.loading && !ifpcCheck.isIfpc) notFound();
   const { sidebarCollapsed } = useUIStore();
   const { tenant, isLoading } = useTenant();
+  const router = useRouter();
 
   const isIfpc = tenant?.slug === IFPC_TENANT_SLUG;
+
+  // Opened from My Interests' "Book Accommodation": once they've answered
+  // (request saved, not interested, or a hotel picked) take them back there.
+  function returnToInterests() {
+    if (new URLSearchParams(window.location.search).get("from") === "my-interests") {
+      router.push("/dashboard/my-interests#stay");
+    }
+  }
 
   const [choice, setChoice] = useState<string | null>(null);
   const [loadingChoice, setLoadingChoice] = useState(true);
@@ -163,12 +172,15 @@ export default function AccommodationPage() {
     }, "Accommodation request saved");
     if (ok) setEditing(false);
     setSavingPref(false);
+    if (ok) returnToInterests();
   }
 
   async function declineAccommodation() {
     setSavingPref(true);
-    if (await post({ required: false }, "Noted — you don't need a room")) setEditing(false);
+    const ok = await post({ required: false }, "Noted — you don't need a room");
+    if (ok) setEditing(false);
     setSavingPref(false);
+    if (ok) returnToInterests();
   }
 
   async function cancelRequest() {
@@ -179,8 +191,9 @@ export default function AccommodationPage() {
 
   async function selectHotel(hotelName: string | null) {
     setSaving(hotelName ?? "__clear__");
-    await post({ hotelName }, hotelName ? `Saved — you're marked as staying at ${hotelName}` : "Hotel preference removed");
+    const ok = await post({ hotelName }, hotelName ? `Saved — you're marked as staying at ${hotelName}` : "Hotel preference removed");
     setSaving(null);
+    if (ok && hotelName) returnToInterests();
   }
 
   const grouped: Record<Tier, typeof VENUE_TRAVEL.accommodation.hotels> = {

@@ -23,6 +23,7 @@ import { useTenant } from "@/lib/tenant/context";
 import { useBrowseEventsHref, useIsIfpcDashboard } from "@/components/ifpc/guard";
 import { useMySelections, useUpNextMessages } from "@/components/ifpc/useMySelections";
 import { IdCardModal } from "@/components/ifpc/IdCardModal";
+import { ifpcPublicHome, useInAppBack } from "@/components/ifpc/inApp";
 
 interface HeaderProps {
     title: string;
@@ -112,6 +113,7 @@ export function Header({ title, subtitle }: HeaderProps) {
     const [unreadCount, setUnreadCount] = React.useState(0);
     // IFPC (apollo-medical) only: live notices about the user's own session picks.
     const { isIfpc } = useIsIfpcDashboard();
+    const inAppBack = useInAppBack();
     const sessionNotices = useUpNextMessages(useMySelections(isIfpc && status === "authenticated"));
     const urgentNotices = sessionNotices.filter((m) => m.tone === "now" || m.tone === "soon").length;
     const badgeCount = unreadCount + urgentNotices;
@@ -157,7 +159,10 @@ export function Header({ title, subtitle }: HeaderProps) {
         : null;
 
     const handleSignOut = () => {
-        if (tenantSlug) {
+        if (isIfpc && tenantSlug) {
+            // IFPC: Logout is the one way back to the public home page.
+            signOut({ callbackUrl: ifpcPublicHome() });
+        } else if (tenantSlug) {
             signOut({ callbackUrl: `/auth/login?tenant=${tenantSlug}` });
         } else {
             signOut({ callbackUrl: "/auth/login" });
@@ -185,7 +190,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                     {showBack && (
                         <button
                             type="button"
-                            onClick={() => router.back()}
+                            onClick={isIfpc ? inAppBack : () => router.back()}
                             aria-label="Go back"
                             title="Go back"
                             className="flex items-center gap-1.5 p-2 rounded-xl hover:bg-muted/80 transition-all duration-200 text-muted-foreground hover:text-foreground"

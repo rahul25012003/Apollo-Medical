@@ -65,7 +65,8 @@ export function MyInterestsPanel({ data, loading }: { data: MyInterests | null; 
                             ))}
                         </Group>
 
-                        <div className="grid grid-cols-1 gap-2 text-sm">
+                        {/* Accommodation returns here (#stay) once they've answered. */}
+                        <div id="stay" className="grid grid-cols-1 gap-2 text-sm scroll-my-24">
                             <p className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                 <Utensils className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                                 Food:{" "}
@@ -92,11 +93,11 @@ export function MyInterestsPanel({ data, loading }: { data: MyInterests | null; 
                             {/* Whatever the answer is — room booked, not interested,
                                 or nothing yet — this is where it gets managed. */}
                             <Link
-                                href="/dashboard/accommodation"
+                                href="/dashboard/accommodation?from=my-interests"
                                 className="inline-flex w-fit items-center gap-1.5 rounded-lg border px-3 h-9 text-xs font-semibold text-primary hover:bg-primary/5"
                             >
                                 <Hotel className="h-3.5 w-3.5" />
-                                {hasAnswered(data) ? "Manage booking" : "Book Accommodation"}
+                                Book Accommodation
                             </Link>
                         </div>
                     </div>
@@ -114,11 +115,6 @@ function Group({ title, icon, empty, children }: { title: string; icon: React.Re
             {hasItems ? <ul className="space-y-2">{children}</ul> : <p className="text-xs text-slate-400 dark:text-slate-500">{empty}</p>}
         </div>
     );
-}
-
-/** True once they have answered either way — room requested or declined. */
-function hasAnswered(d: MyInterests | null): boolean {
-    return !!d && (d.accommodationRequired != null || !!d.accommodationChoice);
 }
 
 export function stayText(d: MyInterests | null): string {
