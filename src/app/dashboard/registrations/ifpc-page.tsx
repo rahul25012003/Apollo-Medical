@@ -1110,8 +1110,8 @@ function RegistrationsContent() {
                 {/* Header Actions */}
                 <div className="flex flex-col gap-3">
                     {/* Search Row */}
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <div className="relative flex-1 search-premium rounded-xl">
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+                        <div className="relative flex-1 min-w-[14rem] search-premium rounded-xl">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 placeholder="Search by name or email..."
@@ -1130,7 +1130,7 @@ function RegistrationsContent() {
                         </div>
                         {!eventIdParam && (
                             <Select value={selectedEventFilter} onValueChange={setSelectedEventFilter}>
-                                <SelectTrigger className="w-full sm:w-[150px] h-9 sm:h-10">
+                                <SelectTrigger className="w-full sm:w-auto sm:min-w-[150px] h-9 sm:h-10">
                                     <SelectValue placeholder="All Events" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1144,7 +1144,7 @@ function RegistrationsContent() {
                             </Select>
                         )}
                         <Select value={selectedPaymentFilter} onValueChange={setSelectedPaymentFilter}>
-                            <SelectTrigger className="w-full sm:w-[120px] h-9 sm:h-10">
+                            <SelectTrigger className="w-full sm:w-auto sm:min-w-[140px] h-9 sm:h-10">
                                 <SelectValue placeholder="Payment" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1155,7 +1155,7 @@ function RegistrationsContent() {
                             </SelectContent>
                         </Select>
                         <Select value={selectedSourceFilter} onValueChange={setSelectedSourceFilter}>
-                            <SelectTrigger className="w-full sm:w-[120px] h-9 sm:h-10">
+                            <SelectTrigger className="w-full sm:w-auto sm:min-w-[140px] h-9 sm:h-10">
                                 <SelectValue placeholder="Source" />
                             </SelectTrigger>
                             <SelectContent>

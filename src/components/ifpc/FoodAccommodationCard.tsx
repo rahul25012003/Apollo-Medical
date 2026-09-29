@@ -153,9 +153,9 @@ export function FoodAccommodationCard({ eventId }: { eventId: string }) {
                                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Staying at <strong className="truncate">{hotel}</strong>
                             </p>
                         )}
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                             <Select value={pickedHotel} onValueChange={setPickedHotel} disabled={confirmed !== true || savingHotel}>
-                                <SelectTrigger className="h-9 text-xs">
+                                <SelectTrigger className="h-9 text-xs flex-1 min-w-[9.5rem]">
                                     <SelectValue placeholder={hotel ? "Change hotel" : "Choose a hotel"} />
                                 </SelectTrigger>
                                 <SelectContent>

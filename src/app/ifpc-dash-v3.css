@@ -380,14 +380,13 @@
 .v3-hero-facts > div + div { border-left: 0; padding-left: 0; }
 
 /* Teal/cyan gradient action buttons join the one brand gradient. */
-.ifpc-neu.ifpc-v3 :is(button, a)[class*="from-teal-"],
-.ifpc-neu.ifpc-v3 :is(button, a)[class*="from-emerald-"] {
+/* Only the saturated (500-700) gradient buttons, never light pastel cards. */
+.ifpc-neu.ifpc-v3 :is(button, a):is([class*="from-teal-5"], [class*="from-teal-6"], [class*="from-teal-7"], [class*="from-emerald-5"], [class*="from-emerald-6"], [class*="from-emerald-7"]):not([class*="from-teal-50"]):not([class*="from-emerald-50"]) {
   background: var(--v3-grad);
   border-radius: 999px;
   box-shadow: 0 12px 24px -12px rgb(37 99 235 / 0.8);
 }
-.ifpc-neu.ifpc-v3 :is(button, a)[class*="from-teal-"]:hover,
-.ifpc-neu.ifpc-v3 :is(button, a)[class*="from-emerald-"]:hover { transform: translateY(-1px); }
+
 
 /* Page banners in violet/purple take the brand gradient too. */
 .ifpc-neu.ifpc-v3 .bg-gradient-to-br.from-violet-600 {
@@ -395,7 +394,7 @@
 }
 
 /* Fields on coloured banners stay glass so their white text reads. */
-.ifpc-neu.ifpc-v3 [class*="bg-gradient"] :is([role="combobox"], input:not([type="checkbox"]):not([type="radio"]), select) {
+.ifpc-neu.ifpc-v3 :is(.bg-gradient-to-br.from-violet-600, [style*="linear-gradient(135deg"]) :is([role="combobox"], input:not([type="checkbox"]):not([type="radio"]), select) {
   background: rgb(255 255 255 / 0.18);
   border-color: rgb(255 255 255 / 0.35);
   color: #fff;
@@ -486,4 +485,41 @@
 .ifpc-neu.ifpc-v3 .ifpc-dash-panel > :first-child > a:hover { background: var(--v3-grad); color: #fff; }
 @media (prefers-reduced-motion: reduce) {
   .ifpc-neu.ifpc-v3 .v3-greet::after, .ifpc-neu.ifpc-v3 .ifpc-dash-cards .h-5 > div { animation: none; }
+}
+
+/* ── Full visibility: no text is cut short with "…" in the page body ─── */
+.ifpc-neu.ifpc-v3 main :is(.truncate, .line-clamp-1, .line-clamp-2, .line-clamp-3, .line-clamp-4):not([role="combobox"] *):not([role="combobox"]) {
+  overflow: visible;
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+  white-space: normal;
+  text-overflow: clip;
+  /* Wrap between words only, so narrow columns never shrink below a word. */
+  overflow-wrap: break-word;
+}
+/* Inline pieces that were truncated keep flowing inline. */
+.ifpc-neu.ifpc-v3 main span.truncate:not(.block) { display: inline; }
+/* The header's name block may still shorten; it has a tooltip-sized slot. */
+
+/* Controls that only appeared on hover are always visible. */
+.ifpc-neu.ifpc-v3 .opacity-0:is(.group-hover\:opacity-100) { opacity: 1; }
+
+/* Wrappers that pull themselves past the page padding stay inside it. */
+.ifpc-neu.ifpc-v3 main .-m-6 { margin: 0; }
+
+/* Stat-card rows: two per row until there is room for four, so figures and
+   labels never have to break mid-word. */
+@media (max-width: 1279px) {
+  .ifpc-neu.ifpc-v3 main .grid.md\:grid-cols-4:not(.ifpc-dash-cards) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Icons placed inside fields sit above the field background. */
+.ifpc-neu.ifpc-v3 .relative > svg.absolute { z-index: 1; pointer-events: none; }
+
+/* Up to laptop widths: rows of buttons (and headers holding them) wrap
+   instead of running off the screen. */
+@media (max-width: 1279px) {
+  .ifpc-neu.ifpc-v3 main .flex:has(> button, > a > button):not([role="tablist"]):not(.flex-col) { flex-wrap: wrap; row-gap: 10px; }
+  .ifpc-neu.ifpc-v3 main .flex.justify-between:has(button):not(.flex-col) { flex-wrap: wrap; row-gap: 12px; }
 }

@@ -31,7 +31,7 @@
 
 .v3-sch-grid { display: grid; gap: 16px; padding: 18px 20px 22px; }
 @media (min-width: 1024px) { .v3-sch-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.v3-sch-day { min-width: 0; padding: 12px; border-radius: 22px; background: #f6f9fe; border: 1px solid rgb(15 23 42 / 0.04); animation: v3s-rise 520ms var(--ease) both; animation-delay: calc(var(--i) * 80ms); }
+.v3-sch-day { min-width: 0; padding: 12px; border-radius: 22px; background: #f6f9fe; border: 1px solid rgb(15 23 42 / 0.04); }
 @keyframes v3s-rise { from { opacity: 0; translate: 0 12px; } }
 .v3-sch-dayhead { display: none; position: relative; margin: 0 0 12px; padding: 12px 14px; border-radius: 16px; background: var(--grad); color: #fff; overflow: hidden; }
 @media (min-width: 1024px) { .v3-sch-dayhead { display: block; } }
