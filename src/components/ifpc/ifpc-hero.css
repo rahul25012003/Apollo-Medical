@@ -38,24 +38,33 @@
    placed so the entrance and rotunda sit between the text and the panel,
    and it melts into the page on the text side, at the top and the bottom. */
 .ifpc-hero-photo {
-  /* One photo across the whole hero; the entrance sits in the middle. */
+  /* One photo. On wide screens it is shifted right so the entrance and its
+     sign sit in the open space between the title and the panel; its left
+     edge fades into the page. */
   position: absolute;
   z-index: -3;
   inset: 0;
-  -webkit-mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.5) 0%, #000 22%, #000 82%, transparent 100%);
-  mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.5) 0%, #000 22%, #000 82%, transparent 100%);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.55) 0%, #000 20%, #000 84%, transparent 100%);
+  mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.55) 0%, #000 20%, #000 84%, transparent 100%);
   animation: ifpc-hero-rise 1.4s var(--hero-ease) both;
 }
 @keyframes ifpc-hero-rise {
   from { opacity: 0; translate: 0 20px; }
 }
 .ifpc-hero-photo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 12% 62%;
+  position: absolute;
+  /* The entrance is at the panorama's far left: this puts it mid-screen. */
+  left: 36%;
+  bottom: 0;
+  width: 92%;
+  height: auto;
+  max-width: none;
   filter: saturate(1.05) contrast(1.02);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 18%), linear-gradient(180deg, transparent 0%, #000 22%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 18%), linear-gradient(180deg, transparent 0%, #000 22%);
+  mask-composite: intersect;
 }
 
 /* Light veil on the text side so navy type reads cleanly. */
@@ -357,7 +366,7 @@
   .ifpc-hero-count .text-center > div:first-child > span { font-size: clamp(20px, calc(var(--m) * 6.6), 36px); }
   .ifpc-hero-count .text-center > p { font-size: clamp(9px, calc(var(--m) * 2.6), 12px); }
 
-  .ifpc-hero-photo img { object-position: 8% 60%; }
+  .ifpc-hero-photo img { left: 0; top: 0; width: 100%; height: 100%; bottom: auto; translate: none; object-fit: cover; object-position: 12% 55%; -webkit-mask-image: none; mask-image: none; }
   .ifpc-hero-shade { background: linear-gradient(180deg, rgb(244 248 255 / 0.55) 0%, rgb(244 248 255 / 0.3) 60%, rgb(244 248 255 / 0.55) 100%); }
   .ifpc-hero-shade { background: rgb(244 248 255 / 0.78); }
 }
