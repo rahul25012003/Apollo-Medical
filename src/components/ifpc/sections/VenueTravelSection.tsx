@@ -1,49 +1,62 @@
 import { CampusMap } from "@/components/ifpc/CampusMap";
-import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
-import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/ifpc/design/Reveal";
 import { VENUE_TRAVEL, CTA_LINKS } from "@/content/ifpc-2026";
-import { MapPin, Clock, ExternalLink } from "lucide-react";
+import { MapPin, Clock, ExternalLink, Car, Wallet } from "lucide-react";
+import "./ifpc-guidelines.css";
 
 export function VenueTravelSection() {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(VENUE_TRAVEL.venue.name + ", " + VENUE_TRAVEL.venue.address)}`;
 
   return (
     <>
-      <Section>
-        <SectionTitle title={VENUE_TRAVEL.venue.name} subtitle={VENUE_TRAVEL.venue.address} />
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm flex flex-wrap items-center justify-between gap-4 mb-10 p-5">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white" style={{ background: "#4B2FE5" }}><MapPin className="h-4 w-4" /></span>
-            <div>
-              <p className="font-bold">{VENUE_TRAVEL.venue.address}</p>
-              <p className="text-xs opacity-60 flex items-center gap-1 mt-0.5"><Clock className="h-3 w-3" /> {VENUE_TRAVEL.venue.hours}</p>
+      <section className="ifpc-v2 ifpc-gd ifpc-gd--sky">
+        <div className="ifpc-gd-wrap">
+          <Reveal>
+            <h2 className="ifpc-gd-title">{VENUE_TRAVEL.venue.name.split(" ")[0]} <span>{VENUE_TRAVEL.venue.name.split(" ").slice(1).join(" ")}</span></h2>
+          </Reveal>
+          <Reveal delayMs={80} className="ifpc-vn-bar">
+            <div className="ifpc-vn-where">
+              <span className="ifpc-vn-pin" aria-hidden="true"><MapPin /></span>
+              <div>
+                <p className="ifpc-vn-addr">{VENUE_TRAVEL.venue.address}</p>
+                <p className="ifpc-vn-hours"><Clock aria-hidden="true" /> {VENUE_TRAVEL.venue.hours}</p>
+              </div>
             </div>
-          </div>
-          <Button asChild variant="outline">
-            <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
-              {CTA_LINKS.getDirections.label} <ExternalLink className="ml-2 h-3.5 w-3.5" />
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="ifpc-vn-btn">
+              {CTA_LINKS.getDirections.label} <ExternalLink aria-hidden="true" />
             </a>
-          </Button>
-        </div>
+          </Reveal>
 
-        <SectionTitle title="On-Campus Map" subtitle="Find your way between the Convention Centre, the daily morning Yoga Hall, and the on-campus Guest House." />
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-2 sm:p-4">
-          <CampusMap />
-        </div>
-      </Section>
+          <Reveal delayMs={120}>
+            <h3 className="ifpc-vn-sub">On-Campus Map</h3>
+            <p className="ifpc-vn-lead">Find your way between the Convention Centre, the daily morning Yoga Hall, and the on-campus Guest House.</p>
+          </Reveal>
+          <Reveal delayMs={160} className="ifpc-vn-map">
+            <CampusMap />
+          </Reveal>
 
-      <Section>
-        <div className="grid sm:grid-cols-2 gap-6">
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-            <h3 className="font-bold mb-2">{VENUE_TRAVEL.localTravel.title}</h3>
-            <p className="text-sm opacity-70 leading-relaxed">{VENUE_TRAVEL.localTravel.text}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-            <h3 className="font-bold mb-2">{VENUE_TRAVEL.payment.title}</h3>
-            <p className="text-sm opacity-70 leading-relaxed">{VENUE_TRAVEL.payment.text}</p>
+          <div className="ifpc-vn-grid">
+            <Reveal className="ifpc-vn-card">
+              <div style={{ "--tone": "#2563eb" } as React.CSSProperties}>
+                <span className="ifpc-gd-icon" aria-hidden="true"><Car /></span>
+                <div>
+                  <h3>{VENUE_TRAVEL.localTravel.title}</h3>
+                  <p>{VENUE_TRAVEL.localTravel.text}</p>
+                </div>
+              </div>
+            </Reveal>
+            <Reveal delayMs={90} className="ifpc-vn-card">
+              <div style={{ "--tone": "#16a34a" } as React.CSSProperties}>
+                <span className="ifpc-gd-icon" aria-hidden="true"><Wallet /></span>
+                <div>
+                  <h3>{VENUE_TRAVEL.payment.title}</h3>
+                  <p>{VENUE_TRAVEL.payment.text}</p>
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
-      </Section>
+      </section>
 
       {/* Accommodation Near the Venue — not needed as of now, disabled per request. Content preserved in VENUE_TRAVEL.accommodation; uncomment to re-enable.
       <Section tint>

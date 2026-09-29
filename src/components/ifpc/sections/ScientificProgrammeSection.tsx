@@ -112,7 +112,6 @@ function DayWiseSchedule({ sessions, eventStart }: { sessions: EventSession[]; e
             })}
           </div>
 
-          <div className="ifpc-dw-photo" aria-hidden="true"><img src="/ifpc/campus/convention-centre.jpg" alt="" loading="lazy" /></div>
         </div>
 
         <div role="tabpanel" aria-label={format(parseISO(day), "EEEE, d MMMM yyyy")} className="ifpc-dw-panel">
@@ -163,7 +162,6 @@ export function ScientificProgrammeSection() {
     <>
       {!hasEnded && structureItems.length > 0 && (
         <section className="ifpc-v2 ifpc-pg ifpc-pg--sky">
-          <div className="ifpc-pg-photo" aria-hidden="true"><img src="/ifpc/campus/convention-centre.jpg" alt="" loading="lazy" /></div>
           <div className="ifpc-pg-wrap">
             <Reveal>
               <PgTitle text={SCIENTIFIC_PROGRAMME.structure.title} />
