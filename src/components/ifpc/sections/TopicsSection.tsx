@@ -1,30 +1,39 @@
-import { Section, SectionTitle } from "@/components/ifpc/IfpcShell";
+import { Reveal } from "@/components/ifpc/design/Reveal";
 import { TOPICS_INTRO, TOPIC_CATEGORIES } from "@/content/ifpc-2026";
-import { ListChecks } from "lucide-react";
+import { Scale, Landmark, Lock, Users, Cpu, Globe2, Stethoscope, GraduationCap, FlaskConical, ClipboardList } from "lucide-react";
+import "./ifpc-programme.css";
 
-const BADGE_COLORS = ["#4B2FE5", "#1e3a5f", "#CCFF33"];
+// An icon and accent per category, in order (decoration only).
+const ICONS = [Scale, Landmark, Lock, Users, Cpu, Globe2, Stethoscope, GraduationCap, FlaskConical, ClipboardList];
+const TONES = ["#7c3aed", "#2563eb", "#ea580c", "#16a34a", "#db2777", "#0d9488", "#4f46e5", "#0ea5e9", "#9333ea", "#d97706"];
 
 export function TopicsSection() {
   return (
-    <Section tint>
-      <SectionTitle title="Thematic Topics" subtitle={TOPICS_INTRO} />
-      <div className="grid sm:grid-cols-2 gap-6">
-        {TOPIC_CATEGORIES.map((cat, i) => (
-          <div key={cat.title} className="rounded-xl border border-slate-200 bg-white shadow-sm relative p-5 pt-6">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white absolute -top-3 -left-3" style={{ background: BADGE_COLORS[i % BADGE_COLORS.length], color: i % 3 === 2 ? "#0a0a0a" : "#fff" }}>
-              <ListChecks className="h-4 w-4" />
-            </span>
-            <h3 className="font-bold pl-2 mb-3">{cat.title}</h3>
-            <ul className="space-y-1.5 pl-2">
-              {cat.items.map((item) => (
-                <li key={item} className="text-sm opacity-70 leading-relaxed pl-4 relative before:content-['•'] before:absolute before:left-0" style={{ color: "inherit" }}>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+    <section className="ifpc-v2 ifpc-pg ifpc-pg--sky">
+      <div className="ifpc-pg-wrap">
+        <Reveal>
+          <h2 className="ifpc-pg-title">Thematic <span>Topics</span></h2>
+          <p className="ifpc-pg-lead">{TOPICS_INTRO}</p>
+        </Reveal>
+        <div className="ifpc-tp-grid">
+          {TOPIC_CATEGORIES.map((cat, i) => {
+            const Icon = ICONS[i % ICONS.length];
+            return (
+              <Reveal key={cat.title} delayMs={(i % 3) * 80} className="ifpc-tp-card">
+                <div style={{ "--tone": TONES[i % TONES.length] } as React.CSSProperties}>
+                  <span className="ifpc-tp-icon" aria-hidden="true"><Icon /></span>
+                  <div>
+                    <h3>{cat.title}</h3>
+                    <ul>
+                      {cat.items.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </div>
+                </div>
+              </Reveal>
+            );
+          })}
+        </div>
       </div>
-    </Section>
+    </section>
   );
 }
