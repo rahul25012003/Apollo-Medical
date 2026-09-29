@@ -7,7 +7,10 @@
   --hero-ease: cubic-bezier(0.22, 1, 0.36, 1);
   isolation: isolate;
   /* Dusk sky the photo rises into. */
-  background: #07102e;
+  background:
+    radial-gradient(45% 55% at 62% 18%, rgb(88 70 190 / 0.45), transparent 70%),
+    radial-gradient(40% 35% at 55% 62%, rgb(255 140 90 / 0.28), transparent 70%),
+    linear-gradient(180deg, #040a24 0%, #0a1442 40%, #1c1d5e 68%, #33245f 100%);
 }
 
 /* ── Scene ────────────────────────────────────────────────────────────── */
@@ -22,8 +25,17 @@
   height: calc(100% + 48px);
   max-width: none;
   object-fit: cover;
-  object-position: 22% center;
-  filter: blur(5px) saturate(1.05) brightness(0.62);
+  /* The far (right) wing of the panorama, not the entrance, which the
+     sharp photo already shows. */
+  object-position: 88% center;
+  filter: blur(7px) saturate(1.05) brightness(0.6);
+  /* Only behind the text: faded out before the sharp photo so the venue
+     never appears twice. */
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 28%, transparent 50%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 28%, transparent 50%);
+}
+@media (max-width: 1023px) {
+  .ifpc-hero-base { -webkit-mask-image: none; mask-image: none; }
 }
 
 .ifpc-hero-photo {
