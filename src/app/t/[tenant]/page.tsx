@@ -219,7 +219,14 @@ function IfpcFAQSectionV2({ faqs }: { faqs: { question: string; answer: string; 
 
   return (
     <section id="faq" className="ifpc-v2 ifpc-fq">
+        <svg className="ifpc-waves" viewBox="0 0 1440 320" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 250 C 240 190 420 300 720 240 S 1200 170 1440 230 L1440 320 L0 320 Z" className="ifpc-waves-a" />
+          <path d="M0 280 C 300 230 520 320 800 270 S 1260 220 1440 270 L1440 320 L0 320 Z" className="ifpc-waves-b" />
+          <path d="M0 230 C 260 170 460 280 760 220 S 1220 150 1440 210" className="ifpc-waves-line" />
+          <path d="M0 250 C 260 200 480 300 780 245 S 1240 180 1440 240" className="ifpc-waves-line ifpc-waves-line--2" />
+        </svg>
       <div className="ifpc-fq-wrap">
+        <span className="ifpc-fq-bubble" aria-hidden="true"><HelpCircle /></span>
         <Reveal>
           <p className="ifpc-fq-chip"><HelpCircle aria-hidden="true" /> FAQ</p>
           <h2 className="ifpc-fq-title">Frequently Asked <span>Questions</span></h2>
@@ -262,6 +269,11 @@ function IfpcFAQSectionV2({ faqs }: { faqs: { question: string; answer: string; 
             <a href="#contact" className="ifpc-fq-help-btn">
               <Mail aria-hidden="true" /> Get in Touch <ArrowRight aria-hidden="true" />
             </a>
+            <span className="ifpc-fq-help-art" aria-hidden="true">
+              <span className="ifpc-fq-help-orb"><MessageSquare /></span>
+              <span className="ifpc-fq-help-orb ifpc-fq-help-orb--b"><Phone /></span>
+              <span className="ifpc-fq-help-orb ifpc-fq-help-orb--c"><Mail /></span>
+            </span>
           </Reveal>
         </div>
       </div>
@@ -3170,6 +3182,14 @@ export default function TenantHomePage() {
           className={cn("relative overflow-hidden", isV2 ? "ifpc-v2 ifpc-ct2 py-16 lg:py-24" : "py-16 lg:py-24 bg-white")}
           data-scroll-reveal={isV2 ? undefined : true}
         >
+          {isV2 && (
+        <svg className="ifpc-waves" viewBox="0 0 1440 320" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 250 C 240 190 420 300 720 240 S 1200 170 1440 230 L1440 320 L0 320 Z" className="ifpc-waves-a" />
+          <path d="M0 280 C 300 230 520 320 800 270 S 1260 220 1440 270 L1440 320 L0 320 Z" className="ifpc-waves-b" />
+          <path d="M0 230 C 260 170 460 280 760 220 S 1220 150 1440 210" className="ifpc-waves-line" />
+          <path d="M0 250 C 260 200 480 300 780 245 S 1240 180 1440 240" className="ifpc-waves-line ifpc-waves-line--2" />
+        </svg>
+          )}
 
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             <div className="text-center mb-10 lg:mb-14">
@@ -3327,6 +3347,12 @@ export default function TenantHomePage() {
       {/* Footer */}
       {tenantSlug === "apollo-medical" ? (
       <footer className="ifpc-v2 ifpc-ft">
+        <svg className="ifpc-ft-lines" viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true">
+          {Array.from({ length: 9 }, (_, i) => (
+            <path key={i} d={`M0 ${190 + i * 9} C 300 ${120 + i * 12}, 560 ${280 - i * 6}, 900 ${200 + i * 5} S 1300 ${140 + i * 10}, 1440 ${170 + i * 8}`} />
+          ))}
+        </svg>
+        <img src="/ifpc/ifpc-icon-512.png" alt="" aria-hidden="true" className="ifpc-ft-mark" />
         <div className="ifpc-ft-wrap">
           <div className="ifpc-ft-grid">
             <div>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useIfpcEvent } from "@/components/ifpc/useIfpcEvent";
 import { Reveal } from "@/components/ifpc/design/Reveal";
 import { IfpcFeedbackForms } from "@/components/ifpc/IfpcFeedbackForms";
-import { Loader2, LogIn, MessageSquareHeart, Star, ArrowRight } from "lucide-react";
+import { Loader2, LogIn, MessageSquareHeart, Star, ArrowRight, Sparkles } from "lucide-react";
 
 export function FeedbackSection({ tenantSlug }: { tenantSlug: string }) {
   const { event, loading } = useIfpcEvent();
@@ -16,6 +16,7 @@ export function FeedbackSection({ tenantSlug }: { tenantSlug: string }) {
     <section className="ifpc-v2 ifpc-fb">
       <div className="ifpc-fb-wrap">
         <Reveal className="ifpc-fb-banner">
+          <span className="ifpc-fb-swirl" aria-hidden="true" />
           <span className="ifpc-fb-icon" aria-hidden="true"><MessageSquareHeart /></span>
           <div className="ifpc-fb-body">
             <h2 className="ifpc-fb-title">Share Your <span>Feedback</span></h2>
@@ -36,9 +37,12 @@ export function FeedbackSection({ tenantSlug }: { tenantSlug: string }) {
           </div>
           {/* A feedback card with stars (decoration only). */}
           <div className="ifpc-fb-art" aria-hidden="true">
+            <Sparkles className="ifpc-fb-spark ifpc-fb-spark--a" />
+            <Sparkles className="ifpc-fb-spark ifpc-fb-spark--b" />
+            <span className="ifpc-fb-art-glow" />
             <div className="ifpc-fb-art-card">
               <span className="ifpc-fb-art-bubble"><MessageSquareHeart /></span>
-              <span className="ifpc-fb-art-stars">{[0, 1, 2, 3, 4].map((i) => <Star key={i} />)}</span>
+              <span className="ifpc-fb-art-stars">{[0, 1, 2, 3, 4].map((i) => <Star key={i} style={{ "--i": i } as React.CSSProperties} />)}</span>
               <span className="ifpc-fb-art-line" />
               <span className="ifpc-fb-art-line ifpc-fb-art-line--short" />
             </div>
