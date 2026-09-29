@@ -568,7 +568,8 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
             </div>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-5 justify-center lg:justify-start">
-              <Link href="/events" className="ifpc-hero-btn ifpc-hero-btn--primary group">
+              {/* IFPC has one conference: go straight to its details page. */}
+              <Link href={nextEvent?.id ? `/events/${nextEvent.id}` : "/events"} className="ifpc-hero-btn ifpc-hero-btn--primary group">
                 <Calendar className="h-5 w-5" aria-hidden="true" />
                 {hasEvents ? "Browse Events" : "Explore Events"}
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />

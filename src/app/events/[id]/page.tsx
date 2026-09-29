@@ -523,9 +523,12 @@ export default function EventDetailPage() {
                     <Link href={tenantSlug ? `/t/${tenantSlug}` : "/"}>
                         <Button variant="outline">Back to Home</Button>
                     </Link>
+                    {/* IFPC has a single conference, so no events list to go back to. */}
+                    {tenantSlug !== IFPC_TENANT_SLUG && (
                     <Link href={tenantSlug ? `/events?tenant=${tenantSlug}` : "/events"}>
                         <Button variant="outline">All Events</Button>
                     </Link>
+                    )}
                 </div>
             </div>
         );
@@ -581,9 +584,11 @@ export default function EventDetailPage() {
                                 <ArrowLeft className="h-4 w-4" />
                                 Back to Home
                             </Link>
+                            {tenantSlug !== IFPC_TENANT_SLUG && (
                             <Link href={tenantSlug ? `/events?tenant=${tenantSlug}` : "/events"} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
                                 All Events
                             </Link>
+                            )}
                         </div>
                     )}
                     {isPreviewMode && (
