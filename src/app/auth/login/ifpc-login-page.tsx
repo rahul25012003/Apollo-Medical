@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
+import { passwordSchema } from "@/lib/validations/auth";
 import "./ifpc-login.css";
 import {
     Mail,
@@ -27,6 +28,7 @@ import {
     Eye,
     EyeOff,
     CalendarDays,
+    KeyRound,
 } from "lucide-react";
 
 const loginSchema = z.object({
@@ -42,6 +44,173 @@ interface TenantBranding {
     logo: string | null;
     primaryColor: string;
     secondaryColor: string;
+}
+
+const resetEmailSchema = z.object({ email: z.string().email("Please enter a valid email address") });
+const resetCodeSchema = z.object({
+    code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code from the email"),
+    password: passwordSchema,
+});
+
+async function postJson(url: string, body: unknown) {
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) {
+        throw new Error(json?.error?.details?.[0]?.message || json?.error?.message || "Something went wrong. Please try again.");
+    }
+    return json.data;
+}
+
+/**
+ * Forgot password, inside the sign-in card: the email gets a 6-digit code,
+ * the code plus a new password resets it (/api/auth/otp/verify turns the
+ * code into the one-time token /api/auth/reset-password needs).
+ */
+function PasswordReset({ initialEmail, onBack }: { initialEmail: string; onBack: (email: string) => void }) {
+    const [step, setStep] = React.useState<"email" | "code" | "done">("email");
+    const [email, setEmail] = React.useState(initialEmail);
+    const [busy, setBusy] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+    const [showPassword, setShowPassword] = React.useState(false);
+    // Kept once the code checks out, so a rejected password can be retried
+    // without asking for a new code (the code itself is single-use).
+    const [token, setToken] = React.useState<string | null>(null);
+
+    const emailForm = useForm<z.infer<typeof resetEmailSchema>>({ resolver: zodResolver(resetEmailSchema), defaultValues: { email: initialEmail } });
+    const codeForm = useForm<z.infer<typeof resetCodeSchema>>({ resolver: zodResolver(resetCodeSchema), defaultValues: { code: "", password: "" } });
+    const codeField = codeForm.register("code");
+
+    const run = async (work: () => Promise<void>) => {
+        setBusy(true);
+        setError(null);
+        try { await work(); } catch (e) { setError(e instanceof Error ? e.message : "Something went wrong. Please try again."); }
+        setBusy(false);
+    };
+
+    const sendCode = (to: string) => run(async () => {
+        await postJson("/api/auth/forgot-password", { email: to });
+        setEmail(to);
+        setToken(null);
+        codeForm.reset({ code: "", password: codeForm.getValues("password") });
+        setStep("code");
+    });
+
+    const resetPassword = ({ code, password }: z.infer<typeof resetCodeSchema>) => run(async () => {
+        let t = token;
+        if (!t) {
+            t = (await postJson("/api/auth/otp/verify", { email, code, purpose: "PASSWORD_RESET" })).token as string;
+            setToken(t);
+        }
+        await postJson("/api/auth/reset-password", { token: t, password, confirmPassword: password });
+        setStep("done");
+    });
+
+    const back = () => onBack(email);
+
+    return (
+        <>
+            <p className="ifpc-lg-chip"><KeyRound aria-hidden="true" /> Reset Password</p>
+            <h2 className="ifpc-lg-h">{step === "email" ? "Forgot Password?" : step === "code" ? "Check Your Email" : "Password Updated"}</h2>
+            <p className="ifpc-lg-sub">
+                {/* U+2011: "6‑digit" never splits across lines. */}
+                {step === "email" && "Enter your registered email and we’ll send you a 6‑digit code."}
+                {step === "code" && <>If <strong>{email}</strong> is registered, a 6&#8209;digit code is on its way. Enter it with your new password.</>}
+                {step === "done" && "You can now sign in with your new password."}
+            </p>
+
+            {error && (
+                <div className="ifpc-lg-error" role="alert">
+                    <Info aria-hidden="true" />
+                    <span>{error}</span>
+                </div>
+            )}
+
+            {step === "email" && (
+                <form onSubmit={emailForm.handleSubmit(({ email: to }) => sendCode(to))} className="ifpc-lg-form">
+                    <div>
+                        <Label htmlFor="reset-email" className="ifpc-lg-label"><Mail aria-hidden="true" /> Email</Label>
+                        <Input
+                            id="reset-email"
+                            type="email"
+                            autoComplete="email"
+                            autoFocus
+                            placeholder="you@example.com"
+                            icon={<Mail className="w-4 h-4" />}
+                            error={emailForm.formState.errors.email?.message}
+                            className="ifpc-lg-input"
+                            {...emailForm.register("email")}
+                        />
+                    </div>
+                    <Button type="submit" className="ifpc-lg-submit" loading={busy}>
+                        Send Code <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                </form>
+            )}
+
+            {step === "code" && (
+                <form onSubmit={codeForm.handleSubmit(resetPassword)} className="ifpc-lg-form">
+                    <div>
+                        <Label htmlFor="reset-code" className="ifpc-lg-label"><KeyRound aria-hidden="true" /> 6-digit code</Label>
+                        <Input
+                            id="reset-code"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            autoFocus
+                            placeholder="••••••"
+                            icon={<KeyRound className="w-4 h-4" />}
+                            error={codeForm.formState.errors.code?.message}
+                            className="ifpc-lg-input"
+                            {...codeField}
+                            // Digits only, so a pasted "123 456" still works.
+                            onChange={(e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); codeField.onChange(e); }}
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="reset-password" className="ifpc-lg-label"><Lock aria-hidden="true" /> New password</Label>
+                        <Input
+                            id="reset-password"
+                            type={showPassword ? "text" : "password"}
+                            autoComplete="new-password"
+                            placeholder="At least 8 characters"
+                            icon={<Lock className="w-4 h-4" />}
+                            rightIcon={
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((v) => !v)}
+                                    className="hover:text-foreground transition-colors"
+                                    tabIndex={-1}
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            }
+                            error={codeForm.formState.errors.password?.message}
+                            className="ifpc-lg-input"
+                            {...codeForm.register("password")}
+                        />
+                    </div>
+                    <Button type="submit" className="ifpc-lg-submit" loading={busy}>
+                        Reset Password <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                </form>
+            )}
+
+            {step === "done" ? (
+                <div className="ifpc-lg-form">
+                    <Button type="button" className="ifpc-lg-submit" onClick={back}>
+                        Back to Sign In <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                </div>
+            ) : (
+                <p className="ifpc-lg-new">
+                    {step === "code" && (
+                        <><button type="button" onClick={() => sendCode(email)} disabled={busy}>Resend code</button><span aria-hidden="true">·</span></>
+                    )}
+                    <button type="button" onClick={back}><ArrowLeft aria-hidden="true" /> Back to sign in</button>
+                </p>
+            )}
+        </>
+    );
 }
 
 function LoginPageInner() {
@@ -139,8 +308,10 @@ function LoginPageInner() {
 
     // Password visibility toggle
     const [showPassword, setShowPassword] = React.useState(false);
+    // "Forgot password?" swaps the card over to the reset steps.
+    const [resetting, setResetting] = React.useState(false);
 
-    const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+    const { register, handleSubmit, getValues, setValue, formState: { errors } } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
         defaultValues: { email: "", password: "", rememberMe: false },
     });
@@ -237,6 +408,12 @@ function LoginPageInner() {
                     <ArrowLeft aria-hidden="true" /> Back to Home
                 </Link>
                 <div className="ifpc-lg-card">
+                    {resetting ? (
+                        <PasswordReset
+                            initialEmail={getValues("email")}
+                            onBack={(email) => { setValue("email", email); setError(null); setResetting(false); }}
+                        />
+                    ) : (<>
                     <p className="ifpc-lg-chip"><Lock aria-hidden="true" /> Password Login</p>
                     <h2 className="ifpc-lg-h">Sign In</h2>
                     <p className="ifpc-lg-sub">Sign in with your email and password.</p>
@@ -265,7 +442,7 @@ function LoginPageInner() {
                         <div>
                             <div className="ifpc-lg-row">
                                 <Label htmlFor="password" className="ifpc-lg-label"><Lock aria-hidden="true" /> Password</Label>
-                                <Link href="/auth/forgot-password" className="ifpc-lg-forgot">Forgot password?</Link>
+                                <button type="button" className="ifpc-lg-forgot" onClick={() => { setError(null); setResetting(true); }}>Forgot password?</button>
                             </div>
                             <Input
                                 id="password"
@@ -303,6 +480,7 @@ function LoginPageInner() {
                         New here?{" "}
                         <Link href={homeHref}>Explore conferences <ArrowRight aria-hidden="true" /></Link>
                     </p>
+                    </>)}
                 </div>
 
                 <footer className="ifpc-lg-foot">

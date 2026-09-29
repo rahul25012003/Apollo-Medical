@@ -179,7 +179,7 @@
 .ifpc-lg-row { display: flex; align-items: center; justify-content: space-between; }
 .ifpc-lg-label { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--navy); }
 .ifpc-lg-label svg { width: 17px; height: 17px; color: #2563eb; }
-.ifpc-lg-forgot { margin-bottom: 8px; font-size: 13.5px; font-weight: 600; color: #2563eb; }
+.ifpc-lg-forgot { margin-bottom: 8px; font-size: 13.5px; font-weight: 600; color: #2563eb; cursor: pointer; }
 .ifpc-lg-forgot:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ifpc-lg .ifpc-lg-input {
   height: 52px;
@@ -215,6 +215,12 @@
 .ifpc-lg-new a { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #2563eb; }
 .ifpc-lg-new a svg { width: 15px; height: 15px; transition: translate 200ms var(--ease); }
 .ifpc-lg-new a:hover svg { translate: 3px 0; }
+/* Reset steps: "Resend code" / "Back to sign in" */
+.ifpc-lg-new button { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #2563eb; cursor: pointer; }
+.ifpc-lg-new button svg { width: 15px; height: 15px; transition: translate 200ms var(--ease); }
+.ifpc-lg-new button:hover svg { translate: -3px 0; }
+.ifpc-lg-new button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ifpc-lg-new button:disabled { opacity: 0.5; cursor: default; }
 .ifpc-lg-foot { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12.5px; color: #64748b; }
 .ifpc-lg-foot a { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
 .ifpc-lg-foot img { height: 34px; }
