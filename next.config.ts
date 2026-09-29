@@ -1,13 +1,11 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
 const isStandalone = process.env.NEXT_STANDALONE === "true";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  // Pin the project root: a stray package-lock.json in a parent folder
-  // otherwise makes Next/Turbopack treat that whole folder as the root.
-  turbopack: { root: path.resolve(".") },
   // standalone only for VPS/Docker (set NEXT_STANDALONE=true). Render/Vercel use standard output.
   ...(isStandalone ? { output: "standalone" } : {}),
   // Skip TS/ESLint re-check during build (already verified clean)
@@ -46,4 +44,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Dev server only: pin the project root, since a stray package-lock.json in a
+// parent folder otherwise makes Turbopack treat that whole folder as the root.
+// Never for builds — with the pin, production builds fail on next/font/google.
+export default function config(phase: string): NextConfig {
+  return phase === PHASE_DEVELOPMENT_SERVER ? { ...nextConfig, turbopack: { root: path.resolve(".") } } : nextConfig;
+}
