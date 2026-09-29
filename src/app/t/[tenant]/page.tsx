@@ -528,34 +528,31 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
 
   return (
     <section id="hero" className="ifpc-hero relative overflow-hidden lg:min-h-[100svh] flex items-center">
-      {/* The photo is a wide panorama with the entrance at its far left; it is
-          placed so the entrance and rotunda sit between the text and the
-          panels, graded to dusk, with warm light at the lobby and lamps. */}
-      <img src={bgImage} alt="" className="ifpc-hero-base" aria-hidden="true" />
+      {/* Daylight venue photo on the right, melting into the light page on
+          the text side and at the bottom. */}
       <div className="ifpc-hero-photo" aria-hidden="true">
         <img src={bgImage} alt="" loading="eager" />
-        <span className="ifpc-hero-glow ifpc-hero-glow--door" />
-        <span className="ifpc-hero-glow ifpc-hero-glow--rotunda" />
-        {[[28.5, 51], [25.2, 55], [31.8, 57.5], [62.8, 47]].map(([x, y], i) => (
-          <span key={i} className="ifpc-hero-lamp" style={{ left: `${x}%`, top: `${y}%` }} />
-        ))}
       </div>
       <div className="ifpc-hero-shade" aria-hidden="true" />
-      <span className="ifpc-hero-streak ifpc-hero-streak--c" aria-hidden="true" />
+      <span className="ifpc-hero-blob" aria-hidden="true" />
 
-      <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-28 pb-12 sm:pt-32 sm:pb-16 lg:pt-28 lg:pb-10">
+      <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-28 pb-10 sm:pt-32 sm:pb-12 lg:pt-32 lg:pb-14">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           <div className="lg:col-span-7 xl:col-span-6 text-center lg:text-left hero-stagger-1">
             <div className="lg:hidden mb-6 flex items-center justify-center gap-3">
               {IFPC_HOSTS.map((h) => (
-                <div key={h.src} className="ifpc-hero-logo h-14 w-14 sm:h-16 sm:w-16 p-1.5 flex-none">
+                <div key={h.src} className="ifpc-hero-logo ifpc-hero-logo--tile h-14 w-14 sm:h-16 sm:w-16 p-1.5 flex-none">
                   <img src={h.src} alt={h.alt} className="max-h-full max-w-full object-contain" />
                 </div>
               ))}
             </div>
             <p className="ifpc-hero-chip">Conference Theme</p>
             <p className="ifpc-hero-theme">
-              {themeLead}{themeLead && " "}<span>{themeLast}</span>
+              {themeLead}{themeLead && " "}
+              <span className="ifpc-hero-gap">
+                {themeLast}
+                <svg viewBox="0 0 200 20" fill="none" aria-hidden="true"><path d="M4 14 C 60 2, 140 2, 196 12" /></svg>
+              </span>
             </p>
             <h1 className="ifpc-hero-name text-balance">
               International Forensic Psychiatry Conference (IFPC) 2026
@@ -563,12 +560,12 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
             <p className="ifpc-hero-tag">
               a global gathering advancing forensic psychiatry knowledge and practice.
             </p>
-            <div className="lg:hidden mt-5 space-y-2 text-white">
-              <p className="flex items-center justify-center gap-2 text-lg font-extrabold"><Calendar className="h-5 w-5 text-emerald-300" />{CONFERENCE.dates}</p>
-              <p className="flex items-center justify-center gap-2 text-base font-bold"><MapPin className="h-5 w-5 flex-none text-emerald-300" />{CONFERENCE.venueName}, {CONFERENCE.city}</p>
+            <div className="lg:hidden mt-5 space-y-2 text-[#0b1a4a]">
+              <p className="flex items-center justify-center gap-2 text-lg font-extrabold"><Calendar className="h-5 w-5 text-blue-600" />{CONFERENCE.dates}</p>
+              <p className="flex items-center justify-center gap-2 text-base font-bold"><MapPin className="h-5 w-5 flex-none text-blue-600" />{CONFERENCE.venueName}, {CONFERENCE.city}</p>
             </div>
 
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-5 justify-center lg:justify-start">
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
               {/* IFPC has one conference: go straight to its details page. */}
               <Link href={nextEvent?.id ? `/events/${nextEvent.id}` : "/events"} className="ifpc-hero-btn ifpc-hero-btn--primary group">
                 <Calendar className="h-5 w-5" aria-hidden="true" />
@@ -582,7 +579,7 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
             </div>
 
             {status && (
-              <div className="mt-7">
+              <div className="mt-6">
                 <span className={cn("ifpc-hero-status", `is-${status.kind}`, status.flash && "animate-flash")}>
                   <span className="ifpc-hero-status-dot" />
                   {status.text}
@@ -591,49 +588,49 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
             )}
           </div>
 
-          <div className={cn("lg:col-span-5 xl:col-span-4 xl:col-start-9 hero-stagger-2 space-y-4", !showCountdown && "hidden lg:block")}>
-            <div className="ifpc-hero-glass hidden lg:block px-6 py-5">
-              <p className="ifpc-hero-hosted">Hosted by</p>
-              <div className="mt-4 flex items-start justify-center gap-6 xl:gap-10">
-                {IFPC_HOSTS.map((h) => (
-                  <div key={h.src} className="text-center">
-                    <div className="ifpc-hero-logo h-20 w-20 p-2.5 mx-auto">
-                      <img src={h.src} alt={h.alt} className="max-h-full max-w-full object-contain" />
+          <div className={cn("lg:col-span-5 xl:col-span-4 xl:col-start-9 hero-stagger-2", !showCountdown && "hidden lg:block")}>
+            {/* One white panel: hosts, then the facts and the countdown in
+                soft inset wells. */}
+            <div className="ifpc-hero-panel">
+              <div className="hidden lg:block">
+                <p className="ifpc-hero-hosted">Hosted by</p>
+                <div className="ifpc-hero-hosts">
+                  {IFPC_HOSTS.map((h) => (
+                    <div key={h.src} className="ifpc-hero-host">
+                      <div className="ifpc-hero-logo">
+                        <img src={h.src} alt={h.alt} className="max-h-full max-w-full object-contain" />
+                      </div>
+                      <p>{h.name}</p>
                     </div>
-                    <p className="mt-2 text-sm font-bold text-white">{h.name}</p>
+                  ))}
+                </div>
+
+                <dl className="ifpc-hero-inset ifpc-hero-facts">
+                  <div className="ifpc-hero-fact">
+                    <span className="ifpc-hero-badge"><Calendar className="h-5 w-5" /></span>
+                    <div>
+                      <dt className="ifpc-hero-label">Dates</dt>
+                      <dd className="ifpc-hero-value whitespace-nowrap">{CONFERENCE.dates}</dd>
+                    </div>
                   </div>
-                ))}
+                  <div className="ifpc-hero-fact">
+                    <span className="ifpc-hero-badge"><MapPin className="h-5 w-5" /></span>
+                    <div>
+                      <dt className="ifpc-hero-label">Venue</dt>
+                      <dd className="ifpc-hero-value">{CONFERENCE.venueName}</dd>
+                      <dd className="ifpc-hero-sub">{CONFERENCE.city}, India</dd>
+                    </div>
+                  </div>
+                </dl>
               </div>
 
-              <div className="my-4 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
-
-              <dl className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="ifpc-hero-badge"><Calendar className="h-[18px] w-[18px]" /></span>
-                  <div>
-                    <dt className="ifpc-hero-label">Dates</dt>
-                    <dd className="text-base font-extrabold text-white whitespace-nowrap">{CONFERENCE.dates}</dd>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="ifpc-hero-badge"><MapPin className="h-[18px] w-[18px]" /></span>
-                  <div>
-                    <dt className="ifpc-hero-label">Venue</dt>
-                    <dd className="text-[15px] font-extrabold leading-snug tracking-tight text-white">{CONFERENCE.venueName}</dd>
-                    <dd className="text-xs text-white/75">{CONFERENCE.city}, India</dd>
-                  </div>
-                </div>
-              </dl>
-            </div>
-
-            {showCountdown && (
-              <div className="ifpc-hero-glass ifpc-hero-count px-5 py-4 text-center">
-                <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white/85">Conference begins in</p>
-                <div className="flex justify-center">
+              {showCountdown && (
+                <div className="ifpc-hero-inset ifpc-hero-count">
+                  <p className="ifpc-hero-count-title">Conference begins in</p>
                   <CountdownTimer targetDate={nextEvent!.startDate} theme={theme} bgDark hideSeconds />
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1376,7 +1373,7 @@ export default function TenantHomePage() {
                 Every other tenant keeps the original nav below, untouched. */}
             {tenantSlug === "apollo-medical" && (
               <div className="hidden xl:flex flex-1 justify-center min-w-0 px-4">
-                <IfpcBottomNav groups={ifpcNavSections} placement="top" accentFrom="#0f766e" accentTo="#22c55e" />
+                <IfpcBottomNav groups={ifpcNavSections} placement="top" accentFrom="#1d4ed8" accentTo="#2563eb" />
               </div>
             )}
 
@@ -1469,7 +1466,7 @@ export default function TenantHomePage() {
       {/* apollo-medical: the same grouped control, floating, for mobile,
           tablet and the installed PWA. */}
       {tenantSlug === "apollo-medical" && (
-        <IfpcBottomNav groups={ifpcNavSections} placement="bottom" accentFrom={theme.primaryColor} accentTo={theme.secondaryColor} />
+        <IfpcBottomNav groups={ifpcNavSections} placement="bottom" accentFrom="#1d4ed8" accentTo="#2563eb" />
       )}
 
       {/* Background wrapper: hero only */}
@@ -1899,23 +1896,8 @@ export default function TenantHomePage() {
           <section
             id="events"
             className={cn("pt-6 pb-10 lg:pt-8 lg:pb-16 relative overflow-hidden", tenantSlug !== "apollo-medical" && "bg-slate-900")}
-            style={tenantSlug === "apollo-medical" ? { backgroundColor: "#12112B" } : undefined}
+            style={tenantSlug === "apollo-medical" ? { background: "linear-gradient(180deg, #f4f8fe 0%, #f7faff 60%, #ffffff 100%)" } : undefined}
           >
-            {/* IFPC: the hero's photo and navy wash carry on behind the event
-                card. Mirrored so its top edge meets the hero's bottom edge, and
-                softened so it reads as atmosphere, not a second photo. */}
-            {tenantSlug === "apollo-medical" && (
-              <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-                <img
-                  src={hero.bgImage || "/ifpc/convention-centre.jpg"}
-                  alt=""
-                  className="absolute -inset-6 w-[calc(100%+3rem)] h-[calc(100%+3rem)] max-w-none object-cover"
-                  style={{ objectPosition: "22% bottom", transform: "scaleY(-1)", filter: "blur(10px)" }}
-                  loading="lazy"
-                />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(115deg, rgba(18,17,43,0.82) 0%, rgba(30,58,95,0.68) 48%, rgba(18,17,43,0.8) 100%)" }} />
-              </div>
-            )}
             {/* Dark decorative bg */}
             {tenantSlug !== "apollo-medical" && <div className="absolute inset-0 pointer-events-none">
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
