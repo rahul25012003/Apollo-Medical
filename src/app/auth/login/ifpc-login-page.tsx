@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
+import "./ifpc-login.css";
 import {
     Mail,
     Lock,
@@ -25,6 +26,7 @@ import {
     Activity,
     Eye,
     EyeOff,
+    CalendarDays,
 } from "lucide-react";
 
 const loginSchema = z.object({
@@ -135,12 +137,6 @@ function LoginPageInner() {
         fetchTenant();
     }, [tenantSlugFromParam]);
 
-    // Computed tenant gradient for buttons
-    const tenantGradient = tenantBranding
-        ? { background: `linear-gradient(135deg, ${tenantBranding.primaryColor}, ${tenantBranding.secondaryColor})` }
-        : undefined;
-    const btnClass = tenantBranding ? "w-full text-white" : "w-full gradient-medical text-white";
-
     // Password visibility toggle
     const [showPassword, setShowPassword] = React.useState(false);
 
@@ -190,311 +186,132 @@ function LoginPageInner() {
         }
     };
 
+    const brandName = tenantBranding?.name || "";
+    const nameWords = brandName.split(" ");
+    // "International Forensic Psychiatry Conference 2026": the year becomes a badge.
+    const year = /^\d{4}$/.test(nameWords[nameWords.length - 1] || "") ? nameWords.pop() : null;
+
     return (
-        <div className="min-h-screen flex flex-col lg:flex-row relative overflow-hidden">
-            {/* ===== LEFT PANEL: Animated Gradient Branding ===== */}
-            <div
-                className="hidden lg:flex lg:w-[55%] relative login-noise overflow-hidden"
-                style={tenantBranding ? {
-                    background: `radial-gradient(ellipse 80% 80% at 10% 20%, ${tenantBranding.primaryColor}59 0%, transparent 50%), radial-gradient(ellipse 60% 60% at 85% 80%, ${tenantBranding.secondaryColor}4d 0%, transparent 50%), radial-gradient(ellipse 50% 50% at 50% 50%, rgba(124,58,237,0.15) 0%, transparent 50%), linear-gradient(135deg, #0a0f1e 0%, #111827 40%, #0f172a 100%)`
-                } : undefined}
-            >
-            {/* If no tenant branding loaded yet, use default mesh gradient */}
-            {!tenantBranding && <div className="absolute inset-0 login-mesh-bg pointer-events-none" />}
-                {/* Animated orbs */}
-                <div className="absolute top-[10%] left-[15%] w-72 h-72 rounded-full bg-teal-500/20 blur-[100px] animate-orb-1" />
-                <div className="absolute bottom-[15%] right-[10%] w-96 h-96 rounded-full bg-blue-500/20 blur-[120px] animate-orb-2" />
-                <div className="absolute top-[50%] left-[50%] w-64 h-64 rounded-full bg-purple-500/15 blur-[80px] animate-orb-3" />
+        <div className="ifpc-lg">
+            {/* ===== LEFT: welcome over the venue ===== */}
+            <aside className="ifpc-lg-left">
+                <img src="/ifpc/convention-centre.jpg" alt="" className="ifpc-lg-photo" aria-hidden="true" />
+                <div className="ifpc-lg-veil" aria-hidden="true" />
+                <div className="ifpc-lg-left-inner">
+                    <Link href={homeHref} className="ifpc-lg-back">
+                        <ArrowLeft aria-hidden="true" /> Back to Home
+                    </Link>
 
-                {/* Floating geometric shapes */}
-                <div className="absolute top-[20%] right-[20%] w-20 h-20 border border-white/10 rounded-2xl rotate-12 animate-float-slow" />
-                <div className="absolute bottom-[25%] left-[20%] w-16 h-16 border border-white/[0.07] rounded-full animate-float-delayed" />
-                <div className="absolute top-[60%] right-[35%] w-12 h-12 border border-teal-400/10 rounded-lg rotate-45 animate-float" />
-                <div className="absolute top-[15%] left-[40%] w-8 h-8 bg-teal-400/10 rounded-full animate-bubble-3" />
-                <div className="absolute bottom-[40%] right-[15%] w-6 h-6 bg-blue-400/10 rounded-full animate-bubble-1" />
-
-                {/* Grid pattern overlay */}
-                <div
-                    className="absolute inset-0 opacity-[0.03]"
-                    style={{
-                        backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-                        backgroundSize: '60px 60px',
-                    }}
-                />
-
-                {/* Branding content */}
-                <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full animate-brand-enter">
-                    {/* Top: Logo & Nav */}
-                    <div>
-                        <Link
-                            href={homeHref}
-                            className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white/90 transition-colors group"
-                        >
-                            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                            Back to Home
-                        </Link>
+                    <div className="ifpc-lg-brand">
+                        <span className="ifpc-lg-logo">
+                            {tenantBranding?.logo ? <img src={tenantBranding.logo} alt={brandName} /> : <Stethoscope aria-hidden="true" />}
+                        </span>
+                        <p>{brandName}</p>
                     </div>
 
-                    {/* Center: Main branding */}
-                    <div className="space-y-8">
-                        {/* Logo mark */}
-                        <div className="flex items-center gap-4">
-                            <div
-                                className="w-14 h-14 rounded-full flex items-center justify-center shadow-premium-lg overflow-hidden bg-white"
-                                style={!tenantBranding?.logo ? (tenantBranding
-                                    ? { background: `linear-gradient(135deg, ${tenantBranding.primaryColor}, ${tenantBranding.secondaryColor})` }
-                                    : { background: 'linear-gradient(135deg, #0d9488, #0891b2)' }) : undefined
-                                }
-                            >
-                                {tenantBranding?.logo ? (
-                                    <img src={tenantBranding.logo} alt={tenantBranding.name} className="w-[75%] h-[75%] object-contain" />
-                                ) : (
-                                    <Stethoscope className="w-7 h-7 text-white" />
-                                )}
-                            </div>
-                            <div>
-                                <h2 className="text-white/90 text-lg font-semibold tracking-tight">
-                                    {tenantBranding?.name || (isTenantLogin ? "" : "ICMS")}
-                                </h2>
-                                <p className="text-white/40 text-xs tracking-widest uppercase">
-                                    {isTenantLogin ? "" : "Conference Management"}
-                                </p>
-                            </div>
-                        </div>
+                    <h1 className="ifpc-lg-title">
+                        Welcome to <span>{nameWords.join(" ") || "Conference"}</span>
+                    </h1>
+                    {year && <span className="ifpc-lg-year"><CalendarDays aria-hidden="true" /> {year}</span>}
+                    <p className="ifpc-lg-lead">Sign in to access your dashboard, registrations, certificates, and more.</p>
 
-                        {/* Headline — tenant-specific or ICMS platform */}
-                        <div className="space-y-4 max-w-lg">
-                            {isTenantLogin ? (
-                                <>
-                                    <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight" style={{ fontFamily: 'inherit' }}>
-                                        Welcome to{" "}
-                                        <span className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
-                                            {tenantBranding?.name || "Conference"}
-                                        </span>
-                                    </h1>
-                                    <p className="text-white/50 text-lg leading-relaxed">
-                                        Sign in to access your dashboard, registrations, certificates, and more.
-                                    </p>
-                                </>
-                            ) : (
-                                <>
-                                    <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight" style={{ fontFamily: 'inherit' }}>
-                                        Where Medical{" "}
-                                        <span className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
-                                            Excellence
-                                        </span>{" "}
-                                        Meets Innovation
-                                    </h1>
-                                    <p className="text-white/50 text-lg leading-relaxed">
-                                        Streamlined conference management for healthcare professionals worldwide.
-                                    </p>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Feature pills — tenant-specific or ICMS platform */}
-                        <div className="flex flex-wrap gap-3">
-                            {(isTenantLogin ? [
-                                { icon: Shield, label: "Secure Login" },
-                                { icon: Activity, label: "Dashboard" },
-                                { icon: Heart, label: "Certificates" },
-                                { icon: Sparkles, label: "Registrations" },
-                            ] : [
-                                { icon: Shield, label: "Secure Access" },
-                                { icon: Activity, label: "Real-time Analytics" },
-                                { icon: Heart, label: "Healthcare Focus" },
-                                { icon: Sparkles, label: "AI-Powered" },
-                            ]).map(({ icon: Icon, label }) => (
-                                <div
-                                    key={label}
-                                    className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/[0.08] border border-white/[0.12] text-white/70 text-sm backdrop-blur-md hover:bg-white/[0.12] hover:text-white/90 transition-all duration-300"
-                                >
-                                    <Icon className="w-3.5 h-3.5" />
-                                    {label}
-                                </div>
-                            ))}
-                        </div>
+                    <div className="ifpc-lg-feats">
+                        {[
+                            { icon: Shield, label: "Secure Login", tone: "#2563eb" },
+                            { icon: Activity, label: "Dashboard", tone: "#4f46e5" },
+                            { icon: Heart, label: "Certificates", tone: "#0d9488" },
+                            { icon: Sparkles, label: "Registrations", tone: "#db2777" },
+                        ].map(({ icon: Icon, label, tone }) => (
+                            <div key={label} style={{ "--tone": tone } as React.CSSProperties}>
+                                <span aria-hidden="true"><Icon /></span>
+                                <p>{label}</p>
+                            </div>
+                        ))}
                     </div>
+                </div>
+            </aside>
 
-                    {/* Bottom: Stats — only for ICMS platform, hidden for tenant logins */}
-                    {!isTenantLogin ? (
-                        <div className="flex items-center gap-8">
-                            <div>
-                                <div className="text-2xl font-bold text-white">500+</div>
-                                <div className="text-white/40 text-xs">Conferences</div>
-                            </div>
-                            <div className="w-px h-8 bg-white/10" />
-                            <div>
-                                <div className="text-2xl font-bold text-white">50K+</div>
-                                <div className="text-white/40 text-xs">Delegates</div>
-                            </div>
-                            <div className="w-px h-8 bg-white/10" />
-                            <div>
-                                <div className="text-2xl font-bold text-white">98%</div>
-                                <div className="text-white/40 text-xs">Satisfaction</div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="text-white/30 text-xs">
-                            &copy; {new Date().getFullYear()} {tenantBranding?.name || "Conference"}. All rights reserved.
+            {/* ===== RIGHT: the form ===== */}
+            <main className="ifpc-lg-right">
+                <Link href={homeHref} className="ifpc-lg-back ifpc-lg-back--m lg:hidden">
+                    <ArrowLeft aria-hidden="true" /> Back to Home
+                </Link>
+                <div className="ifpc-lg-card">
+                    <p className="ifpc-lg-chip"><Lock aria-hidden="true" /> Password Login</p>
+                    <h2 className="ifpc-lg-h">Sign In</h2>
+                    <p className="ifpc-lg-sub">Sign in with your email and password.</p>
+
+                    {error && (
+                        <div className="ifpc-lg-error">
+                            <Info aria-hidden="true" />
+                            <span>{error}</span>
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* ===== RIGHT PANEL: Login Form ===== */}
-            <div className="flex-1 flex flex-col min-h-screen relative bg-gradient-to-br from-slate-50/80 via-white to-teal-50/20">
-                {/* Mobile-only gradient background */}
-                <div className="absolute inset-0 lg:hidden login-mesh-bg login-noise opacity-[0.03] pointer-events-none" />
-
-                {/* Mobile header */}
-                <header className="lg:hidden p-4">
-                    <Link
-                        href={homeHref}
-                        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Back to Home
-                    </Link>
-                </header>
-
-                {/* Form area */}
-                <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-12">
-                    <div className="w-full max-w-[440px] animate-login-card-enter">
-                        {/* Logo & Title */}
-                        <div className="text-center mb-8">
-                            {/* Mobile logo */}
-                            <div className="lg:hidden mb-6">
-                                <div
-                                    className="inline-flex items-center justify-center w-16 h-16 rounded-full shadow-premium-lg mb-3 overflow-hidden bg-white"
-                                    style={!tenantBranding?.logo ? (tenantBranding
-                                        ? { background: `linear-gradient(135deg, ${tenantBranding.primaryColor}, ${tenantBranding.secondaryColor})` }
-                                        : { background: 'linear-gradient(135deg, #0d9488, #0891b2)' }) : undefined
-                                    }
-                                >
-                                    {tenantBranding?.logo ? (
-                                        <img src={tenantBranding.logo} alt={tenantBranding.name} className="w-[75%] h-[75%] object-contain" />
-                                    ) : (
-                                        <Stethoscope className="w-8 h-8 text-white" />
-                                    )}
-                                </div>
-                                <p className="text-xs text-muted-foreground tracking-widest uppercase">
-                                    {isTenantLogin ? (tenantBranding?.name || "") : "ICMS — Conference Management"}
-                                </p>
-                            </div>
-
-                            {/* Mode indicator — only show on tenant login */}
-                            {isTenantLogin && (
-                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/10 text-primary text-xs font-semibold mb-5 shadow-sm">
-                                    <Shield className="w-3 h-3" /> {isIfpcLogin ? "Password Login" : "Admin Login"}
-                                </div>
-                            )}
-
-                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-                                {isIfpcLogin ? "Sign In" : "Admin Sign In"}
-                            </h1>
-                            <p className="text-muted-foreground mt-2 text-sm">
-                                {isIfpcLogin ? "Sign in with your email and password." : "Sign in with your admin credentials."}
-                            </p>
+                    <form onSubmit={handleSubmit(onAdminSubmit)} className="ifpc-lg-form">
+                        <div>
+                            <Label htmlFor="email" className="ifpc-lg-label"><Mail aria-hidden="true" /> Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="you@example.com"
+                                icon={<Mail className="w-4 h-4" />}
+                                error={errors.email?.message}
+                                className="ifpc-lg-input"
+                                {...register("email")}
+                            />
                         </div>
 
-                        {/* Card */}
-                        <div className="glass-card rounded-2xl shadow-premium-lg p-6 sm:p-8 animate-pulse-glow border border-white/60 backdrop-blur-2xl">
-                            {/* Error Alert */}
-                            {error && (
-                                <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm flex items-start gap-2.5 animate-fadeIn">
-                                    <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>{error}</span>
-                                </div>
-                            )}
-
-                            <div className="space-y-5">
-                                <form onSubmit={handleSubmit(onAdminSubmit)} className="space-y-5">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                                        <div className="input-focus-glow rounded-xl">
-                                            <Input
-                                                id="email"
-                                                type="email"
-                                                placeholder="you@example.com"
-                                                icon={<Mail className="w-4 h-4" />}
-                                                error={errors.email?.message}
-                                                className="h-12 rounded-xl"
-                                                {...register("email")}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                                            <Link href="/auth/forgot-password" className="text-xs text-primary hover:text-primary/80 transition-colors">
-                                                Forgot password?
-                                            </Link>
-                                        </div>
-                                        <div className="input-focus-glow rounded-xl">
-                                            <Input
-                                                id="password"
-                                                type={showPassword ? "text" : "password"}
-                                                placeholder="Enter your password"
-                                                icon={<Lock className="w-4 h-4" />}
-                                                rightIcon={
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowPassword((v) => !v)}
-                                                        className="hover:text-foreground transition-colors"
-                                                        tabIndex={-1}
-                                                        aria-label={showPassword ? "Hide password" : "Show password"}
-                                                    >
-                                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                    </button>
-                                                }
-                                                error={errors.password?.message}
-                                                className="h-12 rounded-xl"
-                                                {...register("password")}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2.5">
-                                        <Checkbox id="remember" {...register("rememberMe")} />
-                                        <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer select-none">
-                                            Keep me signed in
-                                        </label>
-                                    </div>
-
-                                    <Button
-                                        type="submit"
-                                        className={`${btnClass} h-12 rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5`}
-                                        style={tenantGradient}
-                                        loading={isLoading}
+                        <div>
+                            <div className="ifpc-lg-row">
+                                <Label htmlFor="password" className="ifpc-lg-label"><Lock aria-hidden="true" /> Password</Label>
+                                <Link href="/auth/forgot-password" className="ifpc-lg-forgot">Forgot password?</Link>
+                            </div>
+                            <Input
+                                id="password"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Enter your password"
+                                icon={<Lock className="w-4 h-4" />}
+                                rightIcon={
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword((v) => !v)}
+                                        className="hover:text-foreground transition-colors"
+                                        tabIndex={-1}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
                                     >
-                                        Sign In
-                                        <ArrowRight className="w-4 h-4 ml-2" />
-                                    </Button>
-                                </form>
-                            </div>
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                }
+                                error={errors.password?.message}
+                                className="ifpc-lg-input"
+                                {...register("password")}
+                            />
                         </div>
 
-                        {/* Footer Link */}
-                        <p className="text-center text-sm text-muted-foreground mt-6">
-                            New here?{" "}
-                            <Link href={homeHref} className="text-primary font-medium hover:text-primary/80 transition-colors">
-                                Explore conferences
-                            </Link>
-                        </p>
-                    </div>
-                </main>
+                        <div className="flex items-center gap-2.5">
+                            <Checkbox id="remember" {...register("rememberMe")} />
+                            <label htmlFor="remember" className="text-sm text-slate-500 cursor-pointer select-none">Keep me signed in</label>
+                        </div>
 
-                {/* Footer */}
-                <footer className="p-4 sm:p-6 flex flex-col items-center gap-1.5 text-xs text-muted-foreground relative z-10">
-                    <span>&copy; {new Date().getFullYear()} {tenantBranding?.name || (isTenantLogin ? "" : "ICMS")}. All rights reserved.</span>
-                    <a href="https://summitsolutions.in" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity">
-                        Powered by
-                        <img src="/summit-logo.png" alt="Summit Solutions" className="h-10 inline-block" />
+                        <Button type="submit" className="ifpc-lg-submit" loading={isLoading}>
+                            Sign In <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                    </form>
+
+                    <p className="ifpc-lg-new">
+                        New here?{" "}
+                        <Link href={homeHref}>Explore conferences <ArrowRight aria-hidden="true" /></Link>
+                    </p>
+                </div>
+
+                <footer className="ifpc-lg-foot">
+                    <span>&copy; {new Date().getFullYear()} {brandName}. All rights reserved.</span>
+                    <a href="https://summitsolutions.in" target="_blank" rel="noopener noreferrer">
+                        Powered by <img src="/summit-logo.png" alt="Summit Solutions" />
                     </a>
                 </footer>
-            </div>
+            </main>
         </div>
     );
 }
