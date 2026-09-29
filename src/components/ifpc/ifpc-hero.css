@@ -7,13 +7,24 @@
   --hero-ease: cubic-bezier(0.22, 1, 0.36, 1);
   isolation: isolate;
   /* Dusk sky the photo rises into. */
-  background:
-    radial-gradient(45% 55% at 62% 18%, rgb(88 70 190 / 0.45), transparent 70%),
-    radial-gradient(40% 35% at 55% 62%, rgb(255 140 90 / 0.28), transparent 70%),
-    linear-gradient(180deg, #040a24 0%, #0a1442 40%, #1c1d5e 68%, #33245f 100%);
+  background: #07102e;
 }
 
 /* ── Scene ────────────────────────────────────────────────────────────── */
+
+/* The whole venue, softly out of focus, behind everything: a hint of the
+   photo shows through on the text side as it does behind the panels. */
+.ifpc-hero-base {
+  position: absolute;
+  inset: -24px;
+  z-index: -4;
+  width: calc(100% + 48px);
+  height: calc(100% + 48px);
+  max-width: none;
+  object-fit: cover;
+  object-position: 22% center;
+  filter: blur(5px) saturate(1.05) brightness(0.62);
+}
 
 .ifpc-hero-photo {
   position: absolute;
@@ -94,8 +105,8 @@
   inset: 0;
   z-index: -2;
   background:
-    linear-gradient(90deg, rgb(4 10 38 / 0.85) 0%, rgb(6 16 52 / 0.55) 26%, rgb(8 22 64 / 0.12) 42%, transparent 52%, transparent 84%, rgb(4 10 38 / 0.3) 100%),
-    linear-gradient(180deg, transparent 0%, transparent 80%, rgb(3 8 30 / 0.55) 100%);
+    linear-gradient(90deg, rgb(4 10 38 / 0.72) 0%, rgb(6 16 52 / 0.55) 30%, rgb(8 22 64 / 0.2) 46%, transparent 56%, transparent 84%, rgb(4 10 38 / 0.3) 100%),
+    linear-gradient(180deg, rgb(8 16 60 / 0.35) 0%, rgb(20 24 80 / 0.15) 45%, transparent 70%, rgb(3 8 30 / 0.55) 100%);
 }
 
 /* A light streak rising from the lower right corner. */
@@ -259,7 +270,7 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.26em;
   text-transform: uppercase;
@@ -279,15 +290,19 @@
   align-items: center;
   justify-content: center;
   border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 10px 26px -10px rgb(0 0 0 / 0.55), 0 0 0 4px rgb(255 255 255 / 0.12);
+  border: 1.5px solid rgb(94 234 212 / 0.45);
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.95), rgb(236 253 250 / 0.88));
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 0 22px -8px rgb(45 212 191 / 0.6),
+    0 10px 24px -12px rgb(4 10 38 / 0.6);
 }
 
 .ifpc-hero-badge {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 40px;
+  height: 40px;
   flex: none;
   border-radius: 999px;
   border: 1px solid rgb(94 234 212 / 0.35);
@@ -296,7 +311,7 @@
   box-shadow: 0 0 18px -6px rgb(45 212 191 / 0.7);
 }
 .ifpc-hero-label {
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -305,20 +320,20 @@
 
 /* The countdown (shared CountdownTimer), dressed as glowing glass tiles
    with the label inside; its values and labels are unchanged. */
-.ifpc-hero-count .flex { gap: 12px; }
+.ifpc-hero-count .flex { gap: 10px; }
 .ifpc-hero-count .contents > span { display: none; }
 .ifpc-hero-count .text-center {
-  width: 92px;
-  padding: 12px 0 11px;
-  border-radius: 16px;
+  width: 76px;
+  padding: 8px 0 7px;
+  border-radius: 14px;
   border: 1px solid rgb(94 234 212 / 0.4);
   background: linear-gradient(180deg, rgb(30 80 140 / 0.55), rgb(8 30 70 / 0.65));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 0 22px -8px rgb(45 212 191 / 0.7);
 }
-.ifpc-hero-count .text-center > div:first-child { width: auto; height: 42px; }
+.ifpc-hero-count .text-center > div:first-child { width: auto; height: 32px; }
 .ifpc-hero-count .text-center > div:first-child > div:first-child { display: none; }
-.ifpc-hero-count .text-center > div:first-child > span { font-size: 36px; text-shadow: 0 0 18px rgb(125 211 252 / 0.5); }
-.ifpc-hero-count .text-center > p { margin-top: 2px; font-size: 11px; letter-spacing: 0.14em; color: rgb(255 255 255 / 0.85); }
+.ifpc-hero-count .text-center > div:first-child > span { font-size: 28px; text-shadow: 0 0 18px rgb(125 211 252 / 0.5); }
+.ifpc-hero-count .text-center > p { margin-top: 1px; font-size: 10px; letter-spacing: 0.14em; color: rgb(255 255 255 / 0.85); }
 @media (max-width: 639px) {
   .ifpc-hero-count .flex { gap: 8px; }
   .ifpc-hero-count .text-center { width: 68px; padding: 10px 0 9px; border-radius: 14px; }
@@ -331,7 +346,7 @@
   .ifpc-hero-photo { left: 4vw; width: 200vw; }
   .ifpc-hero-shade {
     background:
-      linear-gradient(180deg, rgb(4 10 38 / 0.2) 0%, rgb(6 16 52 / 0.1) 50%, rgb(3 8 30 / 0.55) 100%);
+      linear-gradient(180deg, rgb(4 10 38 / 0.5) 0%, rgb(6 16 52 / 0.42) 50%, rgb(3 8 30 / 0.6) 100%);
   }
   .ifpc-hero-btn { min-height: 54px; }
 }

@@ -527,10 +527,11 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
   const themeLast = themeWords[themeWords.length - 1];
 
   return (
-    <section id="hero" className="ifpc-hero relative overflow-hidden lg:min-h-screen flex items-center">
+    <section id="hero" className="ifpc-hero relative overflow-hidden lg:min-h-[100svh] flex items-center">
       {/* The photo is a wide panorama with the entrance at its far left; it is
           placed so the entrance and rotunda sit between the text and the
           panels, graded to dusk, with warm light at the lobby and lamps. */}
+      <img src={bgImage} alt="" className="ifpc-hero-base" aria-hidden="true" />
       <div className="ifpc-hero-photo" aria-hidden="true">
         <img src={bgImage} alt="" loading="eager" />
         <span className="ifpc-hero-glow ifpc-hero-glow--door" />
@@ -542,7 +543,7 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
       <div className="ifpc-hero-shade" aria-hidden="true" />
       <span className="ifpc-hero-streak ifpc-hero-streak--c" aria-hidden="true" />
 
-      <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-28 pb-12 sm:pt-32 sm:pb-16 lg:pt-36 lg:pb-20">
+      <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-28 pb-12 sm:pt-32 sm:pb-16 lg:pt-28 lg:pb-10">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           <div className="lg:col-span-7 xl:col-span-6 text-center lg:text-left hero-stagger-1">
             <div className="lg:hidden mb-6 flex items-center justify-center gap-3">
@@ -590,44 +591,44 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
             )}
           </div>
 
-          <div className={cn("lg:col-span-5 xl:col-span-4 xl:col-start-9 hero-stagger-2 space-y-5", !showCountdown && "hidden lg:block")}>
-            <div className="ifpc-hero-glass hidden lg:block p-6 xl:p-7">
+          <div className={cn("lg:col-span-5 xl:col-span-4 xl:col-start-9 hero-stagger-2 space-y-4", !showCountdown && "hidden lg:block")}>
+            <div className="ifpc-hero-glass hidden lg:block px-6 py-5">
               <p className="ifpc-hero-hosted">Hosted by</p>
-              <div className="mt-5 flex items-start justify-center gap-6 xl:gap-10">
+              <div className="mt-4 flex items-start justify-center gap-6 xl:gap-10">
                 {IFPC_HOSTS.map((h) => (
                   <div key={h.src} className="text-center">
-                    <div className="ifpc-hero-logo h-24 w-24 p-3 mx-auto">
+                    <div className="ifpc-hero-logo h-20 w-20 p-2.5 mx-auto">
                       <img src={h.src} alt={h.alt} className="max-h-full max-w-full object-contain" />
                     </div>
-                    <p className="mt-3 text-sm font-bold text-white">{h.name}</p>
+                    <p className="mt-2 text-sm font-bold text-white">{h.name}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="my-6 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+              <div className="my-4 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
 
-              <dl className="space-y-5">
-                <div className="flex items-start gap-4">
-                  <span className="ifpc-hero-badge"><Calendar className="h-5 w-5" /></span>
+              <dl className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="ifpc-hero-badge"><Calendar className="h-[18px] w-[18px]" /></span>
                   <div>
                     <dt className="ifpc-hero-label">Dates</dt>
-                    <dd className="text-xl font-extrabold text-white whitespace-nowrap">{CONFERENCE.dates}</dd>
+                    <dd className="text-base font-extrabold text-white whitespace-nowrap">{CONFERENCE.dates}</dd>
                   </div>
                 </div>
-                <div className="flex items-start gap-4">
-                  <span className="ifpc-hero-badge"><MapPin className="h-5 w-5" /></span>
+                <div className="flex items-center gap-3">
+                  <span className="ifpc-hero-badge"><MapPin className="h-[18px] w-[18px]" /></span>
                   <div>
                     <dt className="ifpc-hero-label">Venue</dt>
-                    <dd className="text-[17px] font-extrabold leading-snug tracking-tight text-white">{CONFERENCE.venueName}</dd>
-                    <dd className="text-sm text-white/75">{CONFERENCE.city}, India</dd>
+                    <dd className="text-[15px] font-extrabold leading-snug tracking-tight text-white">{CONFERENCE.venueName}</dd>
+                    <dd className="text-xs text-white/75">{CONFERENCE.city}, India</dd>
                   </div>
                 </div>
               </dl>
             </div>
 
             {showCountdown && (
-              <div className="ifpc-hero-glass ifpc-hero-count px-5 py-5 text-center">
-                <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-white/85">Conference begins in</p>
+              <div className="ifpc-hero-glass ifpc-hero-count px-5 py-4 text-center">
+                <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white/85">Conference begins in</p>
                 <div className="flex justify-center">
                   <CountdownTimer targetDate={nextEvent!.startDate} theme={theme} bgDark hideSeconds />
                 </div>
