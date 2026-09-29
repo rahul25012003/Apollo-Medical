@@ -5,6 +5,7 @@ import { useTenantFilter } from "@/hooks/use-tenant-filter";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
 import type { TenantConfig } from "@/lib/tenant/types";
 import "../ifpc-neu.css";
+import "@/components/ifpc/ifpc-platform.css";
 
 export function DashboardTenantWrapper({
     children,

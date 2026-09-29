@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import type { LucideIcon } from "lucide-react";
 import { useTenant } from "@/lib/tenant/context";
 import { IFPC_TENANT_SLUG } from "@/lib/ifpc-constants";
+import "./ifpc-platform.css";
 
 /**
  * Frame for the public, at-the-venue delegate pages (Schedule, Route Map,
@@ -42,9 +43,9 @@ export function DelegatePageShell({
     else router.push("/dashboard");
   };
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4">
+    <div className="ifpc-dp min-h-screen bg-slate-50">
+      <header className="ifpc-dp-head sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="ifpc-dp-bar mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4">
           <Link href={home} className="flex min-w-0 items-center gap-2.5">
             <img src="/ifpc/ifpc-icon-192.png" alt="" width={36} height={36} className="h-9 w-9 rounded-lg object-cover ring-1 ring-slate-200" />
             <span className="min-w-0">
@@ -72,9 +73,9 @@ export function DelegatePageShell({
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 pb-16 pt-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+      <main className="ifpc-dp-main mx-auto max-w-3xl px-4 pb-16 pt-5">
+        <div className="ifpc-dp-top mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="ifpc-dp-title flex items-center gap-2 text-xl font-bold text-slate-900">
             <Icon className="h-5 w-5" style={{ color: accent }} /> {title}
           </h1>
           {actions}

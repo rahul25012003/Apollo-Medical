@@ -1,0 +1,92 @@
+/*
+ * IFPC: Web vs installed app (PWA). The browser reports how the page is
+ * running via `display-mode`, so this is CSS only — no detection script, no
+ * flash, no change to behaviour or content.
+ *
+ *   Web  (default)            — centred page, wider on large screens,
+ *                               hover effects.
+ *   App  (display-mode:       — app bar that respects the notch/status
+ *        standalone)            bar, edge-to-edge content on phones, room
+ *                               for the bottom menu and home indicator,
+ *                               press feedback instead of hover, no
+ *                               rubber-band scroll or tap flash.
+ *
+ * Applies to the venue pages (Schedule, Route Map, Help Line, Food Menu —
+ * DelegatePageShell) and the signed-in IFPC dashboard (.ifpc-neu).
+ */
+
+/* ── Web ──────────────────────────────────────────────────────────────── */
+
+/* Venue pages use the room a desktop browser offers. */
+@media (min-width: 1024px) {
+  .ifpc-dp-bar,
+  .ifpc-dp-main { max-width: min(92vw, 1100px); }
+  .ifpc-dp-bar { height: 72px; padding-inline: 24px; }
+  .ifpc-dp-main { padding: 32px 24px 64px; }
+  .ifpc-dp-title { font-size: 26px; letter-spacing: -0.02em; }
+  .ifpc-dp-top { margin-bottom: 24px; }
+}
+@media (min-width: 1536px) {
+  .ifpc-dp-bar, .ifpc-dp-main { max-width: 1240px; }
+}
+
+/* ── App (installed PWA), any size ────────────────────────────────────── */
+
+@media (display-mode: standalone) {
+  .ifpc-dp,
+  .ifpc-neu {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  /* Buttons and links press in, the way native controls do. */
+  .ifpc-dp :is(a, button):active,
+  .ifpc-neu :is(a, button):active {
+    transform: scale(0.97);
+    transition: transform 80ms ease-out;
+  }
+  .ifpc-dp :is(button, [role="tab"], nav a),
+  .ifpc-neu :is(button, [role="tab"], nav a) {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Venue pages: the bar clears the status bar / notch. */
+  .ifpc-dp-head {
+    padding-top: env(safe-area-inset-top, 0px);
+    background: rgb(255 255 255 / 0.94);
+    box-shadow: 0 6px 20px -16px rgb(15 40 80 / 0.5);
+  }
+  .ifpc-dp-main { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Dashboard: same for its fixed header and page area. */
+  .ifpc-neu header.fixed { padding-top: env(safe-area-inset-top, 0px); height: calc(4rem + env(safe-area-inset-top, 0px)); }
+  .ifpc-neu main { padding-top: calc(4rem + env(safe-area-inset-top, 0px)); }
+}
+
+/* ── App on phones and tablets: app layout ────────────────────────────── */
+
+@media (display-mode: standalone) and (max-width: 1023px) {
+  /* Venue pages: a compact app bar and edge-to-edge content. */
+  .ifpc-dp-bar { height: 56px; max-width: none; padding-inline: 14px; }
+  .ifpc-dp-main { max-width: none; padding: 14px 12px calc(110px + env(safe-area-inset-bottom, 0px)); }
+  .ifpc-dp-title { font-size: 19px; }
+  .ifpc-dp-top { position: sticky; top: calc(56px + env(safe-area-inset-top, 0px)); z-index: 20; margin: -14px -12px 12px; padding: 10px 12px; background: rgb(248 250 252 / 0.92); backdrop-filter: blur(10px); }
+  .ifpc-dp-main :is(.rounded-xl, .rounded-2xl) { border-radius: 18px; }
+
+  /* Dashboard: tighter page padding, a smaller page title, room for the
+     bottom menu and the home indicator. */
+  .ifpc-neu main > div:first-child { padding: 14px 12px calc(110px + env(safe-area-inset-bottom, 0px)); }
+  .ifpc-neu main .section-heading { font-size: 22px; }
+  .ifpc-neu main > div:first-child > .mb-8:first-child { margin-bottom: 16px; }
+
+  /* Touch: every control is a comfortable target, no hover lift. */
+  .ifpc-dp :is(button, a[role="button"], [role="tab"]),
+  .ifpc-neu main :is(button, [role="tab"]) { min-height: 44px; }
+  .ifpc-dp *:hover,
+  .ifpc-neu main *:hover { translate: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-dp :is(a, button):active,
+  .ifpc-neu :is(a, button):active { transform: none; }
+}
