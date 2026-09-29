@@ -527,21 +527,23 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
   const themeLast = themeWords[themeWords.length - 1];
 
   return (
-    <section id="hero" className="ifpc-hero relative overflow-hidden lg:min-h-[100svh] flex items-center">
+    <section id="hero" className="ifpc-hero relative overflow-hidden min-h-[100svh] flex items-center">
       {/* Daylight venue photo on the right, melting into the light page on
           the text side and at the bottom. */}
       <div className="ifpc-hero-photo" aria-hidden="true">
         <img src={bgImage} alt="" loading="eager" />
       </div>
       <div className="ifpc-hero-shade" aria-hidden="true" />
-      <span className="ifpc-hero-blob" aria-hidden="true" />
+      {/* The venue again, soft and pale, behind the text side (its far wing,
+          so the entrance never appears twice). */}
+      <div className="ifpc-hero-base" aria-hidden="true"><img src={bgImage} alt="" /></div>
 
-      <div className="container mx-auto px-4 lg:px-8 relative z-10 pt-28 pb-10 sm:pt-32 sm:pb-12 lg:pt-32 lg:pb-14">
-        <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+      <div className="ifpc-hero-inner relative z-10">
+        <div className="ifpc-hero-grid grid lg:grid-cols-12 items-center">
           <div className="lg:col-span-7 xl:col-span-6 text-center lg:text-left hero-stagger-1">
-            <div className="lg:hidden mb-6 flex items-center justify-center gap-3">
+            <div className="ifpc-hero-mlogos lg:hidden flex items-center justify-center">
               {IFPC_HOSTS.map((h) => (
-                <div key={h.src} className="ifpc-hero-logo ifpc-hero-logo--tile h-14 w-14 sm:h-16 sm:w-16 p-1.5 flex-none">
+                <div key={h.src} className="ifpc-hero-logo ifpc-hero-logo--tile p-1.5 flex-none">
                   <img src={h.src} alt={h.alt} className="max-h-full max-w-full object-contain" />
                 </div>
               ))}
@@ -560,12 +562,12 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
             <p className="ifpc-hero-tag">
               a global gathering advancing forensic psychiatry knowledge and practice.
             </p>
-            <div className="lg:hidden mt-5 space-y-2 text-[#0b1a4a]">
-              <p className="flex items-center justify-center gap-2 text-lg font-extrabold"><Calendar className="h-5 w-5 text-blue-600" />{CONFERENCE.dates}</p>
-              <p className="flex items-center justify-center gap-2 text-base font-bold"><MapPin className="h-5 w-5 flex-none text-blue-600" />{CONFERENCE.venueName}, {CONFERENCE.city}</p>
+            <div className="ifpc-hero-mfacts lg:hidden text-[#0b1a4a]">
+              <p><Calendar className="text-blue-600" />{CONFERENCE.dates}</p>
+              <p><MapPin className="flex-none text-blue-600" />{CONFERENCE.venueName}, {CONFERENCE.city}</p>
             </div>
 
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+            <div className="ifpc-hero-actions flex flex-col sm:flex-row justify-center lg:justify-start">
               {/* IFPC has one conference: go straight to its details page. */}
               <Link href={nextEvent?.id ? `/events/${nextEvent.id}` : "/events"} className="ifpc-hero-btn ifpc-hero-btn--primary group">
                 <Calendar className="h-5 w-5" aria-hidden="true" />
@@ -579,7 +581,7 @@ function IfpcHeroV2({ hero, theme, nextEvent, hasEvents }: IfpcHeroProps) {
             </div>
 
             {status && (
-              <div className="mt-6">
+              <div className="ifpc-hero-status-row">
                 <span className={cn("ifpc-hero-status", `is-${status.kind}`, status.flash && "animate-flash")}>
                   <span className="ifpc-hero-status-dot" />
                   {status.text}
