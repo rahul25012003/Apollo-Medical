@@ -3352,7 +3352,10 @@ export default function TenantHomePage() {
             <path key={i} d={`M0 ${190 + i * 9} C 300 ${120 + i * 12}, 560 ${280 - i * 6}, 900 ${200 + i * 5} S 1300 ${140 + i * 10}, 1440 ${170 + i * 8}`} />
           ))}
         </svg>
-        <img src="/ifpc/ifpc-icon-512.png" alt="" aria-hidden="true" className="ifpc-ft-mark" />
+        <div className="ifpc-ft-photo" aria-hidden="true"><img src="/ifpc/campus/convention-centre-night.jpg" alt="" loading="lazy" /></div>
+        {Array.from({ length: 12 }, (_, i) => (
+          <span key={i} className="ifpc-ft-spark" aria-hidden="true" style={{ left: `${(i * 37) % 100}%`, top: `${10 + ((i * 53) % 70)}%`, animationDelay: `${(i * 0.7) % 5}s` }} />
+        ))}
         <div className="ifpc-ft-wrap">
           <div className="ifpc-ft-grid">
             <div>

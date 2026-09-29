@@ -586,3 +586,88 @@ section.ifpc-v2.ifpc-fb { padding-top: clamp(12px, 1.6vw, 20px); padding-bottom:
 section.ifpc-v2.ifpc-gd.ifpc-rg-sec { padding-top: clamp(12px, 1.6vw, 20px); padding-bottom: clamp(12px, 1.6vw, 20px); }
 /* The theme block's own inner gap before the "Join us" card. */
 section.ifpc-theme-section .ifpc-theme { margin-bottom: clamp(24px, 3vw, 40px); }
+
+/* Footer: the Convention Centre by night, melting into the navy. */
+.ifpc-ft-photo {
+  position: absolute;
+  z-index: -1;
+  right: 0;
+  bottom: 0;
+  width: min(62%, 900px);
+  height: 88%;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.6) 30%, #000 60%), linear-gradient(180deg, transparent 0%, #000 40%, #000 80%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.6) 30%, #000 60%), linear-gradient(180deg, transparent 0%, #000 40%, #000 80%, transparent 100%);
+  mask-composite: intersect;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.ifpc-ft-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% 70%;
+  filter: saturate(1.1) hue-rotate(-12deg);
+  mix-blend-mode: screen;
+  animation: ifpc-ft-zoom 24s ease-in-out infinite alternate;
+}
+@keyframes ifpc-ft-zoom { from { scale: 1; } to { scale: 1.08; translate: -1% -1%; } }
+/* Keep the text columns readable over the photo. */
+.ifpc-ft-wrap { position: relative; }
+.ifpc-ft-grid > div:last-child { text-shadow: 0 2px 12px rgb(11 26 74 / 0.9); }
+
+/* Flowing lines drift slowly. */
+.ifpc-ft-lines path { stroke-dasharray: 6 10; animation: ifpc-ft-flow 18s linear infinite; }
+.ifpc-ft-lines path:nth-child(even) { animation-duration: 26s; animation-direction: reverse; }
+@keyframes ifpc-ft-flow { to { stroke-dashoffset: -320; } }
+
+/* Soft lights that twinkle. */
+.ifpc-ft-spark {
+  position: absolute;
+  z-index: -1;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #c7d2fe;
+  box-shadow: 0 0 10px 3px rgb(129 140 248 / 0.6);
+  animation: ifpc-ft-twinkle 5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ifpc-ft-twinkle { 0%, 100% { opacity: 0.1; scale: 0.6; } 50% { opacity: 0.9; scale: 1.2; } }
+
+/* Links: an underline that grows on hover. */
+.ifpc-ft-links a { position: relative; }
+.ifpc-ft-links a::after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  right: 0;
+  bottom: -3px;
+  height: 1.5px;
+  background: linear-gradient(90deg, #818cf8, #22d3ee);
+  scale: 0 1;
+  transform-origin: left;
+  transition: scale 300ms var(--ease);
+}
+.ifpc-ft-links a:hover::after { scale: 1 1; }
+
+/* Social icons: a soft glow ring on hover. */
+.ifpc-ft-social a:hover { box-shadow: 0 0 0 4px rgb(255 255 255 / 0.12), 0 12px 26px -10px var(--brand); }
+
+/* The emblem watermark is replaced by the photo. */
+.ifpc-ft-mark { display: none; }
+
+@media (max-width: 767px) {
+  .ifpc-ft-photo { width: 100%; height: 45%; opacity: 0.4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-ft-photo img, .ifpc-ft-lines path, .ifpc-ft-spark { animation: none; }
+}
+@media (min-width: 768px) {
+  .ifpc-ft-photo {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.6) 30%, #000 60%), linear-gradient(180deg, transparent 0%, transparent 25%, #000 65%, #000 85%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.6) 30%, #000 60%), linear-gradient(180deg, transparent 0%, transparent 25%, #000 65%, #000 85%, transparent 100%);
+    opacity: 0.5;
+  }
+  .ifpc-ft-photo img { filter: saturate(0.95) hue-rotate(-20deg) brightness(0.9); }
+}
