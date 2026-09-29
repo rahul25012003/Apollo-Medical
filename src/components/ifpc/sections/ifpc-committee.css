@@ -1,0 +1,106 @@
+/* IFPC home: Organising Committee (patrons and the two committees). */
+
+.ifpc-oc {
+  --navy: #0b1a4a;
+  --ink: #475569;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+  padding: clamp(52px, 7vw, 96px) 0;
+  color: var(--navy);
+  background:
+    radial-gradient(40% 50% at 100% 0%, rgb(219 234 254 / 0.6), transparent 70%),
+    radial-gradient(35% 45% at 0% 100%, rgb(220 252 231 / 0.45), transparent 70%),
+    #fbfcff;
+}
+.ifpc-oc-wrap { width: 100%; max-width: min(94vw, 1320px); margin: 0 auto; padding: 0 clamp(16px, 3vw, 32px); }
+.ifpc-oc-title { margin: 0; font-size: clamp(30px, 4vw, 52px); font-weight: 800; line-height: 1.06; letter-spacing: -0.035em; color: var(--navy); }
+.ifpc-oc-title span {
+  color: #4f46e5;
+  background: linear-gradient(95deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.ifpc-oc-lead { margin: 12px 0 0; max-width: 40rem; font-size: clamp(15px, 1.2vw, 17px); line-height: 1.6; color: var(--ink); }
+
+.ifpc-oc-grid { display: grid; gap: 16px; margin-top: clamp(26px, 3.4vw, 44px); }
+@media (min-width: 1024px) { .ifpc-oc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.ifpc-oc-card > div {
+  --tone: #4f46e5;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  height: 100%;
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgb(15 23 42 / 0.06);
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgb(15 23 42 / 0.04), 0 22px 46px -32px rgb(15 40 80 / 0.45);
+  transition: translate 300ms var(--ease), box-shadow 300ms var(--ease);
+}
+.ifpc-oc-card > div::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -25%;
+  bottom: -30%;
+  width: 70%;
+  height: 60%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--tone) 14%, transparent), transparent);
+}
+.ifpc-oc-card > div:hover { translate: 0 -4px; box-shadow: inset 0 1px 0 #fff, 0 28px 54px -32px color-mix(in oklab, var(--tone) 55%, transparent); }
+
+.ifpc-oc-head { display: flex; align-items: center; gap: 14px; }
+.ifpc-oc-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: linear-gradient(150deg, color-mix(in oklab, var(--tone) 70%, #fff), var(--tone));
+  color: #fff;
+  box-shadow: 0 0 0 5px color-mix(in oklab, var(--tone) 12%, #fff), 0 12px 24px -12px color-mix(in oklab, var(--tone) 80%, transparent);
+}
+.ifpc-oc-icon svg { width: 26px; height: 26px; }
+.ifpc-oc-head h3 { margin: 0; font-size: 19px; font-weight: 700; color: var(--navy); }
+
+.ifpc-oc-patrons { display: grid; gap: 10px; margin: 18px 0 0; padding: 0; list-style: none; }
+.ifpc-oc-patrons li {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--tone) 6%, #fff);
+  border: 1px solid color-mix(in oklab, var(--tone) 14%, transparent);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--navy);
+}
+
+.ifpc-oc-chair { margin: 16px 0 0; font-size: 13.5px; color: #64748b; }
+.ifpc-oc-chair strong {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--tone);
+  font-weight: 700;
+  color: #fff;
+}
+.ifpc-oc-members { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.ifpc-oc-members li {
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #f4f7fd;
+  border: 1px solid rgb(15 23 42 / 0.05);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-oc-card > div { transition: none; }
+  .ifpc-oc-card > div:hover { translate: none; }
+}

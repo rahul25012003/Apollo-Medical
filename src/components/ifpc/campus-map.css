@@ -1,0 +1,110 @@
+/* IFPC campus map (home Venue section and the Route Map page). */
+
+.ifpc-cm {
+  --navy: #0b1a4a;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .ifpc-cm { grid-template-columns: minmax(0, 1fr) 340px; }
+}
+
+.ifpc-cm-map {
+  padding: 12px;
+  border-radius: 24px;
+  border: 1px solid rgb(15 23 42 / 0.06);
+  background: #fff;
+  box-shadow: inset 0 1px 0 #fff, 0 22px 50px -34px rgb(15 40 80 / 0.5);
+}
+.ifpc-cm-map svg { display: block; width: 100%; height: auto; border-radius: 18px; }
+.ifpc-cm-pin { cursor: pointer; transition: transform 250ms var(--ease); }
+.ifpc-cm-pin:hover { transform: translateY(-2px); }
+.ifpc-cm-route { stroke-dashoffset: 0; animation: ifpc-cm-march 1.4s linear infinite; }
+@keyframes ifpc-cm-march { to { stroke-dashoffset: -26; } }
+
+.ifpc-cm-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 12px 4px 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #f4f7fd;
+}
+.ifpc-cm-legend span { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--navy); }
+.ifpc-cm-legend svg { width: 15px; height: 15px; }
+.ifpc-cm-note { margin: 10px 4px 2px; text-align: center; font-size: 12px; color: #94a3b8; }
+
+.ifpc-cm-list { display: grid; gap: 12px; }
+.ifpc-cm-place {
+  --tone: #4f46e5;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1.5px solid rgb(15 23 42 / 0.06);
+  background: rgb(255 255 255 / 0.95);
+  box-shadow: inset 0 1px 0 #fff, 0 16px 36px -28px rgb(15 40 80 / 0.45);
+  transition: translate 280ms var(--ease), box-shadow 280ms var(--ease), border-color 280ms var(--ease);
+}
+.ifpc-cm-place:hover { translate: -3px 0; box-shadow: inset 0 1px 0 #fff, 0 22px 44px -28px color-mix(in oklab, var(--tone) 55%, transparent); }
+.ifpc-cm-place[data-active="true"] {
+  border-color: color-mix(in oklab, var(--tone) 55%, transparent);
+  background: linear-gradient(180deg, #fff, color-mix(in oklab, var(--tone) 5%, #fff));
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--tone) 10%, transparent), 0 22px 44px -28px color-mix(in oklab, var(--tone) 55%, transparent);
+}
+.ifpc-cm-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: linear-gradient(150deg, color-mix(in oklab, var(--tone) 70%, #fff), var(--tone));
+  color: #fff;
+  box-shadow: 0 10px 22px -10px color-mix(in oklab, var(--tone) 80%, transparent);
+}
+.ifpc-cm-icon svg { width: 24px; height: 24px; }
+.ifpc-cm-body { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.ifpc-cm-title { font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--navy); }
+.ifpc-cm-text { font-size: 13px; line-height: 1.5; color: #475569; }
+.ifpc-cm-addr { display: flex; gap: 4px; align-items: flex-start; font-size: 11.5px; line-height: 1.45; color: #64748b; }
+.ifpc-cm-addr svg { flex: none; width: 12px; height: 12px; margin-top: 2px; }
+.ifpc-cm-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12.5px; font-weight: 700; color: var(--tone); }
+.ifpc-cm-link svg { width: 12px; height: 12px; }
+.ifpc-cm-chev {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border-radius: 999px;
+  background: #f1f5fd;
+  color: #64748b;
+  transition: background-color 250ms var(--ease), color 250ms var(--ease);
+}
+.ifpc-cm-place:hover .ifpc-cm-chev,
+.ifpc-cm-place[data-active="true"] .ifpc-cm-chev { background: var(--tone); color: #fff; }
+.ifpc-cm-tip {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #f4f7fd;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #64748b;
+}
+.ifpc-cm-tip svg { flex: none; width: 15px; height: 15px; margin-top: 2px; }
+
+@media (max-width: 639px) {
+  .ifpc-cm-legend { border-radius: 16px; }
+  .ifpc-cm-chev { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ifpc-cm-route { animation: none; }
+  .ifpc-cm-place, .ifpc-cm-pin { transition: none; }
+}

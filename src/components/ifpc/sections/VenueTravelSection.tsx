@@ -28,7 +28,7 @@ export function VenueTravelSection() {
           </Reveal>
 
           <Reveal delayMs={120}>
-            <h3 className="ifpc-vn-sub">On-Campus Map</h3>
+            <h2 className="ifpc-gd-title ifpc-vn-sub">On-Campus <span>Map</span></h2>
             <p className="ifpc-vn-lead">Find your way between the Convention Centre, the daily morning Yoga Hall, and the on-campus Guest House.</p>
           </Reveal>
           <Reveal delayMs={160} className="ifpc-vn-map">
